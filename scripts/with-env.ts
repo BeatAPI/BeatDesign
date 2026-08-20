@@ -11,7 +11,7 @@
  *
  * Priority: ENV_FILE > .env.{NODE_ENV} > .env.local > .env
  */
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -65,11 +65,21 @@ if (args.length === 0) {
   process.exit(1);
 }
 
-const command = args.join(' ');
-console.log(`▶️  ${command}\n`);
+const [command, ...commandArgs] = args;
+console.log(`▶️  ${[command, ...commandArgs].join(' ')}\n`);
 
-try {
-  execSync(command, { stdio: 'inherit', cwd: process.cwd(), env: process.env });
-} catch {
+const result = spawnSync(command, commandArgs, {
+  stdio: 'inherit',
+  cwd: process.cwd(),
+  env: process.env,
+  shell: false,
+});
+
+if (result.error) {
+  console.error(`❌ Failed to start ${command}: ${result.error.message}`);
+  process.exit(1);
+}
+
+if (result.status !== 0) {
   process.exit(1);
 }
