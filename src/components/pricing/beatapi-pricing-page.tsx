@@ -5,6 +5,7 @@ import { BeatApiProductShell } from '@/components/marketing/beatapi-product-shel
 import {
   avgSavingsPercent,
   comparisonGroups,
+  countPricingModelFamilies,
   maxSavingsPercent,
   type PricingCategory,
 } from '@/components/pricing/pricing-comparison-data';
@@ -80,9 +81,24 @@ export function BeatApiPricingPage({ locale }: { locale: string }) {
   };
 
   const categoryTabs = [
-    { value: 'all' as const, icon: CheckCircle2, label: copy.filterAll },
-    { value: 'video' as const, icon: Film, label: copy.filterVideo },
-    { value: 'image' as const, icon: Image, label: copy.filterImage },
+    {
+      value: 'all' as const,
+      icon: CheckCircle2,
+      label: copy.filterAll,
+      count: countPricingModelFamilies(),
+    },
+    {
+      value: 'video' as const,
+      icon: Film,
+      label: copy.filterVideo,
+      count: countPricingModelFamilies('video'),
+    },
+    {
+      value: 'image' as const,
+      icon: Image,
+      label: copy.filterImage,
+      count: countPricingModelFamilies('image'),
+    },
   ];
 
   const groups = useMemo(() => {
@@ -136,7 +152,7 @@ export function BeatApiPricingPage({ locale }: { locale: string }) {
         <section id="model-pricing" className="mt-12">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap gap-2">
-              {categoryTabs.map(({ value, icon: Icon, label }) => (
+              {categoryTabs.map(({ value, icon: Icon, label, count }) => (
                 <button
                   key={value}
                   type="button"
@@ -150,12 +166,7 @@ export function BeatApiPricingPage({ locale }: { locale: string }) {
                 >
                   <Icon className="size-3.5" />
                   {label}
-                  <span className="text-[11px] opacity-70">
-                    {value === 'all'
-                      ? comparisonGroups.length
-                      : comparisonGroups.filter((group) => group.category === value)
-                          .length}
-                  </span>
+                  <span className="text-[11px] opacity-70">{count}</span>
                 </button>
               ))}
             </div>

@@ -6,6 +6,7 @@ import {
   bestDiscount,
   comparisonGroups,
   competitorDiscount,
+  countPricingModelFamilies,
   higgsfieldPrice,
   HIGGSFIELD_USD_PER_CREDIT,
   maxHiggsfieldSavingsPercent,
@@ -29,6 +30,12 @@ test('catalog keeps one card per model and groups the Seedance family together',
     ['Seedance 2.0', 'Seedance 2.0 Mini', 'Seedance 2.0 Fast', 'Seedance 2.5']
   );
   assert.equal(new Set(names).size, names.length);
+});
+
+test('pricing filters count selectable model families rather than variant cards', () => {
+  assert.equal(countPricingModelFamilies(), 9);
+  assert.equal(countPricingModelFamilies('video'), 5);
+  assert.equal(countPricingModelFamilies('image'), 4);
 });
 
 test('Seedance 2.0 uses the official BeatAPI list prices', () => {

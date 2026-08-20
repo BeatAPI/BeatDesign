@@ -10,6 +10,7 @@
     },
     {
       "model": "Seedance 2.0",
+      "family": "Seedance 2.0",
       "category": "video",
       "specs": [
         { "id": "seedance-2-480p-no-video", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.5, "competitor": 0.703, "higgsfieldCredits": 15 },
@@ -24,6 +25,7 @@
     },
     {
       "model": "Seedance 2.0 Mini",
+      "family": "Seedance 2.0",
       "category": "video",
       "specs": [
         { "id": "seedance-2-mini-480p", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.1, "competitor": 0.3605, "higgsfieldCredits": 5 },
@@ -34,6 +36,7 @@
     },
     {
       "model": "Seedance 2.0 Fast",
+      "family": "Seedance 2.0",
       "category": "video",
       "specs": [
         { "id": "seedance-2-fast-480p", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.35, "competitor": 0.5625, "higgsfieldCredits": 7.5 },

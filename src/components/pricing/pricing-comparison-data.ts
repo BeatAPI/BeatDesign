@@ -18,11 +18,22 @@ export type ComparisonSpec = {
 
 export type ComparisonGroup = {
   model: string;
+  family?: string;
   category: PricingCategory;
   specs: ComparisonSpec[];
 };
 
 export const comparisonGroups = pricingCatalog.groups as ComparisonGroup[];
+
+export function countPricingModelFamilies(
+  category?: PricingCategory
+): number {
+  return new Set(
+    comparisonGroups
+      .filter((group) => category === undefined || group.category === category)
+      .map((group) => group.family ?? group.model)
+  ).size;
+}
 
 export function higgsfieldPrice(spec: ComparisonSpec): number | undefined {
   if (spec.higgsfieldCredits === undefined) return undefined;
