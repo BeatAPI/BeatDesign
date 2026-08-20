@@ -10,6 +10,10 @@ import {
   saveProjectSnapshot,
 } from '@/core/projects/projects';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
+import {
+  readRequestTextWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 type SaveProjectSnapshotRequest = {
   document?: ProjectSnapshotDocument;
@@ -36,19 +40,18 @@ async function PUT({
 
   let payload: SaveProjectSnapshotRequest | null = null;
   try {
-    const declaredLength = Number(request.headers.get('content-length'));
-    if (
-      Number.isFinite(declaredLength) &&
-      declaredLength > MAX_PROJECT_SNAPSHOT_BYTES
-    ) {
-      return Response.json({ error: 'Project snapshot is too large' }, { status: 413 });
-    }
-    const body = await request.text();
-    if (new TextEncoder().encode(body).byteLength > MAX_PROJECT_SNAPSHOT_BYTES) {
-      return Response.json({ error: 'Project snapshot is too large' }, { status: 413 });
-    }
+    const body = await readRequestTextWithLimit(
+      request,
+      MAX_PROJECT_SNAPSHOT_BYTES
+    );
     payload = JSON.parse(body) as SaveProjectSnapshotRequest;
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json(
+        { error: 'Project snapshot is too large' },
+        { status: 413 }
+      );
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 

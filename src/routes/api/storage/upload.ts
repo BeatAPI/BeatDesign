@@ -10,6 +10,10 @@ import { S3Provider } from '@/core/workspace-storage/provider/s3';
 import type { StorageConfig } from '@/core/workspace-storage/types';
 import { DEFAULT_BEATAPI_BASE_URL } from '@/core/beatcanvas/providers/provider-config';
 import { validateStorageEndpoint } from '@/core/workspace-storage/endpoint-policy';
+import {
+  readRequestFormDataWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
@@ -179,16 +183,6 @@ async function uploadToS3Storage({
 
 async function POST({ request }: { request: Request }) {
   try {
-    const contentLength = Number(request.headers.get('content-length'));
-    if (
-      Number.isFinite(contentLength) &&
-      contentLength > MAX_FILE_BYTES + MAX_MULTIPART_OVERHEAD_BYTES
-    ) {
-      return Response.json(
-        { error: 'Upload request exceeds the 50 MB file limit' },
-        { status: 413 }
-      );
-    }
     const authorizedProjectId = request.headers
       .get('x-beatapi-project-id')
       ?.trim();
@@ -201,7 +195,10 @@ async function POST({ request }: { request: Request }) {
         { status: 403 }
       );
     }
-    const formData = await request.formData();
+    const formData = await readRequestFormDataWithLimit(
+      request,
+      MAX_FILE_BYTES + MAX_MULTIPART_OVERHEAD_BYTES
+    );
     const file = formData.get('file');
     const projectId = formData.get('projectId');
     const generationIntentToken = formData.get('generationIntentToken');
@@ -314,6 +311,12 @@ async function POST({ request }: { request: Request }) {
       provider: result.provider,
     });
   } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json(
+        { error: 'Upload request exceeds the 50 MB file limit' },
+        { status: 413 }
+      );
+    }
     console.error('workspace upload failed:', error);
     return Response.json(
       { error: error instanceof Error ? error.message : 'File upload failed' },
