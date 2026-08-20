@@ -12,3 +12,8 @@ test('visiting Studio or Canvas does not create a project automatically', () => 
   assert.match(source, /onClick=\{\(\) => void createProject\(\)\}/);
   assert.match(source, /'\/api\/app\/projects'/);
 });
+
+test('the first-run screen covers the full viewport', () => {
+  assert.match(source, /min-h-screen/);
+  assert.doesNotMatch(source, /min-h-\[calc\(100vh-96px\)\]/);
+});

@@ -121,7 +121,7 @@ export function CreateProjectRoutePage({
   const WorkspaceIcon = isStudio ? LayoutPanelTopIcon : WorkflowIcon;
 
   return (
-    <main className="flex min-h-[calc(100vh-96px)] items-center justify-center bg-[var(--beat-bg)] px-6 py-16 text-[var(--beat-text-1)]">
+    <main className="flex min-h-screen items-center justify-center bg-[var(--beat-bg)] px-6 py-16 text-[var(--beat-text-1)]">
       <section className="w-full max-w-[520px] rounded-[var(--beat-radius)] border border-white/[0.13] bg-[linear-gradient(145deg,#1b1b1e_0%,#151517_100%)] px-8 py-9 text-center shadow-[0_30px_100px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.035)]">
         {error ? (
           <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-red-500/10 text-red-400">
