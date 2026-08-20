@@ -8,6 +8,7 @@ import {
   markProjectOpened,
   renameProject,
 } from '@/core/projects/projects';
+import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 
 type UpdateProjectRequest = {
   name?: string;
@@ -25,12 +26,17 @@ async function POST({
   request: Request;
   params: { projectId: string };
 }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   const { projectId } = params;
   let payload: OpenProjectRequest = {};
   try {
     payload = (await request.json()) as OpenProjectRequest;
   } catch {
-    payload = {};
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const workspaceMode: WorkspaceMode | undefined = payload.workspaceMode
     ? resolveWorkspaceMode(payload.workspaceMode)
@@ -60,6 +66,11 @@ async function PATCH({
   request: Request;
   params: { projectId: string };
 }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   const { projectId } = params;
   const currentProject = await getProject({ projectId });
 

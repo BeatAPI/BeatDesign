@@ -5,6 +5,7 @@ import {
   WORKSPACE_MUTATION_HEADER,
   WORKSPACE_MUTATION_HEADER_VALUE,
   validateTrustedLocalJsonMutation,
+  validateTrustedWorkspaceJsonMutation,
 } from './trusted-local-request';
 
 const request = (headers: Record<string, string>) =>
@@ -46,4 +47,25 @@ test('rejects cross-site, simple-content, and marker-free settings requests', ()
   for (const candidate of cases) {
     assert.equal(validateTrustedLocalJsonMutation(candidate).ok, false);
   }
+});
+
+test('accepts same-origin workspace mutations on an access-controlled deployment', () => {
+  const hostedRequest = new Request(
+    'https://workspace.example/api/app/projects',
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: 'https://workspace.example',
+        'sec-fetch-site': 'same-origin',
+        [WORKSPACE_MUTATION_HEADER]: WORKSPACE_MUTATION_HEADER_VALUE,
+      },
+      body: JSON.stringify({ name: 'Project' }),
+    }
+  );
+
+  assert.deepEqual(validateTrustedWorkspaceJsonMutation(hostedRequest), {
+    ok: true,
+  });
+  assert.equal(validateTrustedLocalJsonMutation(hostedRequest).ok, false);
 });

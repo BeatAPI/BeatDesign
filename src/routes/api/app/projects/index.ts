@@ -6,6 +6,7 @@ import {
   loadProjects,
 } from '@/core/projects/projects';
 import { resolveWorkspaceMode } from '@/config/workspace-modes';
+import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 
 type DeleteProjectsRequest = {
   projectIds?: unknown;
@@ -30,11 +31,16 @@ async function GET() {
 }
 
 async function POST({ request }: { request: Request }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   let payload: CreateProjectRequest | null = null;
   try {
     payload = (await request.json()) as CreateProjectRequest;
   } catch {
-    payload = {};
+    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
   const name =
@@ -52,6 +58,11 @@ async function POST({ request }: { request: Request }) {
 }
 
 async function DELETE({ request }: { request: Request }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   let payload: DeleteProjectsRequest | null = null;
   try {
     payload = (await request.json()) as DeleteProjectsRequest;

@@ -9,6 +9,7 @@ import {
   getProject,
   saveProjectSnapshot,
 } from '@/core/projects/projects';
+import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 
 type SaveProjectSnapshotRequest = {
   document?: ProjectSnapshotDocument;
@@ -22,6 +23,11 @@ async function PUT({
   request: Request;
   params: { projectId: string };
 }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   const { projectId } = params;
   const currentProject = await getProject({ projectId });
   if (!currentProject) {

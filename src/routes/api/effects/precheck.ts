@@ -19,6 +19,7 @@ import {
 } from '@/core/effects/generation-upload-intent';
 import { getConfig } from '@/modules/config/service';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
+import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 
 type PrecheckRequest = {
   effectId?: number;
@@ -28,6 +29,11 @@ type PrecheckRequest = {
 };
 
 async function POST({ request }: { request: Request }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   let payload: PrecheckRequest;
   try {
     payload = (await request.json()) as PrecheckRequest;

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { submitEffectGeneration } from '@/core/effects/submit-generation';
+import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 
 type GenerateRequest = {
   effectId?: number;
@@ -9,6 +10,11 @@ type GenerateRequest = {
 };
 
 async function POST({ request }: { request: Request }) {
+  const trust = validateTrustedWorkspaceJsonMutation(request);
+  if (!trust.ok) {
+    return Response.json({ error: trust.message }, { status: trust.status });
+  }
+
   let payload: GenerateRequest;
   try {
     payload = (await request.json()) as GenerateRequest;
