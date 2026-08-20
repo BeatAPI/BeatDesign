@@ -6,6 +6,7 @@ import viteReact from '@vitejs/plugin-react';
 import { nitro } from 'nitro/vite';
 import { defineConfig } from 'vite';
 
+import { paraglideCompilerOptions } from './src/config/paraglide';
 import { loadEnvFiles } from './src/lib/env';
 
 // Populate process.env from .env.local / .env.{NODE_ENV} / .env for the
@@ -26,41 +27,7 @@ export default defineConfig({
     // MDX must run before the react plugin so JSX in compiled MDX gets transformed.
     { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react' }) },
     tailwindcss(),
-    paraglideVitePlugin({
-      project: './project.inlang',
-      outdir: './src/paraglide',
-      outputStructure: 'message-modules',
-      cookieName: 'PARAGLIDE_LOCALE',
-      strategy: ['url', 'cookie', 'baseLocale'],
-      urlPatterns: [
-        // API endpoints are never locale-prefixed.
-        {
-          pattern: '/api/:path(.*)?',
-          localized: [
-            ['zh', '/api/:path(.*)?'],
-            ['en', '/api/:path(.*)?'],
-          ],
-        },
-        // English is the primary locale and stays unprefixed; Chinese uses /zh.
-        {
-          pattern: '/',
-          localized: [
-            ['en', '/'],
-            ['zh', '/zh'],
-          ],
-        },
-        // "as-needed" prefix: English unprefixed, Chinese under /zh.
-        {
-          pattern: '/:path(.*)?',
-          localized: [
-            ['zh', '/zh/:path(.*)?'],
-            // Keep the prefixed pattern first so de-localization does not let
-            // the catch-all English pattern consume Chinese URLs.
-            ['en', '/:path(.*)?'],
-          ],
-        },
-      ],
-    }),
+    paraglideVitePlugin(paraglideCompilerOptions),
     tanstackStart({
       srcDirectory: 'src',
     }),
