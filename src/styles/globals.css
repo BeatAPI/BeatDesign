@@ -1,0 +1,1032 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+button:not(:disabled):not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+:root {
+  --font-noto-sans: "Figtree Variable", "Figtree", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-noto-serif: "Figtree Variable", "Figtree", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  --font-noto-sans-mono: "Geist Mono Variable", "Geist Mono", ui-monospace,
+    SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-bricolage-grotesque: "Figtree Variable", "Figtree", ui-sans-serif,
+    system-ui, sans-serif;
+}
+
+/*
+ * Shared design tokens for BeatAPI dark product surfaces (public shell, home,
+ * pricing, projects, auth). One accent, three text levels, two radii —
+ * components should reference these instead of inventing near-identical
+ * greys/oranges.
+ */
+/*
+ * The --beat-* dark product tokens now live at :root (see the "BeatAPI dark
+ * product tokens" block below) so always-dark Studio/Canvas surfaces can
+ * reference them anywhere. This scope only adds the typography layer.
+ */
+
+.beat-t1 {
+  color: var(--beat-text-1);
+}
+
+.beat-t2 {
+  color: var(--beat-text-2);
+}
+
+.beat-t3 {
+  color: var(--beat-text-3);
+}
+
+/*
+ * BeatAPI product surfaces use a dedicated type system inspired by refined
+ * creative tools. It is intentionally scoped so Studio, Canvas, Pricing and
+ * the reusable SaaS dashboard keep their existing typography.
+ */
+.beat-product-shell {
+  --beat-font-ui: "Figtree Variable", "Figtree", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --beat-font-display: "Space Grotesk Variable", "Space Grotesk",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", ui-sans-serif,
+    system-ui, sans-serif;
+  font-family: var(--beat-font-ui);
+  font-feature-settings: "ss01" 1, "ss02" 1, "cv02" 1, "cv03" 1;
+  letter-spacing: -0.005em;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.beat-product-display {
+  font-family: var(--beat-font-display);
+}
+
+.beat-product-shell:lang(zh) {
+  --beat-font-ui: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", ui-sans-serif, system-ui, sans-serif;
+  --beat-font-display: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: normal;
+  letter-spacing: 0;
+}
+
+.beat-product-shell:lang(zh) .beat-product-display {
+  letter-spacing: -0.02em;
+}
+
+.beat-product-shell:lang(zh) .beat-product-hero-title {
+  max-width: 45rem;
+  font-size: clamp(2.75rem, 7vw, 5rem);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.beat-product-shell:lang(zh) .beat-product-page-title {
+  font-size: clamp(2.125rem, 3.7vw, 2.625rem);
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  line-height: 1.22;
+}
+
+.beat-product-hero {
+  position: relative;
+  isolation: isolate;
+}
+
+.beat-product-hero::before {
+  position: absolute;
+  z-index: -1;
+  top: -5rem;
+  left: 50%;
+  width: min(64rem, 100vw);
+  height: 34rem;
+  content: "";
+  pointer-events: none;
+  transform: translateX(-50%);
+  background-image:
+    radial-gradient(circle at 50% 44%, rgb(241 102 34 / 0.12), transparent 31%),
+    radial-gradient(circle, rgb(255 255 255 / 0.13) 0.75px, transparent 0.9px);
+  background-position: center, center;
+  background-size: auto, 8px 8px;
+  mask-image: radial-gradient(ellipse 58% 52% at center, black 8%, transparent 76%);
+  opacity: 0.72;
+}
+
+@media (max-width: 640px) {
+  .beat-product-hero::before {
+    top: -2rem;
+    height: 27rem;
+    background-size: auto, 9px 9px;
+    opacity: 0.5;
+  }
+}
+
+/*
+ * Shared BeatAPI composer vocabulary (Studio composer + Canvas composer).
+ * The prompt textarea is a stock shadcn/ui Textarea reskinned through this
+ * scope instead of being neutralized with !important utilities per usage.
+ */
+.beat-composer [data-slot="textarea"] {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--beat-text-1);
+  caret-color: var(--beat-text-1);
+}
+
+.beat-composer [data-slot="textarea"]::placeholder {
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.beat-composer [data-slot="textarea"]:focus-visible {
+  border: 0;
+  box-shadow: none;
+}
+
+/*
+ * Shared popover / panel motion for the BeatAPI dark product surfaces.
+ * Enter easing follows DESIGN.md (cubic-bezier(.22,1,.36,1), 160ms).
+ */
+@keyframes beat-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes beat-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.beat-pop-in {
+  transform-origin: bottom center;
+  animation: beat-pop-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.beat-slide-in {
+  animation: beat-slide-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .beat-pop-in,
+  .beat-slide-in {
+    animation: none;
+  }
+}
+
+/*
+ * 1. Themes Documentation
+ * VisuGen internal docs
+
+ * 2. Theme Generator
+ * https://ui.shadcn.com/themes
+ * https://tweakcn.com/
+ * https://ui.pub/x/theme-gen
+ *
+ * default theme: custom theme inspired by Qoder
+ * https://qoder.com/
+ * https://tweakcn.com/editor/theme
+ *
+ * NOTICE: when you change the theme, you need to check the fonts and keep the animation variables
+ *
+ * 3. How to Add a Theme Selector to Your Next.js App
+ * https://ouassim.tech/notes/how-to-add-a-theme-selector-to-your-nextjs-app/
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  /* fonts */
+  --font-sans: var(--font-noto-sans);
+  --font-mono: var(--font-noto-sans-mono);
+  --font-serif: var(--font-noto-serif);
+  --font-bricolage-grotesque: var(--font-bricolage-grotesque);
+
+  /* animate */
+  --animate-shiny-text: shiny-text 8s infinite;
+  --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-ripple: ripple var(--duration, 2s) ease calc(var(--i, 0) * .2s)
+    infinite;
+  --animate-pulse: pulse var(--duration) ease-out infinite;
+  --animate-meteor: meteor 5s linear infinite;
+  --animate-gradient: gradient 8s linear infinite;
+
+  @keyframes shiny-text {
+    0%,
+    90%,
+    100% {
+      background-position: calc(-100% - var(--shiny-width)) 0;
+    }
+    30%,
+    60% {
+      background-position: calc(100% + var(--shiny-width)) 0;
+    }
+  }
+
+  @keyframes rainbow {
+    0% {
+      background-position: 0%;
+    }
+    100% {
+      background-position: 200%;
+    }
+  }
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+    to {
+      transform: translateY(calc(-100% - var(--gap)));
+    }
+  }
+
+  @keyframes ripple {
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 var(--pulse-color);
+    }
+    50% {
+      box-shadow: 0 0 0 8px var(--pulse-color);
+    }
+  }
+
+  @keyframes meteor {
+    0% {
+      transform: rotate(var(--angle)) translateX(0);
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(var(--angle)) translateX(-500px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes gradient {
+    to {
+      background-position: var(--bg-size, 300%) 0;
+    }
+  }
+
+  @keyframes beatcanvas-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+:root {
+  --background: #f5f6f3;
+  --foreground: #171814;
+  --card: oklch(1 0 0);
+  --card-foreground: #171814;
+  --popover: oklch(1 0 0);
+  --popover-foreground: #171814;
+  --primary: #ff6b1a;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f1ed;
+  --secondary-foreground: #343630;
+  --muted: #edeee9;
+  --muted-foreground: #5f625b;
+  --accent: #fff0e5;
+  --accent-foreground: #bd4705;
+  --destructive: #c23b32;
+  --destructive-foreground: #ffffff;
+  --border: #ddded8;
+  --input: #c7c9c0;
+  --ring: #ff6b1a;
+  --chart-1: #ff6b1a;
+  --chart-2: #208a55;
+  --chart-3: #2563a9;
+  --chart-4: #b66a09;
+  --chart-5: #5f625b;
+  --sidebar: #fcfcfa;
+  --sidebar-foreground: #343630;
+  --sidebar-primary: #ff6b1a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #fff0e5;
+  --sidebar-accent-foreground: #bd4705;
+  --sidebar-border: #ddded8;
+  --sidebar-ring: #ff6b1a;
+  --font-sans: var(--font-noto-sans);
+  --font-serif: var(--font-noto-serif);
+  --font-mono: var(--font-noto-sans-mono);
+  --radius: 0.5rem;
+  --shadow-2xs: 0px 4px 8px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0px 4px 8px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-md: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 4px 6px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-xl: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 8px 10px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0px 4px 8px 0px hsl(0 0% 0% / 0.25);
+
+  /*
+   * BeatAPI dark product tokens — the single source for the near-black
+   * product language shared by the marketing surfaces, Studio and Canvas.
+   * --beat-accent (orange) is reserved for brand ACTIONS (Generate, CTA);
+   * --beat-graph (cold blue, echoing the Start Here thumbnails) marks canvas
+   * GRAPH semantics — node selection, reference edges, minimap.
+   */
+  --beat-bg: #09090a;
+  --beat-text-1: #f4f4f5;
+  --beat-text-2: #a3a3ab;
+  --beat-text-3: #71717a;
+  --beat-surface: #131416;
+  --beat-surface-2: #19191c;
+  --beat-control: #1b1b1e;
+  --beat-border: rgba(255, 255, 255, 0.08);
+  --beat-border-strong: rgba(255, 255, 255, 0.16);
+  --beat-accent: #ff7a33;
+  --beat-accent-hover: #ff8a4d;
+  --beat-accent-ink: #1d1d1f;
+  --beat-radius: 20px;
+  --beat-radius-sm: 12px;
+  --beat-graph: #7fb0f2;
+  --beat-graph-strong: #a3c8f7;
+  --beat-graph-soft: rgba(127, 176, 242, 0.16);
+
+  /* Legacy Studio aliases — keep pointing at the shared tokens above. */
+  --beat-studio-bg: var(--beat-bg);
+  --beat-studio-surface: var(--beat-surface);
+  --beat-studio-surface-raised: var(--beat-surface-2);
+  --beat-studio-control: var(--beat-control);
+  --beat-studio-border: var(--beat-border);
+  --beat-studio-border-strong: var(--beat-border-strong);
+  --beat-studio-ink: var(--beat-text-1);
+  --beat-studio-muted: var(--beat-text-2);
+  --beat-studio-faint: var(--beat-text-3);
+  --beat-studio-accent: var(--beat-accent);
+  --beat-studio-accent-hover: var(--beat-accent-hover);
+
+  /*
+   * VisuGen canvas tokens — re-aliased onto the shared dark product language.
+   * The old purple accent became --beat-graph (cold blue); surfaces/ink map
+   * to the beat neutral scale so panels and pickers match Studio/Pricing.
+   */
+  --beatcanvas-canvas-bg: var(--beat-bg);
+  --beatcanvas-panel: rgba(19, 20, 22, 0.94);
+  --beatcanvas-panel-solid: var(--beat-surface);
+  --beatcanvas-panel-muted: var(--beat-surface-2);
+  --beatcanvas-panel-hover: #242429;
+  --beatcanvas-panel-active: rgba(127, 176, 242, 0.14);
+  --beatcanvas-line: rgba(255, 255, 255, 0.1);
+  --beatcanvas-line-strong: rgba(255, 255, 255, 0.18);
+  --beatcanvas-line-soft: rgba(255, 255, 255, 0.06);
+  --beatcanvas-ink: var(--beat-text-1);
+  --beatcanvas-ink-soft: var(--beat-text-2);
+  --beatcanvas-ink-faint: var(--beat-text-3);
+  --beatcanvas-accent: var(--beat-graph);
+  --beatcanvas-accent-hover: var(--beat-graph-strong);
+  --beatcanvas-accent-soft: var(--beat-graph-soft);
+  --beatcanvas-success: #63d89b;
+  --beatcanvas-warning: #ffb65e;
+  --beatcanvas-error: #ff6b73;
+  --beatcanvas-processing: #8fbdf4;
+  --beatcanvas-shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --beatcanvas-shadow-md: 0 14px 36px rgba(0, 0, 0, 0.34);
+  --beatcanvas-shadow-lg: 0 22px 54px rgba(0, 0, 0, 0.42);
+  --beatcanvas-shadow-xl: 0 28px 80px rgba(0, 0, 0, 0.5);
+}
+
+.dark {
+  --background: #171816;
+  --foreground: #f3f1e9;
+  --card: #20211e;
+  --card-foreground: #f3f1e9;
+  --popover: #20211e;
+  --popover-foreground: #f3f1e9;
+  --primary: #f87831;
+  --primary-foreground: #171814;
+  --secondary: #292a26;
+  --secondary-foreground: #f3f1e9;
+  --muted: #292a26;
+  --muted-foreground: #b4b6ae;
+  --accent: #39261d;
+  --accent-foreground: #ff9a61;
+  --destructive: #e06a62;
+  --destructive-foreground: #171814;
+  --border: #383a34;
+  --input: #4d5048;
+  --ring: #f87831;
+  --chart-1: #f87831;
+  --chart-2: #55b882;
+  --chart-3: #6ea1dd;
+  --chart-4: #d79a43;
+  --chart-5: #b4b6ae;
+  --sidebar: #1b1c19;
+  --sidebar-foreground: #b4b6ae;
+  --sidebar-primary: #f87831;
+  --sidebar-primary-foreground: #171814;
+  --sidebar-accent: #39261d;
+  --sidebar-accent-foreground: #ff9a61;
+  --sidebar-border: #383a34;
+  --sidebar-ring: #f87831;
+  --font-sans: var(--font-noto-sans);
+  --font-serif: var(--font-noto-serif);
+  --font-mono: var(--font-noto-sans-mono);
+  --radius: 0.5rem;
+  --shadow-2xs: 0px 4px 8px 0px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0px 4px 8px 0px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 1px 2px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-md: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 2px 4px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-lg: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 4px 6px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-xl: 0px 4px 8px 0px hsl(0 0% 0% / 0.1), 0px 8px 10px -1px
+    hsl(0 0% 0% / 0.1);
+  --shadow-2xl: 0px 4px 8px 0px hsl(0 0% 0% / 0.25);
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    font-feature-settings: "liga" 1, "calt" 1, "ss01" 1;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-noto-sans), "PingFang SC", "Hiragino Sans GB",
+      "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+    letter-spacing: -0.005em;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+}
+
+body {
+  @apply overscroll-none bg-background text-foreground;
+}
+
+.text-gradient_indigo-purple {
+  background: linear-gradient(90deg, #6366f1 0%, rgb(168 85 247 / 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* https://github.com/shadcn-ui/ui/issues/4227#issuecomment-2438290165 */
+html body[data-scroll-locked] {
+  overflow: visible !important;
+  margin-right: 0 !important;
+}
+
+/* Fix for Fumadocs empty banner appearing in Cloudflare Worker */
+/* This targets the specific banner issue where empty:hidden doesn't work properly */
+div[class*="border-t"][class*="bg-fd-secondary"]:not(:has(*)):not(
+    [data-content]
+  ) {
+  display: none !important;
+}
+
+/* Fallback for banners with the exact classes found in the issue */
+.border-t.bg-fd-secondary\/50.p-3:empty {
+  display: none !important;
+}
+
+/* Additional safety for any empty Fumadocs banner */
+[class*="fd-secondary"]:empty:not([data-banner-content]) {
+  display: none !important;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Home page header collapsible */
+header > .collapsible-header {
+  background-color: inherit;
+  place-content: center;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+hr {
+  border-color: var(--home-hr-color, #e5e7eb);
+  border-style: solid;
+}
+
+.animated-collapse {
+  transition: width 0.3s ease;
+}
+
+.header-links {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: fit-content;
+  padding: 8px 15px;
+  z-index: 2;
+  cursor: pointer;
+  transition: background-color 0.5s, color 0.3s;
+}
+
+.header-links::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  background-color: var(--home-header-link-hover-bg, #bababa36);
+  transform: scale(40%);
+  opacity: 0;
+  border-radius: 8px;
+  transition: all 300ms;
+}
+
+.header-links:hover {
+  color: var(--home-header-link-hover, #000);
+}
+
+.header-links:hover::after {
+  transform: scale(100%);
+  opacity: 1;
+}
+
+.hero-section {
+  background-image: var(
+    --home-hero-bg-img,
+    radial-gradient(circle at 50% 0%, rgba(45, 107, 230, 0.12), transparent 42%)
+  );
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.hero-bg-gradient {
+  background: linear-gradient(
+    180deg,
+    var(--home-hero-gradient, #fcfcfc) 23%,
+    rgba(0, 0, 0, 0) 87%,
+    var(--home-hero-gradient, #fcfcfc) 97%
+  );
+}
+
+.gradient-text {
+  background: rgb(215, 215, 215);
+  background: linear-gradient(
+    90deg,
+    rgba(215, 215, 215, 1) 18%,
+    rgba(136, 136, 136, 1) 71%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.purple-bg-grad {
+  background: linear-gradient(
+    90deg,
+    #7e22ce91 8%,
+    #625aafae 31%,
+    #7badbbbc 76%,
+    #54d2d0ca 89%
+  );
+  filter: blur(50px);
+  opacity: 0.5;
+}
+
+#dashboard {
+  transform: perspective(1200px) translateX(0px) translateY(12px) scale(0.8)
+    rotate(0deg) rotateX(70deg);
+  transition: transform 0.5s;
+}
+
+.btn {
+  padding: 10px 15px;
+  width: max-content;
+  border-radius: 10px;
+  color: var(--home-btn-color, #fdfdfd);
+  background-color: var(--home-btn-bg, #000);
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  cursor: default;
+}
+
+.input {
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 5px;
+  outline: none;
+  min-width: 100px;
+  border: 1px solid #979797;
+  transition: border 0.3s;
+}
+
+.input:active,
+.input:focus,
+.input:focus-within {
+  border: 1px solid var(--home-input-hover-bd, #232323) !important;
+}
+
+/* Scrollbar */
+.scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 20px;
+}
+
+.scrollbar::-webkit-scrollbar-track {
+  border-radius: 25px;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: #d7d7d7;
+  border-radius: 25px;
+}
+
+/* Dropdown */
+.dropdown {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.dropdown-toggle {
+  width: 100%;
+  outline: none;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  background-color: var(--home-dropdown-bg, #f3f4f6);
+  list-style-type: none;
+  padding: 0;
+  width: 100%;
+  left: 0px;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.dropdown-menu li {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.dropdown-menu li:hover {
+  background-color: var(--home-dropdown-hover-bg, #dddddd84);
+}
+
+/* Carousel */
+.carousel-container {
+  overflow: hidden;
+  white-space: nowrap;
+  width: 100%;
+  max-width: 800px;
+}
+
+.carousel {
+  display: inline-block;
+  animation: home-scroll 10s linear infinite;
+}
+
+.carousel-img {
+  display: inline-block;
+  margin: 0 20px;
+}
+
+@keyframes home-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.commerce-logo-marquee {
+  width: min(1120px, 100%);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 9%,
+    #000 91%,
+    transparent
+  );
+}
+
+.commerce-logo-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 44px;
+  animation: commerce-logo-scroll 18s linear infinite;
+  will-change: transform;
+}
+
+.commerce-logo-marquee:hover .commerce-logo-track {
+  animation-play-state: paused;
+}
+
+.commerce-logo-item {
+  display: flex;
+  flex: 0 0 190px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+}
+
+.commerce-logo-img {
+  display: block;
+  width: 100%;
+  max-width: 172px;
+  max-height: 56px;
+  object-fit: contain;
+  opacity: 0.88;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.commerce-logo-item:hover .commerce-logo-img {
+  transform: translateY(-2px) scale(1.04);
+  opacity: 1;
+}
+
+@keyframes commerce-logo-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(calc(-50% - 22px));
+  }
+}
+
+@media (max-width: 767px) {
+  .commerce-logo-marquee {
+    width: 100%;
+  }
+
+  .commerce-logo-track {
+    gap: 28px;
+    animation-duration: 16s;
+  }
+
+  .commerce-logo-item {
+    flex-basis: 156px;
+    height: 58px;
+  }
+
+  .commerce-logo-img {
+    max-width: 142px;
+    max-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .commerce-logo-track {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: none;
+  }
+}
+
+/* Animated border */
+.animated-border {
+  position: relative;
+  overflow: visible;
+}
+
+.animated-border::after {
+  content: "";
+  position: absolute;
+  top: 0px;
+  left: -100%;
+  width: 30%;
+  height: 100%;
+  border-radius: inherit;
+  background-color: #6366f1;
+  background-repeat: no-repeat;
+  background-position: 0% 0%;
+  filter: blur(1.5rem);
+  opacity: 0.8;
+  box-shadow: inset 0px 0px 20px 5px #6366f1;
+  z-index: -2;
+  pointer-events: none;
+  animation: slide 10s ease-in-out infinite;
+}
+
+.animated-border::before {
+  filter: blur(1.5rem);
+  opacity: 0.3;
+  will-change: transform;
+}
+
+@keyframes slide {
+  0% {
+    left: -100%;
+    right: 100%;
+  }
+  100% {
+    left: 100%;
+    right: -100%;
+  }
+}
+
+/* Footer */
+.footer-link {
+  width: -moz-fit-content;
+  width: fit-content;
+  color: var(--home-footer-link, #282828);
+  transition: color 0.3s;
+}
+
+.footer-link:hover {
+  color: var(--home-footer-link-hover, #000);
+}
+
+/* FAQ accordion */
+.faq-accordion {
+  background-color: inherit;
+  color: var(--home-faq-h-text, #0e0e0e);
+  cursor: pointer;
+  padding: 15px 18px;
+  width: 100%;
+  border: none;
+  text-align: left;
+  outline: none;
+  transition: height 0.4s;
+}
+
+.faq .content {
+  padding: 0px 18px;
+  color: var(--home-faq-content-text, #1e1e1e);
+  height: max-content;
+  overflow: hidden;
+  background-color: transparent;
+  text-align: justify;
+  max-height: 0px;
+  transition: max-height 0.4s, padding 0.4s;
+}
+
+/* Mobile header collapse */
+@media not all and (min-width: 1024px) {
+  header .collapsible-header {
+    text-align: center;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}

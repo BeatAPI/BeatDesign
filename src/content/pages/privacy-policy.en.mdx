@@ -1,0 +1,25 @@
+export const meta = {
+  title: 'Privacy',
+  description: 'How BeatAPI Workspace handles local, provider, and storage data.',
+  updated_at: '2026-08-20',
+}
+
+# Privacy
+
+BeatAPI Workspace is a self-hosted, single-user application. It does not include accounts, authentication, payments, subscriptions, advertising, or built-in analytics.
+
+## Local data
+
+Projects, Canvas and Studio state, generation history, provider settings, and asset indexes are stored in the database configured by the operator. In the default local setup, this is a SQLite file on the same computer.
+
+## Provider data
+
+When you generate media or upload a supported reference file, the server sends the prompt, parameters, and selected media to the configured BeatAPI endpoint. BeatAPI and underlying model providers process that data under their own policies and terms.
+
+Provider API keys remain on the server. A key saved through the Provider dialog is stored in the local database and is encrypted only when `CONFIG_ENCRYPTION_KEY` is configured.
+
+## Operator responsibility
+
+If you deploy this application for other people, you are the operator and are responsible for access control, notices, consent, retention, deletion, security, and compliance for that deployment.
+
+This repository does not transmit telemetry to its maintainers by default.

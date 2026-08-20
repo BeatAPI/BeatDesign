@@ -1,0 +1,68 @@
+.beatcanvas-react-flow {
+  background:
+    radial-gradient(
+      circle at 50% -12%,
+      rgba(127, 176, 242, 0.05),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 85% 82%,
+      rgba(255, 122, 51, 0.02),
+      transparent 32%
+    ),
+    var(--beatcanvas-canvas-bg);
+}
+
+.beatcanvas-react-flow .react-flow__background {
+  shape-rendering: geometricPrecision;
+}
+
+.beatcanvas-react-flow .react-flow__background-pattern.dots circle {
+  filter: drop-shadow(0 0 0.35px rgba(255, 255, 255, 0.18));
+}
+
+.beatcanvas-react-flow .react-flow__renderer {
+  outline: none;
+}
+
+.beatcanvas-react-flow .react-flow__node {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.beatcanvas-react-flow .react-flow__node:focus,
+.beatcanvas-react-flow .react-flow__node:focus-visible {
+  outline: none;
+}
+
+.beatcanvas-react-flow .react-flow__selection,
+.beatcanvas-react-flow .react-flow__nodesselection-rect {
+  border: 1px solid rgba(127, 176, 242, 0.86);
+  background: rgba(127, 176, 242, 0.1);
+}
+
+.beatcanvas-react-flow .react-flow__edge-path {
+  vector-effect: non-scaling-stroke;
+}
+
+.beatcanvas-react-flow .react-flow__handle {
+  min-width: 1px;
+  min-height: 1px;
+}
+
+.beatcanvas-react-flow .react-flow__minimap {
+  margin: 1rem;
+  width: 220px;
+  height: 132px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--beat-surface);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+  overflow: hidden;
+}
+
+.beatcanvas-react-flow .react-flow__minimap-mask {
+  fill: rgba(10, 10, 11, 0.66);
+}

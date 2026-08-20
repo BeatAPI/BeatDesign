@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const source = readFileSync(
+  new URL('./create-project-route-page.tsx', import.meta.url),
+  'utf8'
+);
+
+test('visiting Studio or Canvas does not create a project automatically', () => {
+  assert.doesNotMatch(source, /useEffect/);
+  assert.match(source, /onClick=\{\(\) => void createProject\(\)\}/);
+  assert.match(source, /'\/api\/app\/projects'/);
+});

@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beatapi-workspace",
+  "compatibility_date": "2026-06-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "triggers": { "crons": ["*/2 * * * *"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "beatapi-workspace",
+      "database_id": "replace-with-your-d1-database-id"
+    }
+  ],
+  "vars": {
+    "DATABASE_PROVIDER": "d1",
+    "VITE_APP_URL": "https://your-domain.com",
+    "VITE_APP_NAME": "BeatAPI Workspace",
+    "WORKSPACE_STORAGE_MODE": "beatapi",
+    "EFFECTS_GENERATION_TIMEOUT_MS": "1800000",
+    "EFFECTS_POLL_INTERVAL_MS": "20000"
+  }
+}

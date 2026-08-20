@@ -1,0 +1,39 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+
+import { getEffectById, getEffectsByIds } from './effects';
+import { getRegisteredEffectById } from './registered-effects';
+
+test('official BeatAPI models resolve from the code registry', async () => {
+  const nanoBananaPro = await getEffectById(6);
+  const seedance = await getEffectById(9);
+  const missing = await getEffectById(15);
+
+  assert.equal(nanoBananaPro?.model, 'nano-banana-pro');
+  assert.equal(nanoBananaPro?.provider, 'beatapi');
+  assert.equal(nanoBananaPro?.type, 2);
+  assert.equal(seedance?.model, 'seedance-2');
+  assert.equal(seedance?.type, 1);
+  assert.equal(missing, null);
+});
+
+test('registry effects include the input fields the canvas already sends', () => {
+  const seedance = getRegisteredEffectById(9);
+  const schema = seedance?.inputSchema as Record<string, unknown>;
+
+  assert.ok(schema.prompt);
+  assert.ok(schema.aspect_ratio);
+  assert.ok(schema.wmDuration);
+  assert.ok(schema.wmOutputQuality);
+  assert.ok(schema.image_urls);
+  assert.ok(schema.video_urls);
+  assert.ok(schema.audio_urls);
+});
+
+test('batch lookup only returns official registry models', async () => {
+  const effects = await getEffectsByIds([6, 15, 17, 6]);
+  assert.deepEqual(
+    effects.map((effect) => effect.model).sort(),
+    ['minimax-h3', 'nano-banana-pro']
+  );
+});

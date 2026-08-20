@@ -1,0 +1,113 @@
+{
+  "groups": [
+    {
+      "model": "MiniMax H3",
+      "category": "video",
+      "specs": [
+        { "id": "minimax-h3-768p", "spec": "6 sec · 768P", "specZh": "6 秒 · 768P", "beatapi": 0.24, "competitor": 0.48 },
+        { "id": "minimax-h3-2k", "spec": "6 sec · 2K", "specZh": "6 秒 · 2K", "beatapi": 0.36, "competitor": 0.78, "higgsfieldCredits": 24 }
+      ]
+    },
+    {
+      "model": "Seedance 2.0",
+      "category": "video",
+      "specs": [
+        { "id": "seedance-2-480p-no-video", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.5, "competitor": 0.703, "higgsfieldCredits": 15 },
+        { "id": "seedance-2-480p-with-video", "spec": "5 sec · 480p · with video input", "specZh": "5 秒 · 480p · 有视频输入", "beatapi": 0.6, "competitor": 0.844, "higgsfieldCredits": 15 },
+        { "id": "seedance-2-720p-no-video", "spec": "5 sec · 720p · no video input", "specZh": "5 秒 · 720p · 无视频输入", "beatapi": 1.05, "competitor": 1.517, "higgsfieldCredits": 22.5 },
+        { "id": "seedance-2-720p-with-video", "spec": "5 sec · 720p · with video input", "specZh": "5 秒 · 720p · 有视频输入", "beatapi": 1.3, "competitor": 1.814, "higgsfieldCredits": 22.5 },
+        { "id": "seedance-2-1080p-no-video", "spec": "5 sec · 1080p · no video input", "specZh": "5 秒 · 1080p · 无视频输入", "beatapi": 2.55, "competitor": 3.41, "higgsfieldCredits": 45 },
+        { "id": "seedance-2-1080p-with-video", "spec": "5 sec · 1080p · with video input", "specZh": "5 秒 · 1080p · 有视频输入", "beatapi": 3.1, "competitor": 4.092, "higgsfieldCredits": 45 },
+        { "id": "seedance-2-4k-no-video", "spec": "5 sec · 4K · no video input", "specZh": "5 秒 · 4K · 无视频输入", "beatapi": 5.2, "competitor": 7.776, "higgsfieldCredits": 110 },
+        { "id": "seedance-2-4k-with-video", "spec": "5 sec · 4K · with video input", "specZh": "5 秒 · 4K · 有视频输入", "beatapi": 6.4, "competitor": 9.3312, "higgsfieldCredits": 110 }
+      ]
+    },
+    {
+      "model": "Seedance 2.0 Mini",
+      "category": "video",
+      "specs": [
+        { "id": "seedance-2-mini-480p", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.1, "competitor": 0.3605, "higgsfieldCredits": 5 },
+        { "id": "seedance-2-mini-480p-with-video", "spec": "5 sec · 480p · with video input", "specZh": "5 秒 · 480p · 有视频输入", "beatapi": 0.2, "competitor": 0.577, "higgsfieldCredits": 5 },
+        { "id": "seedance-2-mini-720p", "spec": "5 sec · 720p · no video input", "specZh": "5 秒 · 720p · 无视频输入", "beatapi": 0.25, "competitor": 0.7735, "higgsfieldCredits": 12.5 },
+        { "id": "seedance-2-mini-720p-with-video", "spec": "5 sec · 720p · with video input", "specZh": "5 秒 · 720p · 有视频输入", "beatapi": 0.3, "competitor": 1.2375, "higgsfieldCredits": 12.5 }
+      ]
+    },
+    {
+      "model": "Seedance 2.0 Fast",
+      "category": "video",
+      "specs": [
+        { "id": "seedance-2-fast-480p", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.35, "competitor": 0.5625, "higgsfieldCredits": 7.5 },
+        { "id": "seedance-2-fast-480p-with-video", "spec": "5 sec · 480p · with video input", "specZh": "5 秒 · 480p · 有视频输入", "beatapi": 0.4, "competitor": 0.675, "higgsfieldCredits": 7.5 },
+        { "id": "seedance-2-fast-720p", "spec": "5 sec · 720p · no video input", "specZh": "5 秒 · 720p · 无视频输入", "beatapi": 0.7, "competitor": 1.2095, "higgsfieldCredits": 17.5 },
+        { "id": "seedance-2-fast-720p-with-video", "spec": "5 sec · 720p · with video input", "specZh": "5 秒 · 720p · 有视频输入", "beatapi": 0.8, "competitor": 1.4515, "higgsfieldCredits": 17.5 }
+      ]
+    },
+    {
+      "model": "Seedance 2.5",
+      "category": "video",
+      "specs": [
+        { "id": "seedance-2.5-480p-no-video", "spec": "5 sec · 480p · no video input", "specZh": "5 秒 · 480p · 无视频输入", "beatapi": 0.7, "competitor": 1.1025, "higgsfieldCredits": 15 },
+        { "id": "seedance-2.5-480p-with-video", "spec": "5 sec · 480p · with video input", "specZh": "5 秒 · 480p · 有视频输入", "beatapi": 0.9, "competitor": 2.152, "higgsfieldCredits": 15 },
+        { "id": "seedance-2.5-720p-no-video", "spec": "5 sec · 720p · no video input", "specZh": "5 秒 · 720p · 无视频输入", "beatapi": 1.55, "competitor": 2.31, "higgsfieldCredits": 32.5 },
+        { "id": "seedance-2.5-720p-with-video", "spec": "5 sec · 720p · with video input", "specZh": "5 秒 · 720p · 有视频输入", "beatapi": 1.9, "competitor": 4.838, "higgsfieldCredits": 32.5 },
+        { "id": "seedance-2.5-1080p-no-video", "spec": "5 sec · 1080p · no video input", "specZh": "5 秒 · 1080p · 无视频输入", "beatapi": 2.75, "competitor": 5.6862, "higgsfieldCredits": 45 },
+        { "id": "seedance-2.5-1080p-with-video", "spec": "5 sec · 1080p · with video input", "specZh": "5 秒 · 1080p · 有视频输入", "beatapi": 3.3, "competitor": 6.8234, "higgsfieldCredits": 45 }
+      ]
+    },
+    {
+      "model": "Veo 3.1",
+      "category": "video",
+      "specs": [
+        { "id": "veo-3.1-lite-720p", "spec": "8 sec · Lite · 720p · audio", "specZh": "8 秒 · Lite · 720p · 含音频", "beatapi": 0.15, "competitor": 0.4 },
+        { "id": "veo-3.1-lite-1080p", "spec": "8 sec · Lite · 1080p · audio", "specZh": "8 秒 · Lite · 1080p · 含音频", "beatapi": 0.25, "competitor": 0.64 },
+        { "id": "veo-3.1-lite-4k", "spec": "8 sec · Lite · 4K · audio", "specZh": "8 秒 · Lite · 4K · 含音频", "beatapi": 0.75 },
+        { "id": "veo-3.1-fast-720p", "spec": "8 sec · Fast · 720p · audio", "specZh": "8 秒 · Fast · 720p · 含音频", "beatapi": 0.3, "competitor": 1.2, "higgsfieldCredits": 22 },
+        { "id": "veo-3.1-fast-1080p", "spec": "8 sec · Fast · 1080p · audio", "specZh": "8 秒 · Fast · 1080p · 含音频", "beatapi": 0.4, "competitor": 1.2, "higgsfieldCredits": 22 },
+        { "id": "veo-3.1-fast-4k", "spec": "8 sec · Fast · 4K · audio", "specZh": "8 秒 · Fast · 4K · 含音频", "beatapi": 0.9, "competitor": 2.8 },
+        { "id": "veo-3.1-quality-720p", "spec": "8 sec · Quality · 720p · audio", "specZh": "8 秒 · Quality · 720p · 含音频", "beatapi": 2, "competitor": 3.2, "higgsfieldCredits": 58 },
+        { "id": "veo-3.1-quality-1080p", "spec": "8 sec · Quality · 1080p · audio", "specZh": "8 秒 · Quality · 1080p · 含音频", "beatapi": 2.1, "competitor": 3.2, "higgsfieldCredits": 58 },
+        { "id": "veo-3.1-quality-4k", "spec": "8 sec · Quality · 4K · audio", "specZh": "8 秒 · Quality · 4K · 含音频", "beatapi": 2.5, "competitor": 4.8 }
+      ]
+    },
+    {
+      "model": "Kling 3.0",
+      "category": "video",
+      "specs": [
+        { "id": "kling-3-std-no-audio", "spec": "5 sec · 720p Standard · no audio", "specZh": "5 秒 · 720p Standard · 无音频", "beatapi": 0.55, "competitor": 0.84, "higgsfieldCredits": 7 },
+        { "id": "kling-3-pro-no-audio", "spec": "5 sec · 1080p Pro · no audio", "specZh": "5 秒 · 1080p Pro · 无音频", "beatapi": 0.65, "competitor": 1.12, "higgsfieldCredits": 10 }
+      ]
+    },
+    {
+      "model": "Nano Banana",
+      "category": "image",
+      "specs": [
+        { "id": "nano-banana-1k", "spec": "1 image", "specZh": "1 张图片", "beatapi": 0.03, "competitor": 0.039, "higgsfieldCredits": 1 }
+      ]
+    },
+    {
+      "model": "Nano Banana Pro",
+      "category": "image",
+      "specs": [
+        { "id": "nano-banana-pro-1k", "spec": "1 image · 1K / 2K", "specZh": "1 张图片 · 1K / 2K", "beatapi": 0.09, "competitor": 0.15, "higgsfieldCredits": 2 },
+        { "id": "nano-banana-pro-4k", "spec": "1 image · 4K", "specZh": "1 张图片 · 4K", "beatapi": 0.15, "competitor": 0.3, "higgsfieldCredits": 4 }
+      ]
+    },
+    {
+      "model": "GPT Image 2",
+      "category": "image",
+      "specs": [
+        { "id": "gpt-image-2-1k", "spec": "1 image · 1K", "specZh": "1 张图片 · 1K", "beatapi": 0.04, "competitor": 0.211, "higgsfieldCredits": 4 },
+        { "id": "gpt-image-2-2k", "spec": "1 image · 2K", "specZh": "1 张图片 · 2K", "beatapi": 0.06, "competitor": 0.1, "higgsfieldCredits": 7 },
+        { "id": "gpt-image-2-4k", "spec": "1 image · 4K", "specZh": "1 张图片 · 4K", "beatapi": 0.1, "competitor": 0.401, "higgsfieldCredits": 12 }
+      ]
+    },
+    {
+      "model": "Seedream 5.0 Pro",
+      "category": "image",
+      "specs": [
+        { "id": "seedream-5-pro-1k", "spec": "1 image · 1K", "specZh": "1 张图片 · 1K", "beatapi": 0.06, "competitor": 0.0675 },
+        { "id": "seedream-5-pro-2k", "spec": "1 image · 2K", "specZh": "1 张图片 · 2K", "beatapi": 0.1, "competitor": 0.135, "higgsfieldCredits": 1 }
+      ]
+    }
+  ]
+}

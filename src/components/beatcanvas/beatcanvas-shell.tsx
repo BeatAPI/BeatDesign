@@ -1,0 +1,1291 @@
+'use client';
+
+
+import {
+  invalidateWorkspaceAfterAssetMutation,
+  invalidateWorkspaceAfterGeneration,
+} from '@/core/workspace-lib/app/workspace-query-invalidation';
+import { generationValidationConstraints } from '@/core/effects/validation';
+import {
+  type WorkspaceModelOption,
+  getCanonicalWorkspaceModelId,
+  getDefaultSelectableWorkspaceModel,
+  getWorkspaceModelsByType,
+} from '@/core/effects/workspace-models';
+import type { ProjectSnapshotActiveTemplateWorkflow } from '@/core/projects/project-snapshot';
+import type {
+  CanvasCard,
+  CanvasCardMediaType,
+  CanvasDraftCard,
+} from '@/core/beatcanvas/canvas-types';
+import {
+  appendUniqueReferenceCardId,
+  canUseCanvasCardAsGenerationReference,
+  removeReferenceCardId,
+  shouldIgnoreCanvasModifierShortcut,
+  shouldIgnoreCanvasShortcut,
+} from '@/core/beatcanvas/composer';
+import { getSelectableModel } from '@/core/beatcanvas/generation-controller';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { useProjectSnapshotLifecycle } from './use-project-snapshot-lifecycle';
+import { useBeatCanvasGraph } from './use-beatcanvas-graph';
+import { useBeatCanvasDraftActions } from './use-beatcanvas-draft-actions';
+import { useBeatCanvasGenerationRuntime } from './use-beatcanvas-generation-runtime';
+import {
+  type UploadIntent,
+  useBeatCanvasUploadActions,
+} from './use-beatcanvas-upload-actions';
+import {
+  BeatCanvasFrontLayerProvider,
+  type BeatCanvasFrontLayerValue,
+} from './beatcanvas-front-layer-context';
+import { registerCardConnectorCallback } from './beatcanvas-card-connector-bridge';
+import type { BeatCanvasPreviewMedia } from './beatcanvas-media-preview-overlay';
+import {
+  getPreviewableCanvasCardFromSelection,
+  resolveBatchCanvasCardSelection,
+} from './beatcanvas-media-preview';
+import BeatCanvasSidebar from './beatcanvas-sidebar';
+import { BeatCanvasLoading } from './beatcanvas-loading';
+
+/**
+ * Lazy-load heavy conditional overlays so they don't inflate the initial
+ * canvas bundle. These are only rendered when the user opens them.
+ */
+const BeatCanvasContextToolbar = lazy(() =>
+  import('./beatcanvas-context-toolbar').then((mod) => ({
+    default: mod.BeatCanvasContextToolbar,
+  }))
+);
+const BeatCanvasMediaPreviewOverlay = lazy(() =>
+  import('./beatcanvas-media-preview-overlay').then((mod) => ({
+    default: mod.BeatCanvasMediaPreviewOverlay,
+  }))
+);
+const BeatCanvasStatusPill = lazy(() =>
+  import('./beatcanvas-status-pill').then((mod) => ({
+    default: mod.BeatCanvasStatusPill,
+  }))
+);
+
+/**
+ * Keep the canvas interaction layer lazy so the main studio shell remains
+ * small while React Flow and the composer overlays load together.
+ */
+const BeatCanvasFrontLayer = lazy(() =>
+  import('./beatcanvas-front-layer').then(
+    (mod) => ({ default: mod.BeatCanvasFrontLayer })
+  )
+);
+
+const BeatCanvasReactFlowEditor = lazy(
+  () => import('@/components/beatcanvas/react-flow/react-flow-editor')
+);
+
+const getInitialTaskType = ({
+  initialTarget,
+  initialModelId,
+  imageModels,
+}: {
+  initialTarget: string | null;
+  initialModelId: string | null;
+  imageModels: WorkspaceModelOption[];
+}): CanvasCardMediaType => {
+  if (initialTarget === 'image') return 'image';
+
+  if (!initialModelId) return 'video';
+
+  const canonicalModelId = getCanonicalWorkspaceModelId(initialModelId);
+  return imageModels.some((item) => item.id === canonicalModelId)
+    ? 'image'
+    : 'video';
+};
+
+const getCanvasShortcutTargetContext = (target: EventTarget | null) => {
+  if (!(target instanceof Element)) {
+    return {
+      tagName: null,
+      isContentEditable: false,
+    };
+  }
+
+  const interactiveAncestor = target.closest(
+    'input, textarea, select, button, a, [contenteditable="true"], [contenteditable="plaintext-only"]'
+  );
+  const resolvedTarget = interactiveAncestor ?? target;
+
+  return {
+    tagName: resolvedTarget.tagName,
+    isContentEditable:
+      resolvedTarget instanceof HTMLElement
+        ? resolvedTarget.isContentEditable
+        : false,
+  };
+};
+
+const sanitizeDownloadName = (value: string) =>
+  Array.from(value.trim().replace(/[<>:"/\\|?*]+/g, '-'))
+    .filter((character) => character >= ' ')
+    .join('')
+    .replace(/\s+/g, '-')
+    .toLowerCase();
+
+export function BeatCanvasShell({
+  projectId,
+  projectPath,
+  initialProjectSnapshot,
+  initialProjectSnapshotVersion,
+  initialTarget,
+  initialModelId,
+  initialPrompt,
+}: {
+  projectId: string;
+  projectPath: string;
+  initialProjectSnapshot:
+    | import('@/core/projects/project-snapshot').ProjectSnapshotDocument
+    | null;
+  initialProjectSnapshotVersion: number | null;
+  initialTarget: string | null;
+  initialModelId: string | null;
+  initialPrompt: string | null;
+}) {
+  const rawStudioT = useTranslations('AppShell.studio');
+  const queryClient = useQueryClient();
+  const refreshWorkspaceAfterGeneration = useCallback(() => {
+    void invalidateWorkspaceAfterGeneration(queryClient);
+  }, [queryClient]);
+  const refreshWorkspaceAfterUpload = useCallback(() => {
+    void invalidateWorkspaceAfterAssetMutation(queryClient);
+  }, [queryClient]);
+  const studioT = useCallback(
+    (key: string, values?: Record<string, string | number>) =>
+      rawStudioT(key as never, values as never),
+    [rawStudioT]
+  );
+
+  const imageModels = useMemo(
+    () =>
+      getWorkspaceModelsByType('ai-image').filter(
+        (item) => item.available !== false
+      ),
+    []
+  );
+  const videoModels = useMemo(
+    () =>
+      getWorkspaceModelsByType('ai-video').filter(
+        (item) => item.available !== false
+      ),
+    []
+  );
+  const canonicalInitialModelId = initialModelId
+    ? getCanonicalWorkspaceModelId(initialModelId)
+    : null;
+  const initialTaskType = getInitialTaskType({
+    initialTarget,
+    initialModelId,
+    imageModels,
+  });
+  const initialImageModel = getSelectableModel(
+    imageModels,
+    canonicalInitialModelId ??
+      getDefaultSelectableWorkspaceModel('ai-image')?.id
+  );
+  const initialVideoModel = getSelectableModel(
+    videoModels,
+    canonicalInitialModelId
+  );
+
+  const {
+    activeComposerCardId,
+    canvasCards,
+    canvasCardsRef,
+    copySelectedCanvasCards,
+    createConnectorBetweenCards,
+    createDraftCard,
+    buildProjectSnapshotDocument: buildCanvasProjectSnapshotDocument,
+    canUndoCanvas,
+    canRedoCanvas,
+    recordCanvasHistory,
+    undoCanvas,
+    redoCanvas,
+    editorRef,
+    focusShape,
+    focusShapes,
+    handleCanvasShapeIdsChange,
+    handleSelectedShapeIdsChange,
+    handleSelectShape,
+    handleSelectedCanvasCardIdsChange,
+    insertAssetCard,
+    pasteCanvasCards,
+    createGenerationOutput,
+    updateGenerationOutput,
+    completeGenerationOutput,
+    removeConnectorBetweenCards,
+    restoreProjectSnapshot: restoreCanvasProjectSnapshot,
+    selectedShapeIds,
+    selectedCanvasCardIds,
+    setActiveComposerCardId,
+    updateCanvasCard,
+    updateDraftCard,
+  } = useBeatCanvasGraph({
+    studioT,
+    imageModels,
+    videoModels,
+    initialImageModelId: initialImageModel?.id ?? null,
+    initialVideoModelId: initialVideoModel?.id ?? null,
+  });
+
+  const [statusMessage, setStatusMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
+  const [canvasDocumentRevision, setCanvasDocumentRevision] = useState(0);
+  const [previewMedia, setPreviewMedia] = useState<BeatCanvasPreviewMedia | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setErrorMessage(null);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [errorMessage]);
+
+  const {
+    handleUpload,
+    imageFileInputRef,
+    getPendingUploadCountForDraft,
+    openUploadPicker,
+    promotePendingUploadsForDraft,
+    uploadIntent,
+    videoFileInputRef,
+  } = useBeatCanvasUploadActions({
+    projectId,
+    studioT,
+    imageModels,
+    videoModels,
+    canvasCardsRef,
+    setErrorMessage,
+    setStatusMessage,
+    createConnectorBetweenCards,
+    createDraftCard,
+    focusShape,
+    focusShapes,
+    handleSelectShape,
+    insertAssetCard,
+    updateCanvasCard,
+    updateDraftCard,
+    setActiveComposerCardId,
+    onWorkspaceAssetsMayChange: refreshWorkspaceAfterUpload,
+  });
+
+  const {
+    handleCreatePromptDraft,
+    handleDraftAspectRatioChange,
+    handleDraftDurationChange,
+    handleDraftLanguageChange,
+    handleDraftModeChange,
+    handleDraftModelChange,
+    handleDraftOutputQualityChange,
+    handleDraftPromptChange,
+    handleDraftQualityChange,
+    handleDraftTaskTypeChange,
+    handleDraftVariantChange,
+  } = useBeatCanvasDraftActions({
+    canvasCardsRef,
+    selectedCanvasCardIds,
+    imageModels,
+    videoModels,
+    initialImageModelId: initialImageModel?.id ?? null,
+    initialVideoModelId: initialVideoModel?.id ?? null,
+    studioT,
+    createDraftCard,
+    setActiveComposerCardId,
+    updateDraftCard,
+  });
+
+  const {
+    handleGenerateDraft,
+    metadataMap,
+    resumeInFlightGenerations,
+    runGenerateDraft,
+  } = useBeatCanvasGenerationRuntime({
+      projectId,
+      studioT,
+      canvasCardsRef,
+      imageModels,
+      isCanvasReady,
+      videoModels,
+      getPendingUploadCountForDraft,
+      promotePendingUploadsForDraft,
+      createGenerationOutput,
+      updateGenerationOutput,
+      completeGenerationOutput,
+      setErrorMessage,
+      setStatusMessage,
+      updateDraftCard,
+      onGenerationComplete: refreshWorkspaceAfterGeneration,
+    });
+
+  const handleCreateGenerationFromConnector = useCallback(
+    ({
+      sourceCardId,
+      taskType,
+      pagePoint,
+    }: {
+      sourceCardId: string;
+      taskType: CanvasCardMediaType;
+      pagePoint: { x: number; y: number };
+    }) => {
+      const sourceCard = canvasCardsRef.current[sourceCardId];
+      if (!sourceCard) {
+        return;
+      }
+
+      const models = taskType === 'image' ? imageModels : videoModels;
+      const targetModel = getSelectableModel(models, null);
+      if (
+        !canUseCanvasCardAsGenerationReference({
+          sourceCard,
+          targetType: taskType,
+          targetModel,
+        })
+      ) {
+        return;
+      }
+
+      createDraftCard({
+        taskType,
+        prompt: '',
+        referenceCardIds: [sourceCardId],
+        anchorCardIds: [sourceCardId],
+        placementPoint: pagePoint,
+      });
+    },
+    [canvasCardsRef, createDraftCard, imageModels, videoModels]
+  );
+
+  const handleCreateGenerationAtPoint = useCallback(
+    ({
+      taskType,
+      pagePoint,
+    }: {
+      taskType: CanvasCardMediaType;
+      pagePoint: { x: number; y: number };
+    }) => {
+      createDraftCard({
+        taskType,
+        prompt: '',
+        referenceCardIds: [],
+        placementPoint: pagePoint,
+        connectReferences: false,
+      });
+    },
+    [createDraftCard]
+  );
+
+  const handleAttachCanvasReference = useCallback(
+    (draftId: string, sourceCardId: string) => {
+      const sourceCard = canvasCardsRef.current[sourceCardId];
+      const draftCard = canvasCardsRef.current[draftId];
+      if (!sourceCard || draftCard?.kind !== 'generation') {
+        return;
+      }
+
+      const models = draftCard.type === 'image' ? imageModels : videoModels;
+      const targetModel = getSelectableModel(models, draftCard.modelId);
+      if (
+        !canUseCanvasCardAsGenerationReference({
+          sourceCard,
+          targetType: draftCard.type,
+          targetModel,
+        })
+      ) {
+        return;
+      }
+
+      createConnectorBetweenCards(sourceCardId, draftId, {
+        recordHistory: true,
+      });
+      updateDraftCard(draftId, {
+        referenceCardIds: appendUniqueReferenceCardId(
+          draftCard.referenceCardIds,
+          sourceCardId
+        ),
+      });
+    },
+    [
+      canvasCardsRef,
+      createConnectorBetweenCards,
+      imageModels,
+      updateDraftCard,
+      videoModels,
+    ]
+  );
+
+  const handleDetachCanvasReference = useCallback(
+    (draftId: string, sourceCardId: string) => {
+      const draftCard = canvasCardsRef.current[draftId];
+      if (draftCard?.kind !== 'generation') {
+        return;
+      }
+
+      removeConnectorBetweenCards(sourceCardId, draftId, {
+        recordHistory: true,
+      });
+      updateDraftCard(draftId, {
+        referenceCardIds: removeReferenceCardId(
+          draftCard.referenceCardIds,
+          sourceCardId
+        ),
+      });
+    },
+    [canvasCardsRef, removeConnectorBetweenCards, updateDraftCard]
+  );
+
+  const handleReferenceEdgesRemoved = useCallback(
+    (edges: Array<{ source: string; target: string }>) => {
+      for (const edge of edges) {
+        const draftCard = canvasCardsRef.current[edge.target];
+        if (draftCard?.kind !== 'generation') {
+          continue;
+        }
+
+        updateDraftCard(draftCard.id, {
+          referenceCardIds: removeReferenceCardId(
+            draftCard.referenceCardIds,
+            edge.source
+          ),
+        });
+      }
+    },
+    [canvasCardsRef, updateDraftCard]
+  );
+
+  const handlePinGenerationOutput = useCallback(
+    (draftId: string, outputId: string) => {
+      const draftCard = canvasCardsRef.current[draftId];
+      const outputCard = canvasCardsRef.current[outputId];
+      if (draftCard?.kind !== 'generation' || outputCard?.kind !== 'output') {
+        return;
+      }
+
+      recordCanvasHistory();
+      updateDraftCard(draftId, {
+        pinnedOutputId: outputId,
+        url: outputCard.url,
+      });
+    },
+    [canvasCardsRef, recordCanvasHistory, updateDraftCard]
+  );
+
+  const selectedCanvasCards = useMemo(
+    () =>
+      selectedCanvasCardIds
+        .map((cardId) => canvasCards[cardId])
+        .filter((card): card is CanvasCard => Boolean(card)),
+    [canvasCards, selectedCanvasCardIds]
+  );
+
+  const canvasCopy = useMemo(
+    () => ({
+      imageTitle: studioT('canvas.frame.imageTitle'),
+      videoTitle: studioT('canvas.frame.videoTitle'),
+      imageModeLabel: studioT('canvas.composer.imageMode'),
+      videoModeLabel: studioT('canvas.composer.videoMode'),
+      createGenerationCardLabel: studioT('canvas.connector.createGeneration'),
+      createImageGenerationCardLabel: studioT(
+        'canvas.connector.createImageGeneration'
+      ),
+      createVideoGenerationCardLabel: studioT(
+        'canvas.connector.createVideoGeneration'
+      ),
+      connectorUploadLabel: studioT('canvas.connector.upload'),
+      imagePromptPlaceholder: studioT('canvas.frame.imagePromptPlaceholder'),
+      videoPromptPlaceholder: studioT('canvas.frame.videoPromptPlaceholder'),
+      zoomLabel: studioT('canvas.zoom.label'),
+      zoomOutLabel: studioT('canvas.zoom.zoomOut'),
+      zoomInLabel: studioT('canvas.zoom.zoomIn'),
+      selectToolLabel: studioT('canvas.zoom.select'),
+      panToolLabel: studioT('canvas.zoom.pan'),
+      fitViewLabel: studioT('canvas.zoom.fitView'),
+      hideEdgesLabel: studioT('canvas.zoom.hideEdges'),
+      showEdgesLabel: studioT('canvas.zoom.showEdges'),
+      snapToGridLabel: studioT('canvas.zoom.snapToGrid'),
+      undoLabel: studioT('canvas.zoom.undo'),
+      redoLabel: studioT('canvas.zoom.redo'),
+      historyLabel: studioT('canvas.shapes.history'),
+      latestResultLabel: studioT('canvas.shapes.latestResult'),
+      emptyStateTitle: studioT('emptyState.title'),
+      emptyStateDescription: studioT('emptyState.description'),
+      emptyGuideTitle: studioT('emptyState.guideTitle'),
+      emptyGuideDescription: studioT('emptyState.guideDescription'),
+      emptyFreeGenerateLabel: studioT('emptyState.freeGenerate'),
+      emptyUploadStartLabel: studioT('emptyState.uploadStart'),
+      typeLabel: studioT('canvas.composer.type'),
+      modelLabel: studioT('single.labels.model'),
+      parameterLabel: studioT('canvas.composer.parameters'),
+      aspectRatioLabel: studioT('single.labels.aspectRatio'),
+      outputQualityLabel: studioT('single.labels.outputQuality'),
+      durationLabel: studioT('single.labels.duration'),
+      languageLabel: studioT('canvas.composer.language'),
+      uploadImageLabel: studioT('actions.uploadImage'),
+      uploadVideoLabel: studioT('actions.uploadVideo'),
+      fromCanvasLabel: studioT('canvas.composer.fromCanvas'),
+      currentReferencesLabel: studioT('canvas.composer.currentReferences'),
+      noCanvasReferencesLabel: studioT('canvas.composer.noCanvasReferences'),
+      removeReferenceLabel: studioT('canvas.composer.removeReference'),
+      generateLabel: studioT('canvas.composer.generate'),
+      regenerateLabel: studioT('canvas.composer.regenerate'),
+      generatingLabel: studioT('canvas.composer.generating'),
+      closeComposerLabel: studioT('canvas.composer.close'),
+      defaultSetupLabel: studioT('canvas.composer.defaultSetup'),
+      modeOptionLabel: studioT('canvas.composer.mode'),
+      variantOptionLabel: studioT('canvas.composer.variant'),
+      qualityOptionLabel: studioT('canvas.composer.quality'),
+      tokenQualityLabel: studioT('canvas.composer.tokens.quality'),
+      tokenFastLabel: studioT('canvas.composer.tokens.fast'),
+      tokenLowLabel: studioT('canvas.composer.tokens.low'),
+      tokenMediumLabel: studioT('canvas.composer.tokens.medium'),
+      tokenStandardLabel: studioT('canvas.composer.tokens.standard'),
+      tokenHighLabel: studioT('canvas.composer.tokens.high'),
+      tokenProLabel: studioT('canvas.composer.tokens.pro'),
+      tokenAdaptiveLabel: studioT('canvas.composer.tokens.adaptive'),
+      tokenAutoLabel: studioT('canvas.composer.tokens.auto'),
+      tokenLandscapeLabel: studioT('canvas.composer.tokens.landscape'),
+      tokenPortraitLabel: studioT('canvas.composer.tokens.portrait'),
+      tokenChineseLabel: studioT('canvas.composer.tokens.chinese'),
+      tokenEnglishLabel: studioT('canvas.composer.tokens.english'),
+      queuedStatusLabel: studioT('canvas.composer.status.queued'),
+      generatingStatusLabel: studioT('canvas.composer.status.generating'),
+      readyStatusLabel: studioT('canvas.composer.status.ready'),
+      failedStatusLabel: studioT('canvas.composer.status.failed'),
+    }),
+    [studioT]
+  );
+
+  const canvasComponents = useMemo(
+    () => ({
+      InFrontOfTheCanvas: BeatCanvasFrontLayer,
+    }),
+    []
+  );
+
+  const frontLayerValue = useMemo<BeatCanvasFrontLayerValue>(
+    () => ({
+      cards: canvasCards,
+      selectedShapeIds,
+      selectedCanvasCardIds,
+      activeComposerCardId,
+      composerPresentation: null,
+      imageModels,
+      videoModels,
+      effectMetadataMap: metadataMap,
+      labels: canvasCopy,
+      promptCharacterLimit: generationValidationConstraints.maxPromptChars,
+      canUndoCanvas,
+      canRedoCanvas,
+      onUndoCanvas: undoCanvas,
+      onRedoCanvas: redoCanvas,
+      onCreateImageDraft: () => handleCreatePromptDraft('image'),
+      onUploadImage: () =>
+        openUploadPicker({ intent: 'image', mode: 'global' }),
+      onCreateGenerationFromConnector: handleCreateGenerationFromConnector,
+      onCreateGenerationAtPoint: handleCreateGenerationAtPoint,
+      onSelectedShapeIdsChange: handleSelectedShapeIdsChange,
+      onSelectedCanvasCardIdsChange: handleSelectedCanvasCardIdsChange,
+      onCanvasShapeIdsChange: handleCanvasShapeIdsChange,
+      onActiveComposerCardIdChange: setActiveComposerCardId,
+      onDraftPromptChange: handleDraftPromptChange,
+      onDraftTaskTypeChange: handleDraftTaskTypeChange,
+      onDraftModelChange: handleDraftModelChange,
+      onDraftAspectRatioChange: handleDraftAspectRatioChange,
+      onDraftOutputQualityChange: handleDraftOutputQualityChange,
+      onDraftModeChange: handleDraftModeChange,
+      onDraftVariantChange: handleDraftVariantChange,
+      onDraftQualityChange: handleDraftQualityChange,
+      onDraftDurationChange: handleDraftDurationChange,
+      onDraftLanguageChange: handleDraftLanguageChange,
+      onOpenReferencePicker: (draftId, intent) =>
+        openUploadPicker({ draftId, intent, mode: 'reference' }),
+      onAttachCanvasReference: handleAttachCanvasReference,
+      onDetachCanvasReference: handleDetachCanvasReference,
+      onPinGenerationOutput: handlePinGenerationOutput,
+      onGenerateDraft: handleGenerateDraft,
+    }),
+    [
+      activeComposerCardId,
+      canUndoCanvas,
+      canRedoCanvas,
+      canvasCards,
+      canvasCopy,
+      handleCanvasShapeIdsChange,
+      handleDraftAspectRatioChange,
+      handleDraftDurationChange,
+      handleDraftLanguageChange,
+      handleDraftModeChange,
+      handleDraftModelChange,
+      handleDraftOutputQualityChange,
+      handleDraftPromptChange,
+      handleDraftQualityChange,
+      handleDraftTaskTypeChange,
+      handleDraftVariantChange,
+      handleGenerateDraft,
+      handleCreatePromptDraft,
+      handleAttachCanvasReference,
+      handleCreateGenerationFromConnector,
+      handleCreateGenerationAtPoint,
+      handleDetachCanvasReference,
+      handlePinGenerationOutput,
+      handleSelectedShapeIdsChange,
+      handleSelectedCanvasCardIdsChange,
+      metadataMap,
+      imageModels,
+      openUploadPicker,
+      selectedShapeIds,
+      selectedCanvasCardIds,
+      setActiveComposerCardId,
+      undoCanvas,
+      redoCanvas,
+      videoModels,
+    ]
+  );
+
+  const shellMessage = errorMessage ?? statusMessage;
+  const showShellMessage = Boolean(errorMessage || statusMessage);
+  const selectedDraftCard = useMemo(
+    () =>
+      selectedCanvasCards.find(
+        (card): card is CanvasDraftCard => card.kind === 'generation'
+      ) ?? null,
+    [selectedCanvasCards]
+  );
+  useEffect(() => {
+    if (!selectedDraftCard) {
+      return;
+    }
+
+    setActiveComposerCardId(selectedDraftCard.id);
+  }, [selectedDraftCard?.id, setActiveComposerCardId]);
+  const selectedShapeId =
+    selectedShapeIds.length === 1 ? (selectedShapeIds[0] ?? null) : null;
+  const selectedSingleCard = selectedShapeId
+    ? canvasCards[selectedShapeId]
+    : null;
+
+  const selectedGroupCards = useMemo<CanvasCard[]>(() => {
+    if (!selectedShapeId || selectedSingleCard) {
+      return [];
+    }
+
+    const editor = editorRef.current;
+    const selectedShape = editor?.getShape?.(selectedShapeId as any);
+
+    if (selectedShape?.type !== 'group') {
+      return [];
+    }
+
+    const childIds =
+      editor?.getSortedChildIdsForParent?.(selectedShapeId as any) ?? [];
+
+    return childIds
+      .map((childId: string) => canvasCards[childId])
+      .filter((card: CanvasCard | undefined): card is CanvasCard =>
+        Boolean(card)
+      );
+  }, [canvasCards, editorRef, selectedShapeId, selectedSingleCard]);
+  const effectiveSelectedGroupCards = useMemo(
+    () =>
+      resolveBatchCanvasCardSelection({
+        cardsById: canvasCards,
+        selectedCanvasCardIds,
+        selectedGroupCards,
+      }),
+    [canvasCards, selectedCanvasCardIds, selectedGroupCards]
+  );
+
+  const isDownloadableCanvasCard = useCallback(
+    (card: CanvasCard | null | undefined) => {
+      if (!card?.url || card.kind !== 'asset') {
+        return false;
+      }
+
+      return !card.url.startsWith('data:image/svg+xml');
+    },
+    []
+  );
+  const downloadableGroupCards = useMemo(
+    () =>
+      effectiveSelectedGroupCards.filter((card: CanvasCard) =>
+        isDownloadableCanvasCard(card)
+      ),
+    [effectiveSelectedGroupCards, isDownloadableCanvasCard]
+  );
+  const isSingleDownloadable = isDownloadableCanvasCard(selectedSingleCard);
+  const previewableSelectedCard = useMemo(
+    () =>
+      getPreviewableCanvasCardFromSelection({
+        selectedSingleCard,
+        selectedGroupCards: effectiveSelectedGroupCards,
+      }),
+    [effectiveSelectedGroupCards, selectedSingleCard]
+  );
+  const canPreviewSelection = Boolean(previewableSelectedCard);
+  const isGroupSelected = effectiveSelectedGroupCards.length > 0;
+  const canDownloadSelection =
+    isSingleDownloadable || downloadableGroupCards.length > 0;
+
+  const resolveDownloadUrl = useCallback((card: CanvasCard) => {
+    if (!card.url) {
+      return null;
+    }
+
+    if (card.sourceGenerationId) {
+      const params = new URLSearchParams({
+        taskId: card.sourceGenerationId,
+      });
+      return `/api/assets/download?${params.toString()}`;
+    }
+
+    return card.url;
+  }, []);
+
+  const inferDownloadFileName = useCallback(
+    (card: CanvasCard) => {
+      const baseName = sanitizeDownloadName(card.name) || 'asset';
+      const sourceUrl = resolveDownloadUrl(card) ?? card.url ?? '';
+
+      try {
+        const pathname = new URL(sourceUrl, window.location.origin).pathname;
+        const extension = pathname.split('.').pop()?.toLowerCase();
+        if (extension && extension.length <= 5) {
+          return `${baseName}.${extension}`;
+        }
+      } catch {}
+
+      return `${baseName}.${card.type === 'video' ? 'mp4' : 'png'}`;
+    },
+    [resolveDownloadUrl]
+  );
+
+  const fetchDownloadBlob = useCallback(
+    async (card: CanvasCard) => {
+      const downloadUrl = resolveDownloadUrl(card);
+      if (!downloadUrl) {
+        throw new Error('Missing download URL');
+      }
+
+      let response = await fetch(downloadUrl);
+      if (!response.ok && card.url && card.url !== downloadUrl) {
+        response = await fetch(card.url);
+      }
+
+      if (!response.ok) {
+        throw new Error(`Failed to download ${card.name}`);
+      }
+
+      const blob = await response.blob();
+      return {
+        blob,
+        fileName: inferDownloadFileName(card),
+      };
+    },
+    [inferDownloadFileName, resolveDownloadUrl]
+  );
+
+  const triggerBrowserDownload = useCallback((blob: Blob, fileName: string) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(objectUrl);
+  }, []);
+
+  const handleDownloadSelection = useCallback(async () => {
+    try {
+      if (isSingleDownloadable && selectedSingleCard) {
+        const { blob, fileName } = await fetchDownloadBlob(selectedSingleCard);
+        triggerBrowserDownload(blob, fileName);
+        return;
+      }
+
+      if (downloadableGroupCards.length > 0) {
+        const [{ default: JSZip }, files] = await Promise.all([
+          import('jszip'),
+          Promise.all(
+            downloadableGroupCards.map((card: CanvasCard) =>
+              fetchDownloadBlob(card)
+            )
+          ),
+        ]);
+        const zip = new JSZip();
+        files.forEach(({ blob, fileName }, index) => {
+          zip.file(`${String(index + 1).padStart(2, '0')}-${fileName}`, blob);
+        });
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        triggerBrowserDownload(zipBlob, 'canvas-group-assets.zip');
+        return;
+      }
+
+      toast.error(studioT('messages.noDownloadableAssets'));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : studioT('messages.noDownloadableAssets');
+      toast.error(message);
+    }
+  }, [
+    downloadableGroupCards,
+    fetchDownloadBlob,
+    isSingleDownloadable,
+    selectedSingleCard,
+    studioT,
+    triggerBrowserDownload,
+  ]);
+  const handlePreviewSelection = useCallback(() => {
+    if (!previewableSelectedCard?.url) {
+      return;
+    }
+
+    setActiveComposerCardId(null);
+    setPreviewMedia({
+      type: 'image',
+      url: previewableSelectedCard.url,
+      title:
+        previewableSelectedCard.name || studioT('canvas.frame.imageTitle'),
+    });
+  }, [previewableSelectedCard, setActiveComposerCardId, studioT]);
+
+  useEffect(() => {
+    const handlePreviewMediaEvent = (event: Event) => {
+      const detail = (event as CustomEvent<BeatCanvasPreviewMedia>).detail;
+      if (detail?.type !== 'image' || !detail.url) {
+        return;
+      }
+
+      setActiveComposerCardId(null);
+      setPreviewMedia({
+        type: 'image',
+        url: detail.url,
+        title: detail.title || studioT('canvas.frame.imageTitle'),
+      });
+    };
+
+    window.addEventListener('beatcanvas:preview-media', handlePreviewMediaEvent);
+    return () => {
+      window.removeEventListener(
+        'beatcanvas:preview-media',
+        handlePreviewMediaEvent
+      );
+    };
+  }, [setActiveComposerCardId, studioT]);
+
+  useEffect(() => {
+    const handlePinGenerationOutputEvent = (event: Event) => {
+      const detail = (
+        event as CustomEvent<{ draftId?: string; outputId?: string }>
+      ).detail;
+      if (!detail?.draftId || !detail.outputId) {
+        return;
+      }
+      handlePinGenerationOutput(detail.draftId, detail.outputId);
+    };
+
+    window.addEventListener(
+      'beatcanvas:pin-generation-output',
+      handlePinGenerationOutputEvent
+    );
+    return () => {
+      window.removeEventListener(
+        'beatcanvas:pin-generation-output',
+        handlePinGenerationOutputEvent
+      );
+    };
+  }, [handlePinGenerationOutput]);
+
+  const contextDownloadLabel = isGroupSelected
+    ? studioT('multiSelect.batchDownload')
+    : isSingleDownloadable
+      ? studioT('multiSelect.download')
+      : null;
+  const showContextToolbar = Boolean(
+    canPreviewSelection || isSingleDownloadable || isGroupSelected
+  );
+  const snapshotChangeSignal = useMemo(
+    () => ({
+      cards: canvasCards,
+      canvasDocumentRevision,
+    }),
+    [canvasDocumentRevision, canvasCards]
+  );
+
+  const activeTemplateProjectWorkflowSnapshot =
+    useMemo<ProjectSnapshotActiveTemplateWorkflow | null>(
+      () => initialProjectSnapshot?.workflows?.activeTemplate ?? null,
+      [initialProjectSnapshot]
+    );
+
+  const buildProjectSnapshotDocument = useCallback(() => {
+    const nextDocument = buildCanvasProjectSnapshotDocument();
+    const workflows = {
+      ...(nextDocument.workflows ?? {}),
+      ...(activeTemplateProjectWorkflowSnapshot
+        ? { activeTemplate: activeTemplateProjectWorkflowSnapshot }
+        : {}),
+    };
+
+    return Object.keys(workflows).length > 0
+      ? {
+          ...nextDocument,
+          workflows,
+        }
+      : nextDocument;
+  }, [activeTemplateProjectWorkflowSnapshot, buildCanvasProjectSnapshotDocument]);
+
+  const restoreProjectSnapshot = useCallback(
+    (
+      document: import(
+        '@/core/projects/project-snapshot'
+      ).ProjectSnapshotDocument
+    ) => {
+      restoreCanvasProjectSnapshot(document);
+      resumeInFlightGenerations();
+    },
+    [restoreCanvasProjectSnapshot, resumeInFlightGenerations]
+  );
+
+  useProjectSnapshotLifecycle({
+    projectId,
+    projectPath,
+    initialProjectSnapshot,
+    initialProjectSnapshotVersion,
+    initialPrompt,
+    initialTaskType,
+    isCanvasReady,
+    snapshotChangeSignal,
+    buildProjectSnapshotDocument,
+    restoreProjectSnapshot,
+    createDraftCard,
+  });
+
+  // Listen for card connector events from the overlay
+  useEffect(() => {
+    const handleConnect = (e: Event) => {
+      const { sourceCardId, targetCardId } = (e as CustomEvent).detail;
+      if (sourceCardId && targetCardId && sourceCardId !== targetCardId) {
+        const sourceCard = canvasCardsRef.current[sourceCardId];
+        const targetCard = canvasCardsRef.current[targetCardId];
+        if (!sourceCard || targetCard?.kind !== 'generation') {
+          return;
+        }
+
+        const models = targetCard.type === 'image' ? imageModels : videoModels;
+        const targetModel = getSelectableModel(models, targetCard.modelId);
+        if (
+          !canUseCanvasCardAsGenerationReference({
+            sourceCard,
+            targetType: targetCard.type,
+            targetModel,
+          })
+        ) {
+          return;
+        }
+
+        createConnectorBetweenCards(sourceCardId, targetCardId, {
+          recordHistory: true,
+        });
+        updateDraftCard(targetCardId, {
+          referenceCardIds: [
+            ...new Set([
+              ...(targetCard.referenceCardIds ?? []),
+              sourceCardId,
+            ]),
+          ],
+        });
+      }
+    };
+    window.addEventListener('beatcanvas:connect-cards', handleConnect);
+    return () =>
+      window.removeEventListener('beatcanvas:connect-cards', handleConnect);
+  }, [
+    createConnectorBetweenCards,
+    canvasCardsRef,
+    imageModels,
+    updateDraftCard,
+    videoModels,
+  ]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const targetContext = getCanvasShortcutTargetContext(event.target);
+      const key = event.key.toLowerCase();
+      const hasModifier = event.metaKey || event.ctrlKey;
+
+      if (
+        hasModifier &&
+        !shouldIgnoreCanvasModifierShortcut({
+          ...targetContext,
+          isComposing: event.isComposing,
+          defaultPrevented: event.defaultPrevented,
+        })
+      ) {
+        if (key === 'z' && event.shiftKey) {
+          event.preventDefault();
+          redoCanvas();
+          return;
+        }
+        if (key === 'z') {
+          event.preventDefault();
+          undoCanvas();
+          return;
+        }
+        if (key === 'y') {
+          event.preventDefault();
+          redoCanvas();
+          return;
+        }
+        if (key === 'c') {
+          if (copySelectedCanvasCards()) {
+            event.preventDefault();
+          }
+          return;
+        }
+        if (key === 'v') {
+          if (pasteCanvasCards()) {
+            event.preventDefault();
+          }
+        }
+        return;
+      }
+
+      if (
+        shouldIgnoreCanvasShortcut({
+          ...targetContext,
+          isComposing: event.isComposing,
+          altKey: event.altKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          defaultPrevented: event.defaultPrevented,
+        })
+      ) {
+        return;
+      }
+
+      if (event.shiftKey && key === 'i') {
+        event.preventDefault();
+        openUploadPicker({
+          intent: 'image',
+          mode: 'global',
+        });
+        return;
+      }
+
+      if (event.shiftKey && key === 'v') {
+        event.preventDefault();
+        openUploadPicker({
+          intent: 'video',
+          mode: 'global',
+        });
+        return;
+      }
+
+      if (key === 'g') {
+        event.preventDefault();
+        handleCreatePromptDraft('image');
+        return;
+      }
+
+      if (key === 'm') {
+        event.preventDefault();
+        handleCreatePromptDraft('video');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
+  }, [
+    copySelectedCanvasCards,
+    handleCreatePromptDraft,
+    openUploadPicker,
+    pasteCanvasCards,
+    redoCanvas,
+    undoCanvas,
+  ]);
+
+  // Register card connector "+" button handler
+  useEffect(() => {
+    registerCardConnectorCallback((shapeId, side) => {
+      const card = canvasCardsRef.current[shapeId];
+      if (!card) return;
+
+      if (side === 'output') {
+        handleCreatePromptDraft(card.type === 'video' ? 'video' : 'image');
+      } else {
+        // Open reference upload targeting this card
+        openUploadPicker({
+          intent: card.type === 'video' ? 'video' : 'image',
+          mode: 'reference',
+          draftId: shapeId,
+        });
+      }
+    });
+    return () => registerCardConnectorCallback(null);
+  }, [canvasCardsRef, handleCreatePromptDraft, openUploadPicker]);
+
+  const handleEditorMount = useCallback(
+    (editor: unknown) => {
+      editorRef.current = editor as any;
+
+      if (typeof editorRef.current?.setCurrentTool === 'function') {
+        editorRef.current.setCurrentTool('select');
+      }
+
+      setIsCanvasReady(true);
+    },
+    [editorRef]
+  );
+
+  const handleCanvasDocumentChange = useCallback(() => {
+    setCanvasDocumentRevision((current) => current + 1);
+  }, []);
+
+  return (
+    <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[var(--beatcanvas-canvas-bg)]">
+      <input
+        ref={imageFileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,image/heif"
+        multiple
+        className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px opacity-0"
+        onChange={handleUpload('image')}
+      />
+      <input
+        ref={videoFileInputRef}
+        type="file"
+        accept="video/*,.mp4,.webm,.mov"
+        className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px opacity-0"
+        onChange={handleUpload('video')}
+      />
+
+      {/* Canvas area */}
+      <div className="relative flex-1 min-w-0">
+        <BeatCanvasFrontLayerProvider value={frontLayerValue}>
+          <Suspense fallback={<BeatCanvasLoading />}>
+            <BeatCanvasReactFlowEditor
+              onMount={handleEditorMount}
+              onDocumentChange={handleCanvasDocumentChange}
+              onHistoryCheckpoint={recordCanvasHistory}
+              onReferenceEdgesRemoved={handleReferenceEdgesRemoved}
+              components={canvasComponents}
+            />
+          </Suspense>
+        </BeatCanvasFrontLayerProvider>
+
+        <div className="pointer-events-none absolute inset-0">
+          {/* Floating Left Toolbar */}
+          <BeatCanvasSidebar
+            projectId={projectId}
+            onUploadImage={() =>
+              openUploadPicker({ intent: 'image', mode: 'global' })
+            }
+            onUploadVideo={() =>
+              openUploadPicker({ intent: 'video', mode: 'global' })
+            }
+            onCreateImageDraft={() => handleCreatePromptDraft('image')}
+            onInsertHistoryAsset={(asset) => {
+              const sizeFromDimensions = ():
+                | { w: number; h: number }
+                | undefined => {
+                if (
+                  asset.width &&
+                  asset.height &&
+                  asset.width > 0 &&
+                  asset.height > 0
+                ) {
+                  const maxEdge = 360;
+                  const ratio = asset.width / asset.height;
+                  if (ratio >= 1) {
+                    return { w: maxEdge, h: Math.round(maxEdge / ratio) };
+                  }
+                  return { w: Math.round(maxEdge * ratio), h: maxEdge };
+                }
+                return undefined;
+              };
+              insertAssetCard({
+                assetId: asset.id,
+                type: asset.mediaType,
+                url: asset.publicUrl,
+                name:
+                  asset.mediaType === 'image'
+                    ? 'History Image'
+                    : 'History Video',
+                kind: 'asset',
+                activateOnInsert: true,
+                ...(sizeFromDimensions()
+                  ? { size: sizeFromDimensions() }
+                  : {}),
+              });
+            }}
+            uploadIntent={uploadIntent as UploadIntent | null}
+          />
+
+          {showContextToolbar ? (
+            <Suspense fallback={null}>
+              <BeatCanvasContextToolbar
+                canDownload={canDownloadSelection}
+                canPreview={canPreviewSelection}
+                downloadLabel={contextDownloadLabel}
+                isBatchDownload={isGroupSelected}
+                previewLabel={
+                  canPreviewSelection
+                    ? studioT('multiSelect.preview')
+                    : null
+                }
+                onDownload={() => {
+                  void handleDownloadSelection();
+                }}
+                onPreview={handlePreviewSelection}
+              />
+            </Suspense>
+          ) : null}
+
+          {previewMedia ? (
+            <Suspense fallback={null}>
+              <BeatCanvasMediaPreviewOverlay
+                media={previewMedia}
+                closeLabel={studioT('multiSelect.closePreview')}
+                onClose={() => setPreviewMedia(null)}
+              />
+            </Suspense>
+          ) : null}
+
+          {showShellMessage && !showContextToolbar ? (
+            <Suspense fallback={null}>
+              <BeatCanvasStatusPill
+                message={shellMessage}
+                isError={Boolean(errorMessage)}
+              />
+            </Suspense>
+          ) : null}
+
+          {/* Agent panel removed */}
+        </div>
+      </div>
+    </div>
+  );
+}
