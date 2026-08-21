@@ -1,5 +1,7 @@
 import type {
   WorkspaceAspectRatio,
+  WorkspaceBackgroundSource,
+  WorkspaceCharacterOrientation,
   WorkspaceDuration,
   WorkspaceLanguage,
   WorkspaceModelMode,
@@ -25,6 +27,8 @@ type DraftModelSettings = Pick<
   | 'mode'
   | 'variant'
   | 'quality'
+  | 'characterOrientation'
+  | 'backgroundSource'
 >;
 
 export type CanvasShortcutContext = {
@@ -49,6 +53,11 @@ const INTERACTIVE_SHORTCUT_TAGS = new Set([
   'OPTION',
   'SELECT',
   'TEXTAREA',
+]);
+
+const STRICT_REFERENCE_LIMIT_MODEL_IDS = new Set([
+  'kling-2.6-motion-control',
+  'kling-3-motion-control',
 ]);
 
 const resolveSupportedValue = <T extends string>({
@@ -136,14 +145,21 @@ export const getDraftReferencePickerOptions = ({
   }
 
   const referenceCounts = getReferenceCounts({ draftCard, cards });
+  const strictReferenceLimits = STRICT_REFERENCE_LIMIT_MODEL_IDS.has(model.id);
+  const imageLimit = strictReferenceLimits
+    ? Math.max(model.maxReferenceImages ?? 0, 0)
+    : Number.POSITIVE_INFINITY;
+  const imageRemaining = Math.max(imageLimit - referenceCounts.image, 0);
   const videoLimit = Math.max(model.maxSourceVideos ?? 0, 0);
   const videoRemaining = Math.max(videoLimit - referenceCounts.video, 0);
-  const options: DraftReferencePickerOption[] = [
-    {
+  const options: DraftReferencePickerOption[] = [];
+
+  if (imageRemaining > 0) {
+    options.push({
       intent: 'image',
-      remaining: null,
-    },
-  ];
+      remaining: Number.isFinite(imageRemaining) ? imageRemaining : null,
+    });
+  }
 
   if (videoRemaining > 0) {
     options.push({
@@ -182,6 +198,15 @@ export const listCompatibleCanvasReferenceCards = ({
 }) => {
   const attachedIds = new Set(draftCard.referenceCardIds);
   const referenceCounts = getReferenceCounts({ draftCard, cards });
+  const strictReferenceLimits = Boolean(
+    model && STRICT_REFERENCE_LIMIT_MODEL_IDS.has(model.id)
+  );
+  const imageRemaining = strictReferenceLimits
+    ? Math.max(
+        (model?.maxReferenceImages ?? 0) - referenceCounts.image,
+        0
+      )
+    : Number.POSITIVE_INFINITY;
   const videoRemaining = Math.max(
     (model?.maxSourceVideos ?? 0) - referenceCounts.video,
     0
@@ -193,6 +218,13 @@ export const listCompatibleCanvasReferenceCards = ({
     }
 
     if (!card.url || attachedIds.has(card.id)) {
+      return false;
+    }
+
+    if (
+      card.type === 'image' &&
+      imageRemaining <= 0
+    ) {
       return false;
     }
 
@@ -286,4 +318,27 @@ export const getCompatibleDraftModelSettings = ({
     supported: model.qualityOptions,
     fallback: model.defaultQuality,
   }),
+  characterOrientation:
+    model.characterOrientationOptions &&
+    model.characterOrientationOptions.length > 0
+      ? resolveSupportedValue<WorkspaceCharacterOrientation>({
+          current:
+            draftCard.characterOrientation ??
+            model.defaultCharacterOrientation ??
+            'video',
+          supported: model.characterOrientationOptions,
+          fallback: model.defaultCharacterOrientation,
+        })
+      : undefined,
+  backgroundSource:
+    model.backgroundSourceOptions && model.backgroundSourceOptions.length > 0
+      ? resolveSupportedValue<WorkspaceBackgroundSource>({
+          current:
+            draftCard.backgroundSource ??
+            model.defaultBackgroundSource ??
+            'input_video',
+          supported: model.backgroundSourceOptions,
+          fallback: model.defaultBackgroundSource,
+        })
+      : undefined,
 });

@@ -2,6 +2,8 @@
 
 import type {
   WorkspaceAspectRatio,
+  WorkspaceBackgroundSource,
+  WorkspaceCharacterOrientation,
   WorkspaceDuration,
   WorkspaceLanguage,
   WorkspaceModelMode,
@@ -33,6 +35,8 @@ export function BeatCanvasComposerParameterPicker({
   isOpen,
   labels,
   onDraftAspectRatioChange,
+  onDraftBackgroundSourceChange,
+  onDraftCharacterOrientationChange,
   onDraftDurationChange,
   onDraftLanguageChange,
   onDraftModeChange,
@@ -42,6 +46,8 @@ export function BeatCanvasComposerParameterPicker({
   onOpenChange,
   parameterSummaryLabel,
   selectedAspectRatioOptions,
+  selectedBackgroundSourceOptions,
+  selectedCharacterOrientationOptions,
   selectedDurationOptions,
   selectedLanguageOptions,
   selectedModeOptions,
@@ -59,6 +65,14 @@ export function BeatCanvasComposerParameterPicker({
   onDraftAspectRatioChange: (
     draftId: string,
     aspectRatio: WorkspaceAspectRatio
+  ) => void;
+  onDraftBackgroundSourceChange: (
+    draftId: string,
+    backgroundSource: WorkspaceBackgroundSource
+  ) => void;
+  onDraftCharacterOrientationChange: (
+    draftId: string,
+    characterOrientation: WorkspaceCharacterOrientation
   ) => void;
   onDraftDurationChange: (draftId: string, duration: WorkspaceDuration) => void;
   onDraftLanguageChange: (draftId: string, language: WorkspaceLanguage) => void;
@@ -78,6 +92,8 @@ export function BeatCanvasComposerParameterPicker({
   onOpenChange: (nextOpen: boolean) => void;
   parameterSummaryLabel: string;
   selectedAspectRatioOptions: WorkspaceAspectRatio[];
+  selectedBackgroundSourceOptions: WorkspaceBackgroundSource[];
+  selectedCharacterOrientationOptions: WorkspaceCharacterOrientation[];
   selectedDurationOptions: WorkspaceDuration[];
   selectedLanguageOptions: WorkspaceLanguage[];
   selectedModeOptions: WorkspaceModelMode[];
@@ -230,6 +246,59 @@ export function BeatCanvasComposerParameterPicker({
                       )}
                     >
                       {item}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {selectedCharacterOrientationOptions.length > 0 ? (
+              <section className="space-y-1.5">
+                <p className={composerSectionLabelClassName}>
+                  {labels.characterOrientationLabel}
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {selectedCharacterOrientationOptions.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      disabled={isDraftBusy}
+                      onClick={() =>
+                        onDraftCharacterOrientationChange(
+                          activeDraftCard.id,
+                          item
+                        )
+                      }
+                      className={getParameterChipClassName(
+                        activeDraftCard.characterOrientation === item
+                      )}
+                    >
+                      {normalizeComposerToken(item, labels)}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {selectedBackgroundSourceOptions.length > 0 ? (
+              <section className="space-y-1.5">
+                <p className={composerSectionLabelClassName}>
+                  {labels.backgroundSourceLabel}
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {selectedBackgroundSourceOptions.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      disabled={isDraftBusy}
+                      onClick={() =>
+                        onDraftBackgroundSourceChange(activeDraftCard.id, item)
+                      }
+                      className={getParameterChipClassName(
+                        activeDraftCard.backgroundSource === item
+                      )}
+                    >
+                      {normalizeComposerToken(item, labels)}
                     </button>
                   ))}
                 </div>

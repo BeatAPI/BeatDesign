@@ -59,6 +59,23 @@ const buildInputSchema = (entry: WorkspaceEffectRegistryEntry) => {
       values: entry.supportedLanguages,
     };
   }
+  if (entry.characterOrientationOptions?.length) {
+    schema.characterOrientation = {
+      type: 'enum',
+      required: false,
+      values: entry.characterOrientationOptions,
+    };
+  }
+  if (entry.backgroundSourceOptions?.length) {
+    schema.backgroundSource = {
+      type: 'enum',
+      required: false,
+      values: entry.backgroundSourceOptions,
+    };
+  }
+  if (entry.requiresSourceVideoDuration) {
+    schema.sourceVideoDurationSeconds = optionalAnyField;
+  }
   if (mediaSchema && mediaSchema.image.max > 0) {
     schema.image_urls = optionalAnyField;
   }

@@ -37,8 +37,8 @@ type WorkspaceRegistryOutputQuality =
   | 'std'
   | 'pro';
 type WorkspaceRegistryReferenceType = 'image' | 'video';
-type WorkspaceRegistryBackgroundSource = 'input_image' | 'input_video';
-type WorkspaceRegistryCharacterOrientation = 'image' | 'video';
+export type WorkspaceRegistryBackgroundSource = 'input_image' | 'input_video';
+export type WorkspaceRegistryCharacterOrientation = 'image' | 'video';
 
 export type WorkspaceModelMode = WorkspaceRegistryModelMode;
 export type WorkspaceModelVariant = WorkspaceRegistryModelVariant;
@@ -80,6 +80,11 @@ export type WorkspaceEffectRegistryEntry = {
   audioSettingOptions?: WorkspaceRegistryAudioSetting[];
   defaultLanguage?: WorkspaceRegistryLanguage;
   supportedLanguages?: WorkspaceRegistryLanguage[];
+  defaultCharacterOrientation?: WorkspaceRegistryCharacterOrientation;
+  characterOrientationOptions?: WorkspaceRegistryCharacterOrientation[];
+  defaultBackgroundSource?: WorkspaceRegistryBackgroundSource;
+  backgroundSourceOptions?: WorkspaceRegistryBackgroundSource[];
+  requiresSourceVideoDuration?: boolean;
   providerModelVariantByVariant?: Partial<
     Record<WorkspaceRegistryModelVariant, string>
   >;
@@ -302,6 +307,51 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       defaultOutputQuality: 'pro',
       supportedOutputQualities: ['std', 'pro', '4k'],
       modelAliases: ['kling30'],
+    },
+    {
+      id: 'kling-2.6-motion-control',
+      name: 'Kling 2.6 Motion Control',
+      effectId: 19,
+      workspaceType: 'ai-video',
+      uploadPath: 'effects/kling-2-6-motion-control',
+      imageBucketName: 'image',
+      routeSlug: 'kling-2-6-motion-control',
+      routeAliases: ['kling-2.6-motion-control', 'kling26-motion-control'],
+      routeOrder: 60,
+      defaultOutputQuality: '720p',
+      supportedOutputQualities: ['720p', '1080p'],
+      defaultCharacterOrientation: 'video',
+      characterOrientationOptions: ['image', 'video'],
+      requiresSourceVideoDuration: true,
+      referenceInputDefaultsByType: {
+        video: { characterOrientation: 'video' },
+      },
+      modelAliases: ['kling26motioncontrol'],
+    },
+    {
+      id: 'kling-3-motion-control',
+      name: 'Kling 3.0 Motion Control',
+      effectId: 20,
+      workspaceType: 'ai-video',
+      uploadPath: 'effects/kling-3-motion-control',
+      imageBucketName: 'image',
+      routeSlug: 'kling-3-motion-control',
+      routeAliases: ['kling-3.0-motion-control', 'kling30-motion-control'],
+      routeOrder: 70,
+      defaultOutputQuality: '720p',
+      supportedOutputQualities: ['720p', '1080p'],
+      defaultCharacterOrientation: 'video',
+      characterOrientationOptions: ['image', 'video'],
+      defaultBackgroundSource: 'input_video',
+      backgroundSourceOptions: ['input_video', 'input_image'],
+      requiresSourceVideoDuration: true,
+      referenceInputDefaultsByType: {
+        video: {
+          characterOrientation: 'video',
+          backgroundSource: 'input_video',
+        },
+      },
+      modelAliases: ['kling3motioncontrol', 'kling30motioncontrol'],
     },
   ] as const;
 

@@ -361,6 +361,8 @@
           "variant": "Variant",
           "quality": "Quality",
           "language": "Language",
+          "characterOrientation": "Character orientation",
+          "backgroundSource": "Background source",
           "tokens": {
             "quality": "Quality",
             "fast": "Fast",
@@ -374,7 +376,11 @@
             "landscape": "Landscape",
             "portrait": "Portrait",
             "chinese": "Chinese",
-            "english": "English"
+            "english": "English",
+            "imageOrientation": "Follow image",
+            "videoOrientation": "Follow video",
+            "inputImage": "Image background",
+            "inputVideo": "Video background"
           },
           "status": {
             "queued": "Queued",

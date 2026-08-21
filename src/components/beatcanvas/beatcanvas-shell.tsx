@@ -25,6 +25,11 @@ import {
   shouldIgnoreCanvasModifierShortcut,
   shouldIgnoreCanvasShortcut,
 } from '@/core/beatcanvas/composer';
+import {
+  buildCanvasReferenceMentions,
+  moveCanvasReferenceCardId,
+  rewriteCanvasReferenceAliases,
+} from '@/core/beatcanvas/reference-mentions';
 import { getSelectableModel } from '@/core/beatcanvas/generation-controller';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
@@ -294,6 +299,8 @@ export function BeatCanvasShell({
   const {
     handleCreatePromptDraft,
     handleDraftAspectRatioChange,
+    handleDraftBackgroundSourceChange,
+    handleDraftCharacterOrientationChange,
     handleDraftDurationChange,
     handleDraftLanguageChange,
     handleDraftModeChange,
@@ -445,14 +452,68 @@ export function BeatCanvasShell({
       removeConnectorBetweenCards(sourceCardId, draftId, {
         recordHistory: true,
       });
-      updateDraftCard(draftId, {
-        referenceCardIds: removeReferenceCardId(
-          draftCard.referenceCardIds,
+      updateDraftCard(draftId, (current) => {
+        const nextReferenceCardIds = removeReferenceCardId(
+          current.referenceCardIds,
           sourceCardId
-        ),
+        );
+        const previousMentions = buildCanvasReferenceMentions({
+          referenceCardIds: current.referenceCardIds,
+          cards: canvasCardsRef.current,
+        });
+        const nextMentions = buildCanvasReferenceMentions({
+          referenceCardIds: nextReferenceCardIds,
+          cards: canvasCardsRef.current,
+        });
+
+        return {
+          ...current,
+          prompt: rewriteCanvasReferenceAliases({
+            prompt: current.prompt,
+            previousMentions,
+            nextMentions,
+          }),
+          referenceCardIds: nextReferenceCardIds,
+        };
       });
     },
     [canvasCardsRef, removeConnectorBetweenCards, updateDraftCard]
+  );
+
+  const handleReorderCanvasReferences = useCallback(
+    (draftId: string, activeCardId: string, overCardId: string) => {
+      const draftCard = canvasCardsRef.current[draftId];
+      if (draftCard?.kind !== 'generation') return;
+
+      const nextReferenceCardIds = moveCanvasReferenceCardId({
+        referenceCardIds: draftCard.referenceCardIds,
+        activeCardId,
+        overCardId,
+      });
+      if (nextReferenceCardIds === draftCard.referenceCardIds) return;
+
+      const previousMentions = buildCanvasReferenceMentions({
+        referenceCardIds: draftCard.referenceCardIds,
+        cards: canvasCardsRef.current,
+      });
+      const nextMentions = buildCanvasReferenceMentions({
+        referenceCardIds: nextReferenceCardIds,
+        cards: canvasCardsRef.current,
+      });
+
+      recordCanvasHistory();
+      updateDraftCard(draftId, {
+        prompt: rewriteCanvasReferenceAliases({
+          prompt: draftCard.prompt,
+          previousMentions,
+          nextMentions,
+        }),
+        referenceCardIds: nextReferenceCardIds,
+        status: 'idle',
+        error: null,
+      });
+    },
+    [canvasCardsRef, recordCanvasHistory, updateDraftCard]
   );
 
   const handleReferenceEdgesRemoved = useCallback(
@@ -463,11 +524,26 @@ export function BeatCanvasShell({
           continue;
         }
 
-        updateDraftCard(draftCard.id, {
-          referenceCardIds: removeReferenceCardId(
-            draftCard.referenceCardIds,
+        updateDraftCard(draftCard.id, (current) => {
+          const nextReferenceCardIds = removeReferenceCardId(
+            current.referenceCardIds,
             edge.source
-          ),
+          );
+          return {
+            ...current,
+            prompt: rewriteCanvasReferenceAliases({
+              prompt: current.prompt,
+              previousMentions: buildCanvasReferenceMentions({
+                referenceCardIds: current.referenceCardIds,
+                cards: canvasCardsRef.current,
+              }),
+              nextMentions: buildCanvasReferenceMentions({
+                referenceCardIds: nextReferenceCardIds,
+                cards: canvasCardsRef.current,
+              }),
+            }),
+            referenceCardIds: nextReferenceCardIds,
+          };
         });
       }
     },
@@ -540,6 +616,10 @@ export function BeatCanvasShell({
       aspectRatioLabel: studioT('single.labels.aspectRatio'),
       outputQualityLabel: studioT('single.labels.outputQuality'),
       durationLabel: studioT('single.labels.duration'),
+      characterOrientationLabel: studioT(
+        'canvas.composer.characterOrientation'
+      ),
+      backgroundSourceLabel: studioT('canvas.composer.backgroundSource'),
       languageLabel: studioT('canvas.composer.language'),
       uploadImageLabel: studioT('actions.uploadImage'),
       uploadVideoLabel: studioT('actions.uploadVideo'),
@@ -568,6 +648,14 @@ export function BeatCanvasShell({
       tokenPortraitLabel: studioT('canvas.composer.tokens.portrait'),
       tokenChineseLabel: studioT('canvas.composer.tokens.chinese'),
       tokenEnglishLabel: studioT('canvas.composer.tokens.english'),
+      tokenImageOrientationLabel: studioT(
+        'canvas.composer.tokens.imageOrientation'
+      ),
+      tokenVideoOrientationLabel: studioT(
+        'canvas.composer.tokens.videoOrientation'
+      ),
+      tokenInputImageLabel: studioT('canvas.composer.tokens.inputImage'),
+      tokenInputVideoLabel: studioT('canvas.composer.tokens.inputVideo'),
       queuedStatusLabel: studioT('canvas.composer.status.queued'),
       generatingStatusLabel: studioT('canvas.composer.status.generating'),
       readyStatusLabel: studioT('canvas.composer.status.ready'),
@@ -612,6 +700,9 @@ export function BeatCanvasShell({
       onDraftTaskTypeChange: handleDraftTaskTypeChange,
       onDraftModelChange: handleDraftModelChange,
       onDraftAspectRatioChange: handleDraftAspectRatioChange,
+      onDraftBackgroundSourceChange: handleDraftBackgroundSourceChange,
+      onDraftCharacterOrientationChange:
+        handleDraftCharacterOrientationChange,
       onDraftOutputQualityChange: handleDraftOutputQualityChange,
       onDraftModeChange: handleDraftModeChange,
       onDraftVariantChange: handleDraftVariantChange,
@@ -622,6 +713,7 @@ export function BeatCanvasShell({
         openUploadPicker({ draftId, intent, mode: 'reference' }),
       onAttachCanvasReference: handleAttachCanvasReference,
       onDetachCanvasReference: handleDetachCanvasReference,
+      onReorderCanvasReferences: handleReorderCanvasReferences,
       onPinGenerationOutput: handlePinGenerationOutput,
       onGenerateDraft: handleGenerateDraft,
     }),
@@ -633,6 +725,8 @@ export function BeatCanvasShell({
       canvasCopy,
       handleCanvasShapeIdsChange,
       handleDraftAspectRatioChange,
+      handleDraftBackgroundSourceChange,
+      handleDraftCharacterOrientationChange,
       handleDraftDurationChange,
       handleDraftLanguageChange,
       handleDraftModeChange,
@@ -648,6 +742,7 @@ export function BeatCanvasShell({
       handleCreateGenerationFromConnector,
       handleCreateGenerationAtPoint,
       handleDetachCanvasReference,
+      handleReorderCanvasReferences,
       handlePinGenerationOutput,
       handleSelectedShapeIdsChange,
       handleSelectedCanvasCardIdsChange,

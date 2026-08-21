@@ -24,6 +24,8 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
     'minimax-h3',
     'veo-3.1',
     'kling-3',
+    'kling-2.6-motion-control',
+    'kling-3-motion-control',
   ]);
   assert.equal(videoIds.includes('wan27'), false);
   assert.equal(imageIds.includes('nanobanana2'), false);
@@ -38,6 +40,14 @@ test('legacy canvas model ids resolve to official BeatAPI slugs', () => {
   assert.equal(getCanonicalWorkspaceModelId('veo31'), 'veo-3.1');
   assert.equal(getCanonicalWorkspaceModelId('kling30'), 'kling-3');
   assert.equal(
+    getCanonicalWorkspaceModelId('kling26motioncontrol'),
+    'kling-2.6-motion-control'
+  );
+  assert.equal(
+    getCanonicalWorkspaceModelId('kling30motioncontrol'),
+    'kling-3-motion-control'
+  );
+  assert.equal(
     findWorkspaceModelOption(imageModels, 'nanobananapro')?.id,
     'nano-banana-pro'
   );
@@ -45,6 +55,26 @@ test('legacy canvas model ids resolve to official BeatAPI slugs', () => {
     findWorkspaceModelOption(videoModels, 'seedance20')?.id,
     'seedance-2'
   );
+});
+
+test('Kling Motion Control exposes one image, one motion video, and its controls', () => {
+  const videoModels = getWorkspaceModelsByType('ai-video');
+  const kling26 = findWorkspaceModelOption(
+    videoModels,
+    'kling-2.6-motion-control'
+  );
+  const kling3 = findWorkspaceModelOption(videoModels, 'kling-3-motion-control');
+
+  assert.equal(kling26?.maxReferenceImages, 1);
+  assert.equal(kling26?.maxSourceVideos, 1);
+  assert.deepEqual(kling26?.supportedOutputQualities, ['720p', '1080p']);
+  assert.deepEqual(kling26?.characterOrientationOptions, ['image', 'video']);
+  assert.equal(kling3?.maxReferenceImages, 1);
+  assert.equal(kling3?.maxSourceVideos, 1);
+  assert.deepEqual(kling3?.backgroundSourceOptions, [
+    'input_video',
+    'input_image',
+  ]);
 });
 
 test('BeatAPI-backed models are the default image and video canvas choices', () => {

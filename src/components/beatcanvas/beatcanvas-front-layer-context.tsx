@@ -1,6 +1,8 @@
 import type { EffectMetadata } from '@/core/effects/client-api';
 import type {
   WorkspaceAspectRatio,
+  WorkspaceBackgroundSource,
+  WorkspaceCharacterOrientation,
   WorkspaceDuration,
   WorkspaceLanguage,
   WorkspaceModelMode,
@@ -58,6 +60,8 @@ type CanvasLabels = {
   aspectRatioLabel: string;
   outputQualityLabel: string;
   durationLabel: string;
+  characterOrientationLabel: string;
+  backgroundSourceLabel: string;
   languageLabel: string;
   uploadImageLabel: string;
   uploadVideoLabel: string;
@@ -86,6 +90,10 @@ type CanvasLabels = {
   tokenPortraitLabel: string;
   tokenChineseLabel: string;
   tokenEnglishLabel: string;
+  tokenImageOrientationLabel: string;
+  tokenVideoOrientationLabel: string;
+  tokenInputImageLabel: string;
+  tokenInputVideoLabel: string;
   queuedStatusLabel: string;
   generatingStatusLabel: string;
   readyStatusLabel: string;
@@ -155,6 +163,14 @@ export type BeatCanvasFrontLayerValue = {
   ) => void;
   onDraftQualityChange: (draftId: string, quality: WorkspaceQualityOption) => void;
   onDraftDurationChange: (draftId: string, duration: WorkspaceDuration) => void;
+  onDraftCharacterOrientationChange: (
+    draftId: string,
+    characterOrientation: WorkspaceCharacterOrientation
+  ) => void;
+  onDraftBackgroundSourceChange: (
+    draftId: string,
+    backgroundSource: WorkspaceBackgroundSource
+  ) => void;
   onDraftLanguageChange: (draftId: string, language: WorkspaceLanguage) => void;
   onDraftModeChange: (draftId: string, mode: WorkspaceModelMode) => void;
   onDraftVariantChange: (
@@ -167,6 +183,11 @@ export type BeatCanvasFrontLayerValue = {
   ) => void;
   onAttachCanvasReference: (draftId: string, sourceCardId: string) => void;
   onDetachCanvasReference: (draftId: string, sourceCardId: string) => void;
+  onReorderCanvasReferences: (
+    draftId: string,
+    activeCardId: string,
+    overCardId: string
+  ) => void;
   onPinGenerationOutput: (draftId: string, outputId: string) => void;
   onGenerateDraft: (draftId: string) => void;
 };

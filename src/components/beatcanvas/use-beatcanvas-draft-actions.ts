@@ -2,6 +2,8 @@
 
 import type {
   WorkspaceAspectRatio,
+  WorkspaceBackgroundSource,
+  WorkspaceCharacterOrientation,
   WorkspaceDuration,
   WorkspaceLanguage,
   WorkspaceModelMode,
@@ -134,6 +136,8 @@ export function useBeatCanvasDraftActions({
         mode: defaults.mode,
         variant: defaults.variant,
         quality: defaults.quality,
+        characterOrientation: defaults.characterOrientation,
+        backgroundSource: defaults.backgroundSource,
         status: 'idle',
         error: null,
       }));
@@ -272,9 +276,30 @@ export function useBeatCanvasDraftActions({
     [updateEditableDraft]
   );
 
+  const handleDraftCharacterOrientationChange = useCallback(
+    (draftId: string, characterOrientation: WorkspaceCharacterOrientation) =>
+      updateEditableDraft(
+        draftId,
+        (value: WorkspaceCharacterOrientation) => ({
+          characterOrientation: value,
+        })
+      )(characterOrientation),
+    [updateEditableDraft]
+  );
+
+  const handleDraftBackgroundSourceChange = useCallback(
+    (draftId: string, backgroundSource: WorkspaceBackgroundSource) =>
+      updateEditableDraft(draftId, (value: WorkspaceBackgroundSource) => ({
+        backgroundSource: value,
+      }))(backgroundSource),
+    [updateEditableDraft]
+  );
+
   return {
     handleCreatePromptDraft,
+    handleDraftBackgroundSourceChange,
     handleDraftAspectRatioChange,
+    handleDraftCharacterOrientationChange,
     handleDraftDurationChange,
     handleDraftLanguageChange,
     handleDraftModeChange,

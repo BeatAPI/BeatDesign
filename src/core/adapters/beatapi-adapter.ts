@@ -18,6 +18,8 @@ const VIDEO_MODELS = new Set([
   'veo-3.1',
   'seedance-2.5',
   'kling-3',
+  'kling-2.6-motion-control',
+  'kling-3-motion-control',
 ]);
 
 const BEATAPI_REQUEST_TIMEOUT_MS = 30_000;
@@ -33,6 +35,9 @@ const inputSchema = z.object({
   image_url: z.string().url().optional(),
   video_urls: z.array(z.string().url()).optional(),
   audio_urls: z.array(z.string().url()).optional(),
+  sourceVideoDurationSeconds: z.number().positive().optional(),
+  characterOrientation: z.enum(['image', 'video']).optional(),
+  backgroundSource: z.enum(['input_image', 'input_video']).optional(),
 });
 
 type BeatApiMedia = {
@@ -91,6 +96,11 @@ const mapKlingResolution = (value: string | undefined) => {
   return 'std';
 };
 
+const mapMotionControlResolution = (value: string | undefined) =>
+  value?.toLowerCase() === '1080p' || value?.toLowerCase() === 'pro'
+    ? '1080p'
+    : '720p';
+
 export const buildBeatApiTaskRequest = ({
   effectType,
   model,
@@ -126,6 +136,57 @@ export const buildBeatApiTaskRequest = ({
 
   if (effectType !== 1 || !VIDEO_MODELS.has(model)) {
     throw new Error(`Unsupported BeatAPI video model: ${model}`);
+  }
+
+  if (
+    model === 'kling-2.6-motion-control' ||
+    model === 'kling-3-motion-control'
+  ) {
+    if (images.length !== 1) {
+      throw new Error('Kling Motion Control requires exactly one image');
+    }
+    if (input.video_urls?.length !== 1) {
+      throw new Error('Kling Motion Control requires exactly one motion video');
+    }
+    if (
+      !isOfficialBeatApiMediaUrl(images[0]) ||
+      !isOfficialBeatApiMediaUrl(input.video_urls[0])
+    ) {
+      throw new Error(
+        'Kling Motion Control inputs must be uploaded through the connected BeatAPI account'
+      );
+    }
+    if (
+      input.sourceVideoDurationSeconds !== undefined &&
+      (input.sourceVideoDurationSeconds < 3 ||
+        input.sourceVideoDurationSeconds > 30)
+    ) {
+      throw new Error('Kling Motion Control video must be between 3 and 30 seconds');
+    }
+    const characterOrientation = input.characterOrientation ?? 'video';
+    if (
+      characterOrientation === 'image' &&
+      (input.sourceVideoDurationSeconds ?? 0) > 10
+    ) {
+      throw new Error(
+        'Image orientation supports motion videos up to 10 seconds'
+      );
+    }
+
+    return {
+      path: '/v1/videos/tasks',
+      body: {
+        model,
+        prompt,
+        images,
+        reference_videos: input.video_urls,
+        resolution: mapMotionControlResolution(input.wmOutputQuality),
+        character_orientation: characterOrientation,
+        ...(model === 'kling-3-motion-control'
+          ? { background_source: input.backgroundSource ?? 'input_video' }
+          : {}),
+      },
+    };
   }
 
   const duration = parseDuration(input.wmDuration);

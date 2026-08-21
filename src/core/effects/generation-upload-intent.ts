@@ -168,6 +168,30 @@ export async function claimGenerationUploadSlot({
   return slotId;
 }
 
+export async function getGenerationUploadIntentEffectId({
+  intentId,
+  projectId,
+  dbClient,
+}: {
+  intentId: string;
+  projectId: string;
+  dbClient?: DbClient;
+}) {
+  const db = await resolveDb(dbClient);
+  const [intent] = await db
+    .select({ effectId: generationUploadIntent.effectId })
+    .from(generationUploadIntent)
+    .where(
+      and(
+        eq(generationUploadIntent.id, intentId),
+        eq(generationUploadIntent.projectId, projectId)
+      )
+    )
+    .limit(1);
+
+  return intent?.effectId ?? null;
+}
+
 export async function releaseGenerationUploadSlot({
   intentId,
   slotId,

@@ -10,6 +10,7 @@ import {
   removeReferenceCardId,
   shouldIgnoreCanvasModifierShortcut,
 } from './composer';
+import { resolveReferencePayload } from './canvas-workflows';
 
 const makeModel = (
   overrides: Partial<WorkspaceModelOption> = {}
@@ -67,6 +68,36 @@ test('keeps image references available before model-specific limits are configur
       model: makeModel(),
     }),
     [{ intent: 'image', remaining: null }]
+  );
+});
+
+test('Motion Control stops offering references after one image and one video', () => {
+  const draft = {
+    ...makeDraft(),
+    modelId: 'kling-3-motion-control',
+    referenceCardIds: ['image-1', 'video-1'],
+  };
+  const cards = {
+    'image-1': makeCard({ id: 'image-1', type: 'image' }),
+    'video-1': makeCard({
+      id: 'video-1',
+      type: 'video',
+      url: 'https://example.com/motion.mp4',
+    }),
+  };
+
+  assert.deepEqual(
+    getDraftReferencePickerOptions({
+      draftCard: draft,
+      cards,
+      model: makeModel({
+        id: 'kling-3-motion-control',
+        maxReferenceImages: 1,
+        maxSourceVideos: 1,
+        supportsSourceVideo: true,
+      }),
+    }),
+    []
   );
 });
 
@@ -146,5 +177,43 @@ test('modifier shortcuts still work outside text fields', () => {
   assert.equal(
     shouldIgnoreCanvasModifierShortcut({ isContentEditable: true }),
     true
+  );
+});
+
+test('preserves every compatible reference video in attachment order', () => {
+  assert.deepEqual(
+    resolveReferencePayload({
+      taskType: 'video',
+      cards: [
+        {
+          id: 'video-1',
+          name: 'Motion one',
+          type: 'video',
+          url: 'https://example.com/one.mp4',
+          role: 'asset',
+        },
+        {
+          id: 'image-1',
+          name: 'Character',
+          type: 'image',
+          url: 'https://example.com/person.png',
+          role: 'asset',
+        },
+        {
+          id: 'video-2',
+          name: 'Motion two',
+          type: 'video',
+          url: 'https://example.com/two.mp4',
+          role: 'asset',
+        },
+      ],
+    }),
+    {
+      imageUrls: ['https://example.com/person.png'],
+      videoUrls: [
+        'https://example.com/one.mp4',
+        'https://example.com/two.mp4',
+      ],
+    }
   );
 });

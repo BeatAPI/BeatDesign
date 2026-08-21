@@ -12,6 +12,7 @@ import {
   isDraftBusyStatus,
   listCompatibleCanvasReferenceCards,
 } from '@/core/beatcanvas/composer';
+import { buildCanvasReferenceMentions } from '@/core/beatcanvas/reference-mentions';
 
 import {
   listGenerationOutputsForDraft,
@@ -102,6 +103,8 @@ export function BeatCanvasFrontLayer() {
     onCanvasShapeIdsChange,
     onSelectedShapeIdsChange,
     onDraftAspectRatioChange,
+    onDraftBackgroundSourceChange,
+    onDraftCharacterOrientationChange,
     onDraftDurationChange,
     onDraftLanguageChange,
     onDraftModeChange,
@@ -114,6 +117,7 @@ export function BeatCanvasFrontLayer() {
     onOpenReferencePicker,
     onAttachCanvasReference,
     onDetachCanvasReference,
+    onReorderCanvasReferences,
     onPinGenerationOutput,
     onGenerateDraft,
     onSelectedCanvasCardIdsChange,
@@ -354,6 +358,10 @@ export function BeatCanvasFrontLayer() {
   const selectedLanguageOptions = selectedModel?.supportedLanguages ?? [];
   const selectedAspectRatioOptions = selectedModel?.supportedAspectRatios ?? [];
   const selectedOutputQualities = selectedModel?.supportedOutputQualities ?? [];
+  const selectedCharacterOrientationOptions =
+    selectedModel?.characterOrientationOptions ?? [];
+  const selectedBackgroundSourceOptions =
+    selectedModel?.backgroundSourceOptions ?? [];
   const isDraftBusy = activeDraftCard
     ? isDraftBusyStatus(activeDraftCard.status)
     : false;
@@ -381,6 +389,22 @@ export function BeatCanvasFrontLayer() {
     if (selectedDurationOptions.length > 0) {
       tokens.push(activeDraftCard.duration);
     }
+    if (
+      selectedCharacterOrientationOptions.length > 0 &&
+      activeDraftCard.characterOrientation
+    ) {
+      tokens.push(
+        normalizeComposerToken(activeDraftCard.characterOrientation, labels)
+      );
+    }
+    if (
+      selectedBackgroundSourceOptions.length > 0 &&
+      activeDraftCard.backgroundSource
+    ) {
+      tokens.push(
+        normalizeComposerToken(activeDraftCard.backgroundSource, labels)
+      );
+    }
     if (selectedLanguageOptions.length > 0 && activeDraftCard.language) {
       tokens.push(
         normalizeComposerToken(activeDraftCard.language, labels)
@@ -404,6 +428,8 @@ export function BeatCanvasFrontLayer() {
   }, [
     labels,
     selectedAspectRatioOptions,
+    selectedBackgroundSourceOptions,
+    selectedCharacterOrientationOptions,
     selectedDurationOptions,
     selectedLanguageOptions,
     selectedModeOptions,
@@ -459,16 +485,31 @@ export function BeatCanvasFrontLayer() {
       return [];
     }
 
-    return activeDraftCard.referenceCardIds
-      .map((cardId) => cards[cardId])
-      .filter((card): card is NonNullable<typeof card> => Boolean(card))
-      .map((card) => ({
-        id: card.id,
-        name: card.name,
-        type: card.type,
-        thumbnailUrl: card.url,
-      }));
+    const mentions = buildCanvasReferenceMentions({
+      referenceCardIds: activeDraftCard.referenceCardIds,
+      cards,
+    });
+
+    return mentions.map((mention) => ({
+      id: mention.cardId,
+      name: mention.name,
+      type: mention.type,
+      alias: mention.alias,
+      thumbnailUrl: cards[mention.cardId]?.url ?? null,
+    }));
   }, [activeDraftCard, cards]);
+  const promptReferences = useMemo(
+    () =>
+      currentReferenceCards.map((card) => ({
+        cardId: card.id,
+        type: card.type,
+        index: Number.parseInt(card.alias.replace(/\D/g, ''), 10),
+        alias: card.alias,
+        name: card.name,
+        thumbnailUrl: card.thumbnailUrl,
+      })),
+    [currentReferenceCards]
+  );
   const canvasReferenceCards = useMemo(() => {
     if (!activeDraftCard) {
       return [];
@@ -789,10 +830,11 @@ export function BeatCanvasFrontLayer() {
           promptCharacterLimit={promptCharacterLimit}
           promptInputValue={promptInputValue}
           promptPlaceholder={activePromptPlaceholder}
+          promptReferences={promptReferences}
           presentation={composerPresentation}
           position={activeDraftComposerPosition}
           takeCount={generationOutputs.length}
-          promptAccessory={
+          promptAccessory={(insertReferenceMention) => (
             <>
               <BeatCanvasComposerReferencePicker
                 activeDraftId={activeDraftCard.id}
@@ -811,6 +853,8 @@ export function BeatCanvasFrontLayer() {
                   setIsReferencePickerOpen(nextOpen);
                 }}
                 onOpenReferencePicker={onOpenReferencePicker}
+                onInsertReferenceMention={insertReferenceMention}
+                onReorderCanvasReferences={onReorderCanvasReferences}
                 onRemoveCanvasReference={onDetachCanvasReference}
                 options={referencePickerOptions}
                 primaryIntent={primaryReferenceIntent}
@@ -834,7 +878,7 @@ export function BeatCanvasFrontLayer() {
                 pinnedOutputId={pinnedOutputId}
               />
             </>
-          }
+          )}
         >
           <div className="flex min-w-0 flex-1 flex-nowrap items-center gap-2">
             <BeatCanvasComposerTypePicker
@@ -884,6 +928,10 @@ export function BeatCanvasFrontLayer() {
                   isOpen={isParameterPopoverOpen}
                   labels={labels}
                   onDraftAspectRatioChange={onDraftAspectRatioChange}
+                  onDraftBackgroundSourceChange={onDraftBackgroundSourceChange}
+                  onDraftCharacterOrientationChange={
+                    onDraftCharacterOrientationChange
+                  }
                   onDraftDurationChange={onDraftDurationChange}
                   onDraftLanguageChange={onDraftLanguageChange}
                   onDraftModeChange={onDraftModeChange}
@@ -899,6 +947,12 @@ export function BeatCanvasFrontLayer() {
                   }}
                   parameterSummaryLabel={parameterSummaryLabel}
                   selectedAspectRatioOptions={selectedAspectRatioOptions}
+                  selectedBackgroundSourceOptions={
+                    selectedBackgroundSourceOptions
+                  }
+                  selectedCharacterOrientationOptions={
+                    selectedCharacterOrientationOptions
+                  }
                   selectedDurationOptions={selectedDurationOptions}
                   selectedLanguageOptions={selectedLanguageOptions}
                   selectedModeOptions={selectedModeOptions}

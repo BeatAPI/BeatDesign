@@ -114,6 +114,16 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     video: emptySection,
     audio: emptySection,
   },
+  'kling-2.6-motion-control': {
+    image: createGenericSection('reference-image', 1),
+    video: createGenericSection('reference-video', 1),
+    audio: emptySection,
+  },
+  'kling-3-motion-control': {
+    image: createGenericSection('reference-image', 1),
+    video: createGenericSection('reference-video', 1),
+    audio: emptySection,
+  },
 } as const satisfies Record<string, WorkspaceMediaSchema>;
 
 export const isAppendMediaSection = (section: WorkspaceMediaSection) =>

@@ -1,5 +1,7 @@
 import type {
   WorkspaceAspectRatio,
+  WorkspaceBackgroundSource,
+  WorkspaceCharacterOrientation,
   WorkspaceDuration,
   WorkspaceLanguage,
   WorkspaceModelMode,
@@ -37,6 +39,8 @@ export type CanvasCard = {
   mode: WorkspaceModelMode;
   variant: WorkspaceModelVariant;
   quality: WorkspaceQualityOption;
+  characterOrientation?: WorkspaceCharacterOrientation;
+  backgroundSource?: WorkspaceBackgroundSource;
   sourceGenerationId: string | null;
   sourceConfigCardId?: string | null;
   generationRunId?: string | null;
@@ -59,6 +63,8 @@ export type CanvasGenerationSnapshot = Pick<
   | 'mode'
   | 'variant'
   | 'quality'
+  | 'characterOrientation'
+  | 'backgroundSource'
 > & {
   capturedAt: string;
 };

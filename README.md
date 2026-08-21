@@ -54,7 +54,7 @@ No shared R2 secret is committed to this repository. “Preconfigured” means t
 
 ## Supported model catalog
 
-The canonical catalog lives in `src/core/effects/effect-registry.ts`. The current workspace exposes four image models and five video models through one BeatAPI adapter. Update the registry and adapter together when BeatAPI's public contract changes.
+The canonical catalog lives in `src/core/effects/effect-registry.ts`. The current workspace exposes four image models and seven video models through one BeatAPI adapter, including Kling 2.6 and Kling 3.0 Motion Control. Update the registry and adapter together when BeatAPI's public contract changes.
 
 ## Commands
 

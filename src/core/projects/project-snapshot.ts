@@ -201,6 +201,16 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
       typeof value.quality === 'string'
         ? (value.quality as CanvasCard['quality'])
         : 'standard',
+    characterOrientation:
+      value.characterOrientation === 'image' ||
+      value.characterOrientation === 'video'
+        ? value.characterOrientation
+        : undefined,
+    backgroundSource:
+      value.backgroundSource === 'input_image' ||
+      value.backgroundSource === 'input_video'
+        ? value.backgroundSource
+        : undefined,
     sourceGenerationId:
       typeof value.sourceGenerationId === 'string'
         ? value.sourceGenerationId

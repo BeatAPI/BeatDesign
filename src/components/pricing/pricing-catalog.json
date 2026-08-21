@@ -81,6 +81,22 @@
       ]
     },
     {
+      "model": "Kling 2.6 Motion Control",
+      "category": "video",
+      "specs": [
+        { "id": "kling-2.6-motion-control-720p", "spec": "5 sec · 720p", "specZh": "5 秒 · 720p", "beatapi": 0.3, "competitor": 0.35 },
+        { "id": "kling-2.6-motion-control-1080p", "spec": "5 sec · 1080p", "specZh": "5 秒 · 1080p", "beatapi": 0.5, "competitor": 0.56 }
+      ]
+    },
+    {
+      "model": "Kling 3.0 Motion Control",
+      "category": "video",
+      "specs": [
+        { "id": "kling-3-motion-control-720p", "spec": "5 sec · 720p", "specZh": "5 秒 · 720p", "beatapi": 0.55, "competitor": 0.63 },
+        { "id": "kling-3-motion-control-1080p", "spec": "5 sec · 1080p", "specZh": "5 秒 · 1080p", "beatapi": 0.7, "competitor": 0.84 }
+      ]
+    },
+    {
       "model": "Nano Banana",
       "category": "image",
       "specs": [

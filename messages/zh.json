@@ -362,6 +362,8 @@
           "variant": "版本",
           "quality": "质量",
           "language": "语种",
+          "characterOrientation": "角色朝向",
+          "backgroundSource": "背景来源",
           "tokens": {
             "quality": "质量",
             "fast": "快速",
@@ -375,7 +377,11 @@
             "landscape": "横向",
             "portrait": "纵向",
             "chinese": "中文",
-            "english": "英文"
+            "english": "英文",
+            "imageOrientation": "跟随图片",
+            "videoOrientation": "跟随视频",
+            "inputImage": "图片背景",
+            "inputVideo": "视频背景"
           },
           "status": {
             "queued": "排队中",
