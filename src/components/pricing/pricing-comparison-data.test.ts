@@ -71,6 +71,14 @@ test('Higgsfield fills matched video and image specs from the live generate UI',
   assert.ok(withHiggsfield.length >= 20);
 });
 
+test('Higgsfield stays blank when it is cheaper than BeatAPI', () => {
+  const specs = comparisonGroups.flatMap((group) => group.specs);
+  const kling3mc720 = specs.find((spec) => spec.id === 'kling-3-motion-control-720p');
+  const seedream2k = specs.find((spec) => spec.id === 'seedream-5-pro-2k');
+  assert.equal(higgsfieldPrice(kling3mc720!), undefined);
+  assert.equal(higgsfieldPrice(seedream2k!), undefined);
+});
+
 test('Kling motion control cards match the official BeatAPI list prices', () => {
   const kling26 = comparisonGroups.find(
     (group) => group.model === 'Kling 2.6 Motion Control'

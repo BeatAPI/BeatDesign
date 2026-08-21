@@ -44,6 +44,9 @@ function PlugGlyph({ className }: { className?: string }) {
 const inputClassName =
   'h-11 w-full rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-3.5 font-mono text-[13px] text-white outline-none transition placeholder:text-white/30 focus:border-[#ff7a33]/55 focus:ring-[3px] focus:ring-[#ff7a33]/15';
 
+const saveButtonClassName =
+  'h-11 w-full rounded-[12px] bg-[#ff7a33] text-[14px] font-semibold text-[#1d1d1f] shadow-[0_8px_24px_rgba(255,122,51,0.24)] transition hover:bg-[#ff8a4d] disabled:cursor-not-allowed disabled:opacity-60';
+
 type BeatApiConfigState = {
   baseUrl: string;
   apiKeyConfigured: boolean;
@@ -63,7 +66,15 @@ type StorageConfigState = {
   };
 };
 
-function ApiConfigForm({ onSaved }: { onSaved: () => void }) {
+function ApiConfigForm({
+  providerLabel,
+  isDefault,
+  onSaved,
+}: {
+  providerLabel: string;
+  isDefault: boolean;
+  onSaved: () => void;
+}) {
   const t = useTranslations('AppShell.header.apiConfig');
   const [state, setState] = useState<BeatApiConfigState | null>(null);
   const [apiKey, setApiKey] = useState('');
@@ -105,17 +116,26 @@ function ApiConfigForm({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <div className="space-y-4 px-6 py-6">
+    <div className="space-y-4 px-5 py-5">
+      <div className="flex items-center gap-2">
+        <p className="text-[13px] font-medium text-white">{providerLabel}</p>
+        {isDefault ? (
+          <span className="rounded-full border border-[#ff7a33]/30 bg-[#ff7a33]/10 px-2 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-[#ff9a62]">
+            {t('defaultBadge')}
+          </span>
+        ) : null}
+      </div>
+
       <div>
         <div className="mb-2 flex items-center justify-between">
           <label
             htmlFor="beatapi-key"
-            className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40"
+            className="text-[12px] font-medium text-white/45"
           >
             {t('keyLabel')}
           </label>
           <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
               state?.apiKeyConfigured
                 ? 'border-[#ff7a33]/30 bg-[#ff7a33]/10 text-[#ff9a62]'
                 : 'border-white/12 bg-white/[0.04] text-white/40'
@@ -129,18 +149,22 @@ function ApiConfigForm({ onSaved }: { onSaved: () => void }) {
           type="password"
           value={apiKey}
           onChange={(event) => setApiKey(event.target.value)}
-          placeholder={t('keyPlaceholder')}
+          placeholder={
+            state?.apiKeyConfigured
+              ? t('keySavedPlaceholder')
+              : t('keyPlaceholder')
+          }
           autoComplete="off"
           className={inputClassName}
         />
-        <p className="mt-2 text-[11px] leading-5 text-white/38">
-          {t('connectHint')}
+        <p className="mt-2 text-[12px] leading-5 text-white/40">
+          {state?.apiKeyConfigured ? t('replaceHint') : t('connectHint')}
         </p>
         <a
           href="https://beatapi.io/dashboard/apikeys"
           target="_blank"
           rel="noreferrer"
-          className="mt-2 inline-flex text-[12px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
+          className="mt-2 inline-flex text-[13px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
         >
           {t('getKey')}
         </a>
@@ -148,9 +172,9 @@ function ApiConfigForm({ onSaved }: { onSaved: () => void }) {
 
       <button
         type="button"
-        disabled={saving}
+        disabled={saving || !apiKey.trim()}
         onClick={() => void save()}
-        className="h-11 w-full rounded-[14px] bg-[#ff7a33] text-[14px] font-semibold text-[#1d1d1f] shadow-[0_8px_24px_rgba(255,122,51,0.24)] transition hover:bg-[#ff8a4d] disabled:cursor-not-allowed disabled:opacity-60"
+        className={saveButtonClassName}
       >
         {saving ? t('saving') : t('save')}
       </button>
@@ -241,51 +265,43 @@ function StorageConfigForm({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <div className="space-y-4 px-6 py-6">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-4 px-5 py-5">
+      <div className="grid grid-cols-2 gap-1 rounded-[12px] border border-white/[0.08] bg-black/20 p-1">
         <button
           type="button"
           disabled={!state?.managedEligible}
           onClick={() => {
             if (state?.managedEligible) setMode('beatapi');
           }}
-          className={`rounded-[14px] border p-3 text-left transition ${
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-[10px] text-[13px] font-semibold transition ${
             mode === 'beatapi'
-              ? 'border-[#ff7a33]/55 bg-[#ff7a33]/10'
-              : 'border-white/10 bg-white/[0.025] hover:border-white/20'
-          } disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-white/10`}
+              ? 'bg-white/[0.08] text-white'
+              : 'text-white/40 hover:text-white/70'
+          } disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:text-white/40`}
         >
-          <Cloud className="mb-3 size-4 text-[#ff8b4d]" />
-          <span className="block text-[13px] font-semibold text-white">
-            {t('managedTitle')}
-          </span>
-          <span className="mt-1 block text-[10px] leading-4 text-white/40">
-            {t('managedDescription')}
-          </span>
+          <Cloud
+            className={`size-3.5 ${mode === 'beatapi' ? 'text-[#ff8b4d]' : ''}`}
+          />
+          {t('managedTitle')}
         </button>
         <button
           type="button"
           onClick={() => setMode('s3')}
-          className={`rounded-[14px] border p-3 text-left transition ${
+          className={`inline-flex h-10 items-center justify-center gap-2 rounded-[10px] text-[13px] font-semibold transition ${
             mode === 's3'
-              ? 'border-[#ff7a33]/55 bg-[#ff7a33]/10'
-              : 'border-white/10 bg-white/[0.025] hover:border-white/20'
+              ? 'bg-white/[0.08] text-white'
+              : 'text-white/40 hover:text-white/70'
           }`}
         >
-          <Database className="mb-3 size-4 text-[#ff8b4d]" />
-          <span className="block text-[13px] font-semibold text-white">
-            {t('customTitle')}
-          </span>
-          <span className="mt-1 block text-[10px] leading-4 text-white/40">
-            {t('customDescription')}
-          </span>
+          <Database
+            className={`size-3.5 ${mode === 's3' ? 'text-[#ff8b4d]' : ''}`}
+          />
+          {t('customTitle')}
         </button>
       </div>
 
       {mode === 'beatapi' ? (
-        <div className="rounded-[14px] border border-white/[0.08] bg-white/[0.025] p-4 text-[11px] leading-5 text-white/48">
-          {t('managedHint')}
-        </div>
+        <p className="text-[12px] leading-5 text-white/40">{t('managedHint')}</p>
       ) : (
         <div className="space-y-3">
           <div className="grid grid-cols-[110px_1fr] gap-3">
@@ -346,7 +362,7 @@ function StorageConfigForm({ onSaved }: { onSaved: () => void }) {
               className={inputClassName}
             />
           </div>
-          <label className="flex items-center gap-2 text-[11px] text-white/48">
+          <label className="flex items-center gap-2 text-[12px] text-white/45">
             <input
               type="checkbox"
               checked={forcePathStyle}
@@ -362,7 +378,7 @@ function StorageConfigForm({ onSaved }: { onSaved: () => void }) {
         type="button"
         disabled={saving}
         onClick={() => void save()}
-        className="h-11 w-full rounded-[14px] bg-[#ff7a33] text-[14px] font-semibold text-[#1d1d1f] shadow-[0_8px_24px_rgba(255,122,51,0.24)] transition hover:bg-[#ff8a4d] disabled:cursor-not-allowed disabled:opacity-60"
+        className={saveButtonClassName}
       >
         {saving ? t('saving') : t('save')}
       </button>
@@ -390,38 +406,30 @@ export function WorkspaceApiConfigDialog({
         <PlugGlyph className="size-[18px]" />
       </DialogTrigger>
 
-      <DialogContent className="max-h-[88vh] overflow-y-auto rounded-[28px] border border-white/10 bg-[#111214] p-0 text-[#f5f5f7] shadow-[0_34px_110px_rgba(0,0,0,0.62)] ring-0 sm:max-w-[520px] [&_[data-slot=dialog-close]]:right-4 [&_[data-slot=dialog-close]]:top-4 [&_[data-slot=dialog-close]]:text-white/45 [&_[data-slot=dialog-close]]:hover:bg-white/[0.07] [&_[data-slot=dialog-close]]:hover:text-white">
-        <div className="border-b border-white/[0.08] px-6 pb-5 pt-6">
-          <span className="mb-4 inline-flex size-10 items-center justify-center rounded-[14px] border border-[#ff7a33]/25 bg-[#ff7a33]/10 text-[#ff8b4d]">
-            <PlugGlyph className="size-[18px]" />
-          </span>
-          <DialogHeader className="gap-2 pr-9 text-left">
-            <DialogTitle className="text-[20px] font-semibold tracking-[-0.025em] text-white">
-              {t('title')}
-            </DialogTitle>
-            <DialogDescription className="text-[13px] leading-5 text-white/48">
-              {t('description')}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <p className="text-[14px] font-semibold text-white">
-              {provider.label}
-            </p>
-            {provider.isDefault ? (
-              <span className="rounded-full border border-[#ff7a33]/30 bg-[#ff7a33]/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.13em] text-[#ff9a62]">
-                {t('defaultBadge')}
-              </span>
-            ) : null}
+      <DialogContent className="beat-product-shell max-h-[88vh] overflow-y-auto rounded-[24px] border border-white/10 bg-[#111214] p-0 text-[#f5f5f7] shadow-[0_34px_110px_rgba(0,0,0,0.62)] ring-0 sm:max-w-[480px] [&_[data-slot=dialog-close]]:right-4 [&_[data-slot=dialog-close]]:top-4 [&_[data-slot=dialog-close]]:text-white/45 [&_[data-slot=dialog-close]]:hover:bg-white/[0.07] [&_[data-slot=dialog-close]]:hover:text-white">
+        <div className="border-b border-white/[0.08] px-5 pb-4 pt-5">
+          <div className="flex items-start gap-3 pr-8">
+            <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-[#ff7a33]/25 bg-[#ff7a33]/10 text-[#ff8b4d]">
+              <PlugGlyph className="size-4" />
+            </span>
+            <DialogHeader className="gap-1 text-left">
+              <DialogTitle className="beat-product-display text-[17px] font-semibold tracking-[-0.02em] text-white">
+                {t('title')}
+              </DialogTitle>
+              <DialogDescription className="text-[12px] leading-5 text-white/45">
+                {section === 'provider' ? t('description') : t('storage.intro')}
+              </DialogDescription>
+            </DialogHeader>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 border-b border-white/[0.08] bg-black/10 p-1.5">
+        <div className="grid grid-cols-2 border-b border-white/[0.08] bg-black/10 p-1">
           {(['provider', 'storage'] as const).map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setSection(item)}
-              className={`h-9 rounded-[10px] text-[12px] font-semibold transition ${
+              className={`h-9 rounded-[10px] text-[13px] font-semibold transition ${
                 section === item
                   ? 'bg-white/[0.08] text-white'
                   : 'text-white/40 hover:text-white/70'
@@ -435,6 +443,8 @@ export function WorkspaceApiConfigDialog({
         {section === 'provider' ? (
           <ApiConfigForm
             key={`provider-${saveSignal}`}
+            providerLabel={provider.label}
+            isDefault={provider.isDefault}
             onSaved={() => setSaveSignal((n) => n + 1)}
           />
         ) : (

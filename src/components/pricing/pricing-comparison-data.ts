@@ -37,7 +37,9 @@ export function countPricingModelFamilies(
 
 export function higgsfieldPrice(spec: ComparisonSpec): number | undefined {
   if (spec.higgsfieldCredits === undefined) return undefined;
-  return roundPrice(spec.higgsfieldCredits * HIGGSFIELD_USD_PER_CREDIT);
+  const price = roundPrice(spec.higgsfieldCredits * HIGGSFIELD_USD_PER_CREDIT);
+  if (price < spec.beatapi) return undefined;
+  return price;
 }
 
 export function competitorDiscount(spec: ComparisonSpec): number | undefined {
