@@ -35,6 +35,11 @@ test('keeps React Flow state out of the persisted project document', () => {
     /buildProjectSnapshotDocumentFromCards\(\{/
   );
   assert.match(adapterSource, /cardsById:\s*canvasCardsRef\.current/);
+  assert.match(adapterSource, /camera:\s*editor\?\.getCamera\(\)/);
+  assert.match(
+    adapterSource,
+    /editorRef\.current\?\.setCamera\(document\.camera/
+  );
 });
 
 test('propagates a completed canvas drag into the project snapshot autosave signal', () => {
@@ -58,4 +63,15 @@ test('propagates a completed canvas drag into the project snapshot autosave sign
     /onDocumentChange=\{handleCanvasDocumentChange\}/
   );
   assert.match(studioSource, /canvasDocumentRevision,/);
+});
+
+test('propagates a completed viewport move into the project snapshot autosave signal', () => {
+  const editorSource = readFileSync(
+    new URL('./react-flow-editor.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(editorSource, /const handleMoveEnd = useCallback/);
+  assert.match(editorSource, /editor\.setViewportState\(viewport\)/);
+  assert.match(editorSource, /onMoveEnd=\{handleMoveEnd\}/);
 });

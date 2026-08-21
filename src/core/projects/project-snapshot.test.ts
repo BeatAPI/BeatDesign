@@ -37,3 +37,23 @@ test('drops invalid card kinds and orphan frames', () => {
     { good: { x: 0, y: 0, w: 100, h: 100 } }
   );
 });
+
+test('keeps a valid canvas camera and drops an invalid one', () => {
+  assert.deepEqual(
+    normalizeProjectSnapshotDocument({
+      cards: [],
+      frames: {},
+      camera: { x: 320, y: -180, z: 0.75 },
+    }).camera,
+    { x: 320, y: -180, z: 0.75 }
+  );
+
+  assert.equal(
+    normalizeProjectSnapshotDocument({
+      cards: [],
+      frames: {},
+      camera: { x: 0, y: 0, z: 0 },
+    }).camera,
+    undefined
+  );
+});

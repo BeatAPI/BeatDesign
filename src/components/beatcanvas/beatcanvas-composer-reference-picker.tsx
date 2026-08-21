@@ -316,7 +316,7 @@ export function BeatCanvasComposerReferencePicker({
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-1.5 px-2.5 pb-1">
-                  {canvasReferenceCards.slice(0, 8).map((card) => (
+                  {canvasReferenceCards.map((card) => (
                     <button
                       key={card.id}
                       type="button"

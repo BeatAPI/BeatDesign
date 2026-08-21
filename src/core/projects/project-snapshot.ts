@@ -24,6 +24,12 @@ export type ProjectSnapshotShapeFrame = {
   h: number;
 };
 
+export type ProjectSnapshotCamera = {
+  x: number;
+  y: number;
+  z: number;
+};
+
 export type ProjectSnapshotActiveTemplateWorkflow = {
   slug: string;
   title: string;
@@ -36,6 +42,7 @@ export type ProjectSnapshotDocument = {
   version: 3;
   cards: CanvasCard[];
   frames: Record<string, ProjectSnapshotShapeFrame>;
+  camera?: ProjectSnapshotCamera;
   workflows?: {
     activeTemplate?: ProjectSnapshotActiveTemplateWorkflow | null;
   };
@@ -70,6 +77,27 @@ const normalizeFrame = (value: unknown): ProjectSnapshotShapeFrame | null => {
   }
 
   return { x, y, w, h };
+};
+
+const normalizeCamera = (value: unknown): ProjectSnapshotCamera | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const x = value.x;
+  const y = value.y;
+  const z = value.z;
+
+  if (
+    !isFiniteNumber(x) ||
+    !isFiniteNumber(y) ||
+    !isFiniteNumber(z) ||
+    z <= 0
+  ) {
+    return null;
+  }
+
+  return { x, y, z };
 };
 
 const normalizeActiveTemplateWorkflow = (
@@ -275,11 +303,13 @@ export const normalizeProjectSnapshotDocument = (
   const normalizedWorkflows = {
     ...(activeTemplate ? { activeTemplate } : {}),
   };
+  const camera = normalizeCamera(value.camera);
 
   return {
     version: 3,
     cards,
     frames,
+    ...(camera ? { camera } : {}),
     ...(Object.keys(normalizedWorkflows).length > 0
       ? {
           workflows: normalizedWorkflows,

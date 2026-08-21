@@ -2,6 +2,10 @@
 
 import type { ProjectSnapshotDocument } from '@/core/projects/project-snapshot';
 import type { CanvasCardMediaType } from '@/core/beatcanvas/canvas-types';
+import {
+  WORKSPACE_MUTATION_HEADER,
+  WORKSPACE_MUTATION_HEADER_VALUE,
+} from '@/lib/trusted-local-request';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 type SnapshotSaveFailure = {
@@ -46,6 +50,11 @@ const readSnapshotSaveFailure = async (
 
 const resolveSnapshotSaveErrorMessage = async (response: Response) =>
   (await readSnapshotSaveFailure(response)).message;
+
+export const buildProjectSnapshotRequestHeaders = () => ({
+  'content-type': 'application/json',
+  [WORKSPACE_MUTATION_HEADER]: WORKSPACE_MUTATION_HEADER_VALUE,
+});
 
 const hasHydratableProjectSnapshot = (
   snapshot: ProjectSnapshotDocument | null
@@ -125,9 +134,7 @@ export function useProjectSnapshotLifecycle({
         const sendSaveRequest = (baseVersion: number | null) =>
           fetch(`/api/app/projects/${projectId}/snapshot`, {
             method: 'PUT',
-            headers: {
-              'content-type': 'application/json',
-            },
+            headers: buildProjectSnapshotRequestHeaders(),
             body: JSON.stringify({
               document: snapshotDocument,
               baseVersion,
@@ -266,9 +273,7 @@ export function useProjectSnapshotLifecycle({
       try {
         void fetch(`/api/app/projects/${projectId}/snapshot`, {
           method: 'PUT',
-          headers: {
-            'content-type': 'application/json',
-          },
+          headers: buildProjectSnapshotRequestHeaders(),
           body: JSON.stringify({
             document: JSON.parse(serializedSnapshot) as ProjectSnapshotDocument,
             baseVersion: lastSavedProjectSnapshotVersionRef.current,

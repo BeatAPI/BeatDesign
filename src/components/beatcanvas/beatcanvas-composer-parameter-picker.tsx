@@ -28,6 +28,17 @@ import {
 } from './beatcanvas-composer-utils';
 import type { CanvasLabels } from './beatcanvas-front-layer-context';
 
+export const commitComposerParameterSelection = ({
+  applyChange,
+  onOpenChange,
+}: {
+  applyChange: () => void;
+  onOpenChange: (nextOpen: boolean) => void;
+}) => {
+  applyChange();
+  onOpenChange(false);
+};
+
 export function BeatCanvasComposerParameterPicker({
   activeDraftCard,
   containerRef,
@@ -104,6 +115,8 @@ export function BeatCanvasComposerParameterPicker({
   visibleParameterSummaryTokens: string[];
 }) {
   const isBatchTone = tone === 'batch';
+  const commitSelection = (applyChange: () => void) =>
+    commitComposerParameterSelection({ applyChange, onOpenChange });
 
   return (
     <div
@@ -189,7 +202,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftOutputQualityChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftOutputQualityChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.outputQuality === item
@@ -214,7 +229,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftAspectRatioChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftAspectRatioChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.aspectRatio === item
@@ -239,7 +256,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftDurationChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftDurationChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.duration === item
@@ -264,9 +283,11 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftCharacterOrientationChange(
-                          activeDraftCard.id,
-                          item
+                        commitSelection(() =>
+                          onDraftCharacterOrientationChange(
+                            activeDraftCard.id,
+                            item
+                          )
                         )
                       }
                       className={getParameterChipClassName(
@@ -292,7 +313,12 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftBackgroundSourceChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftBackgroundSourceChange(
+                            activeDraftCard.id,
+                            item
+                          )
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.backgroundSource === item
@@ -317,7 +343,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftLanguageChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftLanguageChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.language === item
@@ -342,7 +370,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftModeChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftModeChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.mode === item
@@ -367,7 +397,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftVariantChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftVariantChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.variant === item
@@ -392,7 +424,9 @@ export function BeatCanvasComposerParameterPicker({
                       type="button"
                       disabled={isDraftBusy}
                       onClick={() =>
-                        onDraftQualityChange(activeDraftCard.id, item)
+                        commitSelection(() =>
+                          onDraftQualityChange(activeDraftCard.id, item)
+                        )
                       }
                       className={getParameterChipClassName(
                         activeDraftCard.quality === item

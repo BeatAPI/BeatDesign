@@ -10,6 +10,7 @@ import {
 
 import { isTransientCanvasUrl } from '@/core/beatcanvas/local-references';
 import type {
+  ProjectSnapshotCamera,
   ProjectSnapshotDocument,
   ProjectSnapshotShapeFrame,
 } from './project-snapshot';
@@ -79,9 +80,11 @@ export const mergeCanvasRuntimeCardsIntoHistoryDocument = ({
 export const buildProjectSnapshotDocument = ({
   cardsById,
   framesById,
+  camera,
 }: {
   cardsById: Record<string, CanvasCard>;
   framesById: SnapshotFramesById;
+  camera?: ProjectSnapshotCamera;
 }): ProjectSnapshotDocument => {
   const persistableCards = Object.values(cardsById).filter(
     (card) => !isTransientCanvasUrl(card.url)
@@ -109,6 +112,7 @@ export const buildProjectSnapshotDocument = ({
     version: 3,
     cards,
     frames,
+    ...(camera ? { camera } : {}),
   };
 };
 

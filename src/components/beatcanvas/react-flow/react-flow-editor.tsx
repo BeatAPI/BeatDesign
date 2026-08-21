@@ -675,6 +675,14 @@ function BeatCanvasReactFlowCanvas({
     onHistoryCheckpoint?.();
   }, [onHistoryCheckpoint]);
 
+  const handleMoveEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | null, viewport: Viewport) => {
+      editor.setViewportState(viewport);
+      onDocumentChange?.();
+    },
+    [editor, onDocumentChange]
+  );
+
   const handleInit = useCallback(
     (instance: ReactFlowInstance<BeatCanvasFlowNode, BeatCanvasFlowEdge>) => {
       editor.setReactFlowInstance(instance);
@@ -807,6 +815,7 @@ function BeatCanvasReactFlowCanvas({
           onNodeDragStart={handleNodeDragStart}
           onNodeDragStop={handleNodeDragStop}
           onMove={(_event, viewport) => editor.setViewportState(viewport)}
+          onMoveEnd={handleMoveEnd}
           minZoom={0.1}
           maxZoom={4}
           defaultViewport={DEFAULT_VIEWPORT}

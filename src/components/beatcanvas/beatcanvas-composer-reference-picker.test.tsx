@@ -78,6 +78,36 @@ test('open picker lists attached and canvas reference cards', () => {
   assert.match(html, /aria-label="Remove reference"/);
 });
 
+test('open picker keeps canvas references beyond the first eight selectable', () => {
+  const canvasReferenceCards = Array.from({ length: 10 }, (_, index) => ({
+    id: `asset-${index + 1}`,
+    name: `Reference ${index + 1}`,
+    type: 'image' as const,
+    thumbnailUrl: `https://example.com/reference-${index + 1}.webp`,
+  }));
+
+  const html = renderToStaticMarkup(
+    <BeatCanvasComposerReferencePicker
+      activeDraftId="draft-1"
+      canvasReferenceCards={canvasReferenceCards}
+      isDraftBusy={false}
+      isOpen={true}
+      labels={{
+        ...labels,
+        fromCanvasLabel: 'From canvas',
+      }}
+      onAttachCanvasReference={() => {}}
+      onOpenChange={() => {}}
+      onOpenReferencePicker={() => {}}
+      options={[{ intent: 'image', remaining: null }]}
+      primaryIntent="image"
+    />
+  );
+
+  assert.match(html, /title="Reference 1"/);
+  assert.match(html, /title="Reference 10"/);
+});
+
 test('open picker renders video references with video elements instead of images', () => {
   const html = renderToStaticMarkup(
     <BeatCanvasComposerReferencePicker

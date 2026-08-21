@@ -476,6 +476,7 @@ export function useBeatCanvasReactFlowAdapter({
     return buildProjectSnapshotDocumentFromCards({
       cardsById: canvasCardsRef.current,
       framesById: frames,
+      camera: editor?.getCamera(),
     });
   }, [canvasCardsRef]);
 
@@ -1278,19 +1279,26 @@ export function useBeatCanvasReactFlowAdapter({
         setActiveComposerCardId(restoredDraftIds[0]);
       }
 
-      if (restoredCardIds.length > 0) {
-        const focusRestoredCards = () => {
-          focusShapes(restoredCardIds);
-        };
-
-        if (
-          typeof window !== 'undefined' &&
-          typeof window.requestAnimationFrame === 'function'
-        ) {
-          window.requestAnimationFrame(focusRestoredCards);
-        } else {
-          focusRestoredCards();
+      const restoreCameraOrFocusCards = () => {
+        if (document.camera) {
+          editorRef.current?.setCamera(document.camera, {
+            animation: { duration: 0 },
+          });
+          return;
         }
+
+        if (restoredCardIds.length > 0) {
+          focusShapes(restoredCardIds);
+        }
+      };
+
+      if (
+        typeof window !== 'undefined' &&
+        typeof window.requestAnimationFrame === 'function'
+      ) {
+        window.requestAnimationFrame(restoreCameraOrFocusCards);
+      } else {
+        restoreCameraOrFocusCards();
       }
     },
     [
@@ -1298,6 +1306,7 @@ export function useBeatCanvasReactFlowAdapter({
       createDraftCard,
       createGenerationOutput,
       canvasCardsRef,
+      editorRef,
       focusShapes,
       insertAssetCard,
       setActiveComposerCardId,

@@ -90,6 +90,7 @@ test('keeps the version 3 project document canonical across React Flow restore',
       [generationCard.id]: { x: 620, y: 180, w: 420, h: 748 },
       [failedOutputCard.id]: { x: 1136, y: 180, w: 420, h: 236 },
     },
+    camera: { x: 460, y: 240, z: 0.75 },
   });
 
   assert.equal(document.version, 3);
@@ -99,6 +100,7 @@ test('keeps the version 3 project document canonical across React Flow restore',
     w: 420,
     h: 748,
   });
+  assert.deepEqual(document.camera, { x: 460, y: 240, z: 0.75 });
 
   const restorePlan = createProjectSnapshotRestorePlan(document);
   assert.deepEqual(restorePlan.connectors, [
