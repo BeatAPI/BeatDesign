@@ -331,7 +331,16 @@ export async function consumeGenerationUploadIntent({
       .map((upload: { publicUrl: string | null }) => upload.publicUrl)
       .filter((url: string | null): url is string => Boolean(url))
   );
-  const authorized = new Set([...uploadedUrls, ...authorizedProjectUrls]);
+  const previouslyUploadedUrls = await getProjectCompletedIntentUploadUrls({
+    projectId,
+    urls: referencedUrls,
+    dbClient: db,
+  });
+  const authorized = new Set([
+    ...uploadedUrls,
+    ...authorizedProjectUrls,
+    ...previouslyUploadedUrls,
+  ]);
   if (
     uploads.length !== intent.expectedUploadCount ||
     uploads.some(
@@ -362,6 +371,41 @@ export async function consumeGenerationUploadIntent({
       )
     );
   return getAffectedRows(consumed) === 1 ? intent : null;
+}
+
+export async function getProjectCompletedIntentUploadUrls({
+  projectId,
+  urls,
+  dbClient,
+}: {
+  projectId: string;
+  urls: string[];
+  dbClient?: DbClient;
+}) {
+  const normalizedUrls = [
+    ...new Set(urls.map((url) => url.trim()).filter(Boolean)),
+  ];
+  if (!projectId || normalizedUrls.length === 0) return [];
+
+  const db = await resolveDb(dbClient);
+  const rows = await db
+    .select({ publicUrl: generationIntentUpload.publicUrl })
+    .from(generationIntentUpload)
+    .innerJoin(
+      generationUploadIntent,
+      eq(generationIntentUpload.intentId, generationUploadIntent.id)
+    )
+    .where(
+      and(
+        eq(generationUploadIntent.projectId, projectId),
+        eq(generationIntentUpload.status, 'uploaded'),
+        inArray(generationIntentUpload.publicUrl, normalizedUrls)
+      )
+    );
+
+  return rows
+    .map((row: { publicUrl: string | null }) => row.publicUrl)
+    .filter((url: string | null): url is string => Boolean(url));
 }
 
 export async function getCompletedIntentUploads({

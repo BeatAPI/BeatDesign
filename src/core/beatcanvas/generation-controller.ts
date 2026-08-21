@@ -32,6 +32,7 @@ import {
   resolveReferencePayload,
 } from '@/core/beatcanvas/canvas-workflows';
 import { isDraftBusyStatus } from '@/core/beatcanvas/composer';
+import { isLocalWorkspaceMediaUrl } from '@/core/beatcanvas/local-references';
 
 export type StudioJobStatus = CanvasCardStatus;
 
@@ -225,7 +226,10 @@ export const buildGenerationEffectInput = async ({
 
   const referenceCards = draftCard.referenceCardIds
     .map((cardId) => canvasCards[cardId])
-    .filter((card): card is CanvasCard => Boolean(card?.url))
+    .filter(
+      (card): card is CanvasCard =>
+        Boolean(card?.url) && !isLocalWorkspaceMediaUrl(card.url)
+    )
     .map((card) => toWorkflowReferenceCard(card));
 
   const referencePayload = resolveReferencePayload({
@@ -570,6 +574,18 @@ export const runDraftGeneration = async ({
         throw new GenerationFailure(
           'precheck',
           translate('messages.requestValidationFailed')
+        );
+      }
+      const unresolvedLocalReference = preparedCard.referenceCardIds.some(
+        (cardId) => {
+          const card = getCurrentCard(cardId);
+          return Boolean(card?.url) && isLocalWorkspaceMediaUrl(card.url);
+        }
+      );
+      if (unresolvedLocalReference) {
+        throw new GenerationFailure(
+          'storage',
+          translate('messages.localReferenceExpired')
         );
       }
       input = preparedRequest.input;

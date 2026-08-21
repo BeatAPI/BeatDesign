@@ -292,6 +292,7 @@
         "promptTooLong": "提示词需少于 {maxChars} 个字符。",
         "promptRequired": "请输入提示词。",
         "imageReferencesPending": "请先生成已连接的上游图片，再运行当前节点。",
+        "localReferenceExpired": "有参考文件只存在于当前页面，请重新添加后再生成。",
         "imageModelOnlySupportsImageReference": "当前图片模型只支持图片参考，本次将按文本生成。",
         "videoContinuationUnsupported": "当前视频模型不支持视频续写，请切换到支持视频输入的模型。",
         "statusRequestFailed": "查询任务状态失败。",

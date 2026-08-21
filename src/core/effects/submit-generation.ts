@@ -217,6 +217,21 @@ export async function submitEffectGeneration({
     }
 
     const referencedUrls = getReferencedUrls(adapterInput);
+    if (
+      referencedUrls.some(
+        (url) => url.startsWith('blob:') || url.startsWith('data:')
+      )
+    ) {
+      return {
+        result: {
+          status: 400,
+          body: {
+            error:
+              'A connected file is only available in this page. Re-add it and generate again.',
+          },
+        } satisfies SubmitEffectGenerationResult,
+      };
+    }
     const authorizedProjectUrls = await getProjectAssetUrls({
       projectId: normalizedProjectId,
       urls: referencedUrls,

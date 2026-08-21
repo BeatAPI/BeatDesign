@@ -9,6 +9,42 @@ export type PendingLocalReferenceUpload = {
 };
 
 type UploadFileFromBrowserImpl = typeof uploadFileFromBrowser;
+type FetchImpl = typeof fetch;
+
+export const isTransientCanvasUrl = (url: string | null | undefined) =>
+  typeof url === 'string' &&
+  (url.startsWith('blob:') || url.startsWith('data:'));
+
+export const isLocalWorkspaceMediaUrl = (url: string | null | undefined) => {
+  if (!url) return false;
+  if (isTransientCanvasUrl(url)) return true;
+  if (url.startsWith('/') && !url.startsWith('//')) return true;
+  try {
+    const parsed = new URL(url);
+    const origin =
+      typeof window !== 'undefined' && window.location?.origin
+        ? window.location.origin
+        : '';
+    if (origin) return parsed.origin === origin;
+    return ['localhost', '127.0.0.1', '::1'].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const needsJustInTimeUpload = ({
+  card,
+  pendingUpload,
+}: {
+  card: CanvasCard | undefined;
+  pendingUpload?: PendingLocalReferenceUpload;
+}) => {
+  if (!card || card.kind === 'generation') return false;
+  if (pendingUpload && (!card.url || isTransientCanvasUrl(card.url))) {
+    return true;
+  }
+  return Boolean(card.url && isLocalWorkspaceMediaUrl(card.url));
+};
 
 export const getPendingDraftReferenceUploadCount = ({
   draftCard,
@@ -24,12 +60,11 @@ export const getPendingDraftReferenceUploadCount = ({
   for (const cardId of draftCard.referenceCardIds) {
     if (seenCardIds.has(cardId)) continue;
     seenCardIds.add(cardId);
-    const card = cardsById[cardId];
     if (
-      pendingUploadsByCardId[cardId] &&
-      card &&
-      card.kind !== 'generation' &&
-      (!card.url || isTransientCanvasUrl(card.url))
+      needsJustInTimeUpload({
+        card: cardsById[cardId],
+        pendingUpload: pendingUploadsByCardId[cardId],
+      })
     ) {
       count += 1;
     }
@@ -37,9 +72,22 @@ export const getPendingDraftReferenceUploadCount = ({
   return count;
 };
 
-export const isTransientCanvasUrl = (url: string | null | undefined) =>
-  typeof url === 'string' &&
-  (url.startsWith('blob:') || url.startsWith('data:'));
+const fileFromWorkspaceUrl = async (
+  url: string,
+  fetchImpl: FetchImpl
+): Promise<File> => {
+  const response = await fetchImpl(url);
+  if (!response.ok) {
+    throw new Error('Failed to read a local canvas reference');
+  }
+  const blob = await response.blob();
+  const filename = decodeURIComponent(
+    url.split('/').pop()?.split('?')[0] || 'reference'
+  );
+  return new File([blob], filename, {
+    type: blob.type || 'application/octet-stream',
+  });
+};
 
 export const promotePendingDraftReferenceUploads = async ({
   draftCard,
@@ -48,6 +96,7 @@ export const promotePendingDraftReferenceUploads = async ({
   projectId,
   generationIntentToken,
   uploadFileFromBrowserImpl = uploadFileFromBrowser,
+  fetchImpl = fetch,
 }: {
   draftCard: CanvasDraftCard;
   cardsById: Record<string, CanvasCard>;
@@ -55,6 +104,7 @@ export const promotePendingDraftReferenceUploads = async ({
   projectId: string;
   generationIntentToken: string;
   uploadFileFromBrowserImpl?: UploadFileFromBrowserImpl;
+  fetchImpl?: FetchImpl;
 }): Promise<
   Array<{
     cardId: string;
@@ -77,16 +127,22 @@ export const promotePendingDraftReferenceUploads = async ({
 
     const pendingUpload = pendingUploadsByCardId[cardId];
     const card = cardsById[cardId];
-    if (!pendingUpload || !card || card.kind === 'generation') {
+    if (
+      !needsJustInTimeUpload({
+        card,
+        pendingUpload,
+      })
+    ) {
       continue;
     }
 
-    if (card.url && !isTransientCanvasUrl(card.url)) {
-      continue;
-    }
+    const file =
+      pendingUpload && (!card.url || isTransientCanvasUrl(card.url))
+        ? pendingUpload.file
+        : await fileFromWorkspaceUrl(card.url as string, fetchImpl);
 
     const uploadResult = await uploadFileFromBrowserImpl(
-      pendingUpload.file,
+      file,
       'beatcanvas/uploads',
       {
         projectId,
@@ -96,7 +152,7 @@ export const promotePendingDraftReferenceUploads = async ({
 
     promotions.push({
       cardId,
-      objectUrl: pendingUpload.objectUrl,
+      objectUrl: pendingUpload?.objectUrl || card.url || '',
       uploadResult,
     });
   }

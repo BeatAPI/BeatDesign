@@ -291,6 +291,7 @@
         "promptTooLong": "Prompt must be shorter than {maxChars} characters.",
         "promptRequired": "Please enter a prompt.",
         "imageReferencesPending": "Generate the connected upstream image before running this node.",
+        "localReferenceExpired": "A connected file is only on this page. Re-add it and generate again.",
         "imageModelOnlySupportsImageReference": "The current image model only supports image references. This run will continue as text-only generation.",
         "videoContinuationUnsupported": "The current video model does not support video continuation. Switch to a model with video input support.",
         "statusRequestFailed": "Failed to query task status.",

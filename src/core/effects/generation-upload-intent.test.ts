@@ -228,6 +228,65 @@ test('zero-upload intents remain valid once and expired intents are rejected', a
   }
 });
 
+test('zero-upload retries can reuse previously uploaded project files', async () => {
+  const { client, db } = await createTestDb();
+  try {
+    const now = new Date(1_000);
+    const firstIntentId = await issueGenerationUploadIntent({
+      projectId: 'project-1',
+      effectId: 301,
+      expectedUploadCount: 1,
+      now,
+      dbClient: db,
+    });
+    const slotId = await claimGenerationUploadSlot({
+      intentId: firstIntentId,
+      projectId: 'project-1',
+      now: new Date(2_000),
+      dbClient: db,
+    });
+    assert.ok(slotId);
+    assert.equal(
+      await completeGenerationUploadSlot({
+        intentId: firstIntentId,
+        upload: {
+          slotId,
+          provider: 'beatapi',
+          bucket: 'beatapi',
+          key: 'inputs/retry.png',
+          url: 'https://media.beatapi.io/inputs/retry.png',
+          filename: 'retry.png',
+          mimeType: 'image/png',
+          sizeBytes: 123,
+        },
+        now: new Date(3_000),
+        dbClient: db,
+      }),
+      true
+    );
+
+    const retryIntentId = await issueGenerationUploadIntent({
+      projectId: 'project-1',
+      effectId: 302,
+      expectedUploadCount: 0,
+      now: new Date(4_000),
+      dbClient: db,
+    });
+    assert.ok(
+      await consumeGenerationUploadIntent({
+        intentId: retryIntentId,
+        projectId: 'project-1',
+        effectId: 302,
+        referencedUrls: ['https://media.beatapi.io/inputs/retry.png'],
+        now: new Date(5_000),
+        dbClient: db,
+      })
+    );
+  } finally {
+    client.close();
+  }
+});
+
 test('limits active upload authorizations per project', async () => {
   const { client, db } = await createTestDb();
   try {
