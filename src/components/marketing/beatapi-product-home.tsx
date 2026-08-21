@@ -17,8 +17,8 @@ function getCopy(locale: string) {
   const messageLocale = locale === 'zh' ? 'zh' : 'en';
   return {
     eyebrow: m['product.home.eyebrow']({}, { locale: messageLocale }),
-    title: m['product.home.title']({}, { locale: messageLocale }),
-    subtitle: m['product.home.subtitle']({}, { locale: messageLocale }),
+    titleLine1: m['product.home.titleLine1']({}, { locale: messageLocale }),
+    titleLine2: m['product.home.titleLine2']({}, { locale: messageLocale }),
     prompt: m['product.home.prompt']({}, { locale: messageLocale }),
     sectionTitle: m['product.home.sectionTitle']({}, { locale: messageLocale }),
     projects: m['product.home.viewProjects']({}, { locale: messageLocale }),
@@ -140,9 +140,7 @@ function PromptComposer({ copy }: { copy: HomeCopy }) {
 
 export function BeatApiProductHome({ locale }: { locale: string }) {
   const copy = getCopy(locale);
-  const titleLines = copy.title
-    .split('. ')
-    .map((part, index, all) => (index < all.length - 1 ? `${part}.` : part));
+  const titleLines = [copy.titleLine1, copy.titleLine2];
 
   return (
     <BeatApiProductShell active="home" locale={locale}>
@@ -159,9 +157,6 @@ export function BeatApiProductHome({ locale }: { locale: string }) {
               </span>
             ))}
           </h1>
-          <p className="mx-auto mt-5 w-full max-w-[720px] text-pretty text-[15px] leading-6 text-[var(--beat-text-2)]">
-            {copy.subtitle}
-          </p>
           <PromptComposer copy={copy} />
         </section>
 

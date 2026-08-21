@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve BeatAPI Workspace.
+Thanks for helping improve BeatDesign.
 
 ## Before opening a change
 

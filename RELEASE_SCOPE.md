@@ -1,6 +1,6 @@
 # Open-source release scope
 
-This repository contains the BeatAPI Workspace only. The separate BeatAPI SaaS Template is not part of this codebase.
+This repository contains BeatDesign only. The separate BeatAPI SaaS Template is not part of this codebase.
 
 Included: homepage, projects, Studio, Canvas, provider configuration, supported model registry, generation lifecycle, uploads, assets, local history, i18n, SQLite/D1 persistence, tests, and deployment examples.
 

@@ -13,12 +13,11 @@
   "product.shell.chinese": "中文",
   "product.shell.terms": "服务条款",
   "product.shell.privacy": "隐私政策",
-  "product.shell.builtFor": "为 AI 创作者打造",
-  "product.home.eyebrow": "开源 AI 创作工作台",
-  "product.home.metaTitle": "BeatAPI Workspace — AI 创作 Studio 与 Canvas",
-  "product.home.metaDescription": "开源的 AI 图片与视频创作工作台，使用你自己的 BeatAPI API Key 在 Studio 中生成，并在 Canvas 中组织和连接素材。",
-  "product.home.title": "让想象，开始流动。",
-  "product.home.subtitle": "在 Studio 中生成图片和视频，再把每个结果连接成可复用的 Canvas 工作流。",
+  "product.home.eyebrow": "开源 · 本地优先",
+  "product.home.metaTitle": "BeatDesign — 开源 AI 图像与视频创作画布",
+  "product.home.metaDescription": "开源、本地优先的 AI 图像与视频创作画布。",
+  "product.home.titleLine1": "化繁为简，",
+  "product.home.titleLine2": "自由创作。",
   "product.home.prompt": "描述你想创作的图片或视频...",
   "product.home.createInStudio": "在 Studio 中创作",
   "product.home.sectionTitle": "选择你的工作空间",
@@ -55,7 +54,7 @@
   "product.pricing.titleLead": "同样的模型，更低的",
   "product.pricing.titleAccent": "价格。",
   "product.pricing.descriptionLead": "只为生成的内容付费。",
-  "product.pricing.descriptionRest": "同样的模型、同样的规格——没有订阅，没有闲置费用。",
+  "product.pricing.descriptionRest": "BeatDesign 由 BeatAPI 驱动。一个余额，贯穿每个工作流。",
   "product.pricing.statCheaperHint": "对比竞品最高优惠",
   "product.pricing.statSavingsHint": "平均节省",
   "product.pricing.filterAll": "所有模型",
@@ -68,7 +67,7 @@
   "product.pricing.colHiggsfield": "竞品 H",
   "product.pricing.colDiscount": "优惠",
   "product.pricing.ctaPrimary": "开始创作",
-  "common.metadata.title": "BeatAPI",
+  "common.metadata.title": "BeatDesign",
   "common.metadata.description": "面向电商团队的 AI 设计工作台",
   "common.search.placeholder": "搜索...",
   "common.table.no_data": "暂无数据",
@@ -119,7 +118,7 @@
   "AppShell": {
     "studio": {
       "intro": {
-        "title": "以画布为中心的 BeatAPI 工作区",
+        "title": "以画布为中心的 BeatDesign 工作区",
         "description": "选中图片、视频或提示节点后，就能直接从画布继续分支生成。"
       },
       "toolbar": {
@@ -526,7 +525,7 @@
       "workspaceNameLabel": "空间名称",
       "projects": "项目",
       "projectsLabel": "打开项目列表",
-      "githubRepository": "在 GitHub 打开 BeatAPI Workspace",
+      "githubRepository": "在 GitHub 打开 BeatDesign",
       "projectAssets": {
         "triggerLabel": "项目素材",
         "title": "项目素材",

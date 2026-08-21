@@ -1,6 +1,6 @@
 # Architecture
 
-BeatAPI Workspace is a single-user creative application. It has no account boundary and no SaaS commerce layer.
+BeatDesign is a single-user creative application. It has no account boundary and no SaaS commerce layer.
 
 ## Product boundary
 

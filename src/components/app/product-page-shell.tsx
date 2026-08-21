@@ -166,7 +166,7 @@ export function ProductPageShell({
                 providerId={envConfigs.generation_provider}
               />
               <a
-                href="https://github.com/BeatAPI/beatapi-workspace"
+                href="https://github.com/BeatAPI/BeatDesign"
                 target="_blank"
                 rel="noreferrer"
                 aria-label={t('header.githubRepository')}

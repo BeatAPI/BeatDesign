@@ -22,7 +22,7 @@ test('workspace header keeps mode switching, shared assets, and API configuratio
   assert.match(shellSource, /GitHubIcon/);
   assert.match(
     shellSource,
-    /https:\/\/github\.com\/BeatAPI\/beatapi-workspace/
+    /https:\/\/github\.com\/BeatAPI\/BeatDesign/
   );
   assert.match(shellSource, /target="_blank"/);
   assert.match(shellSource, /rel="noreferrer"/);

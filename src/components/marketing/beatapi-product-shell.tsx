@@ -44,7 +44,6 @@ function getShellCopy(locale: string) {
     chinese: m['product.shell.chinese']({}, { locale: messageLocale }),
     terms: m['product.shell.terms']({}, { locale: messageLocale }),
     privacy: m['product.shell.privacy']({}, { locale: messageLocale }),
-    builtFor: m['product.shell.builtFor']({}, { locale: messageLocale }),
   };
 }
 
@@ -255,7 +254,6 @@ export function BeatApiProductShell({
           <Link href="/privacy-policy" className="transition hover:text-[#b6b6bb]">
             {copy.privacy}
           </Link>
-          <span>{copy.builtFor}</span>
         </div>
       </footer>
     </div>

@@ -7,10 +7,10 @@ const publicEnv = (key: string) => metaEnv[key] ?? procEnv[key];
 
 export const envConfigs: Record<string, string> = {
   app_url: publicEnv('VITE_APP_URL') ?? 'http://localhost:3020',
-  app_name: publicEnv('VITE_APP_NAME') ?? 'BeatAPI Workspace',
+  app_name: publicEnv('VITE_APP_NAME') ?? 'BeatDesign',
   app_description:
     publicEnv('VITE_APP_DESCRIPTION') ??
-    'Open-source canvas and studio for AI image and video generation',
+    'The open-source, local-first AI canvas for image and video creation.',
   app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.png',
   generation_provider: publicEnv('VITE_GENERATION_PROVIDER') ?? 'beatapi',
 

@@ -1,6 +1,6 @@
 # Code of conduct
 
-We want BeatAPI Workspace to be a welcoming, constructive open-source project.
+We want BeatDesign to be a welcoming, constructive open-source project.
 
 Contributors and maintainers must communicate respectfully, focus criticism on the work, accept good-faith feedback, and avoid harassment, discrimination, threats, doxxing, or publishing private information without permission.
 

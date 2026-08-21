@@ -1,25 +1,102 @@
 export const meta = {
-  title: 'Privacy',
-  description: 'How BeatAPI Workspace handles local, provider, and storage data.',
-  updated_at: '2026-08-20',
+  title: 'BeatDesign Privacy Policy',
+  description: 'How the local-first BeatDesign workspace stores data and connects to BeatAPI and other services.',
+  updated_at: '2026-08-22',
 }
 
-# Privacy
+# BeatDesign Privacy Policy
 
-BeatAPI Workspace is a self-hosted, single-user application. It does not include accounts, authentication, payments, subscriptions, advertising, or built-in analytics.
+*Last updated: August 22, 2026*
 
-## Local data
+BeatDesign is an open-source, local-first AI canvas maintained by BeatAPI. This Privacy Policy explains how the official BeatDesign distribution stores information locally and when information leaves your environment.
 
-Projects, Canvas and Studio state, generation history, provider settings, and asset indexes are stored in the database configured by the operator. In the default local setup, this is a SQLite file on the same computer.
+This policy applies to BeatDesign itself. When you use a BeatAPI account, API key, credits, file service, or hosted generation workflow, the [BeatAPI Privacy Policy](https://beatapi.io/privacy-policy) also applies to BeatAPI's processing.
 
-## Provider data
+## 1. Local-first by default
 
-When you generate media or upload a supported reference file, the server sends the prompt, parameters, and selected media to the configured BeatAPI endpoint. BeatAPI and underlying model providers process that data under their own policies and terms.
+The BeatDesign open-source distribution does not include user accounts, authentication, payments, subscriptions, advertising, or built-in analytics. Projects and workspace state are stored in the database configured by the operator. The default local setup uses a SQLite file on the same computer.
 
-Provider API keys remain on your local server. A key saved through the Provider dialog is always encrypted before it is stored in the local database. Local SQLite installations create an ignored per-install key; hosted installations must provide `CONFIG_ENCRYPTION_KEY`.
+BeatDesign does not send project content to its maintainers merely because you open, edit, arrange, or import it. Selecting or dragging a local file into a project stores it in the local project workspace; it is not sent to a generation provider until you confirm a generation or another action that requires transmission.
 
-## Operator responsibility
+## 2. Information stored in your workspace
 
-If you deploy this application for other people, you are the operator and are responsible for access control, notices, consent, retention, deletion, security, and compliance for that deployment.
+Depending on the features you use, BeatDesign may store the following in your local or operator-controlled environment:
 
-This repository does not transmit telemetry to its maintainers by default.
+- Project names, Canvas documents, Studio settings, node positions, and workflow state.
+- Imported images, videos, audio, and related local asset indexes.
+- Prompts, generation settings, model selections, task identifiers, status history, and output URLs.
+- BeatAPI configuration, masked credential previews, and storage configuration.
+- Technical records needed to recover projects, prevent duplicate submissions, and display generation history.
+
+The operator of the installation controls this database and the files attached to it.
+
+## 3. Information sent when you generate
+
+When you confirm a generation, BeatDesign sends the information needed to perform that request. Depending on the selected workflow, this may include:
+
+- Your prompt, model choice, duration, resolution, aspect ratio, and other generation parameters.
+- Selected reference images, video, audio, subtitles, source URLs, or other media.
+- A BeatAPI API key sent server-to-server for authentication.
+- Project or request identifiers needed for task status, error handling, and output retrieval.
+
+These requests are sent to the official BeatAPI endpoint and may be processed by BeatAPI's upstream AI, infrastructure, storage, and security providers. Provider processing is governed by the [BeatAPI Privacy Policy](https://beatapi.io/privacy-policy) and any model-specific terms that apply.
+
+## 4. API keys and storage credentials
+
+BeatDesign is designed to keep provider and storage credentials on the server side. Credentials saved through the workspace settings are encrypted before being stored in the local database. Local SQLite installations use a per-install encryption key that is excluded from version control; hosted installations must configure their own stable encryption key.
+
+Credentials are used to make the provider or storage requests you initiate. BeatDesign displays only masked previews in the interface. You are responsible for protecting the device, server, environment files, database, encryption key, backups, and administrator access associated with your installation.
+
+## 5. Storage and generated media
+
+Imported local assets are copied into the project-owned local asset directory in the default SQLite setup. When a confirmed workflow requires a remote reference, BeatDesign may upload that reference just in time to BeatAPI Files or to storage configured by the operator.
+
+Generated files may remain at URLs returned by BeatAPI or an upstream provider and may be indexed locally instead of copied to your device. Availability and retention of those remote files are controlled by the relevant service. Download important outputs if you need a durable local copy.
+
+## 6. Browser data, cookies, and telemetry
+
+BeatDesign may store essential interface preferences, such as language or theme, in your browser or an essential cookie. The open-source distribution does not include advertising trackers or maintainer-operated behavioral analytics and does not transmit product telemetry to the maintainers by default.
+
+Your browser, hosting platform, reverse proxy, network operator, or a modified deployment may create their own technical logs. Those logs are controlled by the relevant operator, not by the BeatDesign open-source project.
+
+## 7. Self-hosted and third-party deployments
+
+If you use BeatDesign through a deployment operated by another person or organization, that operator may change the software, connect additional services, enable logging or analytics, require accounts, or establish its own retention rules. The operator is responsible for explaining those practices and responding to privacy requests concerning that deployment.
+
+If you operate BeatDesign for other people, you must provide an accurate privacy notice, establish an appropriate legal basis for processing, limit access, protect credentials, define retention and deletion practices, and comply with applicable privacy and data-protection laws.
+
+## 8. How information may be used or disclosed
+
+The BeatDesign open-source project does not receive your local workspace data by default. Information intentionally sent to BeatAPI is used and disclosed as described in the BeatAPI Privacy Policy, including to provide requested workflows, authenticate requests, operate credits and billing, secure the service, troubleshoot failures, comply with law, and work with necessary service providers.
+
+We do not claim that third-party AI providers have identical privacy or retention practices. Review the applicable provider information before submitting sensitive or regulated content.
+
+## 9. Data retention and deletion
+
+Local project data remains in the database and project asset folders controlled by you or your deployment operator until it is deleted, overwritten, or removed according to that environment's backup and retention practices.
+
+Deleting a local project does not necessarily delete information already sent to BeatAPI, storage providers, or upstream model providers. To request access, correction, export, or deletion of information held by BeatAPI, contact [support@beatapi.io](mailto:support@beatapi.io). Other providers may require a separate request under their own policies.
+
+## 10. Security
+
+BeatDesign uses reasonable technical safeguards for its intended local-first architecture, including server-side credential handling and encryption of saved provider secrets. No software, device, storage system, or internet transmission can be guaranteed completely secure.
+
+Keep BeatDesign updated, bind local development servers to trusted interfaces, avoid exposing the workspace directly to the public internet, use deployment-level access controls, keep secrets out of source control, and rotate credentials after suspected exposure.
+
+## 11. Your choices and rights
+
+In a local installation, you can inspect, export, or delete files and database records under your control. If an organization operates your BeatDesign deployment, contact that operator first about data stored in its environment.
+
+Depending on where you live, you may have rights to access, correct, delete, restrict, object to, or obtain a portable copy of personal information held by a service provider. Requests concerning BeatAPI can be sent to [support@beatapi.io](mailto:support@beatapi.io). We may need to verify your identity and may retain limited records where required for security, billing, fraud prevention, dispute resolution, or law.
+
+## 12. Children's privacy
+
+BeatDesign is a general-purpose creative tool and is not directed to children who cannot legally consent to data processing in their jurisdiction. Operators who make BeatDesign available to minors are responsible for age-appropriate notices, parental consent where required, content safeguards, and applicable legal compliance.
+
+## 13. Changes to this Policy
+
+We may update this Privacy Policy as BeatDesign evolves. We will update the date above when changes are published. Material changes may also be announced through the official repository or website.
+
+## 14. Contact
+
+For questions about this Privacy Policy or BeatAPI data requests, contact [support@beatapi.io](mailto:support@beatapi.io). For a third-party or self-hosted deployment, contact that deployment's operator about information stored or processed in its environment.
