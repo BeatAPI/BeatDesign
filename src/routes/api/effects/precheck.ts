@@ -20,6 +20,11 @@ import {
 import { getConfig } from '@/modules/config/service';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
+import {
+  MAX_WORKSPACE_JSON_REQUEST_BYTES,
+  readRequestJsonWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 type PrecheckRequest = {
   effectId?: number;
@@ -36,8 +41,14 @@ async function POST({ request }: { request: Request }) {
 
   let payload: PrecheckRequest;
   try {
-    payload = (await request.json()) as PrecheckRequest;
-  } catch {
+    payload = await readRequestJsonWithLimit<PrecheckRequest>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    );
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json({ error: 'Request body is too large' }, { status: 413 });
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const effectId = payload.effectId ?? Number.NaN;

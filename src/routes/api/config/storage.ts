@@ -4,6 +4,11 @@ import { respData, respErr } from '@/lib/resp';
 import { getConfig, saveConfigs } from '@/modules/config/service';
 import { validateTrustedLocalJsonMutation } from '@/lib/trusted-local-request';
 import { validateStorageEndpoint } from '@/core/workspace-storage/endpoint-policy';
+import {
+  MAX_WORKSPACE_JSON_REQUEST_BYTES,
+  readRequestJsonWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 type StorageMode = 'beatapi' | 's3';
 
@@ -58,8 +63,7 @@ async function POST({ request }: { request: Request }) {
       return respErr(trust.message, trust.status);
     }
 
-    const body = (await request.json().catch(() => null)) as
-      | {
+    const body = await readRequestJsonWithLimit<{
           mode?: unknown;
           region?: unknown;
           endpoint?: unknown;
@@ -68,8 +72,10 @@ async function POST({ request }: { request: Request }) {
           bucketName?: unknown;
           publicUrl?: unknown;
           forcePathStyle?: unknown;
-        }
-      | null;
+        }>(request, MAX_WORKSPACE_JSON_REQUEST_BYTES).catch((error) => {
+      if (error instanceof RequestBodyTooLargeError) throw error;
+      return null;
+    });
     if (!body || (body.mode !== 'beatapi' && body.mode !== 's3')) {
       return respErr('Storage mode must be beatapi or s3', 400);
     }
@@ -169,7 +175,10 @@ async function POST({ request }: { request: Request }) {
 
     await saveConfigs(next);
     return respData({ ok: true, mode });
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return respErr('Request body is too large', 413);
+    }
     return respErr('Internal error', 500);
   }
 }

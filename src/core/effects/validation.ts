@@ -104,32 +104,75 @@ const hasAllowedVideoExtension = (fileName?: string) =>
 
 export type UploadedMediaType = 'image' | 'video';
 
+const mediaTypeFromMime = (mimeType: string): UploadedMediaType | null => {
+  if (
+    ALLOWED_IMAGE_MIME_TYPES.includes(
+      mimeType as (typeof ALLOWED_IMAGE_MIME_TYPES)[number]
+    )
+  ) {
+    return 'image';
+  }
+  if (
+    ALLOWED_VIDEO_MIME_TYPES.includes(
+      mimeType as (typeof ALLOWED_VIDEO_MIME_TYPES)[number]
+    )
+  ) {
+    return 'video';
+  }
+  return null;
+};
+
+const mediaTypeFromExtension = (fileName?: string): UploadedMediaType | null =>
+  hasAllowedImageExtension(fileName)
+    ? 'image'
+    : hasAllowedVideoExtension(fileName)
+      ? 'video'
+      : null;
+
+const isGenericUploadMimeType = (mimeType: string) =>
+  !mimeType || mimeType === 'application/octet-stream';
+
 export const detectUploadedMediaType = (file: {
   type: string;
   name?: string;
 }): UploadedMediaType | null => {
   const mimeType = getNormalizedMimeType(file.type);
+  const mimeMediaType = mediaTypeFromMime(mimeType);
+  const extensionMediaType = mediaTypeFromExtension(file.name);
 
-  if (
-    ALLOWED_IMAGE_MIME_TYPES.includes(
-      mimeType as (typeof ALLOWED_IMAGE_MIME_TYPES)[number]
-    ) ||
-    hasAllowedImageExtension(file.name)
-  ) {
-    return 'image';
-  }
-
-  if (
-    ALLOWED_VIDEO_MIME_TYPES.includes(
-      mimeType as (typeof ALLOWED_VIDEO_MIME_TYPES)[number]
-    ) ||
-    hasAllowedVideoExtension(file.name)
-  ) {
-    return 'video';
-  }
-
-  return null;
+  if (isGenericUploadMimeType(mimeType)) return extensionMediaType;
+  if (!mimeMediaType) return null;
+  if (extensionMediaType && extensionMediaType !== mimeMediaType) return null;
+  return mimeMediaType;
 };
+
+export const getCanonicalUploadedMediaMimeType = (file: {
+  type: string;
+  name?: string;
+}): string | null => {
+  const mediaType = detectUploadedMediaType(file);
+  if (!mediaType) return null;
+
+  const mimeType = getNormalizedMimeType(file.type);
+  if (!isGenericUploadMimeType(mimeType)) {
+    return mimeType === 'image/jpg' || mimeType === 'image/pjpeg'
+      ? 'image/jpeg'
+      : mimeType;
+  }
+
+  const name = file.name?.toLowerCase() ?? '';
+  if (mediaType === 'image') {
+    if (name.endsWith('.png')) return 'image/png';
+    if (name.endsWith('.webp')) return 'image/webp';
+    return 'image/jpeg';
+  }
+  if (name.endsWith('.webm')) return 'video/webm';
+  if (name.endsWith('.mov')) return 'video/quicktime';
+  return 'video/mp4';
+};
+
+export const isSafeInlineUploadedMediaMimeType = (value: string) =>
+  Boolean(mediaTypeFromMime(getNormalizedMimeType(value)));
 
 export const countPromptCharacters = (prompt: string) =>
   Array.from(prompt).length;
@@ -203,14 +246,7 @@ export const validateUploadedImageFile = (file: {
     };
   }
 
-  if (
-    !ALLOWED_IMAGE_MIME_TYPES.includes(
-      getNormalizedMimeType(
-        file.type
-      ) as (typeof ALLOWED_IMAGE_MIME_TYPES)[number]
-    ) &&
-    !hasAllowedImageExtension(file.name)
-  ) {
+  if (detectUploadedMediaType(file) !== 'image') {
     return {
       ok: false,
       code: 'IMAGE_TYPE_UNSUPPORTED',
@@ -235,14 +271,7 @@ export const validateUploadedVideoFile = (file: {
     };
   }
 
-  if (
-    !ALLOWED_VIDEO_MIME_TYPES.includes(
-      getNormalizedMimeType(
-        file.type
-      ) as (typeof ALLOWED_VIDEO_MIME_TYPES)[number]
-    ) &&
-    !hasAllowedVideoExtension(file.name)
-  ) {
+  if (detectUploadedMediaType(file) !== 'video') {
     return {
       ok: false,
       code: 'VIDEO_TYPE_UNSUPPORTED',

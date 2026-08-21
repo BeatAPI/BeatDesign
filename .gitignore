@@ -59,6 +59,15 @@ yarn-error.log*
 
 # database
 /data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.sqlite3
 src/config/db/schema.ts
 
 # npm (project uses pnpm)

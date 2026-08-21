@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 import { getBeatCanvasProviderServerConfig } from '@/core/beatcanvas/providers/provider-config';
 import { ensureMotionControlInputUrls } from '@/core/effects/beatapi-input-upload';
-import { isOfficialBeatApiMediaUrl } from '@/core/effects/beatapi-media-url';
+import {
+  isOfficialBeatApiMediaUrl,
+  isPublicHttpMediaUrl,
+} from '@/core/effects/beatapi-media-url';
 import { getConfig } from '@/modules/config/service';
 import { BaseAdapter, type GenerationResult } from './base-adapter';
 
@@ -166,11 +169,11 @@ export const buildBeatApiTaskRequest = ({
       throw new Error('Kling Motion Control requires exactly one motion video');
     }
     if (
-      !isOfficialBeatApiMediaUrl(images[0]) ||
-      !isOfficialBeatApiMediaUrl(input.video_urls[0])
+      !isPublicHttpMediaUrl(images[0]) ||
+      !isPublicHttpMediaUrl(input.video_urls[0])
     ) {
       throw new Error(
-        'Kling Motion Control inputs must be uploaded through the connected BeatAPI account'
+        'Kling Motion Control inputs must use public HTTP(S) URLs'
       );
     }
     if (

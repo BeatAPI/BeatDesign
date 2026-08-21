@@ -5,6 +5,7 @@ import { project, projectCanvasState, userAsset } from '@/config/db/schema';
 import {
   type ProjectSnapshotDocument,
   createEmptyProjectSnapshot,
+  hasProjectSnapshotVersionConflict,
   isDestructiveEmptyProjectSnapshot,
   normalizeProjectSnapshotDocument,
 } from '@/core/projects/project-snapshot';
@@ -239,39 +240,72 @@ export const saveProjectSnapshot = async ({
     ? JSON.stringify(previousDocument)
     : null;
 
-  if (
-    typeof baseVersion === 'number' &&
-    currentState &&
-    currentState.version !== baseVersion &&
-    previousSerialized !== nextSerialized
-  ) {
+  const throwVersionConflict = (currentVersion: number) => {
     const error = new Error('Project snapshot version conflict') as Error & {
       currentVersion?: number;
     };
     error.name = 'ProjectSnapshotVersionConflict';
-    error.currentVersion = currentState.version;
+    error.currentVersion = currentVersion;
     throw error;
+  };
+
+  if (
+    currentState &&
+    hasProjectSnapshotVersionConflict({
+      currentVersion: currentState.version,
+      baseVersion,
+      documentChanged: previousSerialized !== nextSerialized,
+    })
+  ) {
+    throwVersionConflict(currentState.version);
   }
   const nextVersion = (currentState?.version ?? 0) + 1;
   const now = new Date();
 
   if (previousSerialized !== nextSerialized) {
-    await db
-      .insert(projectCanvasState)
-      .values({
-        projectId,
-        documentJson: normalizedDocument,
-        version: nextVersion,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: projectCanvasState.projectId,
-        set: {
+    if (currentState) {
+      const updated = await db
+        .update(projectCanvasState)
+        .set({
           documentJson: normalizedDocument,
           version: nextVersion,
           updatedAt: now,
-        },
-      });
+        })
+        .where(
+          and(
+            eq(projectCanvasState.projectId, projectId),
+            eq(projectCanvasState.version, baseVersion as number)
+          )
+        )
+        .returning({ version: projectCanvasState.version });
+      if (updated.length === 0) {
+        const latest = await db
+          .select({ version: projectCanvasState.version })
+          .from(projectCanvasState)
+          .where(eq(projectCanvasState.projectId, projectId))
+          .limit(1);
+        throwVersionConflict(latest[0]?.version ?? currentState.version);
+      }
+    } else {
+      const inserted = await db
+        .insert(projectCanvasState)
+        .values({
+          projectId,
+          documentJson: normalizedDocument,
+          version: nextVersion,
+          updatedAt: now,
+        })
+        .onConflictDoNothing()
+        .returning({ version: projectCanvasState.version });
+      if (inserted.length === 0) {
+        const latest = await db
+          .select({ version: projectCanvasState.version })
+          .from(projectCanvasState)
+          .where(eq(projectCanvasState.projectId, projectId))
+          .limit(1);
+        throwVersionConflict(latest[0]?.version ?? 1);
+      }
+    }
 
     await db
       .update(project)

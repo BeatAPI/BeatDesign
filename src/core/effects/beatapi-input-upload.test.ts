@@ -48,15 +48,28 @@ test('keeps official BeatAPI input URLs and rehosts generated outputs', async ()
   }
 });
 
-test('rejects Motion Control media that is not on the official BeatAPI origin', async () => {
+test('accepts public provider URLs without requiring the official BeatAPI origin', async () => {
+  const publicUrl = 'https://cdn.example.com/character.png?signature=abc';
+  assert.equal(
+    await ensureBeatApiInputUrl({
+      url: publicUrl,
+      kind: 'image',
+      baseUrl: 'https://api.beatapi.io',
+      apiKey: 'sk-test',
+    }),
+    publicUrl
+  );
+});
+
+test('rejects private Motion Control media URLs', async () => {
   await assert.rejects(
     () =>
       ensureBeatApiInputUrl({
-        url: 'https://example.com/character.png',
+        url: 'http://127.0.0.1/character.png',
         kind: 'image',
         baseUrl: 'https://api.beatapi.io',
         apiKey: 'sk-test',
       }),
-    /connected BeatAPI account/
+    /public HTTP\(S\) URLs/
   );
 });

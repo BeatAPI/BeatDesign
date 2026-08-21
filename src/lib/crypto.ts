@@ -5,12 +5,12 @@
  * Workers, and Edge runtimes with no nodejs_compat requirements.
  *
  * Encrypted values are self-describing: `enc:v1:<base64(iv | authTag | ciphertext)>`.
- * Plain values (no prefix) pass through decryptSecret unchanged, so legacy
- * plaintext rows keep working and get encrypted on their next save.
+ * Plain values (no prefix) pass through decryptSecret unchanged so the config
+ * service can migrate legacy rows after a verified encrypted write.
  *
- * Key source: CONFIG_ENCRYPTION_KEY env var. When unset, encryption is
- * disabled entirely — values are stored as plaintext (the original behavior).
- * Already-encrypted rows still decrypt as long as the key stays configured.
+ * Key source: CONFIG_ENCRYPTION_KEY when explicitly configured; otherwise a
+ * per-install key is created at data/.workspace-key for local SQLite mode.
+ * Secret writes fail closed when neither source is available.
  *
  * This protects against database-only compromise (leaked backups, SQL
  * injection dumps). It does NOT protect against a compromised app server —
@@ -20,6 +20,9 @@
 const ENC_PREFIX = 'enc:v1:';
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
+const LOCAL_KEY_PATH = 'data/.workspace-key';
+
+let cachedEncryptionSecret: string | undefined;
 
 function toBase64(bytes: Uint8Array): string {
   let bin = '';
@@ -41,7 +44,46 @@ async function deriveKey(secret: string): Promise<CryptoKey> {
 }
 
 function getEncryptionSecret(): string | undefined {
-  return process.env.CONFIG_ENCRYPTION_KEY || undefined;
+  const configured = process.env.CONFIG_ENCRYPTION_KEY?.trim();
+  if (configured) return configured;
+  if (cachedEncryptionSecret) return cachedEncryptionSecret;
+  if (
+    process.env.DATABASE_PROVIDER &&
+    process.env.DATABASE_PROVIDER !== 'sqlite'
+  ) {
+    return undefined;
+  }
+  if (typeof process.getBuiltinModule !== 'function') return undefined;
+
+  const fs = process.getBuiltinModule('node:fs') as typeof import('node:fs');
+  const path = process.getBuiltinModule('node:path') as typeof import('node:path');
+  const keyPath = path.resolve(LOCAL_KEY_PATH);
+  fs.mkdirSync(path.dirname(keyPath), { recursive: true, mode: 0o700 });
+
+  try {
+    cachedEncryptionSecret = fs.readFileSync(keyPath, 'utf8').trim();
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    const generated = toBase64(crypto.getRandomValues(new Uint8Array(32)));
+    try {
+      fs.writeFileSync(keyPath, `${generated}\n`, {
+        encoding: 'utf8',
+        flag: 'wx',
+        mode: 0o600,
+      });
+      cachedEncryptionSecret = generated;
+    } catch (writeError) {
+      if ((writeError as NodeJS.ErrnoException).code !== 'EEXIST') {
+        throw writeError;
+      }
+      cachedEncryptionSecret = fs.readFileSync(keyPath, 'utf8').trim();
+    }
+  }
+
+  if (!cachedEncryptionSecret) {
+    throw new Error('Local secret encryption key is empty');
+  }
+  return cachedEncryptionSecret;
 }
 
 export function isEncryptedSecret(value: string): boolean {
@@ -49,14 +91,18 @@ export function isEncryptedSecret(value: string): boolean {
 }
 
 /**
- * Encrypt a secret for storage. Returns the value unchanged (plaintext) when
- * it's empty, already encrypted, or CONFIG_ENCRYPTION_KEY is not configured.
+ * Encrypt a secret for storage. Secret persistence never falls back to
+ * plaintext when an encryption key is unavailable.
  */
 export async function encryptSecret(plain: string): Promise<string> {
   if (!plain || isEncryptedSecret(plain)) return plain;
 
   const secret = getEncryptionSecret();
-  if (!secret) return plain;
+  if (!secret) {
+    throw new Error(
+      'Secret encryption is unavailable. Configure CONFIG_ENCRYPTION_KEY.'
+    );
+  }
 
   const key = await deriveKey(secret);
   const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
@@ -78,7 +124,7 @@ export async function encryptSecret(plain: string): Promise<string> {
 /**
  * Decrypt a stored value. Plain (non-prefixed) values pass through unchanged.
  * Returns null when the value is encrypted but cannot be decrypted
- * (wrong/rotated/missing CONFIG_ENCRYPTION_KEY) — callers should skip such values.
+ * (wrong/rotated/missing encryption key) — callers should skip such values.
  */
 export async function decryptSecret(value: string): Promise<string | null> {
   if (!isEncryptedSecret(value)) return value;

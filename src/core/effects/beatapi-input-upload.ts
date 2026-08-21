@@ -1,11 +1,17 @@
 import {
   isOfficialBeatApiInputUrl,
   isOfficialBeatApiMediaUrl,
+  isPublicHttpMediaUrl,
 } from './beatapi-media-url';
+import {
+  readResponseBodyWithLimit,
+  readResponseJsonWithLimit,
+} from '@/lib/response-body-limit';
 
 const MAX_MOTION_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_MOTION_VIDEO_BYTES = 100 * 1024 * 1024;
 const BEATAPI_FILE_TIMEOUT_MS = 120_000;
+const MAX_PROVIDER_JSON_BYTES = 1024 * 1024;
 
 type MotionControlAssetKind = 'image' | 'video';
 
@@ -51,7 +57,10 @@ export const uploadBeatApiInputFile = async ({
     body: formData,
     signal: AbortSignal.timeout(BEATAPI_FILE_TIMEOUT_MS),
   });
-  const payload = (await response.json().catch(() => null)) as unknown;
+  const payload = await readResponseJsonWithLimit(
+    response,
+    MAX_PROVIDER_JSON_BYTES
+  );
   if (!response.ok) {
     const root = asRecord(payload);
     const error = asRecord(root?.error);
@@ -63,7 +72,7 @@ export const uploadBeatApiInputFile = async ({
   }
   const data = asRecord(asRecord(payload)?.data) ?? asRecord(payload);
   const url = readString(data?.url);
-  if (!url || !isOfficialBeatApiInputUrl(url)) {
+  if (!url || !isPublicHttpMediaUrl(url)) {
     throw new Error('BeatAPI upload response is incomplete');
   }
   return url;
@@ -81,9 +90,10 @@ export const ensureBeatApiInputUrl = async ({
   apiKey: string;
 }) => {
   if (isOfficialBeatApiInputUrl(url)) return url;
+  if (isPublicHttpMediaUrl(url) && !isOfficialBeatApiMediaUrl(url)) return url;
   if (!isOfficialBeatApiMediaUrl(url)) {
     throw new Error(
-      'Kling Motion Control inputs must be uploaded through the connected BeatAPI account'
+      'Kling Motion Control inputs must use public HTTP(S) URLs'
     );
   }
 
@@ -104,19 +114,13 @@ export const ensureBeatApiInputUrl = async ({
     );
   }
 
-  const blob = await response.blob();
-  if (blob.size > maxBytes) {
-    throw new Error(
-      kind === 'image'
-        ? 'Kling Motion Control images must be 10 MB or smaller'
-        : 'Kling Motion Control videos must be 100 MB or smaller'
-    );
-  }
-
+  const bytes = await readResponseBodyWithLimit(response, maxBytes);
   const contentType =
-    blob.type ||
     response.headers.get('content-type')?.split(';')[0]?.trim() ||
     (kind === 'image' ? 'image/png' : 'video/mp4');
+  const bodyBuffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(bodyBuffer).set(bytes);
+  const blob = new Blob([bodyBuffer], { type: contentType });
 
   return uploadBeatApiInputFile({
     baseUrl,

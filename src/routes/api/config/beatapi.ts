@@ -4,6 +4,11 @@ import { getConfig, saveConfigs } from '@/modules/config/service';
 import { DEFAULT_BEATAPI_BASE_URL } from '@/core/beatcanvas/providers/provider-config';
 import { maskApiKeyPreview } from '@/lib/mask-api-key';
 import { validateTrustedLocalJsonMutation } from '@/lib/trusted-local-request';
+import {
+  MAX_WORKSPACE_JSON_REQUEST_BYTES,
+  readRequestJsonWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 /**
  * Workspace-level BeatAPI provider configuration. The dialog pre-fills the
@@ -30,9 +35,13 @@ async function POST({ request }: { request: Request }) {
     if (!trust.ok) {
       return respErr(trust.message, trust.status);
     }
-    const body = (await request.json().catch(() => null)) as {
-      apiKey?: unknown;
-    } | null;
+    const body = await readRequestJsonWithLimit<{ apiKey?: unknown }>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    ).catch((error) => {
+      if (error instanceof RequestBodyTooLargeError) throw error;
+      return null;
+    });
     if (!body || typeof body !== 'object') return respErr('Invalid body');
 
     const next: Record<string, string> = {};
@@ -62,7 +71,10 @@ async function POST({ request }: { request: Request }) {
       connected: true,
       apiKeyPreview: maskApiKeyPreview(apiKey),
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return respErr('Request body is too large', 413);
+    }
     return respErr('Internal error', 500);
   }
 }

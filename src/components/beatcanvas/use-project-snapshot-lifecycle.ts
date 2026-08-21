@@ -94,6 +94,7 @@ export function useProjectSnapshotLifecycle({
   restoreProjectSnapshot,
   createDraftCard,
   onEmptyProjectSnapshotSaved,
+  onProjectSnapshotConflict,
 }: {
   projectId: string;
   projectPath: string;
@@ -112,6 +113,7 @@ export function useProjectSnapshotLifecycle({
     referenceCardIds: string[];
   }) => string | null;
   onEmptyProjectSnapshotSaved?: () => void;
+  onProjectSnapshotConflict?: () => void;
 }) {
   const [isHydratedFromProject, setIsHydratedFromProject] = useState(false);
   const [isHydratedFromQuery, setIsHydratedFromQuery] = useState(false);
@@ -123,10 +125,12 @@ export function useProjectSnapshotLifecycle({
     initialProjectSnapshotVersion
   );
   const saveQueueRef = useRef(Promise.resolve());
+  const snapshotConflictRef = useRef(false);
 
   const saveSerializedSnapshot = useCallback(
     async (serializedSnapshot: string, allowEmpty: boolean) => {
       const runSave = async () => {
+        if (snapshotConflictRef.current) return;
         if (serializedSnapshot === lastSavedProjectSnapshotRef.current) {
           if (pendingProjectSnapshotRef.current === serializedSnapshot) {
             pendingProjectSnapshotRef.current = null;
@@ -149,18 +153,15 @@ export function useProjectSnapshotLifecycle({
             }),
           });
 
-        let response = await sendSaveRequest(
+        const response = await sendSaveRequest(
           lastSavedProjectSnapshotVersionRef.current
         );
 
         if (response.status === 409) {
           const failure = await readSnapshotSaveFailure(response);
-          if (typeof failure.currentVersion === 'number') {
-            lastSavedProjectSnapshotVersionRef.current = failure.currentVersion;
-            response = await sendSaveRequest(failure.currentVersion);
-          } else {
-            throw new Error(failure.message);
-          }
+          snapshotConflictRef.current = true;
+          onProjectSnapshotConflict?.();
+          throw new Error(failure.message);
         }
 
         if (!response.ok) {
@@ -186,7 +187,7 @@ export function useProjectSnapshotLifecycle({
       saveQueueRef.current = queuedSave.catch(() => {});
       await queuedSave;
     },
-    [onEmptyProjectSnapshotSaved, projectId]
+    [onEmptyProjectSnapshotSaved, onProjectSnapshotConflict, projectId]
   );
 
   useEffect(() => {
@@ -312,6 +313,7 @@ export function useProjectSnapshotLifecycle({
     if (!isCanvasReady || !isHydratedFromProject) return;
 
     const flushPendingSnapshot = () => {
+      if (snapshotConflictRef.current) return;
       const serializedSnapshot =
         pendingProjectSnapshotRef.current ??
         JSON.stringify(buildProjectSnapshotDocument());

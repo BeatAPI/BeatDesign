@@ -33,6 +33,13 @@ export async function getDbConfigs(): Promise<ConfigMap> {
           continue;
         }
         result[row.name] = plain;
+      } else if (isSecretConfigKey(row.name)) {
+        const encrypted = await encryptSecret(row.value);
+        await db()
+          .update(config)
+          .set({ value: encrypted })
+          .where(eq(config.name, row.name));
+        result[row.name] = row.value;
       } else {
         result[row.name] = row.value;
       }
@@ -68,7 +75,8 @@ const WRITABLE_CONFIG_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Provider secrets are encrypted at rest when CONFIG_ENCRYPTION_KEY is set.
+ * Provider secrets are always encrypted at rest. Local SQLite mode generates
+ * a per-install key; hosted modes require CONFIG_ENCRYPTION_KEY.
  */
 const SECRET_KEY_PATTERN =
   /(_secret|_secret_key|_token|_password|_private_key|_api_key|_access_key|_access_key_id|_api_v3_key)$/;

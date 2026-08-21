@@ -16,7 +16,7 @@ BeatAPI Workspace 是一个自托管、单用户应用，不包含账号、登�
 
 当你生成媒体或上传支持的参考文件时，服务端会把提示词、参数和所选素材发送到已配置的 BeatAPI 接口。BeatAPI 及其底层模型供应商会依据各自的政策与条款处理这些数据。
 
-Provider API Key 只保留在服务端。通过配置弹窗保存的 Key 会写入本地数据库；只有配置了 `CONFIG_ENCRYPTION_KEY` 时才会静态加密。
+Provider API Key 只保留在你的本地服务端。通过配置弹窗保存的 Key 在写入本地数据库前始终加密；本地 SQLite 安装会生成一个被 Git 忽略的设备密钥，托管环境必须提供 `CONFIG_ENCRYPTION_KEY`。
 
 ## 部署者责任
 

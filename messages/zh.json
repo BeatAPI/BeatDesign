@@ -286,6 +286,7 @@
         "uploadSuccess": "素材已加入画布。",
         "uploadCanvasInsertFailed": "画布还没准备好，素材未加入。请稍后重试。",
         "uploadFailed": "上传素材失败，请重试。",
+        "snapshotConflict": "这个项目已在其他标签页更新。当前草稿仍保留在页面中，请刷新后再继续保存。",
         "noDownloadableAssets": "当前选中项里没有可下载的素材。",
         "noAvailableModel": "当前没有可用模型。",
         "metadataLoading": "模型配置加载中，请稍后重试。",

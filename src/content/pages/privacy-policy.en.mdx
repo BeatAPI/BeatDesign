@@ -16,7 +16,7 @@ Projects, Canvas and Studio state, generation history, provider settings, and as
 
 When you generate media or upload a supported reference file, the server sends the prompt, parameters, and selected media to the configured BeatAPI endpoint. BeatAPI and underlying model providers process that data under their own policies and terms.
 
-Provider API keys remain on the server. A key saved through the Provider dialog is stored in the local database and is encrypted only when `CONFIG_ENCRYPTION_KEY` is configured.
+Provider API keys remain on your local server. A key saved through the Provider dialog is always encrypted before it is stored in the local database. Local SQLite installations create an ignored per-install key; hosted installations must provide `CONFIG_ENCRYPTION_KEY`.
 
 ## Operator responsibility
 

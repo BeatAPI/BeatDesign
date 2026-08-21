@@ -214,6 +214,26 @@ test('validates Motion Control media counts and orientation duration', () => {
       }),
     /up to 10 seconds/
   );
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'kling-3-motion-control',
+      input: {
+        prompt: 'Dance',
+        image_urls: ['https://cdn.example.com/character.png?signature=image'],
+        video_urls: ['https://cdn.example.com/motion.mp4?signature=video'],
+      },
+    }).body,
+    {
+      model: 'kling-3-motion-control',
+      prompt: 'Dance',
+      images: ['https://cdn.example.com/character.png?signature=image'],
+      reference_videos: ['https://cdn.example.com/motion.mp4?signature=video'],
+      resolution: '720p',
+      character_orientation: 'video',
+      background_source: 'input_video',
+    }
+  );
   assert.throws(
     () =>
       buildBeatApiTaskRequest({
@@ -221,11 +241,11 @@ test('validates Motion Control media counts and orientation duration', () => {
         model: 'kling-3-motion-control',
         input: {
           prompt: 'Dance',
-          image_urls: ['https://example.com/character.png'],
-          video_urls: ['https://example.com/motion.mp4'],
+          image_urls: ['http://127.0.0.1/character.png'],
+          video_urls: ['https://cdn.example.com/motion.mp4'],
         },
       }),
-    /connected BeatAPI account/
+    /public HTTP\(S\) URLs/
   );
 });
 
