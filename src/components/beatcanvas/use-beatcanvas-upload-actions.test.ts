@@ -33,6 +33,13 @@ test('does not change non-image uploads through the image-only policy', () => {
     }),
     false
   );
+  assert.equal(
+    shouldUploadImmediatelyAfterCanvasInsert({
+      request: { intent: 'media', mode: 'global' },
+      hasResolvedFrame: true,
+    }),
+    false
+  );
 });
 
 test('materializes local image references without uploading them', () => {

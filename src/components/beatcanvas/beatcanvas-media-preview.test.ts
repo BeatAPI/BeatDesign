@@ -31,7 +31,7 @@ const makeCard = (overrides: Partial<CanvasCard>): CanvasCard => ({
   ...overrides,
 });
 
-test('recognizes only real image asset cards as previewable', () => {
+test('recognizes real image and video asset cards as previewable', () => {
   assert.equal(isPreviewableCanvasCard(makeCard({})), true);
   assert.equal(
     isPreviewableCanvasCard(
@@ -39,7 +39,7 @@ test('recognizes only real image asset cards as previewable', () => {
     ),
     false
   );
-  assert.equal(isPreviewableCanvasCard(makeCard({ type: 'video' })), false);
+  assert.equal(isPreviewableCanvasCard(makeCard({ type: 'video' })), true);
   assert.equal(
     isPreviewableCanvasCard(makeCard({ kind: 'generation' })),
     false

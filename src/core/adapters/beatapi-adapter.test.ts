@@ -64,6 +64,25 @@ test('maps a canvas video request to BeatAPI video tasks', () => {
   );
 });
 
+test('keeps multiple @Video references in BeatAPI array order', () => {
+  const request = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'seedance-2',
+    input: {
+      prompt: 'Use @Video1 for motion and @Video2 for camera movement',
+      video_urls: [
+        'https://example.com/motion.mp4',
+        'https://example.com/camera.mp4',
+      ],
+    },
+  });
+
+  assert.deepEqual(request.body.reference_videos, [
+    'https://example.com/motion.mp4',
+    'https://example.com/camera.mp4',
+  ]);
+});
+
 test('passes image references to every BeatAPI image model', () => {
   const request = buildBeatApiTaskRequest({
     effectType: 2,
@@ -111,6 +130,102 @@ test('maps MiniMax and Kling quality values to official BeatAPI resolutions', ()
       input: { prompt: 'Product orbit', wmOutputQuality: '4k', wmDuration: '5s' },
     }).body.resolution,
     '4K'
+  );
+});
+
+test('maps Kling 2.6 and 3.0 Motion Control to the dedicated BeatAPI contract', () => {
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'kling-2.6-motion-control',
+      input: {
+        prompt: 'Follow the dance motion precisely',
+        image_urls: ['https://media.beatapi.io/inputs/character.png'],
+        video_urls: ['https://media.beatapi.io/inputs/motion.mp4'],
+        wmOutputQuality: '1080p',
+        sourceVideoDurationSeconds: 15,
+        characterOrientation: 'video',
+      },
+    }),
+    {
+      path: '/v1/videos/tasks',
+      body: {
+        model: 'kling-2.6-motion-control',
+        prompt: 'Follow the dance motion precisely',
+        images: ['https://media.beatapi.io/inputs/character.png'],
+        reference_videos: ['https://media.beatapi.io/inputs/motion.mp4'],
+        resolution: '1080p',
+        character_orientation: 'video',
+      },
+    }
+  );
+
+  const kling3 = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'kling-3-motion-control',
+    input: {
+      prompt: 'Keep the character identity stable',
+      image_urls: ['https://media.beatapi.io/inputs/character.png'],
+      video_urls: ['https://media.beatapi.io/inputs/motion.mov'],
+      wmOutputQuality: '720p',
+      sourceVideoDurationSeconds: 8,
+      characterOrientation: 'image',
+      backgroundSource: 'input_image',
+    },
+  });
+
+  assert.deepEqual(kling3.body, {
+    model: 'kling-3-motion-control',
+    prompt: 'Keep the character identity stable',
+    images: ['https://media.beatapi.io/inputs/character.png'],
+    reference_videos: ['https://media.beatapi.io/inputs/motion.mov'],
+    resolution: '720p',
+    character_orientation: 'image',
+    background_source: 'input_image',
+  });
+});
+
+test('validates Motion Control media counts and orientation duration', () => {
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'kling-2.6-motion-control',
+        input: {
+          prompt: 'Dance',
+          image_urls: [],
+          video_urls: ['https://media.beatapi.io/inputs/motion.mp4'],
+        },
+      }),
+    /exactly one image/
+  );
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'kling-3-motion-control',
+        input: {
+          prompt: 'Dance',
+          image_urls: ['https://media.beatapi.io/inputs/character.png'],
+          video_urls: ['https://media.beatapi.io/inputs/motion.mp4'],
+          sourceVideoDurationSeconds: 11,
+          characterOrientation: 'image',
+        },
+      }),
+    /up to 10 seconds/
+  );
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'kling-3-motion-control',
+        input: {
+          prompt: 'Dance',
+          image_urls: ['https://example.com/character.png'],
+          video_urls: ['https://example.com/motion.mp4'],
+        },
+      }),
+    /connected BeatAPI account/
   );
 });
 

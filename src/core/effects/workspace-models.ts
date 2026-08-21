@@ -3,6 +3,8 @@ import {
   WORKSPACE_EFFECT_REGISTRY,
   type WorkspaceAspectRatio,
   type WorkspaceAudioSetting,
+  type WorkspaceRegistryBackgroundSource,
+  type WorkspaceRegistryCharacterOrientation,
   type WorkspaceDuration,
   type WorkspaceLanguage,
   type WorkspaceModelMode,
@@ -19,6 +21,8 @@ import {
 } from './workspace-media';
 
 export type WorkspaceType = WorkspaceRegistryType;
+export type WorkspaceBackgroundSource = WorkspaceRegistryBackgroundSource;
+export type WorkspaceCharacterOrientation = WorkspaceRegistryCharacterOrientation;
 export type {
   WorkspaceAspectRatio,
   WorkspaceAudioSetting,
@@ -54,6 +58,10 @@ export type WorkspaceModelOption = {
   audioSettingOptions?: WorkspaceAudioSetting[];
   defaultLanguage?: WorkspaceLanguage;
   supportedLanguages?: WorkspaceLanguage[];
+  defaultCharacterOrientation?: WorkspaceCharacterOrientation;
+  characterOrientationOptions?: WorkspaceCharacterOrientation[];
+  defaultBackgroundSource?: WorkspaceBackgroundSource;
+  backgroundSourceOptions?: WorkspaceBackgroundSource[];
   available?: boolean;
   supportsFramePair?: boolean;
   supportsSourceVideo?: boolean;
@@ -119,6 +127,14 @@ const toWorkspaceModelOption = (
     defaultLanguage: entry.defaultLanguage,
     supportedLanguages: entry.supportedLanguages
       ? [...entry.supportedLanguages]
+      : undefined,
+    defaultCharacterOrientation: entry.defaultCharacterOrientation,
+    characterOrientationOptions: entry.characterOrientationOptions
+      ? [...entry.characterOrientationOptions]
+      : undefined,
+    defaultBackgroundSource: entry.defaultBackgroundSource,
+    backgroundSourceOptions: entry.backgroundSourceOptions
+      ? [...entry.backgroundSourceOptions]
       : undefined,
     supportsFramePair: mediaSchema.image.slots.some(
       (slot) => slot.kind === 'last-frame'

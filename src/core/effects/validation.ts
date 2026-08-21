@@ -99,6 +99,38 @@ const getNormalizedMimeType = (fileType: string) =>
 const hasAllowedImageExtension = (fileName?: string) =>
   Boolean(fileName && /\.(jpe?g|png|webp)$/i.test(fileName));
 
+const hasAllowedVideoExtension = (fileName?: string) =>
+  Boolean(fileName && /\.(mp4|webm|mov)$/i.test(fileName));
+
+export type UploadedMediaType = 'image' | 'video';
+
+export const detectUploadedMediaType = (file: {
+  type: string;
+  name?: string;
+}): UploadedMediaType | null => {
+  const mimeType = getNormalizedMimeType(file.type);
+
+  if (
+    ALLOWED_IMAGE_MIME_TYPES.includes(
+      mimeType as (typeof ALLOWED_IMAGE_MIME_TYPES)[number]
+    ) ||
+    hasAllowedImageExtension(file.name)
+  ) {
+    return 'image';
+  }
+
+  if (
+    ALLOWED_VIDEO_MIME_TYPES.includes(
+      mimeType as (typeof ALLOWED_VIDEO_MIME_TYPES)[number]
+    ) ||
+    hasAllowedVideoExtension(file.name)
+  ) {
+    return 'video';
+  }
+
+  return null;
+};
+
 export const countPromptCharacters = (prompt: string) =>
   Array.from(prompt).length;
 
@@ -193,6 +225,7 @@ export const validateUploadedImageFile = (file: {
 export const validateUploadedVideoFile = (file: {
   size: number;
   type: string;
+  name?: string;
 }): UploadedVideoValidationSuccess | UploadedVideoValidationFailure => {
   if (file.size > REFERENCE_VIDEO_MAX_FILE_SIZE) {
     return {
@@ -204,8 +237,11 @@ export const validateUploadedVideoFile = (file: {
 
   if (
     !ALLOWED_VIDEO_MIME_TYPES.includes(
-      file.type as (typeof ALLOWED_VIDEO_MIME_TYPES)[number]
-    )
+      getNormalizedMimeType(
+        file.type
+      ) as (typeof ALLOWED_VIDEO_MIME_TYPES)[number]
+    ) &&
+    !hasAllowedVideoExtension(file.name)
   ) {
     return {
       ok: false,

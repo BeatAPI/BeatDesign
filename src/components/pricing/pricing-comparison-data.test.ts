@@ -33,8 +33,8 @@ test('catalog keeps one card per model and groups the Seedance family together',
 });
 
 test('pricing filters count selectable model families rather than variant cards', () => {
-  assert.equal(countPricingModelFamilies(), 9);
-  assert.equal(countPricingModelFamilies('video'), 5);
+  assert.equal(countPricingModelFamilies(), 11);
+  assert.equal(countPricingModelFamilies('video'), 7);
   assert.equal(countPricingModelFamilies('image'), 4);
 });
 
@@ -71,9 +71,40 @@ test('Higgsfield fills matched video and image specs from the live generate UI',
   assert.ok(withHiggsfield.length >= 20);
 });
 
+test('Kling motion control cards match the official BeatAPI list prices', () => {
+  const kling26 = comparisonGroups.find(
+    (group) => group.model === 'Kling 2.6 Motion Control'
+  );
+  const kling3mc = comparisonGroups.find(
+    (group) => group.model === 'Kling 3.0 Motion Control'
+  );
+  assert.ok(kling26);
+  assert.ok(kling3mc);
+  assert.equal(
+    kling26.specs.find((spec) => spec.id === 'kling-2.6-motion-control-720p')
+      ?.beatapi,
+    0.3
+  );
+  assert.equal(
+    kling26.specs.find((spec) => spec.id === 'kling-2.6-motion-control-1080p')
+      ?.beatapi,
+    0.5
+  );
+  assert.equal(
+    kling3mc.specs.find((spec) => spec.id === 'kling-3-motion-control-720p')
+      ?.beatapi,
+    0.55
+  );
+  assert.equal(
+    kling3mc.specs.find((spec) => spec.id === 'kling-3-motion-control-1080p')
+      ?.beatapi,
+    0.7
+  );
+});
+
 test('headline savings match the official BeatAPI comparison', () => {
   assert.equal(maxSavingsPercent(), 81);
-  assert.equal(avgSavingsPercent(), 46);
+  assert.equal(avgSavingsPercent(), 44);
   assert.ok(maxHiggsfieldSavingsPercent() >= 80);
   const gpt1k = comparisonGroups
     .flatMap((group) => group.specs)

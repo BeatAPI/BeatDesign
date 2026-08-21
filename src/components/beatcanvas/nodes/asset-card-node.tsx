@@ -6,7 +6,7 @@ import {
   Position,
   type NodeProps,
 } from '@xyflow/react';
-import type { MouseEvent } from 'react';
+import { useEffect, useState, type MouseEvent } from 'react';
 
 import { getBeatCanvasNodeCopy } from './beatcanvas-node-copy';
 import type { BeatCanvasFlowNode } from '../react-flow/beatcanvas-react-flow-types';
@@ -27,21 +27,30 @@ export function AssetCardNode({
   const isContain = fitMode === 'contain';
   const isFrameless = chromeMode === 'frameless';
   const hasOuterChrome = !isFrameless;
-  const canPreviewImage =
-    cardMediaType === 'image' &&
-    Boolean(thumbnailUrl) &&
-    !thumbnailUrl.startsWith('data:image/svg+xml');
+  const [mediaStatus, setMediaStatus] = useState<
+    'idle' | 'loading' | 'ready' | 'error'
+  >(thumbnailUrl ? 'loading' : 'idle');
 
-  const handlePreviewImage = (event: MouseEvent<HTMLImageElement>) => {
-    if (!canPreviewImage || typeof window === 'undefined') return;
+  useEffect(() => {
+    setMediaStatus(thumbnailUrl ? 'loading' : 'idle');
+  }, [cardMediaType, thumbnailUrl]);
+  const canPreviewMedia =
+    Boolean(thumbnailUrl) &&
+    (cardMediaType === 'video' ||
+      !thumbnailUrl.startsWith('data:image/svg+xml'));
+
+  const handlePreviewMedia = (event: MouseEvent<HTMLElement>) => {
+    if (!canPreviewMedia || typeof window === 'undefined') return;
     event.preventDefault();
     event.stopPropagation();
     window.dispatchEvent(
       new CustomEvent('beatcanvas:preview-media', {
         detail: {
-          type: 'image',
+          type: cardMediaType,
           url: thumbnailUrl,
-          title: title || shapeCopy.image,
+          title:
+            title ||
+            (cardMediaType === 'video' ? shapeCopy.video : shapeCopy.image),
         },
       })
     );
@@ -63,6 +72,7 @@ export function AssetCardNode({
       />
       <div
         data-card-id={id}
+        className="group cursor-grab active:cursor-grabbing"
         style={{
           width: w,
           height: h,
@@ -104,19 +114,69 @@ export function AssetCardNode({
               (cardMediaType === 'video' ? shapeCopy.video : shapeCopy.image)}
           </div>
         )}
-        {thumbnailUrl ? (
+        {thumbnailUrl && mediaStatus === 'error' ? (
+          <div
+            className="grid size-full place-items-center px-4 text-center text-xs text-[var(--beat-text-3)]"
+            role="status"
+          >
+            {shapeCopy.previewUnavailable}
+          </div>
+        ) : thumbnailUrl && cardMediaType === 'video' ? (
+          <>
+            <video
+              src={thumbnailUrl}
+              aria-label={title}
+              muted
+              playsInline
+              preload="metadata"
+              draggable={false}
+              onLoadedMetadata={(event) => {
+                const video = event.currentTarget;
+                if (video.duration > 0 && video.currentTime === 0) {
+                  video.currentTime = Math.min(0.05, video.duration / 2);
+                }
+              }}
+              onLoadedData={() => setMediaStatus('ready')}
+              onError={() => setMediaStatus('error')}
+              onDoubleClick={handlePreviewMedia}
+              className="nowheel"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: isContain ? 'contain' : 'cover',
+                display: 'block',
+                cursor: 'zoom-in',
+                borderRadius: CARD_RADIUS - 1,
+                padding: 0,
+                boxSizing: 'border-box',
+              }}
+            />
+            {mediaStatus === 'ready' ? (
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 grid place-items-center bg-black/10 opacity-80 transition-opacity group-hover:opacity-100"
+              >
+                <span className="grid size-10 place-items-center rounded-full bg-black/65 text-lg text-white shadow-lg">
+                  ▶
+                </span>
+              </div>
+            ) : null}
+          </>
+        ) : thumbnailUrl ? (
           <img
             src={thumbnailUrl}
             alt={title}
             draggable={false}
-            onDoubleClick={handlePreviewImage}
-            className="nodrag nowheel"
+            onLoad={() => setMediaStatus('ready')}
+            onError={() => setMediaStatus('error')}
+            onDoubleClick={handlePreviewMedia}
+            className="nowheel"
             style={{
               width: '100%',
               height: '100%',
               objectFit: isContain ? 'contain' : 'cover',
               display: 'block',
-              cursor: canPreviewImage ? 'zoom-in' : 'default',
+              cursor: canPreviewMedia ? 'zoom-in' : 'default',
               borderRadius: CARD_RADIUS - 1,
               padding: 0,
               boxSizing: 'border-box',
@@ -139,6 +199,14 @@ export function AssetCardNode({
               : `🖼 ${shapeCopy.image}`}
           </div>
         )}
+        {thumbnailUrl && mediaStatus === 'loading' ? (
+          <div
+            className="pointer-events-none absolute inset-0 grid place-items-center bg-black/25 px-3 text-center text-[11px] text-white/80"
+            role="status"
+          >
+            {shapeCopy.previewLoading}
+          </div>
+        ) : null}
       </div>
       <Handle
         type="source"

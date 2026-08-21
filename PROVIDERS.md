@@ -18,6 +18,8 @@ The adapter uses:
 
 Model support is defined in `src/core/effects/effect-registry.ts`, not discovered dynamically. This keeps Canvas and Studio behavior deterministic. When adding a model, update the registry, request mapping, media capability rules, and tests together.
 
+Kling 2.6 and Kling 3.0 Motion Control are exposed as BeatAPI models. Each run requires exactly one character image and one MP4/MOV motion video uploaded through the connected BeatAPI account. The Workspace never asks users for a KIE key; BeatAPI owns the upstream provider route, billing, polling, and output persistence.
+
 An API with a different request or polling contract still needs its own adapter. This repository does not ship placeholder KIE, Vidu, Evolink, Gemini, Fal, Replicate, or payment-provider integrations.
 
 ## Storage

@@ -975,6 +975,12 @@ export function useBeatCanvasReactFlowAdapter({
           mode: draftCard.mode,
           variant: draftCard.variant,
           quality: draftCard.quality,
+          ...(draftCard.characterOrientation
+            ? { characterOrientation: draftCard.characterOrientation }
+            : {}),
+          ...(draftCard.backgroundSource
+            ? { backgroundSource: draftCard.backgroundSource }
+            : {}),
           capturedAt: new Date().toISOString(),
         },
       };
@@ -1114,6 +1120,12 @@ export function useBeatCanvasReactFlowAdapter({
         mode: defaults.mode,
         variant: defaults.variant,
         quality: defaults.quality,
+        ...(defaults.characterOrientation
+          ? { characterOrientation: defaults.characterOrientation }
+          : {}),
+        ...(defaults.backgroundSource
+          ? { backgroundSource: defaults.backgroundSource }
+          : {}),
         sourceGenerationId: null,
       };
       const size = frame

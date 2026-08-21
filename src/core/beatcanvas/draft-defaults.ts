@@ -24,4 +24,6 @@ export const getDraftDefaultsFromModel = (
   mode: model?.defaultMode ?? 'quality',
   variant: model?.defaultVariant ?? 'standard',
   quality: model?.defaultQuality ?? 'standard',
+  characterOrientation: model?.defaultCharacterOrientation,
+  backgroundSource: model?.defaultBackgroundSource,
 });

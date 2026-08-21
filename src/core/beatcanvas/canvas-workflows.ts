@@ -53,12 +53,12 @@ export const resolveReferencePayload = ({
   if (taskType === 'video') {
     return {
       imageUrls,
-      videoUrl: videoCards[0]?.url ?? null,
+      videoUrls: videoCards.map((card) => card.url),
     };
   }
 
   return {
     imageUrls,
-    videoUrl: null,
+    videoUrls: [],
   };
 };

@@ -131,6 +131,58 @@ test('passes every connected upstream image even before model limits are configu
   ]);
 });
 
+test('passes every connected reference video in @Video order', async () => {
+  const videoModel: WorkspaceModelOption = {
+    ...ecommerceVideoModel,
+    supportsSourceVideo: true,
+    maxSourceVideos: 3,
+  };
+  const videoMetadata: EffectMetadata = {
+    ...ecommerceVideoMetadata,
+    inputSchema: {
+      prompt: { type: 'string' },
+      wmDuration: { type: 'string' },
+      aspect_ratio: { type: 'string' },
+      language: { type: 'string' },
+      video_urls: { type: 'array' },
+    },
+  };
+  const makeVideoReference = (id: string, url: string): CanvasCard => ({
+    ...makeDraft({ id, type: 'video', url, status: 'succeeded' }),
+    kind: 'asset',
+  });
+
+  const result = await buildGenerationEffectInput({
+    draftCard: makeDraft({
+      referenceCardIds: ['motion-1', 'motion-2'],
+    }),
+    canvasCards: {
+      'motion-1': makeVideoReference(
+        'motion-1',
+        'https://example.com/motion-1.mp4'
+      ),
+      'motion-2': makeVideoReference(
+        'motion-2',
+        'https://example.com/motion-2.mp4'
+      ),
+    },
+    imageModels: [],
+    videoModels: [videoModel],
+    metadataMap: { 15: videoMetadata },
+    runtimeMessages: {
+      missingVideoUrl: 'Missing video URL',
+      readVideoDurationFailed: 'Unable to read video duration',
+      videoMetadataLoadFailed: 'Unable to load video metadata',
+    },
+    translate: (key) => key,
+  });
+
+  assert.deepEqual(result.input.video_urls, [
+    'https://example.com/motion-1.mp4',
+    'https://example.com/motion-2.mp4',
+  ]);
+});
+
 test('blocks downstream generation until a connected upstream image is ready', async () => {
   await assert.rejects(
     buildGenerationEffectInput({

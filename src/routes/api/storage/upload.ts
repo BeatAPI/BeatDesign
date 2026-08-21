@@ -4,8 +4,10 @@ import { getConfig } from '@/modules/config/service';
 import {
   claimGenerationUploadSlot,
   completeGenerationUploadSlot,
+  getGenerationUploadIntentEffectId,
   releaseGenerationUploadSlot,
 } from '@/core/effects/generation-upload-intent';
+import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
 import { S3Provider } from '@/core/workspace-storage/provider/s3';
 import type { StorageConfig } from '@/core/workspace-storage/types';
 import { DEFAULT_BEATAPI_BASE_URL } from '@/core/beatcanvas/providers/provider-config';
@@ -15,7 +17,9 @@ import {
   RequestBodyTooLargeError,
 } from '@/lib/request-body-limit';
 
-const MAX_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_DEFAULT_FILE_BYTES = 50 * 1024 * 1024;
+const MAX_MOTION_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
 const BEATAPI_UPLOAD_TYPES = new Set([
   'image/png',
@@ -26,6 +30,13 @@ const BEATAPI_UPLOAD_TYPES = new Set([
   'audio/aac',
   'audio/mp4',
   'application/x-subrip',
+  'video/mp4',
+  'video/quicktime',
+]);
+
+const MOTION_CONTROL_MODELS = new Set([
+  'kling-2.6-motion-control',
+  'kling-3-motion-control',
 ]);
 
 const CUSTOM_STORAGE_TYPES = new Set([
@@ -197,7 +208,7 @@ async function POST({ request }: { request: Request }) {
     }
     const formData = await readRequestFormDataWithLimit(
       request,
-      MAX_FILE_BYTES + MAX_MULTIPART_OVERHEAD_BYTES
+      MAX_VIDEO_FILE_BYTES + MAX_MULTIPART_OVERHEAD_BYTES
     );
     const file = formData.get('file');
     const projectId = formData.get('projectId');
@@ -205,9 +216,18 @@ async function POST({ request }: { request: Request }) {
     if (!(file instanceof File)) {
       return Response.json({ error: 'file is required' }, { status: 400 });
     }
-    if (file.size <= 0 || file.size > MAX_FILE_BYTES) {
+    const isVideo =
+      file.type.startsWith('video/') || /\.(mp4|mov|webm)$/i.test(file.name);
+    const defaultMaxFileBytes = isVideo
+      ? MAX_VIDEO_FILE_BYTES
+      : MAX_DEFAULT_FILE_BYTES;
+    if (file.size <= 0 || file.size > defaultMaxFileBytes) {
       return Response.json(
-        { error: 'File must be between 1 byte and 50 MB' },
+        {
+          error: `File must be between 1 byte and ${
+            defaultMaxFileBytes / (1024 * 1024)
+          } MB`,
+        },
         { status: 413 }
       );
     }
@@ -232,6 +252,26 @@ async function POST({ request }: { request: Request }) {
     }
 
     const normalizedProjectId = authorizedProjectId;
+    const intentEffectId = await getGenerationUploadIntentEffectId({
+      intentId: authorizedIntent,
+      projectId: normalizedProjectId,
+    });
+    const intentModel = intentEffectId
+      ? getWorkspaceEffectRegistryEntryByEffectId(intentEffectId)?.id
+      : null;
+    const isMotionControl = Boolean(
+      intentModel && MOTION_CONTROL_MODELS.has(intentModel)
+    );
+    if (
+      isMotionControl &&
+      !isVideo &&
+      file.size > MAX_MOTION_IMAGE_BYTES
+    ) {
+      return Response.json(
+        { error: 'Kling Motion Control images must be 10 MB or smaller' },
+        { status: 413 }
+      );
+    }
     const slotId = await claimGenerationUploadSlot({
       intentId: authorizedIntent,
       projectId: normalizedProjectId,
@@ -256,7 +296,11 @@ async function POST({ request }: { request: Request }) {
     } | null = null;
     try {
       result =
-        storageMode === 's3'
+        isMotionControl
+          ? canUseBeatApi
+            ? await uploadToBeatApi(file)
+            : null
+          : storageMode === 's3'
           ? canUseCustomStorage
             ? await uploadToS3Storage({
                 file,
@@ -313,7 +357,7 @@ async function POST({ request }: { request: Request }) {
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
       return Response.json(
-        { error: 'Upload request exceeds the 50 MB file limit' },
+        { error: 'Upload request exceeds the 100 MB video limit' },
         { status: 413 }
       );
     }

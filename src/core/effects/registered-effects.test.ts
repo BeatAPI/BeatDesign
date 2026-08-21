@@ -37,3 +37,21 @@ test('batch lookup only returns official registry models', async () => {
     ['minimax-h3', 'nano-banana-pro']
   );
 });
+
+test('Motion Control registry schemas expose provider controls', () => {
+  const kling26 = getRegisteredEffectById(19)?.inputSchema as Record<
+    string,
+    unknown
+  >;
+  const kling3 = getRegisteredEffectById(20)?.inputSchema as Record<
+    string,
+    unknown
+  >;
+
+  assert.ok(kling26.image_urls);
+  assert.ok(kling26.video_urls);
+  assert.ok(kling26.wmOutputQuality);
+  assert.ok(kling26.sourceVideoDurationSeconds);
+  assert.ok(kling26.characterOrientation);
+  assert.ok(kling3.backgroundSource);
+});

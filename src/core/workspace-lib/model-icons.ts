@@ -12,6 +12,8 @@ const MODEL_ICON_PATHS = {
 const MODEL_ICON_PATH_BY_MODEL_ID: Record<string, string> = {
   'gpt-image-2': MODEL_ICON_PATHS.openai,
   'kling-3': MODEL_ICON_PATHS.kling,
+  'kling-2.6-motion-control': MODEL_ICON_PATHS.kling,
+  'kling-3-motion-control': MODEL_ICON_PATHS.kling,
   'minimax-h3': MODEL_ICON_PATHS.minimax,
   'nano-banana': MODEL_ICON_PATHS.nanobanana,
   'nano-banana-pro': MODEL_ICON_PATHS.nanobanana,

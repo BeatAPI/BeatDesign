@@ -19,6 +19,13 @@ const apiConfigSource = readFileSync(
 test('workspace header keeps mode switching, shared assets, and API configuration actions', () => {
   assert.match(shellSource, /WorkspaceApiConfigDialog/);
   assert.match(shellSource, /ProjectAssetsDialog/);
+  assert.match(shellSource, /GitHubIcon/);
+  assert.match(
+    shellSource,
+    /https:\/\/github\.com\/BeatAPI\/beatapi-workspace/
+  );
+  assert.match(shellSource, /target="_blank"/);
+  assert.match(shellSource, /rel="noreferrer"/);
   assert.match(shellSource, />Studio<\/span>/);
   assert.match(shellSource, />Canvas<\/span>/);
   assert.match(shellSource, /\{ workspaceMode \}/);

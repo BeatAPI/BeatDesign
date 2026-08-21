@@ -125,7 +125,7 @@
       "toolbar": {
         "addNode": "新增节点",
         "generationNode": "生成节点",
-        "uploadNode": "上传节点",
+        "uploadNode": "上传素材",
         "upload": "上传",
         "assets": "资产库",
         "batchScenes": "批量场景"
@@ -134,7 +134,7 @@
         "templates": "模板库",
         "historyAssets": "历史素材",
         "addNodeTitle": "新增节点",
-        "uploadNodeTitle": "上传节点",
+        "uploadNodeTitle": "上传素材",
         "recentAssetsTitle": "最近素材",
         "recentImages": "最近图片",
         "recentVideos": "最近视频",
@@ -191,6 +191,7 @@
         "promptPlaceholder": "描述你想生成的图片或视频。选中画布节点后，它会成为当前参考素材或分支锚点。"
       },
       "actions": {
+        "uploadMedia": "上传素材",
         "uploadImage": "上传图片",
         "uploadVideo": "上传视频",
         "combine": "合并卡片",
@@ -276,6 +277,8 @@
         "addNodeSuccess": "提示节点已加入画布。",
         "uploadImageInvalid": "图片需为 JPG、PNG 或 WebP，且小于 {maxSizeMb}MB。",
         "uploadVideoInvalid": "视频需为 MP4、WebM 或 MOV，且小于 {maxSizeMb}MB。",
+        "uploadMediaInvalid": "{fileName} 不是支持的图片或视频格式。",
+        "openingMediaPicker": "正在打开素材选择器...",
         "openingImagePicker": "正在打开图片选择器...",
         "openingVideoPicker": "正在打开视频选择器...",
         "uploading": "上传素材中...",
@@ -359,6 +362,8 @@
           "variant": "版本",
           "quality": "质量",
           "language": "语种",
+          "characterOrientation": "角色朝向",
+          "backgroundSource": "背景来源",
           "tokens": {
             "quality": "质量",
             "fast": "快速",
@@ -372,7 +377,11 @@
             "landscape": "横向",
             "portrait": "纵向",
             "chinese": "中文",
-            "english": "英文"
+            "english": "英文",
+            "imageOrientation": "跟随图片",
+            "videoOrientation": "跟随视频",
+            "inputImage": "图片背景",
+            "inputVideo": "视频背景"
           },
           "status": {
             "queued": "排队中",
@@ -403,6 +412,8 @@
           "videoGeneration": "视频生成",
           "image": "图片",
           "video": "视频",
+          "previewLoading": "正在加载预览...",
+          "previewUnavailable": "暂时无法预览",
           "processing": "处理中...",
           "pending": "等待中...",
           "generationFailed": "生成失败",
@@ -512,6 +523,7 @@
       "workspaceNameLabel": "空间名称",
       "projects": "项目",
       "projectsLabel": "打开项目列表",
+      "githubRepository": "在 GitHub 打开 BeatAPI Workspace",
       "projectAssets": {
         "triggerLabel": "项目素材",
         "title": "项目素材",

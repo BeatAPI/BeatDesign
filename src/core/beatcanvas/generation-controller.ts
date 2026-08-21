@@ -258,7 +258,7 @@ export const buildGenerationEffectInput = async ({
     if (referencePayload.imageUrls.length > 0) {
       input.image_urls = referencePayload.imageUrls;
     }
-    if (referencePayload.videoUrl) {
+    if (referencePayload.videoUrls.length > 0) {
       notify?.(translate('messages.imageModelOnlySupportsImageReference'));
     }
 
@@ -314,25 +314,25 @@ export const buildGenerationEffectInput = async ({
       referencePayload.imageUrls[referencePayload.imageUrls.length - 1];
   }
 
-  if (referencePayload.videoUrl) {
+  if (referencePayload.videoUrls.length > 0) {
     if (!hasInputSchemaField(metadata.inputSchema, 'video_urls')) {
       throw new Error(translate('messages.videoContinuationUnsupported'));
     }
 
-    input.video_urls = [referencePayload.videoUrl];
+    input.video_urls = referencePayload.videoUrls;
     input.generationType = undefined;
 
     if (
       hasInputSchemaField(metadata.inputSchema, 'sourceVideoDurationSeconds')
     ) {
       input.sourceVideoDurationSeconds = await loadVideoDurationSecondsImpl(
-        referencePayload.videoUrl,
+        referencePayload.videoUrls[0],
         runtimeMessages
       );
     }
   }
 
-  input.wmHasVideoInput = referencePayload.videoUrl !== null;
+  input.wmHasVideoInput = referencePayload.videoUrls.length > 0;
 
   const referenceInputDefaults = getWorkspaceEffectReferenceInputDefaults({
     modelId: model.id,
@@ -340,10 +340,13 @@ export const buildGenerationEffectInput = async ({
   });
   if (referenceInputDefaults) {
     if (hasInputSchemaField(metadata.inputSchema, 'characterOrientation')) {
-      input.characterOrientation = referenceInputDefaults.characterOrientation;
+      input.characterOrientation =
+        draftCard.characterOrientation ??
+        referenceInputDefaults.characterOrientation;
     }
     if (hasInputSchemaField(metadata.inputSchema, 'backgroundSource')) {
-      input.backgroundSource = referenceInputDefaults.backgroundSource;
+      input.backgroundSource =
+        draftCard.backgroundSource ?? referenceInputDefaults.backgroundSource;
     }
   }
 

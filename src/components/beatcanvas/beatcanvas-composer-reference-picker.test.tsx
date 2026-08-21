@@ -77,3 +77,84 @@ test('open picker lists attached and canvas reference cards', () => {
   assert.match(html, /Beach/);
   assert.match(html, /aria-label="Remove reference"/);
 });
+
+test('open picker renders video references with video elements instead of images', () => {
+  const html = renderToStaticMarkup(
+    <BeatCanvasComposerReferencePicker
+      activeDraftId="draft-1"
+      canvasReferenceCards={[
+        {
+          id: 'video-2',
+          name: 'Canvas motion',
+          type: 'video',
+          thumbnailUrl: 'blob:canvas-motion',
+        },
+      ]}
+      currentReferenceCards={[
+        {
+          id: 'video-1',
+          name: 'Attached motion',
+          type: 'video',
+          thumbnailUrl: 'blob:attached-motion',
+        },
+      ]}
+      isDraftBusy={false}
+      isOpen={true}
+      labels={{
+        ...labels,
+        currentReferencesLabel: 'Attached',
+        fromCanvasLabel: 'From canvas',
+        removeReferenceLabel: 'Remove reference',
+      }}
+      onAttachCanvasReference={() => {}}
+      onOpenChange={() => {}}
+      onOpenReferencePicker={() => {}}
+      onRemoveCanvasReference={() => {}}
+      options={[{ intent: 'video', remaining: 2 }]}
+      primaryIntent="video"
+    />
+  );
+
+  assert.equal((html.match(/<video/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /<img[^>]+blob:(?:attached|canvas)-motion/);
+});
+
+test('row variant exposes independently numbered image and video mention chips', () => {
+  const html = renderToStaticMarkup(
+    <BeatCanvasComposerReferencePicker
+      activeDraftId="draft-1"
+      currentReferenceCards={[
+        {
+          id: 'image-1',
+          name: 'Character',
+          type: 'image',
+          alias: '@Image1',
+          thumbnailUrl: 'https://example.com/character.png',
+        },
+        {
+          id: 'video-1',
+          name: 'Dance motion',
+          type: 'video',
+          alias: '@Video1',
+          thumbnailUrl: 'https://example.com/motion.mp4',
+        },
+      ]}
+      isDraftBusy={false}
+      isOpen={false}
+      labels={labels}
+      onOpenChange={() => {}}
+      onOpenReferencePicker={() => {}}
+      options={[
+        { intent: 'image', remaining: null },
+        { intent: 'video', remaining: 2 },
+      ]}
+      primaryIntent="image"
+      variant="row"
+    />
+  );
+
+  assert.match(html, /@Image1/);
+  assert.match(html, /@Video1/);
+  assert.match(html, /draggable="true"/);
+  assert.equal((html.match(/<video/g) ?? []).length, 1);
+});

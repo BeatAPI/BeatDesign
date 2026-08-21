@@ -45,6 +45,10 @@ export const normalizeComposerToken = (
     | 'tokenPortraitLabel'
     | 'tokenChineseLabel'
     | 'tokenEnglishLabel'
+    | 'tokenImageOrientationLabel'
+    | 'tokenVideoOrientationLabel'
+    | 'tokenInputImageLabel'
+    | 'tokenInputVideoLabel'
   >
 ) => {
   switch (value) {
@@ -74,6 +78,14 @@ export const normalizeComposerToken = (
       return labels?.tokenChineseLabel ?? 'Chinese';
     case 'en':
       return labels?.tokenEnglishLabel ?? 'English';
+    case 'image':
+      return labels?.tokenImageOrientationLabel ?? 'Image orientation';
+    case 'video':
+      return labels?.tokenVideoOrientationLabel ?? 'Video orientation';
+    case 'input_image':
+      return labels?.tokenInputImageLabel ?? 'Image background';
+    case 'input_video':
+      return labels?.tokenInputVideoLabel ?? 'Video background';
     default:
       if (/^\d+(?:k|p)$/i.test(value)) {
         return value.toUpperCase();

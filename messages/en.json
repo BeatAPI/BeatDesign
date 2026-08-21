@@ -124,7 +124,7 @@
       "toolbar": {
         "addNode": "Add node",
         "generationNode": "Generation node",
-        "uploadNode": "Upload node",
+        "uploadNode": "Upload media",
         "upload": "Upload",
         "assets": "Assets",
         "batchScenes": "Batch scenes"
@@ -133,7 +133,7 @@
         "templates": "Templates",
         "historyAssets": "History assets",
         "addNodeTitle": "Add node",
-        "uploadNodeTitle": "Upload node",
+        "uploadNodeTitle": "Upload media",
         "recentAssetsTitle": "Recent assets",
         "recentImages": "Recent images",
         "recentVideos": "Recent videos",
@@ -190,6 +190,7 @@
         "promptPlaceholder": "Describe the image or video you want to generate. When you select a canvas node, it becomes the current reference or branch anchor."
       },
       "actions": {
+        "uploadMedia": "Upload media",
         "uploadImage": "Upload image",
         "uploadVideo": "Upload video",
         "combine": "Combine cards",
@@ -275,6 +276,8 @@
         "addNodeSuccess": "Prompt node added to the canvas.",
         "uploadImageInvalid": "Images must be JPG, PNG, or WebP and smaller than {maxSizeMb}MB.",
         "uploadVideoInvalid": "Videos must be MP4, WebM, or MOV and smaller than {maxSizeMb}MB.",
+        "uploadMediaInvalid": "{fileName} is not a supported image or video.",
+        "openingMediaPicker": "Opening media picker...",
         "openingImagePicker": "Opening image picker...",
         "openingVideoPicker": "Opening video picker...",
         "uploading": "Uploading asset...",
@@ -358,6 +361,8 @@
           "variant": "Variant",
           "quality": "Quality",
           "language": "Language",
+          "characterOrientation": "Character orientation",
+          "backgroundSource": "Background source",
           "tokens": {
             "quality": "Quality",
             "fast": "Fast",
@@ -371,7 +376,11 @@
             "landscape": "Landscape",
             "portrait": "Portrait",
             "chinese": "Chinese",
-            "english": "English"
+            "english": "English",
+            "imageOrientation": "Follow image",
+            "videoOrientation": "Follow video",
+            "inputImage": "Image background",
+            "inputVideo": "Video background"
           },
           "status": {
             "queued": "Queued",
@@ -402,6 +411,8 @@
           "videoGeneration": "Video generation",
           "image": "Image",
           "video": "Video",
+          "previewLoading": "Loading preview...",
+          "previewUnavailable": "Preview unavailable",
           "processing": "Processing...",
           "pending": "Pending...",
           "generationFailed": "Generation failed",
@@ -511,6 +522,7 @@
       "workspaceNameLabel": "Workspace name",
       "projects": "Projects",
       "projectsLabel": "Open projects",
+      "githubRepository": "Open BeatAPI Workspace on GitHub",
       "projectAssets": {
         "triggerLabel": "Project assets",
         "title": "Project assets",

@@ -8,6 +8,8 @@ type BeatCanvasNodeCopy = {
   videoGeneration: string;
   image: string;
   video: string;
+  previewLoading: string;
+  previewUnavailable: string;
   pending: string;
   processing: string;
   generationFailed: string;
@@ -52,6 +54,14 @@ const getNodeCopyForLocale = (locale: BeatCanvasNodeLocale): BeatCanvasNodeCopy 
   ),
   image: m['AppShell.studio.canvas.shapes.image']({}, { locale }),
   video: m['AppShell.studio.canvas.shapes.video']({}, { locale }),
+  previewLoading: m['AppShell.studio.canvas.shapes.previewLoading'](
+    {},
+    { locale }
+  ),
+  previewUnavailable: m['AppShell.studio.canvas.shapes.previewUnavailable'](
+    {},
+    { locale }
+  ),
   pending: m['AppShell.studio.canvas.shapes.pending']({}, { locale }),
   processing: m['AppShell.studio.canvas.shapes.processing']({}, { locale }),
   generationFailed: m['AppShell.studio.canvas.shapes.generationFailed'](

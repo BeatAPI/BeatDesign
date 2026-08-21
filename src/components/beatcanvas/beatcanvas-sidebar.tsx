@@ -13,14 +13,9 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 
-type SidebarUploadIntent = 'image' | 'video';
-type ActivePanel = 'upload' | 'history';
+type SidebarUploadIntent = 'image' | 'video' | 'media';
+type ActivePanel = 'history';
 
-const UploadNodePanel = lazy(() =>
-  import('./beatcanvas-sidebar-panels').then((mod) => ({
-    default: mod.UploadNodePanel,
-  }))
-);
 const HistoryPanel = lazy(() =>
   import('./beatcanvas-sidebar-panels').then((mod) => ({
     default: mod.HistoryPanel,
@@ -29,8 +24,7 @@ const HistoryPanel = lazy(() =>
 
 export type BeatCanvasSidebarProps = {
   projectId?: string | null;
-  onUploadImage: () => void;
-  onUploadVideo: () => void;
+  onUploadMedia: () => void;
   onCreateImageDraft: () => void;
   onInsertHistoryAsset: (
     asset: RecentAsset & { mediaType: 'image' | 'video' }
@@ -40,8 +34,7 @@ export type BeatCanvasSidebarProps = {
 
 export default function BeatCanvasSidebar({
   projectId,
-  onUploadImage,
-  onUploadVideo,
+  onUploadMedia,
   onCreateImageDraft,
   onInsertHistoryAsset,
   uploadIntent,
@@ -76,8 +69,9 @@ export default function BeatCanvasSidebar({
         <ToolBtn
           icon={<ImagePlus size={17} />}
           title={t('toolbar.uploadNode')}
-          active={activePanel === 'upload'}
-          onClick={() => handleTogglePanel('upload')}
+          active={uploadIntent !== null}
+          disabled={uploadIntent !== null}
+          onClick={onUploadMedia}
         />
         <ToolSeparator />
         <ToolBtn
@@ -91,14 +85,6 @@ export default function BeatCanvasSidebar({
       {activePanel ? (
         <SlidePanel onClose={handleClosePanel}>
           <Suspense fallback={<SidebarPanelLoading />}>
-            {activePanel === 'upload' ? (
-              <UploadNodePanel
-                isUploadDisabled={uploadIntent !== null}
-                onUploadImage={onUploadImage}
-                onUploadVideo={onUploadVideo}
-                onClose={handleClosePanel}
-              />
-            ) : null}
             {activePanel === 'history' ? (
               <HistoryPanel
                 projectId={projectId}
@@ -116,12 +102,14 @@ function ToolBtn({
   icon,
   title,
   active,
+  disabled = false,
   tone = 'default',
   onClick,
 }: {
   icon: ReactNode;
   title: string;
   active: boolean;
+  disabled?: boolean;
   tone?: 'default' | 'danger';
   onClick: () => void;
 }) {
@@ -135,11 +123,12 @@ function ToolBtn({
       type="button"
       title={title}
       onClick={onClick}
+      disabled={disabled}
       className={`group relative flex h-10 w-10 items-center justify-center rounded-xl border border-transparent transition-[color,background-color,border-color,box-shadow,transform] duration-150 ease-out active:scale-[0.94] ${
         active
           ? 'border-white/[0.12] bg-white/[0.08] text-[var(--beat-text-1)] shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_8px_22px_rgba(0,0,0,0.4)]'
           : idleTone
-      }`}
+      } disabled:cursor-wait disabled:opacity-55`}
       aria-pressed={active}
     >
       {icon}
