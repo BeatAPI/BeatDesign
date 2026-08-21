@@ -18,6 +18,7 @@ import {
 } from '@/core/beatcanvas/providers/provider-config';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { apiGet, apiPost } from '@/lib/api-client';
+import { maskApiKeyPreview } from '@/lib/mask-api-key';
 
 /** Custom plug glyph — the workspace's "connect your API" mark. */
 function PlugGlyph({ className }: { className?: string }) {
@@ -50,6 +51,7 @@ const saveButtonClassName =
 type BeatApiConfigState = {
   baseUrl: string;
   apiKeyConfigured: boolean;
+  apiKeyPreview: string;
 };
 
 type StorageConfigState = {
@@ -79,6 +81,9 @@ function ApiConfigForm({
   const [state, setState] = useState<BeatApiConfigState | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [saving, setSaving] = useState(false);
+  const [replacing, setReplacing] = useState(false);
+  const configured = Boolean(state?.apiKeyConfigured && state.apiKeyPreview);
+  const showEditor = !configured || replacing;
 
   useEffect(() => {
     let cancelled = false;
@@ -96,17 +101,22 @@ function ApiConfigForm({
   }, []);
 
   async function save() {
+    const nextKey = apiKey.trim();
+    if (!nextKey) return;
     setSaving(true);
     try {
-      await apiPost('/api/config/beatapi', {
-        ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}),
-      });
+      const result = await apiPost<{ apiKeyPreview?: string }>(
+        '/api/config/beatapi',
+        { apiKey: nextKey }
+      );
       toast.success(t('saved'));
       setApiKey('');
-      setState((prev) => ({
+      setReplacing(false);
+      setState({
         baseUrl: DEFAULT_BEATAPI_BASE_URL,
-        apiKeyConfigured: Boolean(apiKey.trim() || prev?.apiKeyConfigured),
-      }));
+        apiKeyConfigured: true,
+        apiKeyPreview: result?.apiKeyPreview || maskApiKeyPreview(nextKey),
+      });
       onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -134,50 +144,75 @@ function ApiConfigForm({
           >
             {t('keyLabel')}
           </label>
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-              state?.apiKeyConfigured
-                ? 'border-[#ff7a33]/30 bg-[#ff7a33]/10 text-[#ff9a62]'
-                : 'border-white/12 bg-white/[0.04] text-white/40'
-            }`}
-          >
-            {state?.apiKeyConfigured ? t('keyConfigured') : t('keyNotConfigured')}
-          </span>
+          {configured && !replacing ? (
+            <span className="rounded-full border border-[#ff7a33]/30 bg-[#ff7a33]/10 px-2 py-0.5 text-[11px] font-medium text-[#ff9a62]">
+              {t('keyConfigured')}
+            </span>
+          ) : null}
         </div>
-        <input
-          id="beatapi-key"
-          type="password"
-          value={apiKey}
-          onChange={(event) => setApiKey(event.target.value)}
-          placeholder={
-            state?.apiKeyConfigured
-              ? t('keySavedPlaceholder')
-              : t('keyPlaceholder')
-          }
-          autoComplete="off"
-          className={inputClassName}
-        />
+
+        {showEditor ? (
+          <input
+            id="beatapi-key"
+            type="password"
+            value={apiKey}
+            onChange={(event) => setApiKey(event.target.value)}
+            placeholder={t('keyPlaceholder')}
+            autoComplete="off"
+            className={inputClassName}
+          />
+        ) : (
+          <div className="flex h-11 items-center rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-3.5 font-mono text-[13px] text-white/80">
+            {state?.apiKeyPreview}
+          </div>
+        )}
+
         <p className="mt-2 text-[12px] leading-5 text-white/40">
-          {state?.apiKeyConfigured ? t('replaceHint') : t('connectHint')}
+          {t('connectHint')}
         </p>
-        <a
-          href="https://beatapi.io/dashboard/apikeys"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-2 inline-flex text-[13px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
-        >
-          {t('getKey')}
-        </a>
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+          {configured && !replacing ? (
+            <button
+              type="button"
+              onClick={() => setReplacing(true)}
+              className="text-[13px] font-semibold text-white/55 transition hover:text-white"
+            >
+              {t('replaceKey')}
+            </button>
+          ) : null}
+          {replacing ? (
+            <button
+              type="button"
+              onClick={() => {
+                setReplacing(false);
+                setApiKey('');
+              }}
+              className="text-[13px] font-semibold text-white/55 transition hover:text-white"
+            >
+              {t('cancelReplace')}
+            </button>
+          ) : null}
+          <a
+            href="https://beatapi.io/dashboard/apikeys"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex text-[13px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
+          >
+            {t('getKey')}
+          </a>
+        </div>
       </div>
 
-      <button
-        type="button"
-        disabled={saving || !apiKey.trim()}
-        onClick={() => void save()}
-        className={saveButtonClassName}
-      >
-        {saving ? t('saving') : t('save')}
-      </button>
+      {showEditor ? (
+        <button
+          type="button"
+          disabled={saving || !apiKey.trim()}
+          onClick={() => void save()}
+          className={saveButtonClassName}
+        >
+          {saving ? t('saving') : t('save')}
+        </button>
+      ) : null}
     </div>
   );
 }

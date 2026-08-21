@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { respData, respErr } from '@/lib/resp';
 import { getConfig, saveConfigs } from '@/modules/config/service';
 import { DEFAULT_BEATAPI_BASE_URL } from '@/core/beatcanvas/providers/provider-config';
+import { maskApiKeyPreview } from '@/lib/mask-api-key';
 import { validateTrustedLocalJsonMutation } from '@/lib/trusted-local-request';
 
 /**
@@ -10,11 +11,13 @@ import { validateTrustedLocalJsonMutation } from '@/lib/trusted-local-request';
  */
 async function GET({ request }: { request: Request }) {
   try {
-    const apiKey = await getConfig('BEATAPI_API_KEY');
+    const apiKey =
+      (await getConfig('BEATAPI_API_KEY')) || process.env.BEATAPI_API_KEY || '';
 
     return respData({
       baseUrl: DEFAULT_BEATAPI_BASE_URL,
-      apiKeyConfigured: Boolean(apiKey || process.env.BEATAPI_API_KEY),
+      apiKeyConfigured: Boolean(apiKey),
+      apiKeyPreview: apiKey ? maskApiKeyPreview(apiKey) : '',
     });
   } catch {
     return respErr('Internal error', 500);
@@ -54,7 +57,11 @@ async function POST({ request }: { request: Request }) {
     }
 
     await saveConfigs(next);
-    return respData({ ok: true, connected: true });
+    return respData({
+      ok: true,
+      connected: true,
+      apiKeyPreview: maskApiKeyPreview(apiKey),
+    });
   } catch {
     return respErr('Internal error', 500);
   }
