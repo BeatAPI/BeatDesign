@@ -1,4 +1,4 @@
-# BeatAPI Workspace agent guide
+# BeatDesign agent guide
 
 This repository is the open-source workbench. The sibling `../BeatAPI SaaS Template` is a separate product and must not be mixed into this codebase.
 

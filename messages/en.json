@@ -12,12 +12,11 @@
   "product.shell.chinese": "Chinese",
   "product.shell.terms": "Terms",
   "product.shell.privacy": "Privacy",
-  "product.shell.builtFor": "Built for AI creators",
-  "product.home.eyebrow": "OPEN-SOURCE AI CREATIVE WORKSPACE",
-  "product.home.metaTitle": "BeatAPI Workspace — Studio and Canvas for AI creation",
-  "product.home.metaDescription": "An open-source Studio and Canvas for generating, organizing, and connecting AI images and videos with your own BeatAPI API key.",
-  "product.home.title": "Your imagination. Now in motion.",
-  "product.home.subtitle": "Generate images and videos in Studio, then connect every result into a reusable Canvas workflow.",
+  "product.home.eyebrow": "OPEN SOURCE · LOCAL FIRST",
+  "product.home.metaTitle": "BeatDesign — Open-source AI canvas for image and video creation",
+  "product.home.metaDescription": "The open-source, local-first AI canvas for image and video creation.",
+  "product.home.titleLine1": "Beat complexity.",
+  "product.home.titleLine2": "Design freely.",
   "product.home.prompt": "Describe the image or video you want to create...",
   "product.home.createInStudio": "Create in Studio",
   "product.home.sectionTitle": "Choose your workspace",
@@ -54,7 +53,7 @@
   "product.pricing.titleLead": "Pay less for the same ",
   "product.pricing.titleAccent": "models.",
   "product.pricing.descriptionLead": "Pay only for what you generate.",
-  "product.pricing.descriptionRest": "Same models, same specs — no subscription, no idle fees.",
+  "product.pricing.descriptionRest": "BeatDesign is powered by BeatAPI. One balance, every workflow.",
   "product.pricing.statCheaperHint": "cheaper than competitor",
   "product.pricing.statSavingsHint": "average savings",
   "product.pricing.filterAll": "All models",
@@ -67,7 +66,7 @@
   "product.pricing.colHiggsfield": "Competitor H",
   "product.pricing.colDiscount": "Discount",
   "product.pricing.ctaPrimary": "Start creating",
-  "common.metadata.title": "BeatAPI",
+  "common.metadata.title": "BeatDesign",
   "common.metadata.description": "AI design workspace for ecommerce teams",
   "common.search.placeholder": "Search...",
   "common.table.no_data": "No data",
@@ -118,7 +117,7 @@
   "AppShell": {
     "studio": {
       "intro": {
-        "title": "Canvas-first BeatAPI workspace",
+        "title": "Canvas-first BeatDesign workspace",
         "description": "Select an image, video, or prompt node, then branch the next generation directly from the canvas."
       },
       "toolbar": {
@@ -525,7 +524,7 @@
       "workspaceNameLabel": "Workspace name",
       "projects": "Projects",
       "projectsLabel": "Open projects",
-      "githubRepository": "Open BeatAPI Workspace on GitHub",
+      "githubRepository": "Open BeatDesign on GitHub",
       "projectAssets": {
         "triggerLabel": "Project assets",
         "title": "Project assets",

@@ -1,6 +1,8 @@
-# BeatAPI Workspace
+# BeatDesign
 
-一个开源、本地优先的 AI 图片与视频创作工作台。应用默认打开真正的 Home 首页，产品范围聚焦于项目、Studio、Canvas、共享素材、生成历史、可配置存储，以及 BeatAPI 官方 Provider。
+**化繁为简，自由创作。**
+
+开源、本地优先的 AI 图片与视频创作画布。BeatDesign 将项目、Studio、节点式 Canvas、共享素材、生成历史、可配置存储和 BeatAPI 官方连接整合在一个专注的工作台中。
 
 本仓库不包含登录、账号、支付、订阅、本地积分、后台管理、RBAC 或 API Key 发放系统。
 

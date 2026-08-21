@@ -1,6 +1,8 @@
-# BeatAPI Workspace
+# BeatDesign
 
-An open-source, local-first creative workbench for AI image and video generation. It opens on a real Home surface and keeps the product focused: Projects, a guided Studio, a node-based Canvas, shared assets, generation history, configurable storage, and an official BeatAPI connection.
+**Beat complexity. Design freely.**
+
+The open-source, local-first AI canvas for image and video creation. BeatDesign brings Projects, a guided Studio, a node-based Canvas, shared assets, generation history, configurable storage, and an official BeatAPI connection into one focused workspace.
 
 There is no login, account system, payment flow, subscription, local credit ledger, admin panel, or API-key issuing service in this repository.
 

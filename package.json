@@ -1,16 +1,16 @@
 {
-  "name": "beatapi-workspace",
+  "name": "beatdesign",
   "version": "0.1.0",
   "private": true,
-  "description": "Open-source canvas and studio for AI image and video generation with BeatAPI",
+  "description": "The open-source, local-first AI canvas for image and video creation",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/BeatAPI/beatapi-workspace#readme",
+  "homepage": "https://github.com/BeatAPI/BeatDesign#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BeatAPI/beatapi-workspace.git"
+    "url": "git+https://github.com/BeatAPI/BeatDesign.git"
   },
   "bugs": {
-    "url": "https://github.com/BeatAPI/beatapi-workspace/issues"
+    "url": "https://github.com/BeatAPI/BeatDesign/issues"
   },
   "engines": {
     "node": ">=22",

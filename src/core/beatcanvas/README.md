@@ -1,6 +1,6 @@
 # BeatCanvas boundary
 
-BeatCanvas is the node-based canvas surface in BeatAPI Workspace. This
+BeatCanvas is the node-based canvas surface in BeatDesign. This
 directory owns the browser-side generation contract and Canvas domain logic.
 
 ## Stable boundaries
