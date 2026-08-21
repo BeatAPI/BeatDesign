@@ -10,6 +10,16 @@ const mutationRoutes = [
   './effects/generate.ts',
 ];
 
+test('canvas effect mutations send the workspace request header', () => {
+  const source = readFileSync(
+    new URL('../../core/effects/client-api.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(source, /WORKSPACE_MUTATION_HEADER/);
+  assert.match(source, /\/api\/effects\/precheck/);
+  assert.match(source, /\/api\/effects\/generate/);
+});
+
 test('workspace JSON mutation routes enforce the same-origin request contract', () => {
   for (const route of mutationRoutes) {
     const source = readFileSync(new URL(route, import.meta.url), 'utf8');

@@ -1,3 +1,13 @@
+import {
+  WORKSPACE_MUTATION_HEADER,
+  WORKSPACE_MUTATION_HEADER_VALUE,
+} from '@/lib/trusted-local-request';
+
+const mutationHeaders = {
+  'Content-Type': 'application/json',
+  [WORKSPACE_MUTATION_HEADER]: WORKSPACE_MUTATION_HEADER_VALUE,
+};
+
 export type EffectClientStatus =
   | 'pending'
   | 'processing'
@@ -63,7 +73,7 @@ export const precheckEffect = async (
 ): Promise<EffectClientResponse<PrecheckResponse>> => {
   const response = await fetch('/api/effects/precheck', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: mutationHeaders,
     body: JSON.stringify(payload),
   });
 
@@ -79,7 +89,7 @@ export const generateEffect = async (
 ): Promise<EffectClientResponse<GenerateResponse>> => {
   const response = await fetch('/api/effects/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: mutationHeaders,
     body: JSON.stringify(payload),
   });
 
