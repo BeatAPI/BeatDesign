@@ -16,11 +16,15 @@ import {
   readRequestFormDataWithLimit,
   RequestBodyTooLargeError,
 } from '@/lib/request-body-limit';
+import { readResponseJsonWithLimit } from '@/lib/response-body-limit';
+import { isPublicHttpMediaUrl } from '@/core/effects/beatapi-media-url';
 
 const MAX_DEFAULT_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_MOTION_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_VIDEO_FILE_BYTES = 100 * 1024 * 1024;
 const MAX_MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
+const MAX_PROVIDER_JSON_BYTES = 1024 * 1024;
+const BEATAPI_UPLOAD_TIMEOUT_MS = 120_000;
 const BEATAPI_UPLOAD_TYPES = new Set([
   'image/png',
   'image/jpeg',
@@ -73,9 +77,13 @@ async function uploadToBeatApi(file: File) {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}` },
       body: formData,
+      signal: AbortSignal.timeout(BEATAPI_UPLOAD_TIMEOUT_MS),
     }
   );
-  const payload = (await response.json().catch(() => null)) as unknown;
+  const payload = await readResponseJsonWithLimit(
+    response,
+    MAX_PROVIDER_JSON_BYTES
+  );
   if (!response.ok) {
     throw new Error(readErrorMessage(payload) || 'BeatAPI file upload failed');
   }
@@ -86,7 +94,9 @@ async function uploadToBeatApi(file: File) {
   const url = typeof data?.url === 'string' ? data.url : null;
   const key = typeof data?.key === 'string' ? data.key : null;
   const id = typeof data?.id === 'string' ? data.id : key;
-  if (!url || !id) throw new Error('BeatAPI upload response is incomplete');
+  if (!url || !id || !isPublicHttpMediaUrl(url)) {
+    throw new Error('BeatAPI upload response is incomplete');
+  }
   return { url, key: key || id, provider: 'beatapi' as const };
 }
 

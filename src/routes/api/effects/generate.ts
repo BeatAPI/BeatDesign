@@ -1,6 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { submitEffectGeneration } from '@/core/effects/submit-generation';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
+import {
+  MAX_WORKSPACE_JSON_REQUEST_BYTES,
+  readRequestJsonWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 type GenerateRequest = {
   effectId?: number;
@@ -17,8 +22,14 @@ async function POST({ request }: { request: Request }) {
 
   let payload: GenerateRequest;
   try {
-    payload = (await request.json()) as GenerateRequest;
-  } catch {
+    payload = await readRequestJsonWithLimit<GenerateRequest>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    );
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json({ error: 'Request body is too large' }, { status: 413 });
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const result = await submitEffectGeneration({

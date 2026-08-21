@@ -17,6 +17,18 @@ export class ProjectSnapshotValidationError extends Error {
   }
 }
 
+export const hasProjectSnapshotVersionConflict = ({
+  currentVersion,
+  baseVersion,
+  documentChanged,
+}: {
+  currentVersion: number;
+  baseVersion: number | null | undefined;
+  documentChanged: boolean;
+}) =>
+  documentChanged &&
+  (typeof baseVersion !== 'number' || currentVersion !== baseVersion);
+
 export type ProjectSnapshotShapeFrame = {
   x: number;
   y: number;

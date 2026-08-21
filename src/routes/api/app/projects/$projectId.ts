@@ -9,6 +9,11 @@ import {
   renameProject,
 } from '@/core/projects/projects';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
+import {
+  MAX_WORKSPACE_JSON_REQUEST_BYTES,
+  readRequestJsonWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 type UpdateProjectRequest = {
   name?: string;
@@ -34,8 +39,14 @@ async function POST({
   const { projectId } = params;
   let payload: OpenProjectRequest = {};
   try {
-    payload = (await request.json()) as OpenProjectRequest;
-  } catch {
+    payload = await readRequestJsonWithLimit<OpenProjectRequest>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    );
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json({ error: 'Request body is too large' }, { status: 413 });
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const workspaceMode: WorkspaceMode | undefined = payload.workspaceMode
@@ -80,8 +91,14 @@ async function PATCH({
 
   let payload: UpdateProjectRequest | null = null;
   try {
-    payload = (await request.json()) as UpdateProjectRequest;
-  } catch {
+    payload = await readRequestJsonWithLimit<UpdateProjectRequest>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    );
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json({ error: 'Request body is too large' }, { status: 413 });
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 

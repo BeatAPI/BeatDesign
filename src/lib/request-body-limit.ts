@@ -5,6 +5,8 @@ export class RequestBodyTooLargeError extends Error {
   }
 }
 
+export const MAX_WORKSPACE_JSON_REQUEST_BYTES = 64 * 1024;
+
 export async function readRequestBodyWithLimit(
   request: Request,
   maxBytes: number
@@ -53,6 +55,13 @@ export async function readRequestTextWithLimit(
   return new TextDecoder().decode(
     await readRequestBodyWithLimit(request, maxBytes)
   );
+}
+
+export async function readRequestJsonWithLimit<T>(
+  request: Request,
+  maxBytes: number
+): Promise<T> {
+  return JSON.parse(await readRequestTextWithLimit(request, maxBytes)) as T;
 }
 
 export async function readRequestFormDataWithLimit(

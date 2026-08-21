@@ -285,6 +285,7 @@
         "uploadSuccess": "Asset added to the canvas.",
         "uploadCanvasInsertFailed": "The canvas is not ready yet. Please try adding the asset again.",
         "uploadFailed": "Upload failed. Please try again.",
+        "snapshotConflict": "This project changed in another tab. Your current draft is still open; reload before saving again.",
         "noDownloadableAssets": "No downloadable assets in the current selection.",
         "noAvailableModel": "No available model for the current task.",
         "metadataLoading": "Model metadata is still loading. Please try again shortly.",

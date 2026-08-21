@@ -1202,6 +1202,10 @@ export function BeatCanvasShell({
     setAllowEmptyProjectSnapshot(false);
   }, []);
 
+  const handleProjectSnapshotConflict = useCallback(() => {
+    toast.error(studioT('messages.snapshotConflict'));
+  }, [studioT]);
+
   useProjectSnapshotLifecycle({
     projectId,
     projectPath,
@@ -1216,6 +1220,7 @@ export function BeatCanvasShell({
     restoreProjectSnapshot,
     createDraftCard,
     onEmptyProjectSnapshotSaved: handleEmptyProjectSnapshotSaved,
+    onProjectSnapshotConflict: handleProjectSnapshotConflict,
   });
 
   // Listen for card connector events from the overlay

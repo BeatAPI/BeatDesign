@@ -7,6 +7,11 @@ import {
 } from '@/core/projects/projects';
 import { resolveWorkspaceMode } from '@/config/workspace-modes';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
+import {
+  MAX_WORKSPACE_JSON_REQUEST_BYTES,
+  readRequestJsonWithLimit,
+  RequestBodyTooLargeError,
+} from '@/lib/request-body-limit';
 
 type DeleteProjectsRequest = {
   projectIds?: unknown;
@@ -38,8 +43,14 @@ async function POST({ request }: { request: Request }) {
 
   let payload: CreateProjectRequest | null = null;
   try {
-    payload = (await request.json()) as CreateProjectRequest;
-  } catch {
+    payload = await readRequestJsonWithLimit<CreateProjectRequest>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    );
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json({ error: 'Request body is too large' }, { status: 413 });
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -65,8 +76,14 @@ async function DELETE({ request }: { request: Request }) {
 
   let payload: DeleteProjectsRequest | null = null;
   try {
-    payload = (await request.json()) as DeleteProjectsRequest;
-  } catch {
+    payload = await readRequestJsonWithLimit<DeleteProjectsRequest>(
+      request,
+      MAX_WORKSPACE_JSON_REQUEST_BYTES
+    );
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) {
+      return Response.json({ error: 'Request body is too large' }, { status: 413 });
+    }
     return Response.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 

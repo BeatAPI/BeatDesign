@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { envConfigs } from '@/config';
 import {
   detectUploadedMediaType,
+  getCanonicalUploadedMediaMimeType,
   validateUploadedImageFile,
   validateUploadedVideoFile,
   REFERENCE_VIDEO_MAX_FILE_SIZE,
@@ -27,20 +28,6 @@ import { isSupportedRasterImage } from '@/lib/image-upload-validation';
 import { validateTrustedWorkspaceMutation } from '@/lib/trusted-local-request';
 
 const MAX_MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
-
-const inferMediaMimeType = (file: File, mediaType: 'image' | 'video') => {
-  const declared = file.type.trim().toLowerCase();
-  if (declared) return declared === 'image/pjpeg' ? 'image/jpeg' : declared;
-  const name = file.name.toLowerCase();
-  if (mediaType === 'image') {
-    if (name.endsWith('.png')) return 'image/png';
-    if (name.endsWith('.webp')) return 'image/webp';
-    return 'image/jpeg';
-  }
-  if (name.endsWith('.webm')) return 'video/webm';
-  if (name.endsWith('.mov')) return 'video/quicktime';
-  return 'video/mp4';
-};
 
 async function POST({
   request,
@@ -102,7 +89,10 @@ async function POST({
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const persistedMimeType = inferMediaMimeType(file, mediaType);
+    const persistedMimeType = getCanonicalUploadedMediaMimeType(file);
+    if (!persistedMimeType) {
+      return Response.json({ error: 'Unsupported project asset type' }, { status: 415 });
+    }
     if (
       mediaType === 'image' &&
       !isSupportedRasterImage(persistedMimeType, bytes)

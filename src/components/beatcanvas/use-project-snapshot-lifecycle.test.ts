@@ -56,3 +56,14 @@ test('snapshot autosave sends explicit authorization before replacing a populate
   assert.match(source, /allowEmptyProjectSnapshot/);
   assert.match(source, /allowEmpty,/);
 });
+
+test('snapshot autosave preserves the local draft and stops after a version conflict', () => {
+  const source = readFileSync(
+    new URL('./use-project-snapshot-lifecycle.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(source, /snapshotConflictRef\.current = true/);
+  assert.match(source, /onProjectSnapshotConflict\?\.\(\)/);
+  assert.equal(source.match(/await sendSaveRequest/g)?.length, 1);
+  assert.doesNotMatch(source, /let response/);
+});

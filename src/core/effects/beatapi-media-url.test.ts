@@ -4,7 +4,32 @@ import test from 'node:test';
 import {
   isOfficialBeatApiInputUrl,
   isOfficialBeatApiMediaUrl,
+  isPublicHttpMediaUrl,
 } from './beatapi-media-url';
+
+test('accepts arbitrary public provider media URLs without requiring an official path', () => {
+  for (const url of [
+    'https://cdn.example.com/custom/result.mp4?signature=abc&expires=123',
+    'http://media.example.org/files/result.png#preview',
+    'https://8.8.8.8:8443/output.webm',
+  ]) {
+    assert.equal(isPublicHttpMediaUrl(url), true, url);
+  }
+
+  for (const url of [
+    'file:///tmp/result.mp4',
+    'javascript:alert(1)',
+    'https://user:pass@cdn.example.com/result.mp4',
+    'http://localhost/result.mp4',
+    'https://127.0.0.1/result.mp4',
+    'https://10.1.2.3/result.mp4',
+    'https://203.0.113.10/result.mp4',
+    'https://[::1]/result.mp4',
+    'https://[::ffff:127.0.0.1]/result.mp4',
+  ]) {
+    assert.equal(isPublicHttpMediaUrl(url), false, url);
+  }
+});
 
 test('allows only the official BeatAPI media origin', () => {
   assert.equal(

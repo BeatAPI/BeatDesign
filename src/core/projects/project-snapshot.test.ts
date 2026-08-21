@@ -3,9 +3,45 @@ import test from 'node:test';
 
 import {
   normalizeProjectSnapshotDocument,
+  hasProjectSnapshotVersionConflict,
   isDestructiveEmptyProjectSnapshot,
   ProjectSnapshotValidationError,
 } from './project-snapshot';
+
+test('requires the current base version before changing a saved snapshot', () => {
+  assert.equal(
+    hasProjectSnapshotVersionConflict({
+      currentVersion: 4,
+      baseVersion: 4,
+      documentChanged: true,
+    }),
+    false
+  );
+  assert.equal(
+    hasProjectSnapshotVersionConflict({
+      currentVersion: 4,
+      baseVersion: 3,
+      documentChanged: true,
+    }),
+    true
+  );
+  assert.equal(
+    hasProjectSnapshotVersionConflict({
+      currentVersion: 4,
+      baseVersion: undefined,
+      documentChanged: true,
+    }),
+    true
+  );
+  assert.equal(
+    hasProjectSnapshotVersionConflict({
+      currentVersion: 4,
+      baseVersion: 3,
+      documentChanged: false,
+    }),
+    false
+  );
+});
 
 test('detects only non-empty to empty snapshot replacement as destructive', () => {
   const empty = normalizeProjectSnapshotDocument({ version: 3, cards: [], frames: {} });

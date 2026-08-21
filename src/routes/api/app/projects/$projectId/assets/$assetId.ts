@@ -6,6 +6,7 @@ import {
   LOCAL_PROJECT_ASSET_PROVIDER,
   resolveLocalProjectAssetPath,
 } from '@/core/projects/local-project-assets';
+import { isSafeInlineUploadedMediaMimeType } from '@/core/effects/validation';
 import { getProjectAssetById } from '@/core/workspace-lib/assets/user-assets';
 
 const parseByteRange = (header: string | null, size: number) => {
@@ -65,12 +66,18 @@ async function GET({
     return Response.json({ error: 'Project asset file is missing' }, { status: 404 });
   }
 
+  const safeInlineMimeType = isSafeInlineUploadedMediaMimeType(asset.mimeType)
+    ? asset.mimeType
+    : null;
   const headers = new Headers({
     'accept-ranges': 'bytes',
     'cache-control': 'private, max-age=31536000, immutable',
-    'content-type': asset.mimeType || 'application/octet-stream',
+    'content-type': safeInlineMimeType || 'application/octet-stream',
     'x-content-type-options': 'nosniff',
   });
+  if (!safeInlineMimeType) {
+    headers.set('content-disposition', 'attachment');
+  }
   const rangeHeader = request.headers.get('range');
   const range = parseByteRange(rangeHeader, bytes.byteLength);
   if (rangeHeader && !range) {
