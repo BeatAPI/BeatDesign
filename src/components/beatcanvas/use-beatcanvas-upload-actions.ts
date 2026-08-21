@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  detectUploadedMediaType,
   validateUploadedImageFile,
   validateUploadedVideoFile,
 } from '@/core/effects/validation';
@@ -42,8 +43,13 @@ type TranslateFn = (
 ) => string;
 
 export type UploadIntent = CanvasCardMediaType;
+export type UploadActivityIntent = UploadIntent | 'media';
 
 export type UploadRequest =
+  | {
+      intent: 'media';
+      mode: 'global';
+    }
   | {
       intent: UploadIntent;
       mode: 'global';
@@ -195,7 +201,9 @@ export function useBeatCanvasUploadActions({
   setActiveComposerCardId: (cardId: string | null) => void;
   onWorkspaceAssetsMayChange?: () => void;
 }) {
-  const [uploadIntent, setUploadIntent] = useState<UploadIntent | null>(null);
+  const [uploadIntent, setUploadIntent] =
+    useState<UploadActivityIntent | null>(null);
+  const mediaFileInputRef = useRef<HTMLInputElement | null>(null);
   const imageFileInputRef = useRef<HTMLInputElement | null>(null);
   const videoFileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadRequestRef = useRef<UploadRequest | null>(null);
@@ -288,6 +296,19 @@ export function useBeatCanvasUploadActions({
     ]
   );
 
+  const openMediaUploadPicker = useCallback(() => {
+    const input = mediaFileInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.value = '';
+    uploadRequestRef.current = { intent: 'media', mode: 'global' };
+    setErrorMessage(null);
+    setStatusMessage(studioT('messages.openingMediaPicker'));
+    input.click();
+  }, [setErrorMessage, setStatusMessage, studioT]);
+
   function resolveUploadNaturalSize(
     objectUrl: string,
     intent: UploadIntent
@@ -316,8 +337,7 @@ export function useBeatCanvasUploadActions({
 
   const uploadFiles = useCallback(
     async (request: UploadRequest, allFiles: File[]) => {
-      const intent = request.intent;
-      setUploadIntent(intent);
+      setUploadIntent(request.intent);
 
       if (allFiles.length === 0) {
         uploadRequestRef.current = null;
@@ -325,21 +345,35 @@ export function useBeatCanvasUploadActions({
         setStatusMessage('');
         return;
       }
-      const files =
-        request.mode === 'global' && intent === 'image'
-          ? allFiles
-          : allFiles.slice(0, 1);
+      const files = request.mode === 'global' ? allFiles : allFiles.slice(0, 1);
+      const uploads = files.map((file) => ({
+        file,
+        intent:
+          request.intent === 'media'
+            ? detectUploadedMediaType(file)
+            : request.intent,
+      }));
 
-      for (const file of files) {
+      for (const upload of uploads) {
+        if (!upload.intent) {
+          const message = studioT('messages.uploadMediaInvalid', {
+            fileName: upload.file.name,
+          });
+          setErrorMessage(message);
+          setUploadIntent(null);
+          toast.error(message);
+          return;
+        }
+
         const validation =
-          intent === 'image'
-            ? validateUploadedImageFile(file)
-            : validateUploadedVideoFile(file);
+          upload.intent === 'image'
+            ? validateUploadedImageFile(upload.file)
+            : validateUploadedVideoFile(upload.file);
 
         if (!validation.ok) {
           const maxSizeMb = Math.floor(validation.maxBytes / (1024 * 1024));
           const message =
-            intent === 'image'
+            upload.intent === 'image'
               ? studioT('messages.uploadImageInvalid', { maxSizeMb })
               : studioT('messages.uploadVideoInvalid', { maxSizeMb });
           setErrorMessage(message);
@@ -355,7 +389,11 @@ export function useBeatCanvasUploadActions({
       try {
         const insertedAssetCardIds: string[] = [];
 
-        for (const [index, file] of files.entries()) {
+        for (const [index, upload] of uploads.entries()) {
+          const { file, intent } = upload;
+          if (!intent) {
+            continue;
+          }
           const localObjectUrl = URL.createObjectURL(file);
 
           const naturalSize = await resolveUploadNaturalSize(
@@ -370,8 +408,7 @@ export function useBeatCanvasUploadActions({
             anchorCardIds:
               request.mode === 'reference' ? [request.draftId] : undefined,
             placementSide: request.mode === 'reference' ? 'left' : 'right',
-            placementOffsetIndex:
-              request.mode === 'global' && intent === 'image' ? index : 0,
+            placementOffsetIndex: request.mode === 'global' ? index : 0,
             activateOnInsert: request.mode !== 'reference',
             ...(naturalSize ? { size: naturalSize } : {}),
           });
@@ -448,7 +485,6 @@ export function useBeatCanvasUploadActions({
 
         if (
           request.mode === 'global' &&
-          intent === 'image' &&
           insertedAssetCardIds.length > 1
         ) {
           handleSelectShape(
@@ -501,6 +537,19 @@ export function useBeatCanvasUploadActions({
               mode: 'global' as const,
             };
 
+      const allFiles = Array.from(event.target.files ?? []);
+      event.target.value = '';
+      await uploadFiles(request, allFiles);
+    },
+    [uploadFiles]
+  );
+
+  const handleMediaUpload = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const request: UploadRequest =
+        uploadRequestRef.current?.intent === 'media'
+          ? uploadRequestRef.current
+          : { intent: 'media', mode: 'global' };
       const allFiles = Array.from(event.target.files ?? []);
       event.target.value = '';
       await uploadFiles(request, allFiles);
@@ -572,10 +621,13 @@ export function useBeatCanvasUploadActions({
   );
 
   return {
+    handleMediaUpload,
     handleUpload,
+    mediaFileInputRef,
     imageFileInputRef,
     getPendingUploadCountForDraft,
     materializePendingImageReferences,
+    openMediaUploadPicker,
     openUploadPicker,
     promotePendingUploadsForDraft,
     uploadFiles,

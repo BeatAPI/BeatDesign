@@ -77,3 +77,44 @@ test('open picker lists attached and canvas reference cards', () => {
   assert.match(html, /Beach/);
   assert.match(html, /aria-label="Remove reference"/);
 });
+
+test('open picker renders video references with video elements instead of images', () => {
+  const html = renderToStaticMarkup(
+    <BeatCanvasComposerReferencePicker
+      activeDraftId="draft-1"
+      canvasReferenceCards={[
+        {
+          id: 'video-2',
+          name: 'Canvas motion',
+          type: 'video',
+          thumbnailUrl: 'blob:canvas-motion',
+        },
+      ]}
+      currentReferenceCards={[
+        {
+          id: 'video-1',
+          name: 'Attached motion',
+          type: 'video',
+          thumbnailUrl: 'blob:attached-motion',
+        },
+      ]}
+      isDraftBusy={false}
+      isOpen={true}
+      labels={{
+        ...labels,
+        currentReferencesLabel: 'Attached',
+        fromCanvasLabel: 'From canvas',
+        removeReferenceLabel: 'Remove reference',
+      }}
+      onAttachCanvasReference={() => {}}
+      onOpenChange={() => {}}
+      onOpenReferencePicker={() => {}}
+      onRemoveCanvasReference={() => {}}
+      options={[{ intent: 'video', remaining: 2 }]}
+      primaryIntent="video"
+    />
+  );
+
+  assert.equal((html.match(/<video/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /<img[^>]+blob:(?:attached|canvas)-motion/);
+});

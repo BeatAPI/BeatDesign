@@ -6,8 +6,9 @@ export const isPreviewableCanvasCard = (
   Boolean(
     card?.url &&
       card.kind === 'asset' &&
-      card.type === 'image' &&
-      !card.url.startsWith('data:image/svg+xml')
+      (card.type === 'video' ||
+        (card.type === 'image' &&
+          !card.url.startsWith('data:image/svg+xml')))
   );
 
 export const getPreviewableCanvasCardFromSelection = ({

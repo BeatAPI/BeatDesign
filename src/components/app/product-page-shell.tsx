@@ -6,6 +6,7 @@ import { LayoutPanelTop, Workflow } from 'lucide-react';
 
 import { WorkspaceApiConfigDialog } from '@/components/app/workspace-api-config-dialog';
 import { ProjectAssetsDialog } from '@/components/app/project-assets-dialog';
+import { GitHubIcon } from '@/components/icons/github';
 import { Link } from '@/core/i18n/navigation';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { apiJsonPatch, apiJsonPost } from '@/lib/api-client';
@@ -159,6 +160,16 @@ export function ProductPageShell({
               <WorkspaceApiConfigDialog
                 providerId={envConfigs.generation_provider}
               />
+              <a
+                href="https://github.com/BeatAPI/beatapi-workspace"
+                target="_blank"
+                rel="noreferrer"
+                aria-label={t('header.githubRepository')}
+                title={t('header.githubRepository')}
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.035] text-[var(--beat-text-2)] transition hover:border-white/[0.16] hover:bg-white/[0.075] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--beat-graph)]/70"
+              >
+                <GitHubIcon className="size-[17px]" aria-hidden="true" />
+              </a>
             </div>
           </div>
         </header>

@@ -164,7 +164,19 @@ export function BeatCanvasComposerReferencePicker({
                     className="flex w-full items-center justify-between gap-2 rounded-[8px] px-2 py-1.5 transition-colors duration-150 hover:bg-white/[0.06]"
                   >
                     <span className="flex min-w-0 items-center gap-2.5 text-[var(--beat-text-1)]">
-                      {card.thumbnailUrl ? (
+                      {card.thumbnailUrl && card.type === 'video' ? (
+                        <span className="relative inline-flex size-8 shrink-0 overflow-hidden rounded-md bg-black">
+                          <video
+                            src={card.thumbnailUrl}
+                            aria-label={card.name}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="size-full object-cover"
+                          />
+                          <Video className="pointer-events-none absolute inset-0 m-auto size-3.5 text-white drop-shadow" />
+                        </span>
+                      ) : card.thumbnailUrl ? (
                         <img
                           src={card.thumbnailUrl}
                           alt=""
@@ -221,7 +233,19 @@ export function BeatCanvasComposerReferencePicker({
                       title={card.name}
                       className="relative aspect-square overflow-hidden rounded-lg border border-white/[0.08] transition hover:border-[var(--beat-graph)] disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {card.thumbnailUrl ? (
+                      {card.thumbnailUrl && card.type === 'video' ? (
+                        <span className="relative inline-flex size-full bg-black">
+                          <video
+                            src={card.thumbnailUrl}
+                            aria-label={card.name}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="size-full object-cover"
+                          />
+                          <Video className="pointer-events-none absolute inset-0 m-auto size-4 text-white drop-shadow" />
+                        </span>
+                      ) : card.thumbnailUrl ? (
                         <img
                           src={card.thumbnailUrl}
                           alt={card.name}

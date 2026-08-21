@@ -22,16 +22,12 @@ test('keeps sidebar panel-only data and template code out of the toolbar module'
 
   assert.match(
     source,
-    /const UploadNodePanel = lazy\(\(\) =>\s+import\(['"]\.\/beatcanvas-sidebar-panels['"]\)/
-  );
-  assert.match(
-    source,
     /const HistoryPanel = lazy\(\(\) =>\s+import\(['"]\.\/beatcanvas-sidebar-panels['"]\)/
   );
-  assert.match(source, /UploadNodePanel/);
+  assert.match(source, /onUploadMedia/);
   assert.match(source, /onCreateImageDraft/);
   assert.doesNotMatch(source, /onCreateVideoDraft/);
-  assert.match(source, /handleTogglePanel\('upload'\)/);
+  assert.doesNotMatch(source, /handleTogglePanel\('upload'\)/);
   assert.match(source, /toolbar\.generationNode/);
   assert.match(source, /toolbar\.uploadNode/);
   assert.doesNotMatch(source, /onOpenGenerationComposer/);

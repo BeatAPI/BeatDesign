@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
 export type BeatCanvasPreviewMedia = {
-  type: 'image';
+  type: 'image' | 'video';
   url: string;
   title: string;
 };
@@ -39,12 +39,25 @@ export function BeatCanvasMediaPreviewOverlay({
           <X className="size-4" strokeWidth={2.2} />
           <span className="sr-only">{closeLabel}</span>
         </button>
-        <img
-          src={media.url}
-          alt={media.title}
-          className="max-h-[calc(100vh-140px)] max-w-full rounded-[10px] bg-white object-contain shadow-2xl"
-          draggable={false}
-        />
+        {media.type === 'video' ? (
+          <video
+            src={media.url}
+            aria-label={media.title}
+            controls
+            autoPlay
+            muted
+            playsInline
+            preload="metadata"
+            className="max-h-[calc(100vh-140px)] max-w-full rounded-[10px] bg-black object-contain shadow-2xl"
+          />
+        ) : (
+          <img
+            src={media.url}
+            alt={media.title}
+            className="max-h-[calc(100vh-140px)] max-w-full rounded-[10px] bg-white object-contain shadow-2xl"
+            draggable={false}
+          />
+        )}
         <div className="mt-3 max-w-full truncate rounded-full bg-black/65 px-3 py-1.5 text-[12px] font-medium text-white">
           {media.title}
         </div>

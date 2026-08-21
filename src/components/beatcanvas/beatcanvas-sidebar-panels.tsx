@@ -8,8 +8,6 @@ import { recentAssetsKeys } from '@/core/workspace-lib/app/workspace-query-keys'
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { useQuery } from '@tanstack/react-query';
 import {
-  ChevronRight,
-  ImagePlus,
   Loader2,
   Video,
 } from 'lucide-react';
@@ -17,45 +15,6 @@ import type { ReactNode } from 'react';
 
 import { beatPanelLabelClassName } from '@/components/app/composer-styles';
 import { cn } from '@/lib/utils';
-
-export function UploadNodePanel({
-  isUploadDisabled,
-  onUploadImage,
-  onUploadVideo,
-  onClose,
-}: {
-  isUploadDisabled: boolean;
-  onUploadImage: () => void;
-  onUploadVideo: () => void;
-  onClose: () => void;
-}) {
-  const t = useTranslations('AppShell.studio');
-  const handleAction = (fn: () => void) => {
-    fn();
-    onClose();
-  };
-
-  return (
-    <div className="flex flex-col gap-0.5 p-2">
-      <div className={cn(beatPanelLabelClassName, 'px-2 pb-1.5 pt-1')}>
-        {t('sidebar.uploadNodeTitle')}
-      </div>
-
-      <PanelButton
-        icon={<ImagePlus className="size-3.5" />}
-        label={t('actions.uploadImage')}
-        onClick={() => handleAction(onUploadImage)}
-        disabled={isUploadDisabled}
-      />
-      <PanelButton
-        icon={<Video className="size-3.5" />}
-        label={t('actions.uploadVideo')}
-        onClick={() => handleAction(onUploadVideo)}
-        disabled={isUploadDisabled}
-      />
-    </div>
-  );
-}
 
 export function HistoryPanel({
   onSelectAsset,
@@ -130,38 +89,6 @@ export function HistoryPanel({
         </AssetSection>
       ) : null}
     </div>
-  );
-}
-
-function PanelButton({
-  icon,
-  label,
-  onClick,
-  disabled = false,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="group flex w-full items-center gap-2.5 rounded-[10px] px-2 py-1.5 text-left transition-colors duration-150 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-40"
-    >
-      <span className="grid size-6 shrink-0 place-items-center text-[var(--beat-text-2)] transition-colors group-hover:text-[var(--beat-text-1)]">
-        {icon}
-      </span>
-      <span className="flex-1 text-[13px] font-medium text-[var(--beat-text-1)]">
-        {label}
-      </span>
-      <ChevronRight
-        size={14}
-        className="text-white/25 transition-colors group-hover:text-white/45"
-      />
-    </button>
   );
 }
 

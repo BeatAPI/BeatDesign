@@ -261,9 +261,12 @@ export function BeatCanvasShell({
   }, [errorMessage]);
 
   const {
+    handleMediaUpload,
     handleUpload,
+    mediaFileInputRef,
     imageFileInputRef,
     getPendingUploadCountForDraft,
+    openMediaUploadPicker,
     openUploadPicker,
     promotePendingUploadsForDraft,
     uploadIntent,
@@ -862,25 +865,39 @@ export function BeatCanvasShell({
 
     setActiveComposerCardId(null);
     setPreviewMedia({
-      type: 'image',
+      type: previewableSelectedCard.type,
       url: previewableSelectedCard.url,
       title:
-        previewableSelectedCard.name || studioT('canvas.frame.imageTitle'),
+        previewableSelectedCard.name ||
+        studioT(
+          previewableSelectedCard.type === 'video'
+            ? 'canvas.frame.videoTitle'
+            : 'canvas.frame.imageTitle'
+        ),
     });
   }, [previewableSelectedCard, setActiveComposerCardId, studioT]);
 
   useEffect(() => {
     const handlePreviewMediaEvent = (event: Event) => {
       const detail = (event as CustomEvent<BeatCanvasPreviewMedia>).detail;
-      if (detail?.type !== 'image' || !detail.url) {
+      if (
+        (detail?.type !== 'image' && detail?.type !== 'video') ||
+        !detail.url
+      ) {
         return;
       }
 
       setActiveComposerCardId(null);
       setPreviewMedia({
-        type: 'image',
+        type: detail.type,
         url: detail.url,
-        title: detail.title || studioT('canvas.frame.imageTitle'),
+        title:
+          detail.title ||
+          studioT(
+            detail.type === 'video'
+              ? 'canvas.frame.videoTitle'
+              : 'canvas.frame.imageTitle'
+          ),
       });
     };
 
@@ -1167,6 +1184,14 @@ export function BeatCanvasShell({
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[var(--beatcanvas-canvas-bg)]">
       <input
+        ref={mediaFileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,.jpg,.jpeg,.png,.webp,.mp4,.webm,.mov"
+        multiple
+        className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px opacity-0"
+        onChange={handleMediaUpload}
+      />
+      <input
         ref={imageFileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/heic,image/heif"
@@ -1200,12 +1225,7 @@ export function BeatCanvasShell({
           {/* Floating Left Toolbar */}
           <BeatCanvasSidebar
             projectId={projectId}
-            onUploadImage={() =>
-              openUploadPicker({ intent: 'image', mode: 'global' })
-            }
-            onUploadVideo={() =>
-              openUploadPicker({ intent: 'video', mode: 'global' })
-            }
+            onUploadMedia={openMediaUploadPicker}
             onCreateImageDraft={() => handleCreatePromptDraft('image')}
             onInsertHistoryAsset={(asset) => {
               const sizeFromDimensions = ():
