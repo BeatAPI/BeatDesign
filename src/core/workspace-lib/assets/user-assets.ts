@@ -46,6 +46,7 @@ async function syncProjectCoverAsset({
 }
 
 export const recordUserAsset = async ({
+  id: requestedId,
   type,
   source,
   bucket,
@@ -64,6 +65,7 @@ export const recordUserAsset = async ({
   thumbnailAssetId,
   metadata,
 }: {
+  id?: string;
   type: AssetType;
   source: AssetSource;
   bucket: string;
@@ -95,7 +97,7 @@ export const recordUserAsset = async ({
     return existing[0].id;
   }
 
-  const id = randomUUID();
+  const id = requestedId ?? randomUUID();
   const resolvedAssetClass =
     assetClass ??
     (source === 'upload'
@@ -127,6 +129,44 @@ export const recordUserAsset = async ({
     updatedAt: new Date(),
   });
   return id;
+};
+
+export const getProjectAssetById = async ({
+  projectId,
+  assetId,
+}: {
+  projectId: string;
+  assetId: string;
+}) => {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: userAsset.id,
+      type: userAsset.type,
+      storageProvider: userAsset.storageProvider,
+      bucket: userAsset.bucket,
+      objectKey: userAsset.objectKey,
+      publicUrl: userAsset.publicUrl,
+      filename: userAsset.filename,
+      mimeType: userAsset.mimeType,
+      sizeBytes: userAsset.sizeBytes,
+    })
+    .from(projectAssetMembership)
+    .innerJoin(userAsset, eq(userAsset.id, projectAssetMembership.assetId))
+    .where(
+      and(
+        eq(projectAssetMembership.projectId, projectId),
+        eq(projectAssetMembership.assetId, assetId)
+      )
+    )
+    .limit(1);
+
+  return rows[0] ?? null;
+};
+
+export const deleteUserAssetById = async (assetId: string) => {
+  const db = await getDb();
+  await db.delete(userAsset).where(eq(userAsset.id, assetId));
 };
 
 export const linkGenerationAsset = async ({

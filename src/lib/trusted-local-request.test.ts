@@ -6,6 +6,7 @@ import {
   WORKSPACE_MUTATION_HEADER_VALUE,
   validateTrustedLocalJsonMutation,
   validateTrustedWorkspaceJsonMutation,
+  validateTrustedWorkspaceMutation,
 } from './trusted-local-request';
 
 const request = (headers: Record<string, string>) =>
@@ -68,4 +69,26 @@ test('accepts same-origin workspace mutations on an access-controlled deployment
     ok: true,
   });
   assert.equal(validateTrustedLocalJsonMutation(hostedRequest).ok, false);
+});
+
+test('accepts trusted same-origin multipart workspace mutations without weakening JSON routes', () => {
+  const formData = new FormData();
+  formData.set('file', new File(['image'], 'reference.png', { type: 'image/png' }));
+  const multipartRequest = new Request(
+    'http://127.0.0.1:3020/api/app/projects/project-1/assets',
+    {
+      method: 'POST',
+      headers: {
+        origin: 'http://127.0.0.1:3020',
+        'sec-fetch-site': 'same-origin',
+        [WORKSPACE_MUTATION_HEADER]: WORKSPACE_MUTATION_HEADER_VALUE,
+      },
+      body: formData,
+    }
+  );
+
+  assert.deepEqual(validateTrustedWorkspaceMutation(multipartRequest), {
+    ok: true,
+  });
+  assert.equal(validateTrustedWorkspaceJsonMutation(multipartRequest).ok, false);
 });

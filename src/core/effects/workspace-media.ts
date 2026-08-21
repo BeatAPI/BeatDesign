@@ -94,6 +94,16 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     video: createGenericSection('reference-video', 3),
     audio: createGenericSection('reference-audio', 3),
   },
+  'seedance-2-fast': {
+    image: createGenericSection('reference-image', 9),
+    video: createGenericSection('reference-video', 3),
+    audio: createGenericSection('reference-audio', 3),
+  },
+  'seedance-2-mini': {
+    image: createGenericSection('reference-image', 9),
+    video: createGenericSection('reference-video', 3),
+    audio: createGenericSection('reference-audio', 3),
+  },
   'seedance-2.5': {
     image: createGenericSection('reference-image', 12),
     video: createGenericSection('reference-video', 3),

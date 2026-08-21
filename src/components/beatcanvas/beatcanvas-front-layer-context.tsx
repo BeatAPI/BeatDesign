@@ -79,6 +79,7 @@ type CanvasLabels = {
   qualityOptionLabel: string;
   tokenQualityLabel: string;
   tokenFastLabel: string;
+  tokenLiteLabel: string;
   tokenLowLabel: string;
   tokenMediumLabel: string;
   tokenStandardLabel: string;
@@ -141,7 +142,6 @@ export type BeatCanvasFrontLayerValue = {
   }) => void;
   onSelectedShapeIdsChange: (shapeIds: string[]) => void;
   onSelectedCanvasCardIdsChange: (shapeIds: string[]) => void;
-  onCanvasShapeIdsChange: (shapeIds: string[]) => void;
   onActiveComposerCardIdChange: (cardId: string | null) => void;
   onDraftPromptChange: (draftId: string, prompt: string) => void;
   onDraftTaskTypeChange: (

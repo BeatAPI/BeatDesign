@@ -156,7 +156,12 @@ export function ProductPageShell({
                   </Link>
                 </div>
               ) : null}
-              {projectId ? <ProjectAssetsDialog projectId={projectId} /> : null}
+              {projectId ? (
+                <ProjectAssetsDialog
+                  projectId={projectId}
+                  canAddToCanvas={workspaceMode === 'canvas'}
+                />
+              ) : null}
               <WorkspaceApiConfigDialog
                 providerId={envConfigs.generation_provider}
               />

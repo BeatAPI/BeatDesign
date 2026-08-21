@@ -105,12 +105,11 @@ test('keeps the latest successful media on one generation node', () => {
     outputs: [first, second],
   });
 
-  assert.equal(presentation.status, 'failed');
+  assert.equal(presentation.status, 'succeeded');
   assert.equal(presentation.latestOutputUrl, first.url);
-  assert.equal(presentation.takes.length, 2);
+  assert.equal(presentation.takes.length, 1);
   assert.equal(presentation.takes[0]?.id, first.id);
   assert.equal(presentation.takes[0]?.takeNumber, 1);
   assert.equal(presentation.takes[0]?.isPinned, true);
-  assert.equal(presentation.takes[1]?.id, second.id);
   assert.equal('history' in presentation, false);
 });

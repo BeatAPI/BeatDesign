@@ -229,6 +229,75 @@ test('validates Motion Control media counts and orientation duration', () => {
   );
 });
 
+test('maps Seedance 2 Fast and Mini as separate BeatAPI models', () => {
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'seedance-2-fast',
+      input: {
+        prompt: 'Fast market draft',
+        wmDuration: '5s',
+        wmOutputQuality: '720p',
+        wmSound: true,
+      },
+    }).body,
+    {
+      model: 'seedance-2-fast',
+      prompt: 'Fast market draft',
+      duration: 5,
+      resolution: '720p',
+      generate_audio: true,
+    }
+  );
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'seedance-2-mini',
+      input: {
+        prompt: 'Low-cost storyboard',
+        wmDuration: '5s',
+        wmOutputQuality: '480p',
+      },
+    }).body,
+    {
+      model: 'seedance-2-mini',
+      prompt: 'Low-cost storyboard',
+      duration: 5,
+      resolution: '480p',
+    }
+  );
+});
+
+test('maps Veo 3.1 quality tiers and resolution into BeatAPI fields', () => {
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'veo-3.1',
+      input: {
+        prompt: 'Coastal sunrise',
+        aspect_ratio: '16:9',
+        wmOutputQuality: '1080p',
+        mode: 'fast',
+      },
+    }).body,
+    {
+      model: 'veo-3.1',
+      prompt: 'Coastal sunrise',
+      aspect_ratio: '16:9',
+      resolution: '1080p',
+      quality: 'Fast',
+    }
+  );
+  assert.equal(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'veo-3.1',
+      input: { prompt: 'Storyboard draft', mode: 'lite', wmOutputQuality: '4k' },
+    }).body.quality,
+    'Lite'
+  );
+});
+
 test('rejects models outside the public BeatAPI media catalog', () => {
   assert.throws(
     () =>

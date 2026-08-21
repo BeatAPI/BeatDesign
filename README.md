@@ -37,16 +37,21 @@ Open `http://localhost:3020`. Home is the default route. Opening Studio or Canva
 ```text
 Studio / Canvas
   -> local server routes
+  -> imported files saved under data/project-assets and indexed in SQLite
   -> generation precheck and a one-time SQLite generation intent
-  -> just-in-time reference upload (only when Generate is confirmed)
+  -> just-in-time provider upload of the durable local reference
   -> BeatAPI image or video task API
   -> provider status polling
   -> local generation history and asset index
 ```
 
-The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. Generated files remain at the public URLs returned by the provider and are indexed locally instead of being copied again.
+The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. In local SQLite mode, imported image and video files are copied immediately into the project-owned `data/project-assets/<project-id>/` directory and indexed in SQLite before a card is added to the Canvas. Generated files remain at the public URLs returned by the provider and are indexed locally instead of being copied again.
 
-Selecting a local file creates a browser-local preview only. It does not upload anything. When the user confirms Generate, the server validates the project, model, prompt, concurrency, and BeatAPI connection, then creates a short-lived, one-time generation intent in SQLite. The intent fixes the project, model, and exact upload count. Uploaded URLs must be referenced by the same generation request, and the intent is consumed when the billable task is submitted. Uploaded inputs enter the project asset index only after BeatAPI accepts the task.
+Canvas state is saved as a complete project snapshot after changes, checked again every five seconds while dirty, and flushed when the page is hidden, refreshed, or closed. A populated snapshot cannot be replaced by an unconfirmed empty snapshot.
+
+Selecting or dragging in a local file does not send it to a provider, but it is persisted immediately on the user's own machine so a refresh, restart, or development hot reload cannot lose it. When the user confirms Generate, the server validates the project, model, prompt, concurrency, and BeatAPI connection, then creates a short-lived, one-time generation intent in SQLite. The durable local reference is uploaded to the configured provider storage only for that confirmed generation. The intent fixes the project, model, and exact upload count, and is consumed when the billable task is submitted.
+
+The `data/` directory is gitignored and contains both the SQLite database and local project assets. Back up or move the directory as one unit when migrating a workspace to another machine.
 
 Storage entitlement follows BeatAPI billing. The built-in provider is fixed to the official `https://api.beatapi.io` endpoint and uses the user's BeatAPI API key. Supported image, audio, and subtitle inputs go through BeatAPI Files; an official hosted deployment can preconfigure managed R2 for video inputs that Files does not accept through the separate `BEATAPI_MANAGED_R2_*` secrets. Self-hosters may instead provide their own Cloudflare R2 or other S3-compatible endpoint, bucket, credentials, and public URL through `R2_*`. The two credential sets never fall through to each other.
 

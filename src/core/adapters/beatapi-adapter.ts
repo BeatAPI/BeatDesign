@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { getBeatCanvasProviderServerConfig } from '@/core/beatcanvas/providers/provider-config';
+import { ensureMotionControlInputUrls } from '@/core/effects/beatapi-input-upload';
 import { isOfficialBeatApiMediaUrl } from '@/core/effects/beatapi-media-url';
 import { getConfig } from '@/modules/config/service';
 import { BaseAdapter, type GenerationResult } from './base-adapter';
@@ -15,6 +16,8 @@ const IMAGE_MODELS = new Set([
 const VIDEO_MODELS = new Set([
   'minimax-h3',
   'seedance-2',
+  'seedance-2-fast',
+  'seedance-2-mini',
   'veo-3.1',
   'seedance-2.5',
   'kling-3',
@@ -31,6 +34,7 @@ const inputSchema = z.object({
   wmDuration: z.string().optional(),
   wmOutputQuality: z.string().optional(),
   wmSound: z.boolean().optional(),
+  mode: z.enum(['quality', 'fast', 'lite']).optional(),
   image_urls: z.array(z.string().url()).optional(),
   image_url: z.string().url().optional(),
   video_urls: z.array(z.string().url()).optional(),
@@ -100,6 +104,19 @@ const mapMotionControlResolution = (value: string | undefined) =>
   value?.toLowerCase() === '1080p' || value?.toLowerCase() === 'pro'
     ? '1080p'
     : '720p';
+
+const mapVeoQuality = (mode: string | undefined) => {
+  if (mode === 'fast') return 'Fast';
+  if (mode === 'lite') return 'Lite';
+  return 'Quality';
+};
+
+const mapVeoResolution = (value: string | undefined) => {
+  const quality = value?.toLowerCase();
+  if (quality === '4k') return '4k';
+  if (quality === '1080p') return '1080p';
+  return '720p';
+};
 
 export const buildBeatApiTaskRequest = ({
   effectType,
@@ -203,12 +220,17 @@ export const buildBeatApiTaskRequest = ({
 
   if (model === 'minimax-h3') {
     body.resolution = mapMinimaxResolution(input.wmOutputQuality);
-  } else if (model === 'seedance-2') {
+  } else if (model === 'seedance-2' || model === 'seedance-2-fast') {
     body.resolution = input.wmOutputQuality || '720p';
     body.generate_audio = input.wmSound ?? true;
+  } else if (model === 'seedance-2-mini') {
+    body.resolution = input.wmOutputQuality || '720p';
   } else if (model === 'seedance-2.5') {
     body.resolution = '720p';
     body.generate_audio = input.wmSound ?? true;
+  } else if (model === 'veo-3.1') {
+    body.resolution = mapVeoResolution(input.wmOutputQuality);
+    body.quality = mapVeoQuality(input.mode);
   } else if (model === 'kling-3') {
     body.resolution = mapKlingResolution(input.wmOutputQuality);
     body.sound = input.wmSound ?? true;
@@ -385,10 +407,41 @@ export class BeatApiAdapter extends BaseAdapter {
     }
 
     try {
+      const model = this.effect.model || '';
+      let input = parsed.data;
+      if (
+        model === 'kling-2.6-motion-control' ||
+        model === 'kling-3-motion-control'
+      ) {
+        const images = imageUrlsFromInput(input);
+        if (images.length !== 1 || input.video_urls?.length !== 1) {
+          throw new Error(
+            images.length !== 1
+              ? 'Kling Motion Control requires exactly one image'
+              : 'Kling Motion Control requires exactly one motion video'
+          );
+        }
+        const config = await this.resolveConfig();
+        if (!config.apiKey) {
+          throw new Error('BEATAPI_API_KEY is not configured');
+        }
+        const resolved = await ensureMotionControlInputUrls({
+          imageUrl: images[0],
+          videoUrl: input.video_urls[0],
+          baseUrl: config.baseUrl,
+          apiKey: config.apiKey,
+        });
+        input = {
+          ...input,
+          image_urls: [resolved.imageUrl],
+          video_urls: [resolved.videoUrl],
+        };
+      }
+
       const request = buildBeatApiTaskRequest({
         effectType: this.effect.type,
-        model: this.effect.model || '',
-        input: parsed.data,
+        model,
+        input,
       });
       const task = await this.request(request.path, {
         method: 'POST',

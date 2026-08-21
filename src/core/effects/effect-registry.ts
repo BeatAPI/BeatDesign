@@ -1,6 +1,6 @@
 export type WorkspaceRegistryType = 'ai-video' | 'ai-image';
 
-type WorkspaceRegistryModelMode = 'quality' | 'fast';
+type WorkspaceRegistryModelMode = 'quality' | 'fast' | 'lite';
 type WorkspaceRegistryModelVariant = 'standard' | 'pro';
 type WorkspaceRegistryDuration = `${number}s`;
 type WorkspaceRegistryAspectRatio =
@@ -245,6 +245,42 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       modelAliases: ['seedance20'],
     },
     {
+      id: 'seedance-2-fast',
+      name: 'Seedance 2 Fast',
+      effectId: 21,
+      workspaceType: 'ai-video',
+      uploadPath: 'effects/seedance-2-fast',
+      imageBucketName: 'image',
+      routeSlug: 'seedance-2-fast',
+      routeAliases: ['seedance-2.0-fast', 'seedance20-fast'],
+      routeOrder: 12,
+      defaultDuration: '5s',
+      supportedDurations: durationRange(4, 15),
+      defaultAspectRatio: 'adaptive',
+      supportedAspectRatios: [...SEEDANCE_ASPECT_RATIOS],
+      defaultOutputQuality: '720p',
+      supportedOutputQualities: ['480p', '720p'],
+      modelAliases: ['seedance20fast'],
+    },
+    {
+      id: 'seedance-2-mini',
+      name: 'Seedance 2 Mini',
+      effectId: 22,
+      workspaceType: 'ai-video',
+      uploadPath: 'effects/seedance-2-mini',
+      imageBucketName: 'image',
+      routeSlug: 'seedance-2-mini',
+      routeAliases: ['seedance-2.0-mini', 'seedance20-mini'],
+      routeOrder: 14,
+      defaultDuration: '5s',
+      supportedDurations: durationRange(4, 15),
+      defaultAspectRatio: 'adaptive',
+      supportedAspectRatios: [...SEEDANCE_ASPECT_RATIOS],
+      defaultOutputQuality: '720p',
+      supportedOutputQualities: ['480p', '720p'],
+      modelAliases: ['seedance20mini'],
+    },
+    {
       id: 'seedance-2.5',
       name: 'Seedance 2.5',
       effectId: 18,
@@ -288,7 +324,17 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       routeOrder: 40,
       defaultAspectRatio: '16:9',
       supportedAspectRatios: ['16:9', '9:16', 'auto'],
-      modelAliases: ['veo31', 'veo31-quality', 'veo31-fast'],
+      defaultDuration: '8s',
+      defaultOutputQuality: '720p',
+      supportedOutputQualities: ['720p', '1080p', '4k'],
+      defaultMode: 'quality',
+      modeOptions: ['quality', 'fast', 'lite'],
+      modelAliases: ['veo31', 'veo31-quality', 'veo31-fast', 'veo31-lite'],
+      aliasDefaults: {
+        'veo31-quality': { defaultMode: 'quality' },
+        'veo31-fast': { defaultMode: 'fast' },
+        'veo31-lite': { defaultMode: 'lite' },
+      },
     },
     {
       id: 'kling-3',

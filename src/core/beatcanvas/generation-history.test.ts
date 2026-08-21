@@ -94,6 +94,33 @@ test('keeps an explicit pin and otherwise falls back to the latest success', () 
   );
 });
 
+test('omits failed outputs from draft history', () => {
+  const failed = makeOutput(
+    'output-failed',
+    '2026-08-16T00:03:00.000Z',
+    'failed'
+  );
+  const succeeded = makeOutput('output-ok', '2026-08-16T00:01:00.000Z');
+
+  assert.deepEqual(
+    listGenerationOutputsForDraft(
+      {
+        [failed.id]: failed,
+        [succeeded.id]: succeeded,
+      },
+      'draft-1'
+    ).map((card) => card.id),
+    [succeeded.id]
+  );
+  assert.deepEqual(
+    buildGenerationTakes({
+      outputs: [failed, succeeded],
+      pinnedOutputId: failed.id,
+    }).map((take) => take.id),
+    [succeeded.id]
+  );
+});
+
 test('builds chronological takes and pins the resolved output', () => {
   const older = makeOutput('output-old', '2026-08-16T00:00:00.000Z');
   const newer = makeOutput('output-new', '2026-08-16T00:02:00.000Z');

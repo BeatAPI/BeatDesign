@@ -5,6 +5,7 @@ import { project, projectCanvasState, userAsset } from '@/config/db/schema';
 import {
   type ProjectSnapshotDocument,
   createEmptyProjectSnapshot,
+  isDestructiveEmptyProjectSnapshot,
   normalizeProjectSnapshotDocument,
 } from '@/core/projects/project-snapshot';
 import { and, desc, eq, getTableColumns } from 'drizzle-orm';
@@ -195,10 +196,12 @@ export const saveProjectSnapshot = async ({
   projectId,
   document,
   baseVersion,
+  allowEmpty = false,
 }: {
   projectId: string;
   document: ProjectSnapshotDocument;
   baseVersion?: number | null;
+  allowEmpty?: boolean;
 }) => {
   const db = await getDb();
   const currentProject = await getProject({ projectId });
@@ -214,11 +217,26 @@ export const saveProjectSnapshot = async ({
     .limit(1);
 
   const currentState = stateRows[0] ?? null;
+  const previousDocument = currentState
+    ? normalizeProjectSnapshotDocument(currentState.documentJson)
+    : null;
+  if (
+    previousDocument &&
+    isDestructiveEmptyProjectSnapshot({
+      previous: previousDocument,
+      next: normalizedDocument,
+    }) &&
+    !allowEmpty
+  ) {
+    const error = new Error(
+      'Refusing to replace a non-empty project snapshot with an unconfirmed empty snapshot'
+    );
+    error.name = 'ProjectSnapshotDestructiveEmptyRejected';
+    throw error;
+  }
   const nextSerialized = JSON.stringify(normalizedDocument);
-  const previousSerialized = currentState
-    ? JSON.stringify(
-        normalizeProjectSnapshotDocument(currentState.documentJson)
-      )
+  const previousSerialized = previousDocument
+    ? JSON.stringify(previousDocument)
     : null;
 
   if (

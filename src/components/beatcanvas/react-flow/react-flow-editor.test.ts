@@ -75,3 +75,17 @@ test('propagates a completed viewport move into the project snapshot autosave si
   assert.match(editorSource, /editor\.setViewportState\(viewport\)/);
   assert.match(editorSource, /onMoveEnd=\{handleMoveEnd\}/);
 });
+
+test('propagates only explicit React Flow removals instead of reconciling against transient empty mounts', () => {
+  const editorSource = readFileSync(
+    new URL('./react-flow-editor.tsx', import.meta.url),
+    'utf8'
+  );
+  const frontLayerSource = readFileSync(
+    new URL('../beatcanvas-front-layer.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(editorSource, /onShapeIdsRemoved\?\.\(\[\.\.\.removedIds\]\)/);
+  assert.doesNotMatch(frontLayerSource, /onCanvasShapeIdsChange/);
+});

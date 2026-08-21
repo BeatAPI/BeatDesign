@@ -579,7 +579,10 @@ export const runDraftGeneration = async ({
       const unresolvedLocalReference = preparedCard.referenceCardIds.some(
         (cardId) => {
           const card = getCurrentCard(cardId);
-          return Boolean(card?.url) && isLocalWorkspaceMediaUrl(card.url);
+          return (
+            typeof card?.url === 'string' &&
+            isLocalWorkspaceMediaUrl(card.url)
+          );
         }
       );
       if (unresolvedLocalReference) {

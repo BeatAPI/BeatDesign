@@ -22,7 +22,9 @@ export const listGenerationOutputsForDraft = (
   Object.values(cards)
     .filter(
       (card): card is CanvasOutputCard =>
-        isCanvasOutputCard(card) && card.sourceConfigCardId === draftId
+        isCanvasOutputCard(card) &&
+        card.sourceConfigCardId === draftId &&
+        card.status !== 'failed'
     )
     .sort(
       (left, right) =>
@@ -60,12 +62,14 @@ export const buildGenerationTakes = ({
   outputs: CanvasOutputCard[];
   pinnedOutputId?: string | null;
 }): GenerationTake[] => {
-  const chronological = [...outputs].sort(
-    (left, right) =>
-      left.generationSnapshot.capturedAt.localeCompare(
-        right.generationSnapshot.capturedAt
-      ) || left.id.localeCompare(right.id)
-  );
+  const chronological = [...outputs]
+    .filter((output) => output.status !== 'failed')
+    .sort(
+      (left, right) =>
+        left.generationSnapshot.capturedAt.localeCompare(
+          right.generationSnapshot.capturedAt
+        ) || left.id.localeCompare(right.id)
+    );
   const resolvedPinnedId = resolvePinnedGenerationOutputId({
     outputs: chronological,
     pinnedOutputId,

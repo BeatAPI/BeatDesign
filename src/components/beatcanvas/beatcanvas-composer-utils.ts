@@ -34,6 +34,7 @@ export const normalizeComposerToken = (
     CanvasLabels,
     | 'tokenQualityLabel'
     | 'tokenFastLabel'
+    | 'tokenLiteLabel'
     | 'tokenLowLabel'
     | 'tokenMediumLabel'
     | 'tokenStandardLabel'
@@ -56,6 +57,8 @@ export const normalizeComposerToken = (
       return labels?.tokenQualityLabel ?? 'Quality';
     case 'fast':
       return labels?.tokenFastLabel ?? 'Fast';
+    case 'lite':
+      return labels?.tokenLiteLabel ?? 'Lite';
     case 'low':
       return labels?.tokenLowLabel ?? 'Low';
     case 'medium':

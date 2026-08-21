@@ -257,6 +257,14 @@ export const createEmptyProjectSnapshot = (): ProjectSnapshotDocument => ({
   frames: {},
 });
 
+export const isDestructiveEmptyProjectSnapshot = ({
+  previous,
+  next,
+}: {
+  previous: ProjectSnapshotDocument;
+  next: ProjectSnapshotDocument;
+}) => previous.cards.length > 0 && next.cards.length === 0;
+
 export const normalizeProjectSnapshotDocument = (
   value: unknown
 ): ProjectSnapshotDocument => {

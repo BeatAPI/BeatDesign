@@ -58,6 +58,7 @@ interface BeatCanvasReactFlowEditorProps {
   onMount?: (editor: unknown) => void;
   onDocumentChange?: () => void;
   onHistoryCheckpoint?: () => void;
+  onShapeIdsRemoved?: (shapeIds: string[]) => void;
   onReferenceEdgesRemoved?: (
     edges: Array<{ source: string; target: string }>
   ) => void;
@@ -103,6 +104,7 @@ function BeatCanvasReactFlowCanvas({
   onMount,
   onDocumentChange,
   onHistoryCheckpoint,
+  onShapeIdsRemoved,
   onReferenceEdgesRemoved,
   components,
 }: BeatCanvasReactFlowEditorProps) {
@@ -582,6 +584,9 @@ function BeatCanvasReactFlowCanvas({
       const nonRemoveChanges = changes.filter(
         (change) => change.type !== 'remove'
       );
+      if (removedIds.size > 0) {
+        onShapeIdsRemoved?.([...removedIds]);
+      }
       let nextNodes = applyNodeChanges(
         nonRemoveChanges,
         nodesRef.current.filter((node) => !removedIds.has(node.id))
@@ -631,7 +636,7 @@ function BeatCanvasReactFlowCanvas({
         )
       );
     },
-    [checkpointForDelete, commitEdges, commitNodes]
+    [checkpointForDelete, commitEdges, commitNodes, onShapeIdsRemoved]
   );
 
   const onEdgesChange = useCallback(

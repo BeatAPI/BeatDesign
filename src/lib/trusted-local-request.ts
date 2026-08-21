@@ -7,7 +7,7 @@ export type TrustedLocalRequestResult =
   | { ok: true }
   | { ok: false; status: 403 | 415; message: string };
 
-export function validateTrustedWorkspaceJsonMutation(
+export function validateTrustedWorkspaceMutation(
   request: Request
 ): TrustedLocalRequestResult {
   if (
@@ -18,15 +18,6 @@ export function validateTrustedWorkspaceJsonMutation(
       ok: false,
       status: 403,
       message: 'Untrusted workspace request.',
-    };
-  }
-
-  const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
-  if (!contentType.startsWith('application/json')) {
-    return {
-      ok: false,
-      status: 415,
-      message: 'Workspace requests must use application/json.',
     };
   }
 
@@ -45,6 +36,24 @@ export function validateTrustedWorkspaceJsonMutation(
     } catch {
       return { ok: false, status: 403, message: 'Invalid request origin.' };
     }
+  }
+
+  return { ok: true };
+}
+
+export function validateTrustedWorkspaceJsonMutation(
+  request: Request
+): TrustedLocalRequestResult {
+  const trust = validateTrustedWorkspaceMutation(request);
+  if (!trust.ok) return trust;
+
+  const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
+  if (!contentType.startsWith('application/json')) {
+    return {
+      ok: false,
+      status: 415,
+      message: 'Workspace requests must use application/json.',
+    };
   }
 
   return { ok: true };

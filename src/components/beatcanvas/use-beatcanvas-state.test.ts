@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
-import { reconcileCanvasCardsForAvailableShapes } from './use-beatcanvas-state';
+import { removeCanvasCardsForShapeIds } from './use-beatcanvas-state';
 
 const generationCard: CanvasCard = {
   id: 'shape:generation',
@@ -49,13 +49,13 @@ const outputCard: CanvasCard = {
   },
 };
 
-test('keeps hidden generation history while its visual node remains on canvas', () => {
-  const reconciled = reconcileCanvasCardsForAvailableShapes(
+test('does not treat a transient empty renderer snapshot as card deletion', () => {
+  const reconciled = removeCanvasCardsForShapeIds(
     {
       [generationCard.id]: generationCard,
       [outputCard.id]: outputCard,
     },
-    new Set([generationCard.id])
+    new Set()
   );
 
   assert.deepEqual(Object.keys(reconciled).sort(), [
@@ -64,13 +64,13 @@ test('keeps hidden generation history while its visual node remains on canvas', 
   ]);
 });
 
-test('removes hidden generation history when its visual node is deleted', () => {
-  const reconciled = reconcileCanvasCardsForAvailableShapes(
+test('removes a deleted visual card and its hidden generation history explicitly', () => {
+  const reconciled = removeCanvasCardsForShapeIds(
     {
       [generationCard.id]: generationCard,
       [outputCard.id]: outputCard,
     },
-    new Set()
+    new Set([generationCard.id])
   );
 
   assert.deepEqual(reconciled, {});

@@ -13,28 +13,19 @@ export function BeatCanvasStatusPill({
 }) {
   return (
     <section
-      className={`pointer-events-auto absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full px-4 py-2 text-sm ${beatcanvasPanelClassName}`}
+      className={`pointer-events-auto absolute left-1/2 top-5 z-30 flex -translate-x-1/2 items-center gap-2 rounded-full px-4 py-2 text-sm ${beatcanvasPanelClassName}`}
     >
+      {isError ? (
+        <AlertCircle className="size-3.5 text-[var(--beatcanvas-error)]" />
+      ) : (
+        <Sparkles className="size-3.5 text-[var(--beat-accent)]" />
+      )}
       <span
         className={cn(
-          'inline-flex size-5 items-center justify-center rounded-full',
-          isError
-            ? 'bg-[rgba(255,107,115,0.14)] text-[var(--beatcanvas-error)]'
-            : 'bg-[var(--beat-graph-soft)] text-[var(--beat-graph)]'
-        )}
-      >
-        {isError ? (
-          <AlertCircle className="size-3.5" />
-        ) : (
-          <Sparkles className="size-3.5" />
-        )}
-      </span>
-      <span
-        className={cn(
-          'font-medium',
+          'beat-product-display text-[13px] font-medium tracking-[-0.02em]',
           isError
             ? 'text-[var(--beatcanvas-error)]'
-            : 'text-[var(--beat-text-2)]'
+            : 'text-[var(--beat-accent)]'
         )}
       >
         {message}

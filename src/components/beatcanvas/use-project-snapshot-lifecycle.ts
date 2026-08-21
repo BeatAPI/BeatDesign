@@ -13,6 +13,9 @@ type SnapshotSaveFailure = {
   currentVersion?: number;
 };
 
+export const PROJECT_SNAPSHOT_AUTOSAVE_DELAY_MS = 350;
+export const PROJECT_SNAPSHOT_CHECKPOINT_INTERVAL_MS = 5_000;
+
 const readSnapshotSaveFailure = async (
   response: Response
 ): Promise<SnapshotSaveFailure> => {
@@ -86,9 +89,11 @@ export function useProjectSnapshotLifecycle({
   initialTaskType,
   isCanvasReady,
   snapshotChangeSignal,
+  allowEmptyProjectSnapshot,
   buildProjectSnapshotDocument,
   restoreProjectSnapshot,
   createDraftCard,
+  onEmptyProjectSnapshotSaved,
 }: {
   projectId: string;
   projectPath: string;
@@ -98,6 +103,7 @@ export function useProjectSnapshotLifecycle({
   initialTaskType: CanvasCardMediaType;
   isCanvasReady: boolean;
   snapshotChangeSignal: unknown;
+  allowEmptyProjectSnapshot: boolean;
   buildProjectSnapshotDocument: () => ProjectSnapshotDocument;
   restoreProjectSnapshot: (document: ProjectSnapshotDocument) => void;
   createDraftCard: (input: {
@@ -105,6 +111,7 @@ export function useProjectSnapshotLifecycle({
     prompt: string;
     referenceCardIds: string[];
   }) => string | null;
+  onEmptyProjectSnapshotSaved?: () => void;
 }) {
   const [isHydratedFromProject, setIsHydratedFromProject] = useState(false);
   const [isHydratedFromQuery, setIsHydratedFromQuery] = useState(false);
@@ -118,7 +125,7 @@ export function useProjectSnapshotLifecycle({
   const saveQueueRef = useRef(Promise.resolve());
 
   const saveSerializedSnapshot = useCallback(
-    async (serializedSnapshot: string) => {
+    async (serializedSnapshot: string, allowEmpty: boolean) => {
       const runSave = async () => {
         if (serializedSnapshot === lastSavedProjectSnapshotRef.current) {
           if (pendingProjectSnapshotRef.current === serializedSnapshot) {
@@ -138,6 +145,7 @@ export function useProjectSnapshotLifecycle({
             body: JSON.stringify({
               document: snapshotDocument,
               baseVersion,
+              allowEmpty,
             }),
           });
 
@@ -169,13 +177,16 @@ export function useProjectSnapshotLifecycle({
         if (pendingProjectSnapshotRef.current === serializedSnapshot) {
           pendingProjectSnapshotRef.current = null;
         }
+        if (allowEmpty && snapshotDocument.cards.length === 0) {
+          onEmptyProjectSnapshotSaved?.();
+        }
       };
 
       const queuedSave = saveQueueRef.current.then(runSave, runSave);
       saveQueueRef.current = queuedSave.catch(() => {});
       await queuedSave;
     },
-    [projectId]
+    [onEmptyProjectSnapshotSaved, projectId]
   );
 
   useEffect(() => {
@@ -241,21 +252,60 @@ export function useProjectSnapshotLifecycle({
 
     const timeoutId = window.setTimeout(async () => {
       try {
-        await saveSerializedSnapshot(serializedSnapshot);
+        await saveSerializedSnapshot(
+          serializedSnapshot,
+          allowEmptyProjectSnapshot
+        );
       } catch (error) {
         console.error('save project snapshot failed:', error);
       }
-    }, 350);
+    }, PROJECT_SNAPSHOT_AUTOSAVE_DELAY_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
   }, [
     buildProjectSnapshotDocument,
+    allowEmptyProjectSnapshot,
     isCanvasReady,
     isHydratedFromProject,
     saveSerializedSnapshot,
     snapshotChangeSignal,
+  ]);
+
+  useEffect(() => {
+    if (!isCanvasReady || !isHydratedFromProject) return;
+
+    const checkpointSnapshot = async () => {
+      const serializedSnapshot = JSON.stringify(buildProjectSnapshotDocument());
+      if (serializedSnapshot === lastSavedProjectSnapshotRef.current) {
+        return;
+      }
+
+      pendingProjectSnapshotRef.current = serializedSnapshot;
+      try {
+        await saveSerializedSnapshot(
+          serializedSnapshot,
+          allowEmptyProjectSnapshot
+        );
+      } catch (error) {
+        console.error('checkpoint project snapshot failed:', error);
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void checkpointSnapshot();
+    }, PROJECT_SNAPSHOT_CHECKPOINT_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [
+    allowEmptyProjectSnapshot,
+    buildProjectSnapshotDocument,
+    isCanvasReady,
+    isHydratedFromProject,
+    saveSerializedSnapshot,
   ]);
 
   useEffect(() => {
@@ -277,6 +327,7 @@ export function useProjectSnapshotLifecycle({
           body: JSON.stringify({
             document: JSON.parse(serializedSnapshot) as ProjectSnapshotDocument,
             baseVersion: lastSavedProjectSnapshotVersionRef.current,
+            allowEmpty: allowEmptyProjectSnapshot,
           }),
           keepalive: true,
         });
@@ -303,6 +354,7 @@ export function useProjectSnapshotLifecycle({
     };
   }, [
     buildProjectSnapshotDocument,
+    allowEmptyProjectSnapshot,
     isCanvasReady,
     isHydratedFromProject,
     projectId,

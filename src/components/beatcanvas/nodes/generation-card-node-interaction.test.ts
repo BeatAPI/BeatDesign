@@ -25,5 +25,6 @@ test('generation node leaves prompt and parameters to the attached Composer', ()
   assert.doesNotMatch(source, /latestOutputQuality/);
   assert.match(source, /latestOutputUrl/);
   assert.match(source, /beatcanvas:pin-generation-output/);
+  assert.match(source, /beatcanvas:preview-media/);
   assert.match(source, /Take \$\{take\.takeNumber\}/);
 });

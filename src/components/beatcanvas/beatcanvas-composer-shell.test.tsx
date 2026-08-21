@@ -90,6 +90,7 @@ const labels = {
   qualityOptionLabel: 'Quality',
   tokenQualityLabel: 'Quality',
   tokenFastLabel: 'Fast',
+  tokenLiteLabel: 'Lite',
   tokenLowLabel: 'Low',
   tokenMediumLabel: 'Medium',
   tokenStandardLabel: 'Standard',

@@ -18,6 +18,8 @@ const MODEL_ICON_PATH_BY_MODEL_ID: Record<string, string> = {
   'nano-banana': MODEL_ICON_PATHS.nanobanana,
   'nano-banana-pro': MODEL_ICON_PATHS.nanobanana,
   'seedance-2': MODEL_ICON_PATHS.bytedance,
+  'seedance-2-fast': MODEL_ICON_PATHS.bytedance,
+  'seedance-2-mini': MODEL_ICON_PATHS.bytedance,
   'seedance-2.5': MODEL_ICON_PATHS.bytedance,
   'seedream-5-pro': MODEL_ICON_PATHS.bytedance,
   'veo-3.1': MODEL_ICON_PATHS.google,

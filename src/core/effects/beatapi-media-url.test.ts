@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { isOfficialBeatApiMediaUrl } from './beatapi-media-url';
+import {
+  isOfficialBeatApiInputUrl,
+  isOfficialBeatApiMediaUrl,
+} from './beatapi-media-url';
 
 test('allows only the official BeatAPI media origin', () => {
   assert.equal(
@@ -21,4 +24,17 @@ test('allows only the official BeatAPI media origin', () => {
   ]) {
     assert.equal(isOfficialBeatApiMediaUrl(url), false, url);
   }
+});
+
+test('treats only /inputs/ objects as BeatAPI input files', () => {
+  assert.equal(
+    isOfficialBeatApiInputUrl('https://media.beatapi.io/inputs/character.png'),
+    true
+  );
+  assert.equal(
+    isOfficialBeatApiInputUrl(
+      'https://media.beatapi.io/outputs/task_123/result.png'
+    ),
+    false
+  );
 });

@@ -30,21 +30,20 @@ export const resolveNextActiveComposerCardId = ({
   return null;
 };
 
-export const reconcileCanvasCardsForAvailableShapes = (
+export const removeCanvasCardsForShapeIds = (
   cardsById: Record<string, CanvasCard>,
-  availableIds: Set<string>
+  removedIds: Set<string>
 ) =>
   Object.fromEntries(
     Object.entries(cardsById)
       .filter(
         ([cardId, card]) =>
-          availableIds.has(cardId) ||
-          (isCanvasOutputCard(card) &&
-            availableIds.has(card.sourceConfigCardId))
+          !removedIds.has(cardId) &&
+          (!isCanvasOutputCard(card) || !removedIds.has(card.sourceConfigCardId))
       )
       .map(([cardId, card]) => {
         const nextReferenceCardIds = card.referenceCardIds.filter(
-          (referenceCardId) => availableIds.has(referenceCardId)
+          (referenceCardId) => !removedIds.has(referenceCardId)
         );
 
         return [
@@ -193,11 +192,12 @@ export function useBeatCanvasState() {
     );
   }, []);
 
-  const handleCanvasShapeIdsChange = useCallback((shapeIds: string[]) => {
-    const availableIds = new Set(shapeIds);
-    const nextCards = reconcileCanvasCardsForAvailableShapes(
+  const removeCanvasCardsForShapes = useCallback((shapeIds: string[]) => {
+    const removedIds = new Set(shapeIds);
+    if (removedIds.size === 0) return;
+    const nextCards = removeCanvasCardsForShapeIds(
       canvasCardsRef.current,
-      availableIds
+      removedIds
     );
 
     const nextCardsChanged =
@@ -213,13 +213,13 @@ export function useBeatCanvasState() {
     }
 
     setSelectedCanvasCardIds((previous) =>
-      previous.filter((cardId) => availableIds.has(cardId))
+      previous.filter((cardId) => !removedIds.has(cardId))
     );
     setSelectedShapeIds((previous) =>
-      previous.filter((shapeId) => availableIds.has(shapeId))
+      previous.filter((shapeId) => !removedIds.has(shapeId))
     );
     setActiveComposerCardId((current) =>
-      current && availableIds.has(current) ? current : null
+      current && !removedIds.has(current) ? current : null
     );
   }, []);
 
@@ -231,12 +231,12 @@ export function useBeatCanvasState() {
     activeComposerCardId,
     canvasCards,
     canvasCardsRef,
-    handleCanvasShapeIdsChange,
     handleSelectedShapeIdsChange,
     handleSelectedCanvasCardIdsChange,
     selectedShapeIds,
     selectedCanvasCardIds,
     removeCanvasCard,
+    removeCanvasCardsForShapes,
     replaceCanvasCards,
     setActiveComposerCardId,
     setCanvasCard,

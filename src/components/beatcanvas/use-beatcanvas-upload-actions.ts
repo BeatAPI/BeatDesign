@@ -28,6 +28,7 @@ import {
   type AssetShapeSize,
   computeAdaptiveAssetSize,
 } from '@/core/beatcanvas/studio/project-asset-runtime';
+import { uploadLocalProjectAsset } from '@/core/workspace-lib/app/local-project-asset-client';
 import type {
   ChangeEvent,
   MutableRefObject,
@@ -60,11 +61,11 @@ export type UploadRequest =
       draftId: string;
     };
 
-export function shouldUploadImmediatelyAfterCanvasInsert(_input: {
+export function shouldPersistCanvasImportLocally(_input: {
   request: UploadRequest;
   hasResolvedFrame: boolean;
 }) {
-  return false;
+  return true;
 }
 
 export type PendingImageUploadForCanvas = {
@@ -77,22 +78,26 @@ export type PendingImageUploadForCanvas = {
   };
 };
 
-export function materializePendingImageUploadsToCanvas({
+export type PersistedImageUploadForCanvas = PendingImageUploadForCanvas & {
+  assetId: string;
+  persistedUrl: string;
+};
+
+export function materializePersistedImageUploadsToCanvas({
   uploads,
   frames,
   workflowTemplateId,
-  pendingUploadsByCardId,
   insertAssetCard,
 }: {
-  uploads: PendingImageUploadForCanvas[];
+  uploads: PersistedImageUploadForCanvas[];
   frames?: ProjectSnapshotShapeFrame[];
   workflowTemplateId?: string | null;
-  pendingUploadsByCardId: Record<string, PendingLocalReferenceUpload>;
   insertAssetCard: (input: {
     type: 'image';
     url: string;
     name: string;
     kind: 'asset';
+    assetId?: string | null;
     frame?: ProjectSnapshotShapeFrame;
     placementOffsetIndex?: number;
     activateOnInsert?: boolean;
@@ -107,9 +112,10 @@ export function materializePendingImageUploadsToCanvas({
   for (const [index, upload] of uploads.entries()) {
     const assetCardId = insertAssetCard({
       type: 'image',
-      url: upload.url,
+      url: upload.persistedUrl,
       name: upload.name,
       kind: 'asset',
+      assetId: upload.assetId,
       frame: frames?.[index],
       placementOffsetIndex: index,
       activateOnInsert: false,
@@ -124,10 +130,6 @@ export function materializePendingImageUploadsToCanvas({
     }
 
     insertedAssetCardIds.push(assetCardId);
-    pendingUploadsByCardId[assetCardId] = {
-      file: upload.file,
-      objectUrl: upload.url,
-    };
   }
 
   return insertedAssetCardIds;
@@ -178,6 +180,7 @@ export function useBeatCanvasUploadActions({
     url: string;
     name: string;
     kind: 'asset';
+    assetId?: string | null;
     anchorCardIds?: string[];
     placementSide?: PlacementSide;
     frame?: ProjectSnapshotShapeFrame;
@@ -395,16 +398,23 @@ export function useBeatCanvasUploadActions({
             continue;
           }
           const localObjectUrl = URL.createObjectURL(file);
-
-          const naturalSize = await resolveUploadNaturalSize(
-            localObjectUrl,
-            intent
-          );
+          const naturalSize = await resolveUploadNaturalSize(localObjectUrl, intent);
+          URL.revokeObjectURL(localObjectUrl);
+          const persistedAsset = shouldPersistCanvasImportLocally({
+            request,
+            hasResolvedFrame: Boolean(naturalSize),
+          })
+            ? await uploadLocalProjectAsset({ projectId, file })
+            : null;
+          if (!persistedAsset) {
+            throw new Error('Canvas imports must be saved locally before insertion');
+          }
           const assetCardId = insertAssetCard({
             type: intent,
-            url: localObjectUrl,
-            name: file.name,
+            url: persistedAsset.publicUrl,
+            name: persistedAsset.filename,
             kind: 'asset',
+            assetId: persistedAsset.id,
             anchorCardIds:
               request.mode === 'reference' ? [request.draftId] : undefined,
             placementSide: request.mode === 'reference' ? 'left' : 'right',
@@ -414,15 +424,10 @@ export function useBeatCanvasUploadActions({
           });
 
           if (!assetCardId) {
-            URL.revokeObjectURL(localObjectUrl);
             continue;
           }
 
           insertedAssetCardIds.push(assetCardId);
-          pendingUploadsRef.current[assetCardId] = {
-            file,
-            objectUrl: localObjectUrl,
-          };
 
           if (request.mode === 'reference') {
             const currentDraft = canvasCardsRef.current[request.draftId];
@@ -483,6 +488,8 @@ export function useBeatCanvasUploadActions({
           return;
         }
 
+        onWorkspaceAssetsMayChange?.();
+
         if (
           request.mode === 'global' &&
           insertedAssetCardIds.length > 1
@@ -516,6 +523,7 @@ export function useBeatCanvasUploadActions({
       handleSelectShape,
       imageModels,
       insertAssetCard,
+      onWorkspaceAssetsMayChange,
       projectId,
       setActiveComposerCardId,
       setErrorMessage,
@@ -601,7 +609,7 @@ export function useBeatCanvasUploadActions({
   );
 
   const materializePendingImageReferences = useCallback(
-    ({
+    async ({
       uploads,
       frames,
       workflowTemplateId,
@@ -609,15 +617,32 @@ export function useBeatCanvasUploadActions({
       uploads: PendingImageUploadForCanvas[];
       frames?: ProjectSnapshotShapeFrame[];
       workflowTemplateId?: string | null;
-    }) =>
-      materializePendingImageUploadsToCanvas({
-        uploads,
+    }) => {
+      const persistedUploads = await Promise.all(
+        uploads.map(async (upload) => {
+          const asset = await uploadLocalProjectAsset({
+            projectId,
+            file: upload.file,
+          });
+          if (upload.url.startsWith('blob:')) {
+            URL.revokeObjectURL(upload.url);
+          }
+          return {
+            ...upload,
+            assetId: asset.id,
+            persistedUrl: asset.publicUrl,
+          };
+        })
+      );
+      onWorkspaceAssetsMayChange?.();
+      return materializePersistedImageUploadsToCanvas({
+        uploads: persistedUploads,
         frames,
         workflowTemplateId,
-        pendingUploadsByCardId: pendingUploadsRef.current,
         insertAssetCard,
-      }),
-    [insertAssetCard]
+      });
+    },
+    [insertAssetCard, onWorkspaceAssetsMayChange, projectId]
   );
 
   return {

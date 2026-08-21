@@ -14,3 +14,12 @@ export const isOfficialBeatApiMediaUrl = (value: string) => {
     return false;
   }
 };
+
+export const isOfficialBeatApiInputUrl = (value: string) => {
+  if (!isOfficialBeatApiMediaUrl(value)) return false;
+  try {
+    return new URL(value).pathname.startsWith('/inputs/');
+  } catch {
+    return false;
+  }
+};

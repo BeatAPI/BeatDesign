@@ -31,6 +31,15 @@ import {
   rewriteCanvasReferenceAliases,
 } from '@/core/beatcanvas/reference-mentions';
 import { getSelectableModel } from '@/core/beatcanvas/generation-controller';
+import {
+  PROJECT_ASSET_DRAG_MIME,
+  PROJECT_ASSET_INSERT_EVENT,
+  getProjectAssetCardSize,
+  isProjectAssetTransferType,
+  parseProjectAssetTransfer,
+  type ProjectAssetInsertDetail,
+  type ProjectAssetTransfer,
+} from '@/core/beatcanvas/project-asset-transfer';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
@@ -158,6 +167,7 @@ export function BeatCanvasShell({
   initialPrompt: string | null;
 }) {
   const rawStudioT = useTranslations('AppShell.studio');
+  const projectAssetsT = useTranslations('AppShell.header.projectAssets');
   const queryClient = useQueryClient();
   const refreshWorkspaceAfterGeneration = useCallback(() => {
     void invalidateWorkspaceAfterGeneration(queryClient);
@@ -219,7 +229,6 @@ export function BeatCanvasShell({
     editorRef,
     focusShape,
     focusShapes,
-    handleCanvasShapeIdsChange,
     handleSelectedShapeIdsChange,
     handleSelectShape,
     handleSelectedCanvasCardIdsChange,
@@ -229,6 +238,7 @@ export function BeatCanvasShell({
     updateGenerationOutput,
     completeGenerationOutput,
     removeConnectorBetweenCards,
+    removeCanvasCardsForShapes,
     restoreProjectSnapshot: restoreCanvasProjectSnapshot,
     selectedShapeIds,
     selectedCanvasCardIds,
@@ -247,9 +257,95 @@ export function BeatCanvasShell({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [canvasDocumentRevision, setCanvasDocumentRevision] = useState(0);
+  const [allowEmptyProjectSnapshot, setAllowEmptyProjectSnapshot] =
+    useState(false);
   const [previewMedia, setPreviewMedia] = useState<BeatCanvasPreviewMedia | null>(
     null
   );
+
+  const insertProjectAsset = useCallback(
+    (
+      asset: ProjectAssetTransfer,
+      clientPoint?: { x: number; y: number }
+    ) => {
+      if (asset.projectId !== projectId) return;
+
+      const size = getProjectAssetCardSize(asset);
+      const pagePoint = clientPoint
+        ? editorRef.current?.screenToPage(clientPoint)
+        : null;
+      const insertedShapeId = insertAssetCard({
+        assetId: asset.id,
+        type: asset.mediaType,
+        url: asset.publicUrl,
+        name:
+          asset.filename?.trim() ||
+          projectAssetsT(
+            asset.mediaType === 'image' ? 'imageName' : 'videoName'
+          ),
+        kind: 'asset',
+        activateOnInsert: true,
+        size,
+        ...(pagePoint
+          ? {
+              frame: {
+                x: pagePoint.x - size.w / 2,
+                y: pagePoint.y - size.h / 2,
+                w: size.w,
+                h: size.h,
+              },
+            }
+          : {}),
+      });
+
+      if (insertedShapeId) {
+        toast.success(projectAssetsT('addedToCanvas'));
+      }
+    },
+    [editorRef, insertAssetCard, projectAssetsT, projectId]
+  );
+
+  useEffect(() => {
+    const handleInsertEvent = (event: Event) => {
+      const detail = (event as CustomEvent<ProjectAssetInsertDetail>).detail;
+      if (!detail?.asset) return;
+      insertProjectAsset(detail.asset, detail.clientPoint);
+    };
+
+    const handleDragOver = (event: DragEvent) => {
+      if (
+        !event.dataTransfer ||
+        !isProjectAssetTransferType(Array.from(event.dataTransfer.types))
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    };
+
+    const handleDrop = (event: DragEvent) => {
+      const transferValue = event.dataTransfer?.getData(
+        PROJECT_ASSET_DRAG_MIME
+      );
+      if (!transferValue) return;
+
+      const asset = parseProjectAssetTransfer(transferValue);
+      if (!asset || asset.projectId !== projectId) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      insertProjectAsset(asset, { x: event.clientX, y: event.clientY });
+    };
+
+    window.addEventListener(PROJECT_ASSET_INSERT_EVENT, handleInsertEvent);
+    window.addEventListener('dragover', handleDragOver, true);
+    window.addEventListener('drop', handleDrop, true);
+    return () => {
+      window.removeEventListener(PROJECT_ASSET_INSERT_EVENT, handleInsertEvent);
+      window.removeEventListener('dragover', handleDragOver, true);
+      window.removeEventListener('drop', handleDrop, true);
+    };
+  }, [insertProjectAsset, projectId]);
 
   useEffect(() => {
     if (!errorMessage) {
@@ -274,6 +370,7 @@ export function BeatCanvasShell({
     openMediaUploadPicker,
     openUploadPicker,
     promotePendingUploadsForDraft,
+    uploadFiles,
     uploadIntent,
     videoFileInputRef,
   } = useBeatCanvasUploadActions({
@@ -295,6 +392,29 @@ export function BeatCanvasShell({
     setActiveComposerCardId,
     onWorkspaceAssetsMayChange: refreshWorkspaceAfterUpload,
   });
+
+  useEffect(() => {
+    const handleLocalFileDragOver = (event: DragEvent) => {
+      if (!event.dataTransfer?.types.includes('Files')) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+    };
+
+    const handleLocalFileDrop = (event: DragEvent) => {
+      const files = Array.from(event.dataTransfer?.files ?? []);
+      if (files.length === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void uploadFiles({ intent: 'media', mode: 'global' }, files);
+    };
+
+    window.addEventListener('dragover', handleLocalFileDragOver, true);
+    window.addEventListener('drop', handleLocalFileDrop, true);
+    return () => {
+      window.removeEventListener('dragover', handleLocalFileDragOver, true);
+      window.removeEventListener('drop', handleLocalFileDrop, true);
+    };
+  }, [uploadFiles]);
 
   const {
     handleCreatePromptDraft,
@@ -637,6 +757,7 @@ export function BeatCanvasShell({
       qualityOptionLabel: studioT('canvas.composer.quality'),
       tokenQualityLabel: studioT('canvas.composer.tokens.quality'),
       tokenFastLabel: studioT('canvas.composer.tokens.fast'),
+      tokenLiteLabel: studioT('canvas.composer.tokens.lite'),
       tokenLowLabel: studioT('canvas.composer.tokens.low'),
       tokenMediumLabel: studioT('canvas.composer.tokens.medium'),
       tokenStandardLabel: studioT('canvas.composer.tokens.standard'),
@@ -694,7 +815,6 @@ export function BeatCanvasShell({
       onCreateGenerationAtPoint: handleCreateGenerationAtPoint,
       onSelectedShapeIdsChange: handleSelectedShapeIdsChange,
       onSelectedCanvasCardIdsChange: handleSelectedCanvasCardIdsChange,
-      onCanvasShapeIdsChange: handleCanvasShapeIdsChange,
       onActiveComposerCardIdChange: setActiveComposerCardId,
       onDraftPromptChange: handleDraftPromptChange,
       onDraftTaskTypeChange: handleDraftTaskTypeChange,
@@ -723,7 +843,6 @@ export function BeatCanvasShell({
       canRedoCanvas,
       canvasCards,
       canvasCopy,
-      handleCanvasShapeIdsChange,
       handleDraftAspectRatioChange,
       handleDraftBackgroundSourceChange,
       handleDraftCharacterOrientationChange,
@@ -1079,6 +1198,10 @@ export function BeatCanvasShell({
     [restoreCanvasProjectSnapshot, resumeInFlightGenerations]
   );
 
+  const handleEmptyProjectSnapshotSaved = useCallback(() => {
+    setAllowEmptyProjectSnapshot(false);
+  }, []);
+
   useProjectSnapshotLifecycle({
     projectId,
     projectPath,
@@ -1088,9 +1211,11 @@ export function BeatCanvasShell({
     initialTaskType,
     isCanvasReady,
     snapshotChangeSignal,
+    allowEmptyProjectSnapshot,
     buildProjectSnapshotDocument,
     restoreProjectSnapshot,
     createDraftCard,
+    onEmptyProjectSnapshotSaved: handleEmptyProjectSnapshotSaved,
   });
 
   // Listen for card connector events from the overlay
@@ -1273,8 +1398,22 @@ export function BeatCanvasShell({
   );
 
   const handleCanvasDocumentChange = useCallback(() => {
+    if (Object.keys(canvasCardsRef.current).length > 0) {
+      setAllowEmptyProjectSnapshot(false);
+    }
     setCanvasDocumentRevision((current) => current + 1);
-  }, []);
+  }, [canvasCardsRef]);
+
+  const handleCanvasShapeIdsRemoved = useCallback(
+    (shapeIds: string[]) => {
+      removeCanvasCardsForShapes(shapeIds);
+      if (Object.keys(canvasCardsRef.current).length === 0) {
+        setAllowEmptyProjectSnapshot(true);
+      }
+      setCanvasDocumentRevision((current) => current + 1);
+    },
+    [canvasCardsRef, removeCanvasCardsForShapes]
+  );
 
   return (
     <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[var(--beatcanvas-canvas-bg)]">
@@ -1310,6 +1449,7 @@ export function BeatCanvasShell({
               onMount={handleEditorMount}
               onDocumentChange={handleCanvasDocumentChange}
               onHistoryCheckpoint={recordCanvasHistory}
+              onShapeIdsRemoved={handleCanvasShapeIdsRemoved}
               onReferenceEdgesRemoved={handleReferenceEdgesRemoved}
               components={canvasComponents}
             />
@@ -1322,40 +1462,9 @@ export function BeatCanvasShell({
             projectId={projectId}
             onUploadMedia={openMediaUploadPicker}
             onCreateImageDraft={() => handleCreatePromptDraft('image')}
-            onInsertHistoryAsset={(asset) => {
-              const sizeFromDimensions = ():
-                | { w: number; h: number }
-                | undefined => {
-                if (
-                  asset.width &&
-                  asset.height &&
-                  asset.width > 0 &&
-                  asset.height > 0
-                ) {
-                  const maxEdge = 360;
-                  const ratio = asset.width / asset.height;
-                  if (ratio >= 1) {
-                    return { w: maxEdge, h: Math.round(maxEdge / ratio) };
-                  }
-                  return { w: Math.round(maxEdge * ratio), h: maxEdge };
-                }
-                return undefined;
-              };
-              insertAssetCard({
-                assetId: asset.id,
-                type: asset.mediaType,
-                url: asset.publicUrl,
-                name:
-                  asset.mediaType === 'image'
-                    ? 'History Image'
-                    : 'History Video',
-                kind: 'asset',
-                activateOnInsert: true,
-                ...(sizeFromDimensions()
-                  ? { size: sizeFromDimensions() }
-                  : {}),
-              });
-            }}
+            onInsertHistoryAsset={(asset) =>
+              insertProjectAsset({ ...asset, projectId })
+            }
             uploadIntent={uploadIntent as UploadIntent | null}
           />
 

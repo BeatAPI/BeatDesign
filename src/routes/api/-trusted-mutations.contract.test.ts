@@ -10,6 +10,8 @@ const mutationRoutes = [
   './effects/generate.ts',
 ];
 
+const multipartMutationRoutes = ['./app/projects/$projectId/assets/index.ts'];
+
 test('canvas effect mutations send the workspace request header', () => {
   const source = readFileSync(
     new URL('../../core/effects/client-api.ts', import.meta.url),
@@ -28,5 +30,17 @@ test('workspace JSON mutation routes enforce the same-origin request contract', 
       /validateTrustedWorkspaceJsonMutation\(request\)/,
       `${route} must validate the workspace mutation request`
     );
+  }
+});
+
+test('workspace multipart mutation routes enforce the same-origin request contract', () => {
+  for (const route of multipartMutationRoutes) {
+    const source = readFileSync(new URL(route, import.meta.url), 'utf8');
+    assert.match(
+      source,
+      /validateTrustedWorkspaceMutation\(request\)/,
+      `${route} must validate the workspace mutation request`
+    );
+    assert.match(source, /multipart\/form-data/);
   }
 });

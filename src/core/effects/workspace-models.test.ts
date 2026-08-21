@@ -20,6 +20,8 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
   ]);
   assert.deepEqual(videoIds, [
     'seedance-2',
+    'seedance-2-fast',
+    'seedance-2-mini',
     'seedance-2.5',
     'minimax-h3',
     'veo-3.1',
@@ -37,7 +39,10 @@ test('legacy canvas model ids resolve to official BeatAPI slugs', () => {
 
   assert.equal(getCanonicalWorkspaceModelId('nanobananapro'), 'nano-banana-pro');
   assert.equal(getCanonicalWorkspaceModelId('seedance20'), 'seedance-2');
+  assert.equal(getCanonicalWorkspaceModelId('seedance20fast'), 'seedance-2-fast');
+  assert.equal(getCanonicalWorkspaceModelId('seedance20mini'), 'seedance-2-mini');
   assert.equal(getCanonicalWorkspaceModelId('veo31'), 'veo-3.1');
+  assert.equal(getCanonicalWorkspaceModelId('veo31-lite'), 'veo-3.1');
   assert.equal(getCanonicalWorkspaceModelId('kling30'), 'kling-3');
   assert.equal(
     getCanonicalWorkspaceModelId('kling26motioncontrol'),
@@ -86,4 +91,15 @@ test('BeatAPI-backed models are the default image and video canvas choices', () 
     getDefaultSelectableWorkspaceModel('ai-video')?.id,
     'seedance-2'
   );
+});
+
+test('Veo 3.1 exposes Lite, Fast, and Quality as composer modes', () => {
+  const veo = findWorkspaceModelOption(
+    getWorkspaceModelsByType('ai-video'),
+    'veo-3.1'
+  );
+
+  assert.equal(veo?.defaultMode, 'quality');
+  assert.deepEqual(veo?.modeOptions, ['quality', 'fast', 'lite']);
+  assert.deepEqual(veo?.supportedOutputQualities, ['720p', '1080p', '4k']);
 });

@@ -38,6 +38,20 @@ test('batch lookup only returns official registry models', async () => {
   );
 });
 
+test('Veo 3.1 registry schema exposes quality mode and resolution', () => {
+  const veo = getRegisteredEffectById(1)?.inputSchema as Record<string, unknown>;
+  const mode = veo.mode as { values?: string[] };
+  const quality = veo.wmOutputQuality as { values?: string[] };
+
+  assert.deepEqual(mode.values, ['quality', 'fast', 'lite']);
+  assert.deepEqual(quality.values, ['720p', '1080p', '4k']);
+});
+
+test('Seedance 2 Fast and Mini resolve from the code registry', () => {
+  assert.equal(getRegisteredEffectById(21)?.model, 'seedance-2-fast');
+  assert.equal(getRegisteredEffectById(22)?.model, 'seedance-2-mini');
+});
+
 test('Motion Control registry schemas expose provider controls', () => {
   const kling26 = getRegisteredEffectById(19)?.inputSchema as Record<
     string,

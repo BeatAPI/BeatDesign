@@ -43,6 +43,17 @@ export function GenerationCardNode({
   const isBusy = status === 'pending' || status === 'processing';
   const isFailed = status === 'failed';
   const hasResult = Boolean(latestOutputUrl);
+  const isEmptySlot = !hasResult && !isFailed;
+  const emptySlotAccent =
+    cardMediaType === 'video' ? 'var(--beat-graph)' : 'var(--beat-accent)';
+  const emptySlotBorder =
+    cardMediaType === 'video'
+      ? 'rgba(127, 176, 242, 0.62)'
+      : 'rgba(255, 122, 51, 0.62)';
+  const emptySlotGlow =
+    cardMediaType === 'video'
+      ? 'inset 0 0 0 1px rgba(127, 176, 242, 0.14), 0 0 22px rgba(127, 176, 242, 0.12)'
+      : 'inset 0 0 0 1px rgba(255, 122, 51, 0.14), 0 0 22px rgba(255, 122, 51, 0.12)';
   const shapeCopy = getBeatCanvasNodeCopy();
   const isInsideGroup = Boolean(internalNode?.parentId);
   const displayLabel =
@@ -61,6 +72,15 @@ export function GenerationCardNode({
     window.dispatchEvent(
       new CustomEvent('beatcanvas:pin-generation-output', {
         detail: { draftId: id, outputId: take.id },
+      })
+    );
+    window.dispatchEvent(
+      new CustomEvent('beatcanvas:preview-media', {
+        detail: {
+          type: take.type,
+          url: take.url,
+          title: `${displayLabel} ${take.takeNumber}`,
+        },
       })
     );
   };
@@ -165,17 +185,21 @@ export function GenerationCardNode({
               background: isFailed
                 ? 'rgba(255,107,115,0.10)'
                 : FRAME_BACKGROUND,
-              border: `1px solid ${
-                isFailed ? 'var(--beatcanvas-error)' : CARD_BORDER_COLOR
-              }`,
+              border: isFailed
+                ? '1px solid var(--beatcanvas-error)'
+                : isEmptySlot
+                  ? `1.5px dashed ${emptySlotBorder}`
+                  : `1px solid ${CARD_BORDER_COLOR}`,
               boxSizing: 'border-box',
               overflow: 'hidden',
               position: 'relative',
               boxShadow: selected
                 ? '0 0 0 2px rgba(127,176,242,0.20), 0 16px 38px rgba(0,0,0,0.36)'
-                : isInsideGroup
-                  ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 18px rgba(0,0,0,0.22)'
-                  : '0 14px 32px rgba(0,0,0,0.3)',
+                : isEmptySlot
+                  ? emptySlotGlow
+                  : isInsideGroup
+                    ? 'inset 0 1px 0 rgba(255,255,255,0.05), 0 8px 18px rgba(0,0,0,0.22)'
+                    : '0 14px 32px rgba(0,0,0,0.3)',
             }}
           >
             {isInsideGroup ? (
@@ -252,8 +276,10 @@ export function GenerationCardNode({
                     height: 'auto',
                     color: isFailed
                       ? 'rgba(255,107,115,0.22)'
-                      : PLACEHOLDER_COLOR,
-                    opacity: isInsideGroup ? 0.72 : 1,
+                      : isEmptySlot
+                        ? emptySlotAccent
+                        : PLACEHOLDER_COLOR,
+                    opacity: isEmptySlot ? 0.42 : isInsideGroup ? 0.72 : 1,
                   }}
                 >
                   <circle cx="72.5" cy="17.5" r="8.5" fill="currentColor" />

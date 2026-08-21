@@ -18,6 +18,7 @@ import {
 type SaveProjectSnapshotRequest = {
   document?: ProjectSnapshotDocument;
   baseVersion?: number | null;
+  allowEmpty?: boolean;
 };
 
 async function PUT({
@@ -68,6 +69,7 @@ async function PUT({
       document: normalizeProjectSnapshotDocument(payload.document),
       baseVersion:
         typeof payload.baseVersion === 'number' ? payload.baseVersion : null,
+      allowEmpty: payload.allowEmpty === true,
     });
 
     return Response.json({
@@ -80,6 +82,19 @@ async function PUT({
 
     if (error instanceof ProjectSnapshotValidationError) {
       return Response.json({ error: error.message }, { status: 400 });
+    }
+
+    if (
+      error instanceof Error &&
+      error.name === 'ProjectSnapshotDestructiveEmptyRejected'
+    ) {
+      return Response.json(
+        {
+          error: 'Unconfirmed empty project snapshot rejected',
+          detail,
+        },
+        { status: 422 }
+      );
     }
 
     if (

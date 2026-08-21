@@ -100,7 +100,6 @@ export function BeatCanvasFrontLayer() {
     onUndoCanvas,
     onRedoCanvas,
     onActiveComposerCardIdChange,
-    onCanvasShapeIdsChange,
     onSelectedShapeIdsChange,
     onDraftAspectRatioChange,
     onDraftBackgroundSourceChange,
@@ -154,11 +153,6 @@ export function BeatCanvasFrontLayer() {
     [cards, selectedShapeIds]
   );
   const selectedCardIdsKey = selectedCardIds.join(',');
-  const currentShapeIds = useCanvasEngineValue(
-    (currentEditor) =>
-      currentEditor.getCurrentPageShapes().map((shape) => shape.id),
-    [cards]
-  );
   const zoomLevel = useCanvasEngineValue(
     (currentEditor) =>
       Math.round(
@@ -196,10 +190,6 @@ export function BeatCanvasFrontLayer() {
     onSelectedCanvasCardIdsChange(selectedCardIds);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only fire when the actual card IDs change, not on every cards object update
   }, [onSelectedCanvasCardIdsChange, selectedCardIdsKey]);
-
-  useEffect(() => {
-    onCanvasShapeIdsChange(currentShapeIds);
-  }, [currentShapeIds, onCanvasShapeIdsChange]);
 
   useEffect(() => {
     if (
@@ -808,7 +798,7 @@ export function BeatCanvasFrontLayer() {
         </button>
       </div>
 
-      {currentShapeIds.length === 0 ? (
+      {Object.keys(cards).length === 0 ? (
         <div className="absolute inset-x-0 top-[46%] z-10 flex -translate-y-1/2 justify-center px-6">
           <StudioStartHere />
         </div>

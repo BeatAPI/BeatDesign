@@ -22,8 +22,21 @@ const localCard = (id: string, url: string): CanvasCard =>
     type: 'image',
     name: id,
     url,
+    assetId: null,
+    prompt: '',
     referenceCardIds: [],
-  }) as CanvasCard;
+    workflowTemplateId: null,
+    status: 'succeeded',
+    error: null,
+    modelId: '',
+    aspectRatio: '1:1',
+    outputQuality: '1k',
+    duration: '5s',
+    mode: 'quality',
+    variant: 'standard',
+    quality: 'standard',
+    sourceGenerationId: null,
+  }) satisfies CanvasCard;
 
 test('counts same-origin demo assets as just-in-time uploads', () => {
   assert.equal(

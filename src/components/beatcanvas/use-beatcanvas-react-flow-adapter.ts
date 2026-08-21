@@ -162,11 +162,14 @@ export const buildGenerationCardPresentation = ({
   card: CanvasDraftCard;
   outputs: CanvasOutputCard[];
 }) => {
-  const orderedOutputs = [...outputs].sort((left, right) =>
-    left.generationSnapshot.capturedAt.localeCompare(
-      right.generationSnapshot.capturedAt
-    ) || left.id.localeCompare(right.id)
-  );
+  const orderedOutputs = [...outputs]
+    .filter((output) => output.status !== 'failed')
+    .sort(
+      (left, right) =>
+        left.generationSnapshot.capturedAt.localeCompare(
+          right.generationSnapshot.capturedAt
+        ) || left.id.localeCompare(right.id)
+    );
   const latestOutput = orderedOutputs[orderedOutputs.length - 1] ?? null;
   const pinnedOutput = card.pinnedOutputId
     ? orderedOutputs.find(

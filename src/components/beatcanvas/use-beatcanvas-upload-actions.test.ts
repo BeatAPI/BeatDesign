@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
-  materializePendingImageUploadsToCanvas,
-  shouldUploadImmediatelyAfterCanvasInsert,
+  materializePersistedImageUploadsToCanvas,
+  shouldPersistCanvasImportLocally,
   type UploadRequest,
 } from './use-beatcanvas-upload-actions';
 
-test('does not upload image selections immediately after canvas insertion', () => {
+test('persists image selections immediately after canvas insertion', () => {
   const imageRequests: UploadRequest[] = [
     { intent: 'image', mode: 'global' },
     { intent: 'image', mode: 'reference', draftId: 'draft-1' },
@@ -15,52 +15,49 @@ test('does not upload image selections immediately after canvas insertion', () =
 
   for (const request of imageRequests) {
     assert.equal(
-      shouldUploadImmediatelyAfterCanvasInsert({
+      shouldPersistCanvasImportLocally({
         request,
         hasResolvedFrame: true,
       }),
-      false,
-      `${request.mode} image uploads should stay local until generation`
+      true,
+      `${request.mode} image uploads should be durable before insertion`
     );
   }
 });
 
-test('does not change non-image uploads through the image-only policy', () => {
+test('persists video and mixed-media selections immediately too', () => {
   assert.equal(
-    shouldUploadImmediatelyAfterCanvasInsert({
+    shouldPersistCanvasImportLocally({
       request: { intent: 'video', mode: 'global' },
       hasResolvedFrame: true,
     }),
-    false
+    true
   );
   assert.equal(
-    shouldUploadImmediatelyAfterCanvasInsert({
+    shouldPersistCanvasImportLocally({
       request: { intent: 'media', mode: 'global' },
       hasResolvedFrame: true,
     }),
-    false
+    true
   );
 });
 
-test('materializes local image references without uploading them', () => {
+test('materializes image references only from durable local asset URLs', () => {
   const file = new File(['image-bytes'], 'product.png', { type: 'image/png' });
-  const pendingUploadsByCardId: Record<
-    string,
-    { file: File; objectUrl: string }
-  > = {};
   const inserts: unknown[] = [];
 
-  const cardIds = materializePendingImageUploadsToCanvas({
+  const cardIds = materializePersistedImageUploadsToCanvas({
     uploads: [
       {
         file,
         name: 'product.png',
         url: 'blob:local-product-preview',
+        assetId: 'asset-1',
+        persistedUrl: '/api/app/projects/project-1/assets/asset-1',
         size: { w: 1200, h: 900 },
       },
     ],
     frames: [{ x: 10, y: 20, w: 132, h: 112 }],
-    pendingUploadsByCardId,
     insertAssetCard: (input) => {
       inserts.push(input);
       return `card-${inserts.length}`;
@@ -68,18 +65,13 @@ test('materializes local image references without uploading them', () => {
   });
 
   assert.deepEqual(cardIds, ['card-1']);
-  assert.deepEqual(pendingUploadsByCardId, {
-    'card-1': {
-      file,
-      objectUrl: 'blob:local-product-preview',
-    },
-  });
   assert.deepEqual(inserts, [
     {
       type: 'image',
-      url: 'blob:local-product-preview',
+      url: '/api/app/projects/project-1/assets/asset-1',
       name: 'product.png',
       kind: 'asset',
+      assetId: 'asset-1',
       frame: { x: 10, y: 20, w: 132, h: 112 },
       placementOffsetIndex: 0,
       activateOnInsert: false,
