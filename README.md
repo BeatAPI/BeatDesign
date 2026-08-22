@@ -12,6 +12,7 @@ There is no login, account system, payment flow, subscription, local credit ledg
 
 - Studio for prompt-first image and video generation.
 - React Flow Canvas for connected, multi-step creative workflows.
+- A project-scoped Assets view shared by Studio and Canvas.
 - Local projects, snapshots, generation history, and asset indexing.
 - One code-defined catalog of supported BeatAPI image and video models.
 - BeatAPI task submission and status polling.

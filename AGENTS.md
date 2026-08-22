@@ -23,7 +23,7 @@ Do not add authentication, accounts, payments, subscriptions, credits, API-key i
 - Storage entitlement follows billing. BeatAPI managed R2/Files is allowed only with the official `https://api.beatapi.io` billing endpoint; any custom API host must use an operator-owned R2/S3-compatible bucket. File selection stays local and upload is allowed only after generation precheck. Never commit shared storage credentials.
 - The model catalog lives in `src/core/effects/effect-registry.ts`.
 - BeatAPI request mapping lives in `src/core/adapters/beatapi-adapter.ts`.
-- Studio and Canvas share projects, tasks, and assets.
+- Studio, Canvas, and Assets share projects, tasks, and assets.
 - Add message keys to both `messages/en.json` and `messages/zh.json`.
 - Do not edit `src/routeTree.gen.ts` manually.
 
