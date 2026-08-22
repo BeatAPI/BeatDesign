@@ -1,4 +1,4 @@
-export const workspaceModes = ['studio', 'canvas'] as const;
+export const workspaceModes = ['studio', 'canvas', 'assets'] as const;
 
 export type WorkspaceMode = (typeof workspaceModes)[number];
 
@@ -8,4 +8,10 @@ export function resolveWorkspaceMode(value?: string | null): WorkspaceMode {
   return workspaceModes.includes(value as WorkspaceMode)
     ? (value as WorkspaceMode)
     : defaultWorkspaceMode;
+}
+
+export function workspaceModePath(mode: WorkspaceMode) {
+  if (mode === 'studio') return '/studio';
+  if (mode === 'assets') return '/assets';
+  return '/canvas';
 }

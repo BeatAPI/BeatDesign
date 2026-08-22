@@ -12,6 +12,7 @@ There is no login, account system, payment flow, subscription, local credit ledg
 
 - Studio for prompt-first image and video generation.
 - React Flow Canvas for connected, multi-step creative workflows.
+- A project-scoped Assets view shared by Studio and Canvas.
 - Local projects, snapshots, generation history, and asset indexing.
 - One code-defined catalog of supported BeatAPI image and video models.
 - BeatAPI task submission and status polling.
@@ -37,7 +38,7 @@ Open `http://localhost:3020`. Home is the default route. Opening Studio or Canva
 ## How data flows
 
 ```text
-Studio / Canvas
+Studio / Canvas / Assets
   -> local server routes
   -> imported files saved under data/project-assets and indexed in SQLite
   -> generation precheck and a one-time SQLite generation intent

@@ -24,8 +24,7 @@ function getShellCopy(locale: string) {
   const messageLocale = normalizeLocale(locale);
   return {
     home: m['product.shell.home']({}, { locale: messageLocale }),
-    studio: m['product.shell.studio']({}, { locale: messageLocale }),
-    canvas: m['product.shell.canvas']({}, { locale: messageLocale }),
+    create: m['product.shell.create']({}, { locale: messageLocale }),
     pricing: m['product.shell.pricing']({}, { locale: messageLocale }),
     projects: m['product.shell.projects']({}, { locale: messageLocale }),
     openNavigation: m['product.shell.openNavigation'](
@@ -40,8 +39,8 @@ function getShellCopy(locale: string) {
       {},
       { locale: messageLocale }
     ),
-    english: m['product.shell.english']({}, { locale: messageLocale }),
-    chinese: m['product.shell.chinese']({}, { locale: messageLocale }),
+    english: m['product.shell.english']({}, { locale: 'en' }),
+    chinese: m['product.shell.chinese']({}, { locale: 'zh' }),
     terms: m['product.shell.terms']({}, { locale: messageLocale }),
     privacy: m['product.shell.privacy']({}, { locale: messageLocale }),
   };
@@ -52,8 +51,7 @@ type ShellCopy = ReturnType<typeof getShellCopy>;
 function getNavItems(copy: ShellCopy) {
   return [
     { label: copy.home, href: '/' },
-    { label: copy.studio, href: '/studio' },
-    { label: copy.canvas, href: '/canvas' },
+    { label: copy.create, href: '/studio' },
     { label: copy.pricing, href: '/pricing' },
     { label: copy.projects, href: '/projects' },
   ] as const;
@@ -116,8 +114,8 @@ function LocaleMenu({ locale, copy }: { locale: ProductLocale; copy: ShellCopy }
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const options = [
-    { code: 'en' as const, short: 'EN', label: copy.english },
-    { code: 'zh' as const, short: 'ZH', label: copy.chinese },
+    { code: 'en' as const, label: copy.english },
+    { code: 'zh' as const, label: copy.chinese },
   ];
 
   useEffect(() => {
@@ -143,32 +141,31 @@ function LocaleMenu({ locale, copy }: { locale: ProductLocale; copy: ShellCopy }
         aria-label={copy.switchLanguage}
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-10 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.035] px-3 text-[12px] font-semibold text-white/70 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
+        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[13px] font-medium text-white/45 transition hover:bg-white/[0.06] hover:text-white"
       >
-        <Globe2 className="size-3.5 text-white/40" />
+        <Globe2 className="size-3.5" />
         {locale.toUpperCase()}
         <ChevronDown
-          className={`size-3 text-white/35 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`size-3 opacity-70 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 min-w-[150px] overflow-hidden rounded-[14px] border border-white/10 bg-[#151517] p-1.5 shadow-2xl">
+        <div className="absolute right-0 top-full z-50 mt-2 min-w-[132px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#151517] p-1 shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
           {options.map((option) => (
             <button
               key={option.code}
               type="button"
               onClick={() => switchLanguage(option.code)}
-              className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-[12px] text-[#b8b8bd] transition hover:bg-white/[0.06] hover:text-white"
+              className={`flex w-full items-center justify-between rounded-[8px] px-2.5 py-2 text-left text-[13px] transition hover:bg-white/[0.06] ${
+                option.code === locale
+                  ? 'text-white'
+                  : 'text-[var(--beat-text-2)] hover:text-white'
+              }`}
             >
-              <span className="w-6 text-[10px] font-bold text-[#6f6f76]">
-                {option.short}
-              </span>
-              <span className={option.code === locale ? 'font-semibold text-white' : ''}>
-                {option.label}
-              </span>
+              {option.label}
               {option.code === locale ? (
-                <Check className="ml-auto size-3.5 text-[var(--beat-accent)]" />
+                <Check className="size-3.5 text-[var(--beat-accent)]" />
               ) : null}
             </button>
           ))}

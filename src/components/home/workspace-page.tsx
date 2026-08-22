@@ -26,7 +26,7 @@ import { m } from '@/paraglide/messages.js';
 type WorkspaceProject = {
   id: string;
   name: string;
-  lastWorkspaceMode?: 'studio' | 'canvas';
+  lastWorkspaceMode?: 'studio' | 'canvas' | 'assets';
   activityAt: string;
   activityLabel: string;
   coverImageUrl?: string | null;

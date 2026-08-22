@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-for (const routeFile of ['./studio/$projectId.tsx', './canvas/$projectId.tsx']) {
+for (const routeFile of [
+  './studio/$projectId.tsx',
+  './canvas/$projectId.tsx',
+  './assets/$projectId.tsx',
+]) {
   test(`keeps ${routeFile} data-loaded but client rendered`, () => {
     const source = readFileSync(new URL(routeFile, import.meta.url), 'utf8');
 

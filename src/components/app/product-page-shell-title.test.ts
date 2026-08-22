@@ -9,6 +9,7 @@ test('project title field uses the available header width instead of a short cha
   );
 
   assert.doesNotMatch(source, /20\)\}ch/);
+  assert.doesNotMatch(source, /maxLength=/);
   assert.match(source, /className="flex min-w-0 flex-1 items-center gap-3"/);
   assert.match(source, /className="min-w-0 flex-1"/);
   assert.match(source, /className="h-9 w-full/);

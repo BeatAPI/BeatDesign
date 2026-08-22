@@ -2,10 +2,9 @@
 
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { LayoutPanelTop, Workflow } from 'lucide-react';
+import { Images, LayoutPanelTop, Workflow } from 'lucide-react';
 
 import { WorkspaceApiConfigDialog } from '@/components/app/workspace-api-config-dialog';
-import { ProjectAssetsDialog } from '@/components/app/project-assets-dialog';
 import { GitHubIcon } from '@/components/icons/github';
 import { Link } from '@/core/i18n/navigation';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
@@ -99,7 +98,7 @@ export function ProductPageShell({
         }
       }}
       aria-label={t('header.workspaceNameLabel')}
-      className="h-9 w-full min-w-0 rounded-md border-0 bg-transparent px-0 text-[15px] font-semibold text-[var(--beat-text-1)] outline-none placeholder:text-white/35 focus:ring-0"
+      className="h-9 w-full min-w-0 truncate rounded-md border-0 bg-transparent px-0 text-[15px] font-semibold text-[var(--beat-text-1)] outline-none placeholder:text-white/35 focus:ring-0"
     />
   ) : (
     <span className="block truncate text-[15px] font-semibold text-[var(--beat-text-1)]">
@@ -154,13 +153,18 @@ export function ProductPageShell({
                   >
                     <Workflow className="size-3.5" /> <span className="hidden sm:inline">Canvas</span>
                   </Link>
+                  <Link
+                    href={`/assets/${projectId}`}
+                    aria-current={workspaceMode === 'assets' ? 'page' : undefined}
+                    className={`inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition sm:px-3 ${
+                      workspaceMode === 'assets'
+                        ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+                        : 'text-[var(--beat-text-2)] hover:text-white'
+                    }`}
+                  >
+                    <Images className="size-3.5" /> <span className="hidden sm:inline">Assets</span>
+                  </Link>
                 </div>
-              ) : null}
-              {projectId ? (
-                <ProjectAssetsDialog
-                  projectId={projectId}
-                  canAddToCanvas={workspaceMode === 'canvas'}
-                />
               ) : null}
               <WorkspaceApiConfigDialog
                 providerId={envConfigs.generation_provider}

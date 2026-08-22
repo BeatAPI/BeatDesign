@@ -1,4 +1,5 @@
 import { ProductPageShell } from '@/components/app/product-page-shell';
+import { ProjectAssetsWorkspace } from '@/components/app/project-assets-workspace';
 import { BeatStudioWorkspace } from '@/components/studio/beat-studio-workspace';
 import { BeatCanvasShell } from '@/components/beatcanvas/beatcanvas-shell';
 import type { loadWorkspaceProjectRoute } from '@/core/projects/workspace-project-route-loader';
@@ -25,6 +26,8 @@ export function WorkspaceProjectRoutePage({
           initialModelId={data.modelId}
           initialPrompt={data.prompt}
         />
+      ) : data.workspaceMode === 'assets' ? (
+        <ProjectAssetsWorkspace projectId={data.project.id} />
       ) : (
         <BeatCanvasShell
           projectId={data.project.id}

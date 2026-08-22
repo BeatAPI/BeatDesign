@@ -10,6 +10,7 @@
 
 - Studio：以提示词和参数为主的快速生成体验。
 - Canvas：基于 React Flow 的多步骤节点画布。
+- Assets：Studio 与 Canvas 共用的项目素材库。
 - 本地项目、画布快照、生成历史和素材索引。
 - 由代码统一维护的 BeatAPI 图片/视频模型目录。
 - BeatAPI 任务提交、状态轮询和结果回填。
@@ -35,7 +36,7 @@ pnpm dev
 ## 数据逻辑
 
 ```text
-Studio / Canvas
+Studio / Canvas / Assets
   -> 本地服务端接口
   -> 导入文件立即保存到 data/project-assets，并写入 SQLite 素材索引
   -> 生成预检与 SQLite 一次性生成意图

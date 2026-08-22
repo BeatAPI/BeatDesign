@@ -15,11 +15,21 @@ export function buildStudioEffectInput({
   model,
   prompt,
   aspectRatio,
+  duration,
+  outputQuality,
+  mode,
+  quality,
+  language,
 }: {
   media: StudioMedia;
   model: WorkspaceModelOption;
   prompt: string;
   aspectRatio: string;
+  duration?: string;
+  outputQuality?: string;
+  mode?: string;
+  quality?: string;
+  language?: string;
 }): Record<string, unknown> {
   const input: Record<string, unknown> = {
     prompt: prompt.trim(),
@@ -27,19 +37,21 @@ export function buildStudioEffectInput({
   };
 
   if (media === 'image') {
-    if (model.defaultOutputQuality) {
-      input.wmOutputQuality = model.defaultOutputQuality;
-    }
-    if (model.defaultQuality) input.quality = model.defaultQuality;
+    const nextOutputQuality = outputQuality ?? model.defaultOutputQuality;
+    if (nextOutputQuality) input.wmOutputQuality = nextOutputQuality;
+    const nextQuality = quality ?? model.defaultQuality;
+    if (nextQuality) input.quality = nextQuality;
     return input;
   }
 
   input.generationType = 'TEXT_2_VIDEO';
-  if (model.defaultDuration) input.wmDuration = model.defaultDuration;
-  if (model.defaultMode) input.mode = model.defaultMode;
-  if (model.defaultOutputQuality) {
-    input.wmOutputQuality = model.defaultOutputQuality;
-  }
-  if (model.defaultLanguage) input.language = model.defaultLanguage;
+  const nextDuration = duration ?? model.defaultDuration;
+  if (nextDuration) input.wmDuration = nextDuration;
+  const nextMode = mode ?? model.defaultMode;
+  if (nextMode) input.mode = nextMode;
+  const nextOutputQuality = outputQuality ?? model.defaultOutputQuality;
+  if (nextOutputQuality) input.wmOutputQuality = nextOutputQuality;
+  const nextLanguage = language ?? model.defaultLanguage;
+  if (nextLanguage) input.language = nextLanguage;
   return input;
 }

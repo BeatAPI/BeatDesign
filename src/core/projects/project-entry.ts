@@ -1,6 +1,8 @@
-import { Routes } from '@/core/workspace-lib/shims/routes';
 import type { Locale } from '@/core/workspace-lib/shims/next-intl';
-import { resolveWorkspaceMode } from '@/config/workspace-modes';
+import {
+  resolveWorkspaceMode,
+  workspaceModePath,
+} from '@/config/workspace-modes';
 import { formatProjectActivityDate } from './format-project-activity-date';
 
 const getLocalizedRoute = (route: string, locale?: string | null) =>
@@ -59,8 +61,7 @@ export function buildCreateProjectPath({ ...intent }: ProjectWorkspaceIntent = {
   const { mode, ...searchIntent } = intent;
   const searchParams = buildProjectEntrySearchParams(searchIntent);
   const query = searchParams.toString();
-  const workspacePath =
-    resolveWorkspaceMode(mode) === 'studio' ? Routes.Studio : Routes.Canvas;
+  const workspacePath = workspaceModePath(resolveWorkspaceMode(mode));
   return query ? `${workspacePath}?${query}` : workspacePath;
 }
 
@@ -74,9 +75,7 @@ export function buildLocalizedCreateProjectPath({
 }
 
 export function buildProjectDetailPath(projectId: string, mode?: string) {
-  const workspacePath =
-    resolveWorkspaceMode(mode) === 'studio' ? Routes.Studio : Routes.Canvas;
-  return `${workspacePath}/${projectId}`;
+  return `${workspaceModePath(resolveWorkspaceMode(mode))}/${projectId}`;
 }
 
 export function buildProjectDetailPathWithIntent({

@@ -37,6 +37,6 @@ test('workspace shell exposes projects, Studio, Canvas, assets, and provider con
   assert.match(source, /href="\/"/);
   assert.match(source, /\/studio\//);
   assert.match(source, /\/canvas\//);
-  assert.match(source, /ProjectAssetsDialog/);
+  assert.match(source, /\/assets\//);
   assert.match(source, /WorkspaceApiConfigDialog/);
 });

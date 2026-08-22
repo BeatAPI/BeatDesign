@@ -31,3 +31,9 @@ export const generationStatusKeys = {
   byTask: (wmTaskId: string, effectId: number) =>
     [...generationStatusKeys.all, wmTaskId, effectId] as const,
 };
+
+export const projectGenerationsKeys = {
+  all: ['project-generations'] as const,
+  list: (projectId: string) =>
+    [...projectGenerationsKeys.all, 'list', projectId] as const,
+};

@@ -1,17 +1,17 @@
-# Design System — BeatAPI SaaS Template
+# Design System — BeatDesign
 
 ## Product Context
 
-- **What this is:** An open-source AI SaaS starter and a working demonstration of building on BeatAPI.
+- **What this is:** An open-source, local-first AI creative workbench and a working demonstration of building on BeatAPI.
 - **Who it is for:** Independent developers and small product teams shipping AI media products for an international audience.
 - **Space:** Developer tools, AI creative software, and SaaS infrastructure.
-- **Project type:** Marketing site, authenticated SaaS dashboard, guided studio, and node canvas.
+- **Project type:** Marketing site, local project workspace, guided Studio, node Canvas, and shared Assets view.
 
 ## Aesthetic Direction
 
 - **Direction:** Warm technical editorial in marketing; cinematic black creative operating system across Studio, Canvas, and PromptWise-structured Pricing.
 - **Decoration:** Intentional. Typography, product media, fine grid lines, dark glass controls, and restrained highlights create character without ornamental UI noise.
-- **Layout:** Hybrid. Marketing uses editorial scale and asymmetry; authenticated product surfaces use a strict, predictable grid.
+- **Layout:** Hybrid. Marketing uses editorial scale and asymmetry; local project surfaces use a strict, predictable grid.
 - **Mood:** Capable, cinematic, and crafted. Creation surfaces should feel like focused production tools, while the marketing site stays warmer and more editorial.
 - **Reference language:** PromptWise is the visual reference, not a copied page or a separately selectable theme.
 
@@ -30,7 +30,7 @@
 - **Brand 600:** `#E9550B` — hover and pressed states.
 - **Brand soft:** `#FFF0E5` — selected surfaces and subtle callouts.
 - **Marketing canvas:** `#F6F0E7` — warm cream.
-- **Studio / Canvas canvas:** `#08090A` — near-black production workspace.
+- **Studio / Canvas / Assets canvas:** `#08090A` — near-black production workspace.
 - **Pricing canvas:** `#08090A` with graphite `#141517` plan cards, warm-white type, and PromptWise's original plan geometry.
 - **Dark surface:** `#111214`; raised surface `#17181B`; control surface `#202126`.
 - **Dark ink:** `#F6F6F4`; secondary `rgba(246,246,244,.58)`; faint `rgba(246,246,244,.34)`.
@@ -39,7 +39,7 @@
 - **Borders:** `#DDDED8`; strong `#C7C9C0`.
 - **Highlight:** `#C7F36B` — sparse proof or status accent, never a primary CTA.
 - **Success:** `#208A55`; warning `#B66A09`; error `#C23B32`; info `#2563A9`.
-- **Dark product surfaces:** Near-black canvas with charcoal cards. Orange stays saturated because it is the only brand action color; purple is limited to Canvas graph semantics. Pricing keeps PromptWise's commercial hierarchy while using the same dark product vocabulary as Studio and Canvas.
+- **Dark product surfaces:** Near-black canvas with charcoal cards. Orange stays saturated because it is the only brand action color; cold blue is limited to Canvas graph semantics. Pricing keeps PromptWise's commercial hierarchy while using the same dark product vocabulary as Studio, Canvas, and Assets.
 
 ## Spacing and Shape
 
@@ -52,9 +52,10 @@
 ## Layout
 
 - **Marketing grid:** 12 columns, max width 1280px, 24–32px gutters.
-- **App grid:** Creative project routes use a 56px top bar and fluid main region without a persistent sidebar. Administrative routes may keep their own navigation.
-- **Studio:** No sidebar. A full-bleed media wall supports a bottom floating composer; media type, model, ratio, credits, and Generate live in that composer. Content max width is 1380px and composer max width is 1180px.
+- **App grid:** Creative project routes use a 56px top bar and fluid main region without a persistent sidebar.
+- **Studio:** No sidebar. A full-bleed media wall supports a bottom floating composer; media type, model, ratio, parameters, and Generate live in that composer. Content max width is 1380px and composer max width is 1180px.
 - **Canvas:** Full-bleed workspace inside the same AppShell. Floating toolbars use the shared panel tokens.
+- **Assets:** A project-scoped media library shares the same AppShell and content width as Studio.
 - **Responsive:** Sidebar becomes a drawer below 960px. Canvas remains usable with touch-safe controls and a collapsible inspector.
 
 ## Component Language
@@ -69,11 +70,11 @@ MarketingHeader, HeroStatement, HeroDemoFrame, ProofStrip, FeatureStory, MediaSh
 
 ### Product
 
-AppShell, AppSidebar, AppTopbar, PageHeader, MetricCard, DataTable, EmptyState, ErrorState, LoadingState, UsageMeter, CreditBalance, and StatusBadge.
+AppShell, AppTopbar, PageHeader, MediaLibrary, EmptyState, ErrorState, LoadingState, and StatusBadge.
 
 ### Creative workspace
 
-WorkspaceSwitcher, PromptComposer, MediaUploader, ModelPicker, EffectPicker, GenerationSettings, GenerationCard, TaskProgress, ResultViewer, CreditEstimate, APIRequestPreview, WebhookStatus, CanvasNode, CanvasEdge, CanvasToolbar, and InspectorPanel.
+WorkspaceSwitcher, PromptComposer, MediaUploader, ModelPicker, EffectPicker, GenerationSettings, GenerationCard, GenerationHistory, TaskProgress, ResultViewer, CanvasNode, CanvasEdge, CanvasToolbar, and InspectorPanel.
 
 Do not create a universal `Section` component controlled by many presentation props. Reuse small primitives and keep each product section semantically owned.
 
@@ -83,7 +84,7 @@ React Flow remains the interaction engine. PromptWise changes its visual express
 
 - Canvas background uses the same near-black canvas with a restrained two-scale dot grid.
 - Nodes are dark, thin-bordered cards with a narrow semantic header and clear input/output ports.
-- Purple marks graph selection and connection semantics; orange remains reserved for brand and purchase actions.
+- Cold blue marks graph selection and connection semantics; orange remains reserved for brand actions.
 - Toolbars and inspectors match AppShell surfaces, typography, radius, and focus states.
 - Zoom, pan, connect, multi-select, keyboard shortcuts, undo/redo, persistence, and accessibility behavior are regression-tested independently of styling.
 
@@ -116,7 +117,7 @@ Homepage emphasis is approximately 70% what can be built with BeatAPI, 20% what 
 | Date | Decision | Rationale |
 | --- | --- | --- |
 | 2026-08-12 | One PromptWise-derived design language | A single recognizable system is more valuable than several shallow themes. |
-| 2026-08-12 | Shared AppShell with Studio and Canvas modes | Preserves both workflows without doubling dashboard maintenance. |
+| 2026-08-12 | Shared AppShell with Studio, Canvas, and Assets modes | Preserves every project view without duplicating workspace chrome. |
 | 2026-08-12 | Orange primary, cream marketing, neutral app | Connects the brand across marketing and product while preserving workspace clarity. |
 | 2026-08-12 | Figtree + Geist Mono | Keeps creative brand expression and developer readability in one family of interfaces. |
 | 2026-08-15 | Unified black Studio, Canvas, and Pricing | Pricing retains the preferred PromptWise structure while matching the cinematic product environment. |
