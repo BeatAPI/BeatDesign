@@ -1,4 +1,5 @@
 import type { WorkspaceProjectCardItem } from '@/components/app/workspace-project-hub';
+import type { ProjectGenerationItem } from '@/core/effects/project-generations';
 import { apiJsonDelete, apiJsonGet } from '@/lib/api-client';
 
 export type RecentAsset = {
@@ -35,4 +36,10 @@ export async function fetchWorkspaceProjects(): Promise<{
 
 export async function deleteWorkspaceProjects(projectIds: string[]) {
   return apiJsonDelete<{ success: true }>('/api/app/projects', { projectIds });
+}
+
+export async function fetchProjectGenerations(projectId: string) {
+  return apiJsonGet<{ items: ProjectGenerationItem[] }>(
+    `/api/app/projects/${encodeURIComponent(projectId)}/generations`
+  );
 }

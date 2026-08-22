@@ -43,6 +43,7 @@ LICENSE
 *.pem
 *.tsbuildinfo
 public/uploads
+public/demo-assets
 *-before.png
 design-qa-*.png
 canvas-rollback-empty.png

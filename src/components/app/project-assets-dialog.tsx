@@ -26,6 +26,7 @@ import {
 } from '@/core/workspace-lib/app/workspace-client-api';
 import { recentAssetsKeys } from '@/core/workspace-lib/app/workspace-query-keys';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
+import { beatPanelLabelClassName } from '@/components/app/composer-styles';
 import {
   PROJECT_ASSET_DRAG_MIME,
   PROJECT_ASSET_INSERT_EVENT,
@@ -83,7 +84,7 @@ function AssetTile({
       onDragEnd={(event) => {
         if (event.dataTransfer.dropEffect === 'copy') onAdded();
       }}
-      className={`group relative aspect-square overflow-hidden rounded-[14px] border border-white/[0.08] bg-[#09090b] transition hover:-translate-y-0.5 hover:border-white/[0.22] ${
+      className={`group relative h-[200px] w-fit overflow-hidden rounded-[14px] bg-transparent transition hover:-translate-y-0.5 ${
         canAddToCanvas ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
       title={asset.filename || addLabel}
@@ -94,13 +95,13 @@ function AssetTile({
           muted
           playsInline
           preload="metadata"
-          className="size-full object-cover opacity-85 transition duration-300 group-hover:opacity-100"
+          className="h-full w-auto object-contain"
         />
       ) : (
         <img
           src={asset.publicUrl}
           alt={asset.filename || ''}
-          className="size-full object-cover transition duration-300 group-hover:scale-[1.025]"
+          className="h-full w-auto object-contain"
         />
       )}
       {mediaType === 'video' ? (
@@ -148,6 +149,102 @@ function AssetTile({
   );
 }
 
+export function ProjectAssetsLibrary({
+  projectId,
+  canAddToCanvas = false,
+  onAdded,
+}: {
+  projectId: string;
+  canAddToCanvas?: boolean;
+  onAdded?: () => void;
+}) {
+  const t = useTranslations('AppShell.header.projectAssets');
+  const assetsQuery = useQuery({
+    queryKey: recentAssetsKeys.lists(projectId),
+    queryFn: () => fetchRecentAssets(projectId),
+    staleTime: 30 * 1000,
+  });
+  const images = assetsQuery.data?.images ?? [];
+  const videos = assetsQuery.data?.videos ?? [];
+  const total = images.length + videos.length;
+
+  return (
+    <>
+      {assetsQuery.isLoading ? (
+        <div className="flex min-h-52 items-center justify-center gap-2 text-[13px] text-white/45">
+          <Loader2 className="size-4 animate-spin" />
+          {t('loading')}
+        </div>
+      ) : null}
+
+      {assetsQuery.isError ? (
+        <div className="flex min-h-52 items-center justify-center text-[13px] text-[#ff8a8d]">
+          {t('loadFailed')}
+        </div>
+      ) : null}
+
+      {!assetsQuery.isLoading && !assetsQuery.isError && total === 0 ? (
+        <div className="flex min-h-52 flex-col items-center justify-center text-center">
+          <span className="grid size-12 place-items-center rounded-[15px] border border-white/[0.08] bg-white/[0.035] text-white/28">
+            <Images className="size-5" />
+          </span>
+          <p className="mt-4 text-[14px] font-medium text-white/72">
+            {t('empty')}
+          </p>
+        </div>
+      ) : null}
+
+      {!assetsQuery.isLoading && !assetsQuery.isError && total > 0 ? (
+        <div className="space-y-6">
+          {images.length > 0 ? (
+            <section>
+              <h3 className={`mb-3 ${beatPanelLabelClassName}`}>
+                {t('images')}
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {images.map((asset) => (
+                  <AssetTile
+                    key={asset.id}
+                    asset={asset}
+                    mediaType="image"
+                    projectId={projectId}
+                    canAddToCanvas={canAddToCanvas}
+                    onAdded={() => onAdded?.()}
+                    addLabel={t('addToCanvas')}
+                    openLabel={t('openOriginal')}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {videos.length > 0 ? (
+            <section>
+              <h3 className={`mb-3 ${beatPanelLabelClassName}`}>
+                {t('videos')}
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {videos.map((asset) => (
+                  <AssetTile
+                    key={asset.id}
+                    asset={asset}
+                    mediaType="video"
+                    projectId={projectId}
+                    canAddToCanvas={canAddToCanvas}
+                    onAdded={() => onAdded?.()}
+                    addLabel={t('addToCanvas')}
+                    openLabel={t('openOriginal')}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function ProjectAssetsDialog({
   projectId,
   canAddToCanvas = false,
@@ -157,14 +254,6 @@ export function ProjectAssetsDialog({
 }) {
   const t = useTranslations('AppShell.header.projectAssets');
   const [open, setOpen] = useState(false);
-  const assetsQuery = useQuery({
-    queryKey: recentAssetsKeys.lists(projectId),
-    queryFn: () => fetchRecentAssets(projectId),
-    staleTime: 30 * 1000,
-  });
-  const images = assetsQuery.data?.images ?? [];
-  const videos = assetsQuery.data?.videos ?? [];
-  const total = images.length + videos.length;
 
   return (
     <Dialog modal={false} open={open} onOpenChange={setOpen}>
@@ -177,11 +266,6 @@ export function ProjectAssetsDialog({
         <span className="hidden text-xs font-medium sm:inline">
           {t('triggerLabel')}
         </span>
-        {total > 0 ? (
-          <span className="text-[10px] font-semibold tabular-nums text-white/38">
-            {total}
-          </span>
-        ) : null}
       </DialogTrigger>
 
       <DialogContent
@@ -207,77 +291,11 @@ export function ProjectAssetsDialog({
         </DialogHeader>
 
         <div className="max-h-[60vh] overflow-y-auto px-5 py-5 sm:px-6">
-          {assetsQuery.isLoading ? (
-            <div className="flex min-h-52 items-center justify-center gap-2 text-[13px] text-white/45">
-              <Loader2 className="size-4 animate-spin" />
-              {t('loading')}
-            </div>
-          ) : null}
-
-          {assetsQuery.isError ? (
-            <div className="flex min-h-52 items-center justify-center text-[13px] text-[#ff8a8d]">
-              {t('loadFailed')}
-            </div>
-          ) : null}
-
-          {!assetsQuery.isLoading && !assetsQuery.isError && total === 0 ? (
-            <div className="flex min-h-52 flex-col items-center justify-center text-center">
-              <span className="grid size-12 place-items-center rounded-[15px] border border-white/[0.08] bg-white/[0.035] text-white/28">
-                <Images className="size-5" />
-              </span>
-              <p className="mt-4 text-[14px] font-medium text-white/72">
-                {t('empty')}
-              </p>
-            </div>
-          ) : null}
-
-          {!assetsQuery.isLoading && !assetsQuery.isError && total > 0 ? (
-            <div className="space-y-6">
-              {images.length > 0 ? (
-                <section>
-                  <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/35">
-                    {t('images')}
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5">
-                    {images.map((asset) => (
-                      <AssetTile
-                        key={asset.id}
-                        asset={asset}
-                        mediaType="image"
-                        projectId={projectId}
-                        canAddToCanvas={canAddToCanvas}
-                        onAdded={() => setOpen(false)}
-                        addLabel={t('addToCanvas')}
-                        openLabel={t('openOriginal')}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              {videos.length > 0 ? (
-                <section>
-                  <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/35">
-                    {t('videos')}
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-5">
-                    {videos.map((asset) => (
-                      <AssetTile
-                        key={asset.id}
-                        asset={asset}
-                        mediaType="video"
-                        projectId={projectId}
-                        canAddToCanvas={canAddToCanvas}
-                        onAdded={() => setOpen(false)}
-                        addLabel={t('addToCanvas')}
-                        openLabel={t('openOriginal')}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-            </div>
-          ) : null}
+          <ProjectAssetsLibrary
+            projectId={projectId}
+            canAddToCanvas={canAddToCanvas}
+            onAdded={() => setOpen(false)}
+          />
         </div>
       </DialogContent>
     </Dialog>

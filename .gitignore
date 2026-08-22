@@ -75,6 +75,7 @@ package-lock.json
 
 # Runtime uploads and local QA artifacts
 /public/uploads/
+/public/demo-assets/
 /*-before.png
 /design-qa-*.png
 /canvas-rollback-empty.png

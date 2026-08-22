@@ -1,11 +1,11 @@
-# Design System — BeatAPI SaaS Template
+# Design System — BeatDesign
 
 ## Product Context
 
-- **What this is:** An open-source AI SaaS starter and a working demonstration of building on BeatAPI.
+- **What this is:** An open-source, local-first AI creative workbench and a working demonstration of building on BeatAPI.
 - **Who it is for:** Independent developers and small product teams shipping AI media products for an international audience.
 - **Space:** Developer tools, AI creative software, and SaaS infrastructure.
-- **Project type:** Marketing site, authenticated SaaS dashboard, guided studio, and node canvas.
+- **Project type:** Marketing site, local project workspace, guided Studio, node Canvas, and shared Assets view.
 
 ## Aesthetic Direction
 
@@ -52,9 +52,10 @@
 ## Layout
 
 - **Marketing grid:** 12 columns, max width 1280px, 24–32px gutters.
-- **App grid:** Creative project routes use a 56px top bar and fluid main region without a persistent sidebar. Administrative routes may keep their own navigation.
-- **Studio:** No sidebar. A full-bleed media wall supports a bottom floating composer; media type, model, ratio, credits, and Generate live in that composer. Content max width is 1380px and composer max width is 1180px.
+- **App grid:** Creative project routes use a 56px top bar and fluid main region without a persistent sidebar.
+- **Studio:** No sidebar. A full-bleed media wall supports a bottom floating composer; media type, model, ratio, parameters, and Generate live in that composer. Content max width is 1380px and composer max width is 1180px.
 - **Canvas:** Full-bleed workspace inside the same AppShell. Floating toolbars use the shared panel tokens.
+- **Assets:** A project-scoped media library shares the same AppShell and content width as Studio.
 - **Responsive:** Sidebar becomes a drawer below 960px. Canvas remains usable with touch-safe controls and a collapsible inspector.
 
 ## Component Language

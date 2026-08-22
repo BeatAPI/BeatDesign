@@ -1,6 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "product.shell.home": "首页",
+  "product.shell.create": "创作",
   "product.shell.studio": "Studio",
   "product.shell.canvas": "Canvas",
   "product.shell.pricing": "定价",
@@ -22,10 +23,10 @@
   "product.home.createInStudio": "在 Studio 中创作",
   "product.home.sectionTitle": "选择你的工作空间",
   "product.home.viewProjects": "查看项目",
-  "product.home.studioDescription": "在专注的工作区中生成和比较图片或视频。",
-  "product.home.canvasDescription": "排列共享素材，并把它们连接成可视化工作流。",
+  "product.home.studioDescription": "在专注工作区生成图片和视频。",
+  "product.home.canvasDescription": "把素材连成可视化工作流。",
   "product.home.projectsTitle": "项目",
-  "product.home.projectsDescription": "继续最近的创作，Studio 与 Canvas 状态会保存在同一个项目中。",
+  "product.home.projectsDescription": "继续最近的 Studio 与 Canvas 创作。",
   "product.home.openWorkspace": "打开工作空间",
   "product.home.mediaImage": "图片",
   "product.home.mediaVideo": "视频",
@@ -389,6 +390,7 @@
             "queued": "排队中",
             "generating": "生成中",
             "ready": "已就绪",
+            "success": "成功",
             "failed": "失败"
           },
           "fromCanvas": "来自画布",
@@ -432,6 +434,23 @@
         "guideDescription": "用提示词自由生成，或上传图片开始创作。",
         "freeGenerate": "自由生成",
         "uploadStart": "上传图片"
+      },
+      "feed": {
+        "history": "历史",
+        "result": "生成结果",
+        "generating": "生成中...",
+        "failed": "失败",
+        "ready": "成功",
+        "success": "成功",
+        "noPrompt": "无提示词",
+        "openPreview": "打开预览",
+        "closePreview": "关闭预览",
+        "prompt": "提示词",
+        "model": "模型",
+        "params": "参数",
+        "image": "图片",
+        "video": "视频",
+        "references": "参考图"
       },
       "textNote": {
         "template": "文本备注\n\n在这里记录构图想法、镜头说明或制作备注。"
@@ -625,10 +644,9 @@
       "retry": "重试",
       "backToHistory": "返回历史",
       "startTitle": "开始新项目",
-      "startStudioDescription": "只有确认开始后，才会创建 Studio 项目。",
-      "startCanvasDescription": "只有确认开始后，才会创建 Canvas 项目。",
-      "startStudio": "开始 Studio 项目",
-      "startCanvas": "开始 Canvas 项目",
+      "startDescription": "选择 Studio 或 Canvas 来创建这个项目。",
+      "startStudio": "Studio",
+      "startCanvas": "Canvas",
       "defaultName": "未命名项目"
     }
   },

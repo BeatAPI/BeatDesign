@@ -1,33 +1,32 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowUp,
-  Film,
-  ImageIcon,
-  ImagePlus,
-  Loader2,
-  Sparkles,
-} from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { resolveOutputMedia } from '@/core/effects/output-media';
+import { StudioComposer } from '@/components/studio/studio-composer';
+import { StudioGenerationFeed } from '@/components/studio/studio-generation-feed';
+import { StudioStartHere } from '@/components/studio/studio-start-here';
+import type { CanvasCardMediaType } from '@/core/beatcanvas/canvas-types';
 import { resolveWmTaskId } from '@/core/effects/client-api';
-import { getModelIconPathByModelId } from '@/core/workspace-lib/model-icons';
-import { WorkspaceSelect } from '@/components/app/workspace-select';
+import { resolveOutputMedia } from '@/core/effects/output-media';
+import { generationValidationConstraints } from '@/core/effects/validation';
 import {
-  composerCardClassName,
-  composerGenerateButtonClassName,
-} from '@/components/app/composer-styles';
+  findWorkspaceModelOption,
+  getDefaultSelectableWorkspaceModel,
+} from '@/core/effects/workspace-models';
+import {
+  applyStudioDraftModel,
+  createStudioDraftCard,
+} from '@/core/studio/studio-draft';
 import {
   buildStudioEffectInput,
   getStudioModels,
   type StudioMedia,
 } from '@/core/studio/studio-runtime';
-import { apiJsonGet, apiJsonPost } from '@/lib/api-client';
+import { fetchProjectGenerations } from '@/core/workspace-lib/app/workspace-client-api';
 import { invalidateWorkspaceAfterGeneration } from '@/core/workspace-lib/app/workspace-query-invalidation';
-import { StudioStartHere } from '@/components/studio/studio-start-here';
-import { cn } from '@/lib/utils';
+import { projectGenerationsKeys } from '@/core/workspace-lib/app/workspace-query-keys';
+import { apiJsonGet, apiJsonPost } from '@/lib/api-client';
 
 type GenerationResponse = {
   status?: 'pending' | 'processing' | 'succeeded' | 'failed';
@@ -76,42 +75,67 @@ export function BeatStudioWorkspace({
   const queryClient = useQueryClient();
   const initialMedia: StudioMedia =
     initialTarget === 'video' ? 'video' : 'image';
-  const [media, setMedia] = useState<StudioMedia>(initialMedia);
-  const [prompt, setPrompt] = useState(initialPrompt || '');
-  const [aspectRatio, setAspectRatio] = useState(
-    initialMedia === 'video' ? '16:9' : '1:1'
-  );
-  const [modelId, setModelId] = useState(initialModelId || '');
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const imageModels = useMemo(() => getStudioModels('image'), []);
+  const videoModels = useMemo(() => getStudioModels('video'), []);
+  const [draft, setDraft] = useState(() => {
+    const models = initialMedia === 'video' ? videoModels : imageModels;
+    const model =
+      findWorkspaceModelOption(models, initialModelId) ??
+      getDefaultSelectableWorkspaceModel(
+        initialMedia === 'video' ? 'ai-video' : 'ai-image'
+      );
+    return createStudioDraftCard({
+      type: initialMedia,
+      model,
+      prompt: initialPrompt || '',
+    });
+  });
   const [error, setError] = useState('');
-  const models = useMemo(() => getStudioModels(media), [media]);
+  const models = draft.type === 'video' ? videoModels : imageModels;
   const selectedModel =
-    models.find((model) => model.id === modelId) ?? models[0] ?? null;
+    findWorkspaceModelOption(models, draft.modelId) ?? models[0] ?? null;
+
+  const generationsQuery = useQuery({
+    queryKey: projectGenerationsKeys.list(projectId),
+    queryFn: () => fetchProjectGenerations(projectId),
+    refetchInterval: (query) =>
+      query.state.data?.items.some(
+        (item) => item.status === 'pending' || item.status === 'processing'
+      )
+        ? 2500
+        : false,
+  });
+  const feedItems = (generationsQuery.data?.items ?? []).filter(
+    (item) => item.status !== 'failed'
+  );
 
   useEffect(() => {
-    if (!selectedModel) return;
-    if (selectedModel.id !== modelId) setModelId(selectedModel.id);
-    const ratios = selectedModel.supportedAspectRatios || [];
-    if (ratios.length && !ratios.includes(aspectRatio as never)) {
-      setAspectRatio(selectedModel.defaultAspectRatio || ratios[0]);
-    }
-  }, [aspectRatio, modelId, selectedModel]);
+    if (!selectedModel || selectedModel.id === draft.modelId) return;
+    setDraft((current) =>
+      applyStudioDraftModel({ draft: current, model: selectedModel })
+    );
+  }, [draft.modelId, selectedModel]);
 
   const generation = useMutation({
     mutationFn: async () => {
       if (!selectedModel) {
         throw new Error('No model is available for this media type.');
       }
-      if (!prompt.trim()) {
+      if (!draft.prompt.trim()) {
         throw new Error('Describe what you want to create first.');
       }
       const payload = {
         effectId: selectedModel.effectId,
         input: buildStudioEffectInput({
-          media,
+          media: draft.type,
           model: selectedModel,
-          prompt,
-          aspectRatio,
+          prompt: draft.prompt,
+          aspectRatio: draft.aspectRatio,
+          duration: draft.duration,
+          outputQuality: draft.outputQuality,
+          mode: draft.mode,
+          quality: draft.quality,
+          language: draft.language,
         }),
         projectId,
       };
@@ -133,26 +157,25 @@ export function BeatStudioWorkspace({
       if (created.status === 'failed') {
         throw new Error(created.error || 'Generation failed');
       }
-      let output = created.output;
+      await invalidateWorkspaceAfterGeneration(queryClient);
       const wmTaskId = resolveWmTaskId(created);
       if (wmTaskId && created.status !== 'succeeded') {
-        output = await waitForGeneration({
+        await waitForGeneration({
           wmTaskId,
           effectId: selectedModel.effectId,
         });
-      }
-      const mediaOutput = resolveOutputMedia(output);
-      if (!mediaOutput.resultUrl) {
+      } else if (!resolveOutputMedia(created.output).resultUrl) {
         throw new Error('Generation completed without a media URL.');
       }
-      return mediaOutput.resultUrl;
     },
-    onSuccess: (url) => {
-      setResultUrl(url);
+    onSuccess: () => {
       setError('');
       void invalidateWorkspaceAfterGeneration(queryClient);
     },
-    onError: (generationError: Error) => setError(generationError.message),
+    onError: (generationError: Error) => {
+      setError(generationError.message);
+      void invalidateWorkspaceAfterGeneration(queryClient);
+    },
   });
 
   return (
@@ -160,152 +183,56 @@ export function BeatStudioWorkspace({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_112%,rgba(255,122,51,0.12),transparent_34%),linear-gradient(180deg,#08090a_0%,#0b0b0d_48%,#08090a_100%)]" />
       <div className="pointer-events-none absolute inset-x-[8%] top-0 h-[62%] opacity-25 [background-image:radial-gradient(rgba(255,255,255,0.16)_0.75px,transparent_0.75px)] [background-size:18px_18px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
 
-      <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-4 pb-[220px] pt-8 sm:px-6 sm:pb-[210px] md:pb-[190px]">
-        {resultUrl ? (
-          <div className="w-full max-w-[780px] overflow-hidden rounded-[var(--beat-radius)] border border-white/[0.09] bg-black shadow-[0_38px_120px_rgba(0,0,0,0.58)]">
-            {media === 'video' ? (
-              <video
-                src={resultUrl}
-                controls
-                autoPlay
-                className="max-h-[55vh] w-full object-contain"
-              />
-            ) : (
-              <img
-                src={resultUrl}
-                alt="Generated result"
-                className="max-h-[55vh] w-full object-contain"
-              />
-            )}
+      <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[220px] pt-8 sm:px-6 sm:pb-[210px]">
+        {feedItems.length > 0 ? (
+          <div className="flex min-h-full w-full flex-col justify-end">
+            <StudioGenerationFeed items={feedItems} />
           </div>
         ) : (
-          <StudioStartHere />
+          <div className="flex flex-1 items-center justify-center">
+            <StudioStartHere />
+          </div>
         )}
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#09090a] via-[#09090a]/96 to-transparent px-3 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-14">
-        <div
-          className={cn(
-            'mx-auto w-full max-w-[1138px] overflow-hidden p-2.5 sm:p-3.5',
-            composerCardClassName
-          )}
-          data-beatapi-composer=""
-        >
-          <div className="relative">
-            <button
-              type="button"
-              aria-label="Add a reference image"
-              title="Reference upload coming next"
-              className="absolute left-0 top-0 z-10 flex size-9 rotate-[-5deg] items-center justify-center rounded-[10px] border border-dashed border-white/[0.13] bg-white/[0.03] text-[var(--beat-text-2)] shadow-[0_8px_20px_rgba(0,0,0,0.24)] transition hover:border-white/25 hover:bg-white/[0.06]"
-            >
-              <ImagePlus className="size-3.5" />
-            </button>
-            <textarea
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder="Describe the subject, motion, camera, lighting, and atmosphere you want to create."
-              className="h-[80px] min-h-[80px] w-full resize-none bg-transparent py-2 pl-[52px] pr-3 text-[14px] leading-6 text-[var(--beat-text-1)] outline-none placeholder:text-white/35 sm:h-[92px] sm:min-h-[92px] sm:pl-[56px] sm:pr-16 sm:text-[15px]"
-            />
-          </div>
+      <StudioComposer
+        draft={draft}
+        imageModels={imageModels}
+        videoModels={videoModels}
+        isBusy={generation.isPending}
+        promptCharacterLimit={generationValidationConstraints.maxPromptChars}
+        takeCount={feedItems.length}
+        onDraftChange={(next) => {
+          if (next.type !== draft.type || next.modelId !== draft.modelId) {
+            const nextModels =
+              next.type === 'video' ? videoModels : imageModels;
+            const nextModel =
+              findWorkspaceModelOption(nextModels, next.modelId) ??
+              nextModels[0] ??
+              null;
+            if (nextModel) {
+              setDraft(
+                applyStudioDraftModel({
+                  draft: { ...next, type: next.type as CanvasCardMediaType },
+                  model: nextModel,
+                })
+              );
+              return;
+            }
+          }
+          setDraft(next);
+        }}
+        onGenerate={() => {
+          setError('');
+          generation.mutate();
+        }}
+      />
 
-          <div className="mt-1.5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-            <div className="grid min-w-0 flex-1 grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:items-center">
-              <div className="min-w-0">
-                <WorkspaceSelect
-                  ariaLabel="Media type"
-                  triggerClassName="min-w-[96px]"
-                  value={media}
-                  options={[
-                    {
-                      value: 'image',
-                      label: 'Image',
-                      leading: (
-                        <ImageIcon className="size-3.5 shrink-0 text-[var(--beat-text-2)]" />
-                      ),
-                    },
-                    {
-                      value: 'video',
-                      label: 'Video',
-                      leading: (
-                        <Film className="size-3.5 shrink-0 text-[var(--beat-text-2)]" />
-                      ),
-                    },
-                  ]}
-                  onChange={(next) => setMedia(next as StudioMedia)}
-                />
-              </div>
-
-              <div className="min-w-0">
-                <WorkspaceSelect
-                  ariaLabel="Model"
-                  triggerClassName="w-fit max-w-full"
-                  value={selectedModel?.id || ''}
-                  options={models.map((model) => ({
-                    value: model.id,
-                    label: model.name,
-                    leading: (
-                      <span className="grid size-4 shrink-0 place-items-center rounded-[4px] bg-white/90 ring-1 ring-black/10">
-                        <img
-                          src={getModelIconPathByModelId(model.id) || '/logo.png'}
-                          alt=""
-                          className="size-3 rounded-[2px]"
-                        />
-                      </span>
-                    ),
-                  }))}
-                  onChange={setModelId}
-                  leadingIcon={<Sparkles className="size-3.5 shrink-0 text-[var(--beat-text-2)]" />}
-                />
-              </div>
-
-              <div className="min-w-0">
-                <WorkspaceSelect
-                  ariaLabel="Aspect ratio"
-                  triggerClassName="min-w-[88px]"
-                  value={aspectRatio}
-                  options={(
-                    selectedModel?.supportedAspectRatios || [
-                      media === 'video' ? '16:9' : '1:1',
-                    ]
-                  ).map((ratio) => ({ value: ratio, label: ratio }))}
-                  onChange={setAspectRatio}
-                  leadingIcon={
-                    <span className="size-3.5 shrink-0 rounded-[3px] border border-white/40" />
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setError('');
-                  generation.mutate();
-                }}
-                disabled={
-                  generation.isPending || !prompt.trim() || !selectedModel
-                }
-                className={cn(
-                  composerGenerateButtonClassName,
-                  'active:translate-y-px'
-                )}
-                aria-label="Generate"
-              >
-                {generation.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ArrowUp className="size-3.5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {error ? (
-            <p className="px-1 pt-3 text-sm text-[var(--beatcanvas-error)]">{error}</p>
-          ) : null}
-        </div>
-      </div>
+      {error ? (
+        <p className="pointer-events-none absolute inset-x-0 bottom-[88px] z-30 px-6 text-center text-sm text-[var(--beatcanvas-error)]">
+          {error}
+        </p>
+      ) : null}
     </section>
   );
 }

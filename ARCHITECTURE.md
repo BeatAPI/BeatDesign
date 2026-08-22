@@ -15,7 +15,7 @@ Projects
   + Storage configuration
 ```
 
-Studio and Canvas are two views over the same project, generation, and asset services. Switching modes never creates a second project or backend.
+Studio, Canvas, and Assets are three views over the same project, generation, and asset services. Switching modes never creates a second project or backend.
 
 ## Runtime flow
 

@@ -37,7 +37,7 @@ Open `http://localhost:3020`. Home is the default route. Opening Studio or Canva
 ## How data flows
 
 ```text
-Studio / Canvas
+Studio / Canvas / Assets
   -> local server routes
   -> imported files saved under data/project-assets and indexed in SQLite
   -> generation precheck and a one-time SQLite generation intent

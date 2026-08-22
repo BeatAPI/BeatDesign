@@ -18,7 +18,8 @@ const apiConfigSource = readFileSync(
 
 test('workspace header keeps mode switching, shared assets, and API configuration actions', () => {
   assert.match(shellSource, /WorkspaceApiConfigDialog/);
-  assert.match(shellSource, /ProjectAssetsDialog/);
+  assert.match(shellSource, /\/assets\//);
+  assert.match(shellSource, />Assets<\/span>/);
   assert.match(shellSource, /GitHubIcon/);
   assert.match(
     shellSource,

@@ -1,9 +1,7 @@
 import {
   ArrowRight,
   ArrowUp,
-  Film,
   FolderClock,
-  ImagePlus,
   PanelsTopLeft,
   Workflow,
 } from 'lucide-react';
@@ -39,12 +37,7 @@ function getCopy(locale: string) {
       { locale: messageLocale }
     ),
     open: m['product.home.openWorkspace']({}, { locale: messageLocale }),
-    createInStudio: m['product.home.createInStudio'](
-      {},
-      { locale: messageLocale }
-    ),
-    mediaImage: m['product.home.mediaImage']({}, { locale: messageLocale }),
-    mediaVideo: m['product.home.mediaVideo']({}, { locale: messageLocale }),
+    create: m['product.shell.create']({}, { locale: messageLocale }),
   };
 }
 
@@ -79,7 +72,7 @@ function WorkspaceCard({
         <h3 className="beat-product-display mt-6 text-[17px] font-semibold tracking-[-0.02em] text-[var(--beat-text-1)]">
           {title}
         </h3>
-        <p className="mt-2 max-w-[330px] text-[13px] leading-[1.65] text-[var(--beat-text-2)]">
+        <p className="mt-2 truncate whitespace-nowrap text-[13px] leading-[1.65] text-[var(--beat-text-2)]">
           {description}
         </p>
         <span className="mt-auto inline-flex items-center gap-2 pt-6 text-[12.5px] font-medium text-white/65 transition-colors group-hover:text-white">
@@ -93,10 +86,6 @@ function WorkspaceCard({
 
 function PromptComposer({ copy }: { copy: HomeCopy }) {
   const [prompt, setPrompt] = useState('');
-  const mediaActions = [
-    { label: copy.mediaImage, icon: ImagePlus },
-    { label: copy.mediaVideo, icon: Film },
-  ] as const;
 
   return (
     <form
@@ -112,23 +101,10 @@ function PromptComposer({ copy }: { copy: HomeCopy }) {
         aria-label={copy.prompt}
         className="min-h-16 w-full resize-none border-0 bg-transparent text-[15px] leading-6 text-white outline-none placeholder:text-[var(--beat-text-3)] sm:text-base"
       />
-      <div className="mt-auto flex items-end justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
-          {mediaActions.map(({ label, icon: Icon }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={() => setPrompt((value) => value || `${label}: `)}
-              className="inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.09] bg-white/[0.035] px-3 text-xs font-medium text-[var(--beat-text-2)] transition hover:border-white/[0.18] hover:bg-white/[0.06] hover:text-white"
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="mt-auto flex items-end justify-end">
         <button
           type="submit"
-          aria-label={copy.createInStudio}
+          aria-label={copy.create}
           className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--beat-accent)] text-[var(--beat-accent-ink)] shadow-[0_8px_24px_rgba(255,122,51,0.3)] transition hover:scale-[1.04] hover:bg-[#ff8a4d]"
         >
           <ArrowUp className="size-4" />

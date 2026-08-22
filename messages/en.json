@@ -1,6 +1,7 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "product.shell.home": "Home",
+  "product.shell.create": "Create",
   "product.shell.studio": "Studio",
   "product.shell.canvas": "Canvas",
   "product.shell.pricing": "Pricing",
@@ -21,10 +22,10 @@
   "product.home.createInStudio": "Create in Studio",
   "product.home.sectionTitle": "Choose your workspace",
   "product.home.viewProjects": "View projects",
-  "product.home.studioDescription": "Generate and compare images or videos in a focused workspace.",
-  "product.home.canvasDescription": "Arrange shared assets and connect them into a visual workflow.",
+  "product.home.studioDescription": "Generate images and videos in one workspace.",
+  "product.home.canvasDescription": "Connect assets in a visual workflow.",
   "product.home.projectsTitle": "Projects",
-  "product.home.projectsDescription": "Continue recent work with Studio and Canvas state kept together.",
+  "product.home.projectsDescription": "Continue recent Studio and Canvas work.",
   "product.home.openWorkspace": "Open workspace",
   "product.home.mediaImage": "Image",
   "product.home.mediaVideo": "Video",
@@ -387,7 +388,8 @@
           "status": {
             "queued": "Queued",
             "generating": "Generating",
-            "ready": "Ready",
+        "ready": "Success",
+        "success": "Success",
             "failed": "Failed"
           },
           "fromCanvas": "From canvas",
@@ -431,6 +433,23 @@
         "guideDescription": "Generate freely from a prompt, or upload an image to start.",
         "freeGenerate": "Free generation",
         "uploadStart": "Upload image"
+      },
+      "feed": {
+        "history": "History",
+        "result": "Generation",
+        "generating": "Generating...",
+        "failed": "Failed",
+        "ready": "Ready",
+        "success": "Success",
+        "noPrompt": "No prompt",
+        "openPreview": "Open preview",
+        "closePreview": "Close preview",
+        "prompt": "Prompt",
+        "model": "Model",
+        "params": "Parameters",
+        "image": "Image",
+        "video": "Video",
+        "references": "References"
       },
       "textNote": {
         "template": "Text note\n\nCapture composition ideas, shot notes, or production reminders here."
@@ -624,10 +643,9 @@
       "retry": "Try again",
       "backToHistory": "Back to history",
       "startTitle": "Start a new project",
-      "startStudioDescription": "A Studio project is created only after you choose to start.",
-      "startCanvasDescription": "A Canvas project is created only after you choose to start.",
-      "startStudio": "Start Studio project",
-      "startCanvas": "Start Canvas project",
+      "startDescription": "Choose Studio or Canvas to create this project.",
+      "startStudio": "Studio",
+      "startCanvas": "Canvas",
       "defaultName": "Untitled project"
     }
   },

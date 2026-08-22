@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import {
   effectMetadataKeys,
   generationStatusKeys,
+  projectGenerationsKeys,
   recentAssetsKeys,
   workspaceModelsKeys,
   workspaceProjectsKeys,
@@ -14,6 +15,7 @@ export async function invalidateWorkspaceAfterGeneration(
     queryClient.invalidateQueries({ queryKey: recentAssetsKeys.all }),
     queryClient.invalidateQueries({ queryKey: workspaceProjectsKeys.all }),
     queryClient.invalidateQueries({ queryKey: generationStatusKeys.all }),
+    queryClient.invalidateQueries({ queryKey: projectGenerationsKeys.all }),
   ]);
 }
 

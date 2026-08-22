@@ -36,3 +36,28 @@ test('builds a text-to-video request without inventing a second backend', () => 
   assert.equal(input.prompt, 'Slow cinematic camera move');
   assert.equal(input.generationType, 'TEXT_2_VIDEO');
 });
+
+test('passes Veo quality mode and resolution through the shared studio input', () => {
+  const veo = getStudioModels('video').find((item) => item.id === 'veo-3.1');
+  assert.ok(veo);
+  assert.deepEqual(veo.modeOptions, ['quality', 'fast', 'lite']);
+  assert.deepEqual(
+    buildStudioEffectInput({
+      media: 'video',
+      model: veo,
+      prompt: 'Coastal sunrise',
+      aspectRatio: '16:9',
+      mode: 'lite',
+      outputQuality: '4k',
+      duration: '8s',
+    }),
+    {
+      prompt: 'Coastal sunrise',
+      aspect_ratio: '16:9',
+      generationType: 'TEXT_2_VIDEO',
+      wmDuration: '8s',
+      mode: 'lite',
+      wmOutputQuality: '4k',
+    }
+  );
+});
