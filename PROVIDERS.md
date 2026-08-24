@@ -1,6 +1,6 @@
 # Provider configuration
 
-BeatAPI is the fixed built-in generation provider implemented by this repository. The upstream URL is intentionally fixed to `https://api.beatapi.io`; users only provide their own BeatAPI API key.
+BeatAPI is the fixed built-in generation and analysis provider implemented by this repository. The upstream URL is intentionally fixed to `https://api.beatapi.io`; users only provide their own BeatAPI API key.
 
 Configure it in either place:
 
@@ -13,12 +13,15 @@ The adapter uses:
 
 - `POST /v1/images/tasks`
 - `POST /v1/videos/tasks`
+- `POST /v1/video-analysis/tasks`
 - `GET /v1/tasks/:id`
 - `POST /v1/files` for supported reference files
 
 Model support is defined in `src/core/effects/effect-registry.ts`, not discovered dynamically. This keeps Canvas and Studio behavior deterministic. When adding a model, update the registry, request mapping, media capability rules, and tests together.
 
 Kling 2.6 and Kling 3.0 Motion Control are exposed as BeatAPI models. Each run requires exactly one character image and one MP4/MOV motion video uploaded through the connected BeatAPI account. The Workspace never asks users for a KIE key; BeatAPI owns the upstream provider route, billing, polling, and output persistence.
+
+Video Analysis is exposed as a stable BeatAPI workflow with Standard and Deep depth controls. The Workspace uploads one MP4/MOV input, submits the analysis task, polls `GET /v1/tasks/:id`, and stores the returned report text and usage in the local project history. Provider-specific Gemini routing remains private to BeatAPI.
 
 An API with a different request or polling contract still needs its own adapter. This repository does not ship placeholder KIE, Vidu, Evolink, Gemini, Fal, Replicate, or payment-provider integrations.
 
