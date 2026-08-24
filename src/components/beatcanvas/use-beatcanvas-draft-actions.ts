@@ -14,6 +14,7 @@ import type {
 } from '@/core/effects/workspace-models';
 import type {
   CanvasCard,
+  CanvasGenerationMode,
   CanvasCardMediaType,
   CanvasDraftCard,
 } from '@/core/beatcanvas/canvas-types';
@@ -24,6 +25,10 @@ import {
 } from '@/core/beatcanvas/composer';
 import { getDraftDefaultsFromModel } from '@/core/beatcanvas/draft-defaults';
 import { getSelectableModel } from '@/core/beatcanvas/generation-controller';
+import {
+  VIDEO_ANALYSIS_MODEL_ID,
+  type VideoAnalysisDepth,
+} from '@/core/effects/video-analysis';
 import type { MutableRefObject } from 'react';
 import { useCallback } from 'react';
 
@@ -106,12 +111,33 @@ export function useBeatCanvasDraftActions({
   );
 
   const handleDraftTaskTypeChange = useCallback(
-    (draftId: string, taskType: CanvasCardMediaType) => {
+    (draftId: string, taskType: CanvasGenerationMode) => {
       const currentCard = canvasCardsRef.current[draftId];
       if (
         !isCanvasDraftCard(currentCard) ||
         isDraftBusyStatus(currentCard.status)
       ) {
+        return;
+      }
+
+      if (taskType === 'analysis') {
+        const videoReferenceId = currentCard.referenceCardIds.find(
+          (cardId) => canvasCardsRef.current[cardId]?.type === 'video'
+        );
+        updateDraftCard(draftId, (current) => ({
+          ...current,
+          type: 'video',
+          generationMode: 'analysis',
+          analysisDepth: current.analysisDepth ?? 'standard',
+          name: studioT('analysis.modeLabel'),
+          modelId: VIDEO_ANALYSIS_MODEL_ID,
+          referenceCardIds: videoReferenceId ? [videoReferenceId] : [],
+          url: null,
+          resultText: null,
+          status: 'idle',
+          error: null,
+        }));
+        setActiveComposerCardId(draftId);
         return;
       }
 
@@ -124,6 +150,8 @@ export function useBeatCanvasDraftActions({
       updateDraftCard(draftId, (current) => ({
         ...current,
         type: taskType,
+        generationMode: taskType,
+        analysisDepth: undefined,
         name:
           taskType === 'image'
             ? studioT('canvas.frame.imageTitle')
@@ -138,6 +166,7 @@ export function useBeatCanvasDraftActions({
         quality: defaults.quality,
         characterOrientation: defaults.characterOrientation,
         backgroundSource: defaults.backgroundSource,
+        resultText: null,
         status: 'idle',
         error: null,
       }));
@@ -153,6 +182,27 @@ export function useBeatCanvasDraftActions({
       updateDraftCard,
       videoModels,
     ]
+  );
+
+  const handleDraftAnalysisDepthChange = useCallback(
+    (draftId: string, analysisDepth: VideoAnalysisDepth) => {
+      const currentCard = canvasCardsRef.current[draftId];
+      if (
+        !isCanvasDraftCard(currentCard) ||
+        currentCard.generationMode !== 'analysis' ||
+        isDraftBusyStatus(currentCard.status)
+      ) {
+        return;
+      }
+
+      updateDraftCard(draftId, {
+        analysisDepth,
+        status: 'idle',
+        error: null,
+      });
+      setActiveComposerCardId(draftId);
+    },
+    [canvasCardsRef, setActiveComposerCardId, updateDraftCard]
   );
 
   const handleDraftModelChange = useCallback(
@@ -296,6 +346,7 @@ export function useBeatCanvasDraftActions({
   );
 
   return {
+    handleDraftAnalysisDepthChange,
     handleCreatePromptDraft,
     handleDraftBackgroundSourceChange,
     handleDraftAspectRatioChange,

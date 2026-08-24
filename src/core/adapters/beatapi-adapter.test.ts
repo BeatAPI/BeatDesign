@@ -43,7 +43,7 @@ test('maps a canvas video request to BeatAPI video tasks', () => {
         audio_urls: ['https://example.com/reference.mp3'],
         aspect_ratio: '9:16',
         wmDuration: '8s',
-        wmOutputQuality: '1080p',
+        wmOutputQuality: '720p',
         wmSound: true,
       },
     }),
@@ -54,7 +54,7 @@ test('maps a canvas video request to BeatAPI video tasks', () => {
         prompt: 'Neon market tracking shot',
         aspect_ratio: '9:16',
         duration: 8,
-        resolution: '1080p',
+        resolution: '720p',
         generate_audio: true,
         reference_images: ['https://example.com/first-frame.png'],
         reference_videos: ['https://example.com/reference.mp4'],
@@ -62,6 +62,68 @@ test('maps a canvas video request to BeatAPI video tasks', () => {
       },
     }
   );
+});
+
+test('maps standard and deep video analysis to the stable BeatAPI workflow', () => {
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 3,
+      model: 'video-analysis',
+      input: {
+        prompt: 'List each action with timestamps',
+        video_url: 'https://media.beatapi.io/inputs/review.mp4',
+        analysis_depth: 'deep',
+        max_output_tokens: 4096,
+      },
+    }),
+    {
+      path: '/v1/video-analysis/tasks',
+      body: {
+        video_url: 'https://media.beatapi.io/inputs/review.mp4',
+        prompt: 'List each action with timestamps',
+        analysis_depth: 'deep',
+        max_output_tokens: 4096,
+      },
+    }
+  );
+
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 3,
+      model: 'video-analysis',
+      input: {
+        prompt: 'Summarize this video',
+        video_url: 'https://media.beatapi.io/inputs/review.mov',
+      },
+    }).body,
+    {
+      video_url: 'https://media.beatapi.io/inputs/review.mov',
+      prompt: 'Summarize this video',
+      analysis_depth: 'standard',
+      max_output_tokens: 2048,
+    }
+  );
+});
+
+test('keeps video analysis text and usage in normalized task output', () => {
+  const result = normalizeBeatApiTaskResult({
+    id: 'analysis-1',
+    status: 'succeeded',
+    output: {
+      text: '00:04 — Product enters frame',
+      usage: { input_tokens: 120, output_tokens: 18 },
+    },
+  });
+
+  assert.equal(result.status, 'succeeded');
+  assert.deepEqual(result.output, {
+    taskId: 'analysis-1',
+    provider: 'beatapi',
+    requestId: null,
+    stage: null,
+    analysis_text: '00:04 — Product enters frame',
+    usage: { input_tokens: 120, output_tokens: 18 },
+  });
 });
 
 test('keeps multiple @Video references in BeatAPI array order', () => {
@@ -96,7 +158,35 @@ test('passes image references to every BeatAPI image model', () => {
   assert.deepEqual(request.body.images, ['https://example.com/source.png']);
 });
 
-test('does not truncate upstream images before BeatAPI model limits are configured', () => {
+test('uses reference images by default and frames only when @Image roles are explicit', () => {
+  const frames = [
+    'https://example.com/first.png',
+    'https://example.com/last.png',
+  ];
+  const defaultRequest = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'seedance-2',
+    input: {
+      prompt: 'Use @Image1 and @Image2 as visual references',
+      image_urls: frames,
+    },
+  });
+
+  assert.equal(defaultRequest.body.images, undefined);
+  assert.deepEqual(defaultRequest.body.reference_images, frames);
+
+  const frameRequest = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'seedance-2',
+    input: {
+      prompt: 'Use @Image1 as the first frame and @Image2 as the last frame',
+      image_urls: frames,
+    },
+  });
+
+  assert.deepEqual(frameRequest.body.images, frames);
+  assert.equal(frameRequest.body.reference_images, undefined);
+
   const images = [
     'https://example.com/one.png',
     'https://example.com/two.png',
@@ -111,7 +201,93 @@ test('does not truncate upstream images before BeatAPI model limits are configur
     },
   });
 
-  assert.deepEqual(request.body.images, images);
+  assert.equal(request.body.images, undefined);
+  assert.deepEqual(request.body.reference_images, images);
+});
+
+test('explicit Chinese @Image roles determine first and last frame order', () => {
+  const firstAttached = 'https://example.com/attached-first.png';
+  const secondAttached = 'https://example.com/attached-second.png';
+  const request = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'minimax-h3',
+    input: {
+      prompt: '将 @Image2 作为首帧，@Image1 作为尾帧。',
+      image_urls: [firstAttached, secondAttached],
+    },
+  });
+
+  assert.deepEqual(request.body.images, [secondAttached, firstAttached]);
+  assert.equal(request.body.reference_images, undefined);
+});
+
+test('normalizes MiniMax H3 text defaults and Veo reference quality', () => {
+  const h3 = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'minimax-h3',
+    input: {
+      prompt: 'Dawn village',
+      aspect_ratio: 'adaptive',
+    },
+  });
+  assert.equal(h3.body.aspect_ratio, '16:9');
+
+  const veo = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'veo-3.1',
+    input: {
+      prompt: 'Use all three visual references',
+      image_urls: [
+        'https://example.com/subject.png',
+        'https://example.com/location.png',
+        'https://example.com/style.png',
+      ],
+      mode: 'quality',
+    },
+  });
+  assert.equal(veo.body.images, undefined);
+  assert.deepEqual(veo.body.reference_images, [
+    'https://example.com/subject.png',
+    'https://example.com/location.png',
+    'https://example.com/style.png',
+  ]);
+  assert.equal(veo.body.quality, 'Fast');
+});
+
+test('rejects parameter combinations BeatAPI does not support', () => {
+  const references = [
+    'https://example.com/one.png',
+    'https://example.com/two.png',
+    'https://example.com/three.png',
+  ];
+
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'seedance-2',
+        input: {
+          prompt: 'Use all references',
+          image_urls: references,
+          wmOutputQuality: '1080p',
+        },
+      }),
+    /1080p.*reference image/i
+  );
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'veo-3.1',
+        input: {
+          prompt: 'Use all references',
+          image_urls: references,
+          aspect_ratio: 'auto',
+          mode: 'fast',
+        },
+      }),
+    /reference mode requires aspect_ratio/i
+  );
 });
 
 test('maps MiniMax and Kling quality values to official BeatAPI resolutions', () => {

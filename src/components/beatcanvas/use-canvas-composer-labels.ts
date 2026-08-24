@@ -13,6 +13,13 @@ export function useCanvasComposerLabels(): CanvasLabels {
       videoTitle: studioT('canvas.frame.videoTitle'),
       imageModeLabel: studioT('canvas.composer.imageMode'),
       videoModeLabel: studioT('canvas.composer.videoMode'),
+      analysisModeLabel: studioT('analysis.modeLabel'),
+      analysisModelLabel: studioT('analysis.modelLabel'),
+      analysisStandardModelLabel: studioT('analysis.standardModel'),
+      analysisProModelLabel: studioT('analysis.proModel'),
+      analysisPromptPlaceholder: studioT('analysis.promptPlaceholder'),
+      analyzeLabel: studioT('analysis.analyze'),
+      analyzingLabel: studioT('analysis.analyzing'),
       createGenerationCardLabel: studioT('canvas.connector.createGeneration'),
       createImageGenerationCardLabel: studioT(
         'canvas.connector.createImageGeneration'

@@ -138,3 +138,42 @@ test('keeps a valid canvas camera and drops an invalid one', () => {
     undefined
   );
 });
+
+test('persists Canvas video analysis mode, depth, and text output', () => {
+  const normalized = normalizeProjectSnapshotDocument({
+    version: 3,
+    cards: [
+      {
+        id: 'analysis-1',
+        kind: 'generation',
+        type: 'video',
+        generationMode: 'analysis',
+        analysisDepth: 'deep',
+        name: 'Analyze',
+        url: null,
+        resultText: '00:00 The subject enters frame.',
+        prompt: 'Return timestamps.',
+        referenceCardIds: ['video-1'],
+        workflowTemplateId: null,
+        status: 'idle',
+        error: null,
+        modelId: 'video-analysis',
+        aspectRatio: '16:9',
+        outputQuality: '720p',
+        duration: '5s',
+        mode: 'quality',
+        variant: 'standard',
+        quality: 'standard',
+        sourceGenerationId: null,
+      },
+    ],
+    frames: {},
+  });
+
+  assert.equal(normalized.cards[0]?.generationMode, 'analysis');
+  assert.equal(normalized.cards[0]?.analysisDepth, 'deep');
+  assert.equal(
+    normalized.cards[0]?.resultText,
+    '00:00 The subject enters frame.'
+  );
+});

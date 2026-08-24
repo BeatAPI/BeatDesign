@@ -85,12 +85,10 @@ test('Canvas Motion Control controls reach the BeatAPI provider request', async 
 
   assert.deepEqual(built.input, {
     prompt: 'Keep the identity and follow the motion.',
-    generationType: undefined,
     wmOutputQuality: '1080p',
     image_urls: ['https://media.beatapi.io/inputs/character.png'],
     video_urls: ['https://media.beatapi.io/inputs/motion.mp4'],
     sourceVideoDurationSeconds: 15.25,
-    wmHasVideoInput: true,
     characterOrientation: 'video',
     backgroundSource: 'input_image',
   });

@@ -9,9 +9,14 @@ import type {
 } from '@/core/beatcanvas/canvas-types';
 import {
   isCanvasDraftCard,
+  isCanvasAnalysisCard,
   isCanvasOutputCard,
 } from '@/core/beatcanvas/canvas-types';
 import { resolveOutputMedia } from '@/core/effects/output-media';
+import {
+  resolveVideoAnalysisText,
+  VIDEO_ANALYSIS_EFFECT_ID,
+} from '@/core/effects/video-analysis';
 import {
   type StudioJobStatus,
   buildGenerationEffectInput,
@@ -77,7 +82,8 @@ export function useBeatCanvasGenerationRuntime({
   completeGenerationOutput: (params: {
     outputCardId: string;
     draftCard: CanvasDraftCard;
-    url: string;
+    url?: string | null;
+    resultText?: string | null;
     name: string;
     sourceGenerationId?: string | null;
     suppressFocus?: boolean;
@@ -273,17 +279,16 @@ export function useBeatCanvasGenerationRuntime({
         continue;
       }
 
-      const models =
-        outputCard.generationSnapshot.type === 'image'
-          ? imageModels
-          : videoModels;
-      const model = getSelectableModel(
-        models,
-        outputCard.generationSnapshot.modelId
-      );
-      if (!model) {
-        continue;
-      }
+      const isAnalysis =
+        outputCard.generationSnapshot.generationMode === 'analysis' ||
+        isCanvasAnalysisCard(draftCard);
+      const models = outputCard.generationSnapshot.type === 'image'
+        ? imageModels
+        : videoModels;
+      const model = isAnalysis
+        ? null
+        : getSelectableModel(models, outputCard.generationSnapshot.modelId);
+      if (!isAnalysis && !model) continue;
 
       resumedRunIdsRef.current.add(
         outputCard.generationRunId ?? outputCard.id
@@ -304,7 +309,7 @@ export function useBeatCanvasGenerationRuntime({
         try {
           const output = await pollEffectUntilComplete({
             wmTaskId,
-            effectId: model.effectId,
+            effectId: isAnalysis ? VIDEO_ANALYSIS_EFFECT_ID : model!.effectId,
             onStatus: (status, message) => {
               updateGenerationOutput(outputCard.id, { status });
               const latestDraft = canvasCardsRef.current[draftCard.id];
@@ -315,8 +320,11 @@ export function useBeatCanvasGenerationRuntime({
             },
           });
 
-          const resolvedMedia = resolveOutputMedia(output);
-          if (!resolvedMedia.resultUrl) {
+          const resultText = isAnalysis
+            ? resolveVideoAnalysisText(output)
+            : null;
+          const resolvedMedia = isAnalysis ? null : resolveOutputMedia(output);
+          if (isAnalysis ? !resultText : !resolvedMedia?.resultUrl) {
             throw new Error(studioT('messages.generationFailed'));
           }
 
@@ -328,7 +336,8 @@ export function useBeatCanvasGenerationRuntime({
           completeGenerationOutput({
             outputCardId: outputCard.id,
             draftCard: latestDraft,
-            url: resolvedMedia.resultUrl,
+            url: resolvedMedia?.resultUrl ?? null,
+            resultText,
             name: outputCard.name,
             sourceGenerationId: wmTaskId,
             suppressFocus: true,

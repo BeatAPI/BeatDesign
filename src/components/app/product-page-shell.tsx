@@ -24,6 +24,7 @@ export function ProductPageShell({
   workspaceMode?: WorkspaceMode;
 }) {
   const t = useTranslations('AppShell');
+  const untitledWorkspaceName = t('header.untitledCanvas');
   const getDisplayWorkspaceName = useCallback(
     (name: string | null | undefined) => {
       const trimmed = name?.trim();
@@ -31,9 +32,9 @@ export function ProductPageShell({
         trimmed !== 'Untitled canvas' &&
         trimmed !== 'Untitled project'
         ? trimmed
-        : t('header.untitledCanvas');
+        : untitledWorkspaceName;
     },
-    [t]
+    [untitledWorkspaceName]
   );
   const defaultWorkspaceName = getDisplayWorkspaceName(workspaceName);
   const [draftWorkspaceName, setDraftWorkspaceName] =
@@ -63,7 +64,7 @@ export function ProductPageShell({
   }, [projectId, workspaceMode]);
 
   const commitWorkspaceName = async () => {
-    const nextName = draftWorkspaceName.trim() || t('header.untitledCanvas');
+    const nextName = draftWorkspaceName.trim() || untitledWorkspaceName;
     setDraftWorkspaceName(nextName);
 
     if (!projectId || nextName === lastPersistedWorkspaceNameRef.current) {
@@ -105,6 +106,12 @@ export function ProductPageShell({
       {workspaceName?.trim() || t('header.projects')}
     </span>
   );
+  const workspaceTabClassName = (isActive: boolean) =>
+    `inline-flex h-7 items-center justify-center gap-1.5 rounded-full px-2 text-xs font-medium transition sm:px-3 ${
+      isActive
+        ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+        : 'text-[var(--beat-text-2)] hover:bg-white/[0.045] hover:text-white'
+    }`;
 
   return (
     <div className="beat-product-shell flex h-screen min-h-screen flex-col overflow-hidden bg-[var(--beat-bg)] text-[var(--beat-text-1)]">
@@ -130,41 +137,38 @@ export function ProductPageShell({
 
             <div className="ml-auto flex min-w-0 items-center justify-end gap-2">
               {projectId && workspaceMode ? (
-                <div className="flex items-center rounded-full border border-white/[0.09] bg-white/[0.035] p-1" aria-label="Workspace view">
+                <nav
+                  className="flex items-center rounded-full border border-white/[0.09] bg-white/[0.035] p-1"
+                  aria-label={t('header.workspaceView')}
+                >
                   <Link
                     href={`/studio/${projectId}`}
                     aria-current={workspaceMode === 'studio' ? 'page' : undefined}
-                    className={`inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition sm:px-3 ${
-                      workspaceMode === 'studio'
-                        ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-                        : 'text-[var(--beat-text-2)] hover:text-white'
-                    }`}
+                    aria-label={t('header.studio')}
+                    className={workspaceTabClassName(workspaceMode === 'studio')}
                   >
-                    <LayoutPanelTop className="size-3.5" /> <span className="hidden sm:inline">Studio</span>
+                    <LayoutPanelTop className="size-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t('header.studio')}</span>
                   </Link>
                   <Link
                     href={`/canvas/${projectId}`}
                     aria-current={workspaceMode === 'canvas' ? 'page' : undefined}
-                    className={`inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition sm:px-3 ${
-                      workspaceMode === 'canvas'
-                        ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-                        : 'text-[var(--beat-text-2)] hover:text-white'
-                    }`}
+                    aria-label={t('header.canvas')}
+                    className={workspaceTabClassName(workspaceMode === 'canvas')}
                   >
-                    <Workflow className="size-3.5" /> <span className="hidden sm:inline">Canvas</span>
+                    <Workflow className="size-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t('header.canvas')}</span>
                   </Link>
                   <Link
                     href={`/assets/${projectId}`}
                     aria-current={workspaceMode === 'assets' ? 'page' : undefined}
-                    className={`inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition sm:px-3 ${
-                      workspaceMode === 'assets'
-                        ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-                        : 'text-[var(--beat-text-2)] hover:text-white'
-                    }`}
+                    aria-label={t('header.assets')}
+                    className={workspaceTabClassName(workspaceMode === 'assets')}
                   >
-                    <Images className="size-3.5" /> <span className="hidden sm:inline">Assets</span>
+                    <Images className="size-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t('header.assets')}</span>
                   </Link>
-                </div>
+                </nav>
               ) : null}
               <WorkspaceApiConfigDialog
                 providerId={envConfigs.generation_provider}

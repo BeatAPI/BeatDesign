@@ -2,8 +2,11 @@
 
 import {
   countPromptCharacters,
+  getGenerationPromptConstraints,
+  getGenerationPromptMaxChars,
   truncatePromptToMaxChars,
 } from '@/core/effects/validation';
+import { VIDEO_ANALYSIS_MODEL_ID } from '@/core/effects/video-analysis';
 import { findWorkspaceModelOption } from '@/core/effects/workspace-models';
 import { cn } from '@/lib/utils';
 import { StudioStartHere } from '@/components/studio/studio-start-here';
@@ -11,6 +14,7 @@ import {
   getDraftReferencePickerOptions,
   isDraftBusyStatus,
   listCompatibleCanvasReferenceCards,
+  resolveReferenceDrivenDraftAspectRatio,
 } from '@/core/beatcanvas/composer';
 import { buildCanvasReferenceMentions } from '@/core/beatcanvas/reference-mentions';
 
@@ -42,6 +46,7 @@ import {
   useCanvasEngineValue,
 } from './canvas-engine/canvas-engine-context';
 import { BeatCanvasComposerModelPicker } from './beatcanvas-composer-model-picker';
+import { BeatCanvasAnalysisDepthPicker } from './beatcanvas-analysis-depth-picker';
 import { BeatCanvasComposerParameterPicker } from './beatcanvas-composer-parameter-picker';
 import { BeatCanvasComposerReferencePicker } from './beatcanvas-composer-reference-picker';
 import { BeatCanvasComposerShell } from './beatcanvas-composer-shell';
@@ -101,6 +106,7 @@ export function BeatCanvasFrontLayer() {
     onRedoCanvas,
     onActiveComposerCardIdChange,
     onSelectedShapeIdsChange,
+    onDraftAnalysisDepthChange,
     onDraftAspectRatioChange,
     onDraftBackgroundSourceChange,
     onDraftCharacterOrientationChange,
@@ -331,8 +337,12 @@ export function BeatCanvasFrontLayer() {
     activeDraftCard,
   ]);
 
-  const modelOptions =
-    activeDraftCard?.type === 'image' ? imageModels : videoModels;
+  const isAnalysisDraft = activeDraftCard?.generationMode === 'analysis';
+  const modelOptions = isAnalysisDraft
+    ? []
+    : activeDraftCard?.type === 'image'
+      ? imageModels
+      : videoModels;
   const selectedModel =
     findWorkspaceModelOption(modelOptions, activeDraftCard?.modelId) ??
     modelOptions[0] ??
@@ -355,11 +365,47 @@ export function BeatCanvasFrontLayer() {
   const isDraftBusy = activeDraftCard
     ? isDraftBusyStatus(activeDraftCard.status)
     : false;
+
+  useEffect(() => {
+    if (!activeDraftCard || !selectedModel || isDraftBusy) {
+      return;
+    }
+
+    const nextAspectRatio = resolveReferenceDrivenDraftAspectRatio({
+      draftCard: activeDraftCard,
+      cards,
+      model: selectedModel,
+      getReferenceDimensions: (card) => {
+        const bounds = editor.getShapePageBounds(card.id);
+        return bounds
+          ? { width: bounds.w, height: bounds.h }
+          : null;
+      },
+    });
+
+    if (nextAspectRatio !== activeDraftCard.aspectRatio) {
+      onDraftAspectRatioChange(activeDraftCard.id, nextAspectRatio);
+    }
+  }, [
+    activeDraftCard,
+    cards,
+    editor,
+    isDraftBusy,
+    onDraftAspectRatioChange,
+    selectedModel,
+  ]);
+
   const promptCharacterCount = countPromptCharacters(promptInputValue);
-  const activePromptPlaceholder =
-    activeDraftCard?.type === 'video'
+  const activePromptPlaceholder = isAnalysisDraft
+    ? labels.analysisPromptPlaceholder
+    : activeDraftCard?.type === 'video'
       ? labels.videoPromptPlaceholder
       : labels.imagePromptPlaceholder;
+  const activePromptCharacterLimit = isAnalysisDraft
+    ? getGenerationPromptMaxChars({ modelId: VIDEO_ANALYSIS_MODEL_ID })
+    : getGenerationPromptConstraints({
+        modelId: selectedModel?.id,
+      }).maxChars ?? promptCharacterLimit;
 
   const parameterSummaryTokens = useMemo(() => {
     if (!activeDraftCard) {
@@ -468,7 +514,7 @@ export function BeatCanvasFrontLayer() {
   );
   const primaryReferenceIntent =
     referencePickerOptions[0]?.intent ??
-    activeDraftCard?.type ??
+    (isAnalysisDraft ? 'video' : activeDraftCard?.type) ??
     'image';
   const currentReferenceCards = useMemo(() => {
     if (!activeDraftCard) {
@@ -533,7 +579,7 @@ export function BeatCanvasFrontLayer() {
   );
 
   const truncatePrompt = (value: string) =>
-    truncatePromptToMaxChars(value, promptCharacterLimit);
+    truncatePromptToMaxChars(value, activePromptCharacterLimit);
 
   const handlePromptValueChange = (nextPrompt: string) => {
     if (!activeDraftCard || isDraftBusy) {
@@ -654,149 +700,150 @@ export function BeatCanvasFrontLayer() {
       ref={frontLayerRef}
       className="pointer-events-none absolute inset-0 z-30"
     >
-      <div
-        className={cn(
-          'pointer-events-auto absolute left-1/2 z-[70] flex -translate-x-1/2 items-center gap-1 rounded-[var(--beat-radius-sm)] px-1.5 py-1',
-          activeComposerCardId ? 'top-4' : 'bottom-4',
-          beatcanvasPanelClassName
-        )}
-      >
-        <button
-          type="button"
+      {!activeDraftCard ? (
+        <div
           className={cn(
-            'inline-flex size-8 items-center justify-center rounded-xl transition duration-150',
-            activeCanvasTool === 'select'
-              ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-              : 'text-[var(--beat-text-2)] hover:bg-white/[0.06] hover:text-white'
+            'pointer-events-auto absolute bottom-4 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-1 rounded-[var(--beat-radius-sm)] px-1.5 py-1',
+            beatcanvasPanelClassName
           )}
-          onClick={() => {
-            setActiveCanvasTool('select');
-            editor.setCurrentTool('select');
-          }}
-          aria-label={labels.selectToolLabel}
-          aria-pressed={activeCanvasTool === 'select'}
         >
-          <MousePointer2 className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className={cn(
-            'inline-flex size-8 items-center justify-center rounded-xl transition duration-150',
-            activeCanvasTool === 'pan'
-              ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
-              : 'text-[var(--beat-text-2)] hover:bg-white/[0.06] hover:text-white'
-          )}
-          onClick={() => {
-            setActiveCanvasTool('pan');
-            editor.setCurrentTool('pan');
-          }}
-          aria-label={labels.panToolLabel}
-          aria-pressed={activeCanvasTool === 'pan'}
-        >
-          <Hand className="size-3.5" />
-        </button>
-        <div className="mx-1 h-5 w-px bg-white/10" />
-        <button
-          type="button"
-          className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white"
-          onClick={() => {
-            if (typeof editor.zoomOut === 'function') {
-              editor.zoomOut(undefined, { animation: { duration: 180 } });
+          <button
+            type="button"
+            className={cn(
+              'inline-flex size-8 items-center justify-center rounded-xl transition duration-150',
+              activeCanvasTool === 'select'
+                ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+                : 'text-[var(--beat-text-2)] hover:bg-white/[0.06] hover:text-white'
+            )}
+            onClick={() => {
+              setActiveCanvasTool('select');
+              editor.setCurrentTool('select');
+            }}
+            aria-label={labels.selectToolLabel}
+            aria-pressed={activeCanvasTool === 'select'}
+          >
+            <MousePointer2 className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'inline-flex size-8 items-center justify-center rounded-xl transition duration-150',
+              activeCanvasTool === 'pan'
+                ? 'bg-white/[0.10] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'
+                : 'text-[var(--beat-text-2)] hover:bg-white/[0.06] hover:text-white'
+            )}
+            onClick={() => {
+              setActiveCanvasTool('pan');
+              editor.setCurrentTool('pan');
+            }}
+            aria-label={labels.panToolLabel}
+            aria-pressed={activeCanvasTool === 'pan'}
+          >
+            <Hand className="size-3.5" />
+          </button>
+          <div className="mx-1 h-5 w-px bg-white/10" />
+          <button
+            type="button"
+            className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white"
+            onClick={() => {
+              if (typeof editor.zoomOut === 'function') {
+                editor.zoomOut(undefined, { animation: { duration: 180 } });
+              }
+            }}
+            aria-label={labels.zoomOutLabel}
+          >
+            <Minus className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-8 min-w-[54px] items-center justify-center rounded-xl bg-white/[0.05] px-2 text-[12px] font-medium tabular-nums text-[var(--beat-text-2)] transition duration-150 hover:text-white"
+            onClick={() => {
+              if (typeof editor.resetZoom === 'function') {
+                editor.resetZoom(undefined, { animation: { duration: 180 } });
+              }
+            }}
+          >
+            {zoomLevel}%
+          </button>
+          <button
+            type="button"
+            className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white"
+            onClick={() => {
+              if (typeof editor.zoomIn === 'function') {
+                editor.zoomIn(undefined, { animation: { duration: 180 } });
+              }
+            }}
+            aria-label={labels.zoomInLabel}
+          >
+            <Plus className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white"
+            onClick={() => editor.fitView({ animation: { duration: 220 } })}
+            aria-label={labels.fitViewLabel}
+          >
+            <Focus className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'inline-flex size-8 items-center justify-center rounded-xl transition duration-150 hover:bg-white/[0.06] hover:text-white',
+              edgesVisible
+                ? 'text-[var(--beat-text-2)]'
+                : 'bg-[var(--beat-graph-soft)] text-[var(--beat-graph)]'
+            )}
+            onClick={() => {
+              const next = !edgesVisible;
+              setEdgesVisible(next);
+              editor.setEdgesVisible(next);
+            }}
+            aria-label={
+              edgesVisible ? labels.hideEdgesLabel : labels.showEdgesLabel
             }
-          }}
-          aria-label={labels.zoomOutLabel}
-        >
-          <Minus className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex h-8 min-w-[54px] items-center justify-center rounded-xl bg-white/[0.05] px-2 text-[12px] font-medium tabular-nums text-[var(--beat-text-2)] transition duration-150 hover:text-white"
-          onClick={() => {
-            if (typeof editor.resetZoom === 'function') {
-              editor.resetZoom(undefined, { animation: { duration: 180 } });
-            }
-          }}
-        >
-          {zoomLevel}%
-        </button>
-        <button
-          type="button"
-          className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white"
-          onClick={() => {
-            if (typeof editor.zoomIn === 'function') {
-              editor.zoomIn(undefined, { animation: { duration: 180 } });
-            }
-          }}
-          aria-label={labels.zoomInLabel}
-        >
-          <Plus className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white"
-          onClick={() => editor.fitView({ animation: { duration: 220 } })}
-          aria-label={labels.fitViewLabel}
-        >
-          <Focus className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className={cn(
-            'inline-flex size-8 items-center justify-center rounded-xl transition duration-150 hover:bg-white/[0.06] hover:text-white',
-            edgesVisible
-              ? 'text-[var(--beat-text-2)]'
-              : 'bg-[var(--beat-graph-soft)] text-[var(--beat-graph)]'
-          )}
-          onClick={() => {
-            const next = !edgesVisible;
-            setEdgesVisible(next);
-            editor.setEdgesVisible(next);
-          }}
-          aria-label={
-            edgesVisible ? labels.hideEdgesLabel : labels.showEdgesLabel
-          }
-          aria-pressed={!edgesVisible}
-        >
-          <EyeOff className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          className={cn(
-            'inline-flex size-8 items-center justify-center rounded-xl transition duration-150 hover:bg-white/[0.06] hover:text-white',
-            isSnapToGridActive
-              ? 'bg-[var(--beat-graph-soft)] text-[var(--beat-graph)]'
-              : 'text-[var(--beat-text-2)]'
-          )}
-          onClick={() => {
-            const next = !isSnapToGridActive;
-            setIsSnapToGridActive(next);
-            editor.setSnapToGrid(next);
-          }}
-          aria-label={labels.snapToGridLabel}
-          aria-pressed={isSnapToGridActive}
-        >
-          <Magnet className="size-3.5" />
-        </button>
-        <div className="mx-1 h-5 w-px bg-white/10" />
-        <button
-          type="button"
-          disabled={!canUndoCanvas}
-          onClick={onUndoCanvas}
-          className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:text-white/25"
-          aria-label={labels.undoLabel}
-        >
-          <Undo2 className="size-3.5" />
-        </button>
-        <button
-          type="button"
-          disabled={!canRedoCanvas}
-          onClick={onRedoCanvas}
-          className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:text-white/25"
-          aria-label={labels.redoLabel}
-        >
-          <Redo2 className="size-3.5" />
-        </button>
-      </div>
+            aria-pressed={!edgesVisible}
+          >
+            <EyeOff className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            className={cn(
+              'inline-flex size-8 items-center justify-center rounded-xl transition duration-150 hover:bg-white/[0.06] hover:text-white',
+              isSnapToGridActive
+                ? 'bg-[var(--beat-graph-soft)] text-[var(--beat-graph)]'
+                : 'text-[var(--beat-text-2)]'
+            )}
+            onClick={() => {
+              const next = !isSnapToGridActive;
+              setIsSnapToGridActive(next);
+              editor.setSnapToGrid(next);
+            }}
+            aria-label={labels.snapToGridLabel}
+            aria-pressed={isSnapToGridActive}
+          >
+            <Magnet className="size-3.5" />
+          </button>
+          <div className="mx-1 h-5 w-px bg-white/10" />
+          <button
+            type="button"
+            disabled={!canUndoCanvas}
+            onClick={onUndoCanvas}
+            className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:text-white/25"
+            aria-label={labels.undoLabel}
+          >
+            <Undo2 className="size-3.5" />
+          </button>
+          <button
+            type="button"
+            disabled={!canRedoCanvas}
+            onClick={onRedoCanvas}
+            className="inline-flex size-8 items-center justify-center rounded-xl text-[var(--beat-text-2)] transition duration-150 hover:bg-white/[0.06] hover:text-white disabled:pointer-events-none disabled:text-white/25"
+            aria-label={labels.redoLabel}
+          >
+            <Redo2 className="size-3.5" />
+          </button>
+        </div>
+      ) : null}
 
       {Object.keys(cards).length === 0 ? (
         <div className="absolute inset-x-0 top-[46%] z-10 flex -translate-y-1/2 justify-center px-6">
@@ -816,8 +863,15 @@ export function BeatCanvasFrontLayer() {
           onPromptChange={handlePromptValueChange}
           onPromptCommit={handlePromptCommit}
           onPromptCompositionChange={setIsPromptComposing}
+          primaryButtonLabel={
+            isAnalysisDraft
+              ? isDraftBusy
+                ? labels.analyzingLabel
+                : labels.analyzeLabel
+              : undefined
+          }
           promptCharacterCount={promptCharacterCount}
-          promptCharacterLimit={promptCharacterLimit}
+          promptCharacterLimit={activePromptCharacterLimit}
           promptInputValue={promptInputValue}
           promptPlaceholder={activePromptPlaceholder}
           promptReferences={promptReferences}
@@ -885,10 +939,30 @@ export function BeatCanvasFrontLayer() {
                 setIsVersionPickerOpen(false);
                 setIsTypeSelectOpen(nextOpen);
               }}
-              selectedType={activeDraftCard.type}
+              selectedType={
+                activeDraftCard.generationMode ?? activeDraftCard.type
+              }
             />
 
-            <div className="contents">
+            {isAnalysisDraft ? (
+              <BeatCanvasAnalysisDepthPicker
+                activeDraftId={activeDraftCard.id}
+                containerRef={modelPickerRef}
+                depth={activeDraftCard.analysisDepth ?? 'standard'}
+                isDraftBusy={isDraftBusy}
+                isOpen={isModelSelectOpen}
+                labels={labels}
+                onDepthChange={onDraftAnalysisDepthChange}
+                onOpenChange={(nextOpen) => {
+                  setIsTypeSelectOpen(false);
+                  setIsReferencePickerOpen(false);
+                  setIsParameterPopoverOpen(false);
+                  setIsVersionPickerOpen(false);
+                  setIsModelSelectOpen(nextOpen);
+                }}
+              />
+            ) : (
+              <div className="contents">
                 <BeatCanvasComposerModelPicker
                   activeDraftId={activeDraftCard.id}
                   containerRef={modelPickerRef}
@@ -909,7 +983,9 @@ export function BeatCanvasFrontLayer() {
                   selectedModelLabel={selectedModelLabel}
                 />
               </div>
+            )}
 
+            {!isAnalysisDraft ? (
               <div className="contents">
                 <BeatCanvasComposerParameterPicker
                   activeDraftCard={activeDraftCard}
@@ -952,7 +1028,8 @@ export function BeatCanvasFrontLayer() {
                   visibleParameterSummaryTokens={visibleParameterSummaryTokens}
                 />
               </div>
-            </div>
+            ) : null}
+          </div>
         </BeatCanvasComposerShell>
       ) : null}
 

@@ -34,7 +34,7 @@ test('builds a text-to-video request without inventing a second backend', () => 
     aspectRatio: '16:9',
   });
   assert.equal(input.prompt, 'Slow cinematic camera move');
-  assert.equal(input.generationType, 'TEXT_2_VIDEO');
+  assert.equal(input.generationType, undefined);
 });
 
 test('passes Veo quality mode and resolution through the shared studio input', () => {
@@ -54,7 +54,6 @@ test('passes Veo quality mode and resolution through the shared studio input', (
     {
       prompt: 'Coastal sunrise',
       aspect_ratio: '16:9',
-      generationType: 'TEXT_2_VIDEO',
       wmDuration: '8s',
       mode: 'lite',
       wmOutputQuality: '4k',

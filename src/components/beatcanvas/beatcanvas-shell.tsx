@@ -419,6 +419,7 @@ export function BeatCanvasShell({
 
   const {
     handleCreatePromptDraft,
+    handleDraftAnalysisDepthChange,
     handleDraftAspectRatioChange,
     handleDraftBackgroundSourceChange,
     handleDraftCharacterOrientationChange,
@@ -532,6 +533,14 @@ export function BeatCanvasShell({
         return;
       }
 
+      if (
+        draftCard.generationMode === 'analysis' &&
+        !draftCard.referenceCardIds?.includes(sourceCardId) &&
+        (draftCard.referenceCardIds?.length ?? 0) >= 1
+      ) {
+        return;
+      }
+
       const models = draftCard.type === 'image' ? imageModels : videoModels;
       const targetModel = getSelectableModel(models, draftCard.modelId);
       if (
@@ -539,6 +548,7 @@ export function BeatCanvasShell({
           sourceCard,
           targetType: draftCard.type,
           targetModel,
+          targetGenerationMode: draftCard.generationMode,
         })
       ) {
         return;
@@ -683,6 +693,7 @@ export function BeatCanvasShell({
       updateDraftCard(draftId, {
         pinnedOutputId: outputId,
         url: outputCard.url,
+        resultText: outputCard.resultText ?? null,
       });
     },
     [canvasCardsRef, recordCanvasHistory, updateDraftCard]
@@ -730,6 +741,7 @@ export function BeatCanvasShell({
       onSelectedCanvasCardIdsChange: handleSelectedCanvasCardIdsChange,
       onActiveComposerCardIdChange: setActiveComposerCardId,
       onDraftPromptChange: handleDraftPromptChange,
+      onDraftAnalysisDepthChange: handleDraftAnalysisDepthChange,
       onDraftTaskTypeChange: handleDraftTaskTypeChange,
       onDraftModelChange: handleDraftModelChange,
       onDraftAspectRatioChange: handleDraftAspectRatioChange,
@@ -757,6 +769,7 @@ export function BeatCanvasShell({
       canvasCards,
       canvasCopy,
       handleDraftAspectRatioChange,
+      handleDraftAnalysisDepthChange,
       handleDraftBackgroundSourceChange,
       handleDraftCharacterOrientationChange,
       handleDraftDurationChange,
@@ -1147,14 +1160,23 @@ export function BeatCanvasShell({
           return;
         }
 
+        if (
+          targetCard.generationMode === 'analysis' &&
+          !targetCard.referenceCardIds?.includes(sourceCardId) &&
+          (targetCard.referenceCardIds?.length ?? 0) >= 1
+        ) {
+          return;
+        }
+
         const models = targetCard.type === 'image' ? imageModels : videoModels;
         const targetModel = getSelectableModel(models, targetCard.modelId);
         if (
           !canUseCanvasCardAsGenerationReference({
-            sourceCard,
-            targetType: targetCard.type,
-            targetModel,
-          })
+          sourceCard,
+          targetType: targetCard.type,
+          targetModel,
+          targetGenerationMode: targetCard.generationMode,
+        })
         ) {
           return;
         }

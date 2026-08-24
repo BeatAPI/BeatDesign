@@ -28,3 +28,15 @@ test('generation node leaves prompt and parameters to the attached Composer', ()
   assert.match(source, /beatcanvas:preview-media/);
   assert.match(source, /Take \$\{take\.takeNumber\}/);
 });
+
+test('generated videos expose a direct playback entry', () => {
+  assert.match(source, /const handlePreviewLatestOutput/);
+  assert.match(
+    source,
+    /cardMediaType === 'video'[\s\S]*?<button[\s\S]*?handlePreviewLatestOutput/
+  );
+  assert.match(
+    source,
+    /<video[\s\S]*?onDoubleClick=\{[\s\S]*?handlePreviewLatestOutput/
+  );
+});

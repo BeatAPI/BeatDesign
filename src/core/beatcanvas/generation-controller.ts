@@ -12,9 +12,16 @@ import {
 } from '@/core/effects/effect-registry';
 import { resolveOutputMedia } from '@/core/effects/output-media';
 import {
-  generationValidationConstraints,
+  getGenerationPromptConstraints,
+  getGenerationPromptMaxChars,
   validateGenerationPrompt,
 } from '@/core/effects/validation';
+import {
+  resolveVideoAnalysisText,
+  VIDEO_ANALYSIS_DEFAULT_OUTPUT_TOKENS,
+  VIDEO_ANALYSIS_EFFECT_ID,
+  VIDEO_ANALYSIS_MODEL_ID,
+} from '@/core/effects/video-analysis';
 import {
   findWorkspaceModelOption,
   type WorkspaceModelOption,
@@ -25,6 +32,7 @@ import {
   type CanvasCardStatus,
   type CanvasDraftCard,
   type CanvasOutputCard,
+  isCanvasAnalysisCard,
   isCanvasDraftCard,
 } from '@/core/beatcanvas/canvas-types';
 import {
@@ -164,6 +172,21 @@ export const getSelectableModel = (
   models.find((model) => model.available !== false) ??
   null;
 
+const getVideoAnalysisModel = (
+  depth: CanvasDraftCard['analysisDepth'] = 'standard'
+): WorkspaceModelOption => ({
+  id: VIDEO_ANALYSIS_MODEL_ID,
+  name:
+    depth === 'deep'
+      ? 'Video Analysis Pro'
+      : 'Video Analysis Standard',
+  effectId: VIDEO_ANALYSIS_EFFECT_ID,
+  uploadPath: 'effects/video-analysis',
+  imageBucketName: 'video',
+  supportsSourceVideo: true,
+  maxSourceVideos: 1,
+});
+
 type BuildGenerationEffectInputParams = {
   draftCard: CanvasDraftCard;
   canvasCards: Record<string, CanvasCard>;
@@ -187,6 +210,50 @@ export const buildGenerationEffectInput = async ({
   notify,
   loadVideoDurationSecondsImpl = loadVideoDurationSeconds,
 }: BuildGenerationEffectInputParams) => {
+  if (isCanvasAnalysisCard(draftCard)) {
+    const promptValidation = validateGenerationPrompt(draftCard.prompt, {
+      required: true,
+      maxChars: getGenerationPromptMaxChars({
+        modelId: VIDEO_ANALYSIS_MODEL_ID,
+      }),
+    });
+    if (!promptValidation.ok) {
+      throw new Error(
+        promptValidation.code === 'PROMPT_TOO_LONG'
+          ? translate('messages.promptTooLong', {
+              maxChars: promptValidation.maxChars,
+            })
+          : translate('messages.promptRequired')
+      );
+    }
+
+    const videoReferences = draftCard.referenceCardIds
+      .map((cardId) => canvasCards[cardId])
+      .filter(
+        (card): card is CanvasCard =>
+          Boolean(card?.url) && card.type === 'video'
+      );
+    if (videoReferences.length !== 1) {
+      throw new Error(translate('messages.analysisVideoRequired'));
+    }
+
+    const videoUrl = videoReferences[0]?.url;
+    const input: Record<string, unknown> = {
+      prompt: promptValidation.trimmedPrompt,
+      analysis_depth: draftCard.analysisDepth ?? 'standard',
+      max_output_tokens: VIDEO_ANALYSIS_DEFAULT_OUTPUT_TOKENS,
+    };
+    if (videoUrl && !isLocalWorkspaceMediaUrl(videoUrl)) {
+      input.video_url = videoUrl;
+    }
+
+    return {
+      effectId: VIDEO_ANALYSIS_EFFECT_ID,
+      input,
+      model: getVideoAnalysisModel(draftCard.analysisDepth),
+    };
+  }
+
   const models = draftCard.type === 'image' ? imageModels : videoModels;
   const model = getSelectableModel(models, draftCard.modelId);
   if (!model) {
@@ -198,10 +265,10 @@ export const buildGenerationEffectInput = async ({
     throw new Error(translate('messages.metadataLoading'));
   }
 
-  const promptValidation = validateGenerationPrompt(draftCard.prompt, {
-    required: true,
-    maxChars: generationValidationConstraints.maxPromptChars,
-  });
+  const promptValidation = validateGenerationPrompt(
+    draftCard.prompt,
+    getGenerationPromptConstraints({ modelId: model.id })
+  );
   if (!promptValidation.ok) {
     throw new Error(
       promptValidation.code === 'PROMPT_TOO_LONG'
@@ -273,11 +340,6 @@ export const buildGenerationEffectInput = async ({
     };
   }
 
-  input.generationType =
-    referencePayload.imageUrls.length > 0
-      ? 'FIRST_AND_LAST_FRAMES_2_VIDEO'
-      : 'TEXT_2_VIDEO';
-
   if (hasInputSchemaField(metadata.inputSchema, 'aspect_ratio')) {
     input.aspect_ratio = draftCard.aspectRatio;
   }
@@ -324,7 +386,6 @@ export const buildGenerationEffectInput = async ({
     }
 
     input.video_urls = referencePayload.videoUrls;
-    input.generationType = undefined;
 
     if (
       hasInputSchemaField(metadata.inputSchema, 'sourceVideoDurationSeconds')
@@ -335,8 +396,6 @@ export const buildGenerationEffectInput = async ({
       );
     }
   }
-
-  input.wmHasVideoInput = referencePayload.videoUrls.length > 0;
 
   const referenceInputDefaults = getWorkspaceEffectReferenceInputDefaults({
     modelId: model.id,
@@ -446,7 +505,8 @@ type RunDraftGenerationParams = {
   completeGenerationOutput: (params: {
     outputCardId: string;
     draftCard: CanvasDraftCard;
-    url: string;
+    url?: string | null;
+    resultText?: string | null;
     name: string;
     sourceGenerationId?: string | null;
     suppressFocus?: boolean;
@@ -680,11 +740,17 @@ export const runDraftGeneration = async ({
       }
     }
 
-    const resolvedMedia = resolveOutputMedia(output);
-    if (!resolvedMedia.resultUrl) {
+    const isAnalysis = isCanvasAnalysisCard(currentCard);
+    const resultText = isAnalysis ? resolveVideoAnalysisText(output) : null;
+    const resolvedMedia = isAnalysis ? null : resolveOutputMedia(output);
+    if (isAnalysis ? !resultText : !resolvedMedia?.resultUrl) {
       throw new GenerationFailure(
         'output',
-        translate('messages.generationFailed')
+        translate(
+          isAnalysis
+            ? 'messages.analysisCompletedWithoutText'
+            : 'messages.generationFailed'
+        )
       );
     }
 
@@ -699,7 +765,8 @@ export const runDraftGeneration = async ({
     const completedShapeId = completeGenerationOutput({
       outputCardId,
       draftCard: latestDraftCard,
-      url: resolvedMedia.resultUrl,
+      url: resolvedMedia?.resultUrl ?? null,
+      resultText,
       name: outputName,
       sourceGenerationId: wmTaskId ?? null,
       suppressFocus: suppressResultFocus,

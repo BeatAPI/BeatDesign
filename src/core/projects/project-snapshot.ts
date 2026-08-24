@@ -8,6 +8,7 @@ const MAX_CARD_REFERENCES = 20;
 const MAX_ID_CHARS = 200;
 const MAX_NAME_CHARS = 500;
 const MAX_PROMPT_CHARS = 20_000;
+const MAX_RESULT_TEXT_CHARS = 100_000;
 const MAX_URL_CHARS = 4_096;
 
 export class ProjectSnapshotValidationError extends Error {
@@ -199,10 +200,24 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
     assetId: typeof value.assetId === 'string' ? value.assetId : null,
     kind: kind as CanvasCard['kind'],
     type: type as CanvasCard['type'],
+    generationMode:
+      value.generationMode === 'analysis' ||
+      value.generationMode === 'image' ||
+      value.generationMode === 'video'
+        ? value.generationMode
+        : undefined,
+    analysisDepth:
+      value.analysisDepth === 'deep' || value.analysisDepth === 'standard'
+        ? value.analysisDepth
+        : undefined,
     name,
     url:
       typeof value.url === 'string' && value.url.length <= MAX_URL_CHARS
         ? value.url
+        : null,
+    resultText:
+      typeof value.resultText === 'string'
+        ? value.resultText.slice(0, MAX_RESULT_TEXT_CHARS)
         : null,
     prompt: normalizeString(value.prompt, MAX_PROMPT_CHARS),
     referenceCardIds,

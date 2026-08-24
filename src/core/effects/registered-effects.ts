@@ -6,8 +6,36 @@ import {
   getWorkspaceEffectRegistryEntryByEffectId,
 } from './effect-registry';
 import { getWorkspaceMediaSchema } from './workspace-media';
+import {
+  isVideoAnalysisEffectId,
+  VIDEO_ANALYSIS_EFFECT_ID,
+  VIDEO_ANALYSIS_MODEL_ID,
+} from './video-analysis';
 
 export type RegisteredEffect = EffectRecord;
+
+const VIDEO_ANALYSIS_EFFECT: RegisteredEffect = {
+  id: VIDEO_ANALYSIS_EFFECT_ID,
+  name: 'Video Analysis',
+  type: 3,
+  model: VIDEO_ANALYSIS_MODEL_ID,
+  version: null,
+  linkName: VIDEO_ANALYSIS_MODEL_ID,
+  description: 'BeatAPI asynchronous video analysis',
+  platform: 'beatapi',
+  api: 'https://api.beatapi.io/v1/video-analysis/tasks',
+  provider: 'beatapi',
+  inputSchema: {
+    prompt: { type: 'string', required: true },
+    video_url: { type: 'string', required: true },
+    analysis_depth: {
+      type: 'enum',
+      required: false,
+      values: ['standard', 'deep'],
+    },
+    max_output_tokens: { type: 'number', required: false },
+  },
+};
 
 const optionalAnyField = { type: 'any', required: false } as const;
 
@@ -112,11 +140,12 @@ export const toRegisteredEffect = (
 };
 
 export const listRegisteredEffects = (): RegisteredEffect[] =>
-  WORKSPACE_EFFECT_REGISTRY.map(toRegisteredEffect);
+  [...WORKSPACE_EFFECT_REGISTRY.map(toRegisteredEffect), VIDEO_ANALYSIS_EFFECT];
 
 export const getRegisteredEffectById = (
   id: number
 ): RegisteredEffect | null => {
+  if (isVideoAnalysisEffectId(id)) return VIDEO_ANALYSIS_EFFECT;
   const entry = getWorkspaceEffectRegistryEntryByEffectId(id);
   return entry ? toRegisteredEffect(entry) : null;
 };

@@ -9,7 +9,7 @@ import {
 import { getDb } from '@/core/workspace-lib/db-adapter';
 
 const INTENT_TTL_MS = 10 * 60 * 1000;
-export const MAX_GENERATION_UPLOADS = 20;
+export const MAX_GENERATION_UPLOADS = 50;
 export const MAX_ACTIVE_GENERATION_INTENTS_PER_PROJECT = 7;
 export const MAX_ACTIVE_UPLOAD_INTENTS_PER_PROJECT = 2;
 

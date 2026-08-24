@@ -9,13 +9,23 @@ import { StudioStartHere } from '@/components/studio/studio-start-here';
 import type { CanvasCardMediaType } from '@/core/beatcanvas/canvas-types';
 import { resolveWmTaskId } from '@/core/effects/client-api';
 import { resolveOutputMedia } from '@/core/effects/output-media';
-import { generationValidationConstraints } from '@/core/effects/validation';
+import {
+  getGenerationPromptConstraints,
+  getGenerationPromptMaxChars,
+} from '@/core/effects/validation';
+import {
+  resolveVideoAnalysisText,
+  VIDEO_ANALYSIS_EFFECT_ID,
+  VIDEO_ANALYSIS_MODEL_ID,
+  type VideoAnalysisDepth,
+} from '@/core/effects/video-analysis';
 import {
   findWorkspaceModelOption,
   getDefaultSelectableWorkspaceModel,
 } from '@/core/effects/workspace-models';
 import {
   applyStudioDraftModel,
+  applyStudioHistoryItem,
   createStudioDraftCard,
 } from '@/core/studio/studio-draft';
 import {
@@ -23,7 +33,11 @@ import {
   getStudioModels,
   type StudioMedia,
 } from '@/core/studio/studio-runtime';
-import { fetchProjectGenerations } from '@/core/workspace-lib/app/workspace-client-api';
+import {
+  fetchProjectGenerations,
+} from '@/core/workspace-lib/app/workspace-client-api';
+import { uploadLocalProjectAsset } from '@/core/workspace-lib/app/local-project-asset-client';
+import { uploadFileFromBrowser } from '@/core/workspace-storage/client';
 import { invalidateWorkspaceAfterGeneration } from '@/core/workspace-lib/app/workspace-query-invalidation';
 import { projectGenerationsKeys } from '@/core/workspace-lib/app/workspace-query-keys';
 import { apiJsonGet, apiJsonPost } from '@/lib/api-client';
@@ -74,22 +88,32 @@ export function BeatStudioWorkspace({
 }) {
   const queryClient = useQueryClient();
   const initialMedia: StudioMedia =
-    initialTarget === 'video' ? 'video' : 'image';
+    initialTarget === 'analysis'
+      ? 'analysis'
+      : initialTarget === 'video'
+        ? 'video'
+        : 'image';
   const imageModels = useMemo(() => getStudioModels('image'), []);
   const videoModels = useMemo(() => getStudioModels('video'), []);
   const [draft, setDraft] = useState(() => {
-    const models = initialMedia === 'video' ? videoModels : imageModels;
+    const draftMedia = initialMedia === 'video' ? 'video' : 'image';
+    const models = draftMedia === 'video' ? videoModels : imageModels;
     const model =
       findWorkspaceModelOption(models, initialModelId) ??
       getDefaultSelectableWorkspaceModel(
-        initialMedia === 'video' ? 'ai-video' : 'ai-image'
+        draftMedia === 'video' ? 'ai-video' : 'ai-image'
       );
     return createStudioDraftCard({
-      type: initialMedia,
+      type: draftMedia,
       model,
       prompt: initialPrompt || '',
     });
   });
+  const [media, setMedia] = useState<StudioMedia>(initialMedia);
+  const [analysisDepth, setAnalysisDepth] =
+    useState<VideoAnalysisDepth>('standard');
+  const [analysisFile, setAnalysisFile] = useState<File | null>(null);
+  const [referenceUrls, setReferenceUrls] = useState<string[]>([]);
   const [error, setError] = useState('');
   const models = draft.type === 'video' ? videoModels : imageModels;
   const selectedModel =
@@ -118,39 +142,68 @@ export function BeatStudioWorkspace({
 
   const generation = useMutation({
     mutationFn: async () => {
-      if (!selectedModel) {
+      const isAnalysis = media === 'analysis';
+      if (!isAnalysis && !selectedModel) {
         throw new Error('No model is available for this media type.');
       }
-      if (!draft.prompt.trim()) {
+      const promptConstraints = getGenerationPromptConstraints({
+        modelId: isAnalysis ? VIDEO_ANALYSIS_MODEL_ID : selectedModel?.id,
+      });
+      if (promptConstraints.required && !draft.prompt.trim()) {
         throw new Error('Describe what you want to create first.');
       }
+      if (isAnalysis && !analysisFile) {
+        throw new Error('Add an MP4 or MOV video to analyze.');
+      }
+      const effectId = isAnalysis
+        ? VIDEO_ANALYSIS_EFFECT_ID
+        : selectedModel!.effectId;
+      const initialInput = isAnalysis
+        ? {
+            prompt: draft.prompt.trim(),
+            analysis_depth: analysisDepth,
+          }
+        : buildStudioEffectInput({
+            media: draft.type,
+            model: selectedModel!,
+            prompt: draft.prompt,
+            aspectRatio: draft.aspectRatio,
+            duration: draft.duration,
+            outputQuality: draft.outputQuality,
+            mode: draft.mode,
+            quality: draft.quality,
+            language: draft.language,
+            imageUrls: referenceUrls,
+          });
       const payload = {
-        effectId: selectedModel.effectId,
-        input: buildStudioEffectInput({
-          media: draft.type,
-          model: selectedModel,
-          prompt: draft.prompt,
-          aspectRatio: draft.aspectRatio,
-          duration: draft.duration,
-          outputQuality: draft.outputQuality,
-          mode: draft.mode,
-          quality: draft.quality,
-          language: draft.language,
-        }),
+        effectId,
+        input: initialInput,
         projectId,
       };
       const precheck = await apiJsonPost<GenerationResponse>(
         '/api/effects/precheck',
-        { ...payload, expectedUploadCount: 0 }
+        { ...payload, expectedUploadCount: isAnalysis ? 1 : 0 }
       );
       if (precheck.error) throw new Error(precheck.error);
       if (!precheck.uploadIntentToken) {
         throw new Error('Generation validation did not return an intent.');
       }
+      const input = isAnalysis
+        ? {
+            ...initialInput,
+            video_url: (
+              await uploadFileFromBrowser(analysisFile!, undefined, {
+                projectId,
+                generationIntentToken: precheck.uploadIntentToken,
+              })
+            ).url,
+          }
+        : initialInput;
       const created = await apiJsonPost<GenerationResponse>(
         '/api/effects/generate',
         {
           ...payload,
+          input,
           generationIntentToken: precheck.uploadIntentToken,
         }
       );
@@ -159,12 +212,18 @@ export function BeatStudioWorkspace({
       }
       await invalidateWorkspaceAfterGeneration(queryClient);
       const wmTaskId = resolveWmTaskId(created);
+      let output = created.output;
       if (wmTaskId && created.status !== 'succeeded') {
-        await waitForGeneration({
+        output = await waitForGeneration({
           wmTaskId,
-          effectId: selectedModel.effectId,
+          effectId,
         });
-      } else if (!resolveOutputMedia(created.output).resultUrl) {
+      }
+      if (isAnalysis) {
+        if (!resolveVideoAnalysisText(output)) {
+          throw new Error('Analysis completed without text output.');
+        }
+      } else if (!resolveOutputMedia(output).resultUrl) {
         throw new Error('Generation completed without a media URL.');
       }
     },
@@ -186,7 +245,19 @@ export function BeatStudioWorkspace({
       <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[220px] pt-8 sm:px-6 sm:pb-[210px]">
         {feedItems.length > 0 ? (
           <div className="flex min-h-full w-full flex-col justify-end">
-            <StudioGenerationFeed items={feedItems} />
+            <StudioGenerationFeed
+              items={feedItems}
+              onReuse={(item) => {
+                const next = applyStudioHistoryItem({
+                  item,
+                  imageModels,
+                  videoModels,
+                });
+                setMedia(next.media);
+                setDraft(next.draft);
+                setReferenceUrls(next.referenceUrls);
+              }}
+            />
           </div>
         ) : (
           <div className="flex flex-1 items-center justify-center">
@@ -197,11 +268,18 @@ export function BeatStudioWorkspace({
 
       <StudioComposer
         draft={draft}
+        media={media}
         imageModels={imageModels}
         videoModels={videoModels}
         isBusy={generation.isPending}
-        promptCharacterLimit={generationValidationConstraints.maxPromptChars}
+        promptCharacterLimit={
+          media === 'analysis'
+            ? getGenerationPromptMaxChars({ modelId: VIDEO_ANALYSIS_MODEL_ID })
+            : getGenerationPromptMaxChars({ modelId: selectedModel?.id })
+        }
         takeCount={feedItems.length}
+        analysisDepth={analysisDepth}
+        analysisFileName={analysisFile?.name ?? null}
         onDraftChange={(next) => {
           if (next.type !== draft.type || next.modelId !== draft.modelId) {
             const nextModels =
@@ -222,6 +300,47 @@ export function BeatStudioWorkspace({
           }
           setDraft(next);
         }}
+        onMediaChange={(nextMedia) => {
+          setMedia(nextMedia);
+          setReferenceUrls([]);
+          if (nextMedia === 'analysis') return;
+          const nextType = nextMedia === 'video' ? 'video' : 'image';
+          const nextModels = nextType === 'video' ? videoModels : imageModels;
+          const nextModel = nextModels[0] ?? null;
+          if (nextModel) {
+            setDraft((current) =>
+              applyStudioDraftModel({
+                draft: { ...current, type: nextType },
+                model: nextModel,
+              })
+            );
+          }
+        }}
+        onAnalysisDepthChange={setAnalysisDepth}
+        onAnalysisFileSelect={(file) => {
+          const supported =
+            file.type === 'video/mp4' ||
+            file.type === 'video/quicktime' ||
+            /\.(mp4|mov)$/i.test(file.name);
+          if (!supported) {
+            setError('Video analysis supports MP4 and MOV files only.');
+            return;
+          }
+          setError('');
+          setAnalysisFile(file);
+          void uploadLocalProjectAsset({ projectId, file }).catch(
+            (uploadError: Error) => {
+              console.warn('Could not persist the analysis source locally:', uploadError);
+            }
+          );
+        }}
+        onClearAnalysisFile={() => setAnalysisFile(null)}
+        referenceUrls={referenceUrls}
+        onRemoveReference={(url) =>
+          setReferenceUrls((current) =>
+            current.filter((item) => item !== url)
+          )
+        }
         onGenerate={() => {
           setError('');
           generation.mutate();

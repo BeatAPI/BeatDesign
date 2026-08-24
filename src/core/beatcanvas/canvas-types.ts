@@ -9,8 +9,10 @@ import type {
   WorkspaceOutputQuality,
   WorkspaceQualityOption,
 } from '@/core/effects/workspace-models';
+import type { VideoAnalysisDepth } from '@/core/effects/video-analysis';
 
 export type CanvasCardMediaType = 'image' | 'video';
+export type CanvasGenerationMode = CanvasCardMediaType | 'analysis';
 export type CanvasCardKind = 'asset' | 'generation' | 'output';
 export type CanvasCardStatus =
   | 'idle'
@@ -24,8 +26,11 @@ export type CanvasCard = {
   assetId?: string | null;
   kind: CanvasCardKind;
   type: CanvasCardMediaType;
+  generationMode?: CanvasGenerationMode;
+  analysisDepth?: VideoAnalysisDepth;
   name: string;
   url: string | null;
+  resultText?: string | null;
   prompt: string;
   referenceCardIds: string[];
   workflowTemplateId: string | null;
@@ -52,6 +57,8 @@ export type CanvasCard = {
 export type CanvasGenerationSnapshot = Pick<
   CanvasCard,
   | 'type'
+  | 'generationMode'
+  | 'analysisDepth'
   | 'prompt'
   | 'referenceCardIds'
   | 'workflowTemplateId'
@@ -65,6 +72,7 @@ export type CanvasGenerationSnapshot = Pick<
   | 'quality'
   | 'characterOrientation'
   | 'backgroundSource'
+  | 'resultText'
 > & {
   capturedAt: string;
 };
@@ -93,3 +101,11 @@ export const isCanvasDraftCard = isCanvasGenerationCard;
 
 /** @deprecated Use CanvasGenerationCard */
 export type CanvasDraftCard = CanvasGenerationCard;
+
+export const getCanvasGenerationMode = (
+  card: Pick<CanvasCard, 'type' | 'generationMode'>
+): CanvasGenerationMode => card.generationMode ?? card.type;
+
+export const isCanvasAnalysisCard = (
+  card: CanvasCard | null | undefined
+) => Boolean(card && getCanvasGenerationMode(card) === 'analysis');

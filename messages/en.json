@@ -324,6 +324,8 @@
         "missingVideoUrl": "Missing video URL.",
         "readVideoDurationFailed": "Unable to read video duration.",
         "videoMetadataLoadFailed": "Unable to load video metadata.",
+        "analysisVideoRequired": "Attach exactly one MP4 or MOV video to analyze.",
+        "analysisCompletedWithoutText": "Analysis completed without text output.",
         "addTextNoteSuccess": "Text note added to the canvas."
       },
       "dock": {
@@ -434,6 +436,18 @@
         "freeGenerate": "Free generation",
         "uploadStart": "Upload image"
       },
+      "analysis": {
+        "modeLabel": "Analyze",
+        "modelLabel": "Analysis model",
+        "standardModel": "Video Analysis Standard",
+        "proModel": "Video Analysis Pro",
+        "promptPlaceholder": "Ask what to inspect in the video, including timestamps, actions, scenes, or issues...",
+        "uploadVideo": "Add an MP4 or MOV video",
+        "removeVideo": "Remove selected video",
+        "analyze": "Analyze",
+        "analyzing": "Analyzing...",
+        "referenceUploadSoon": "Reference upload is not available in this mode yet"
+      },
       "feed": {
         "history": "History",
         "result": "Generation",
@@ -449,6 +463,8 @@
         "params": "Parameters",
         "image": "Image",
         "video": "Video",
+        "analysis": "Analysis",
+        "analysisResult": "Analysis result",
         "references": "References"
       },
       "textNote": {
@@ -544,6 +560,13 @@
       "projects": "Projects",
       "projectsLabel": "Open projects",
       "githubRepository": "Open BeatDesign on GitHub",
+      "workspaceView": "Workspace view",
+      "create": "Create",
+      "studio": "Studio",
+      "studioDescription": "Focused generation and analysis",
+      "canvas": "Canvas",
+      "canvasDescription": "Visual multi-step workflow",
+      "assets": "Assets",
       "projectAssets": {
         "triggerLabel": "Project assets",
         "title": "Project assets",

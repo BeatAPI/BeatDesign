@@ -48,7 +48,11 @@ export const resolvePinnedGenerationOutputId = ({
   }
 
   return (
-    outputs.find((output) => output.status === 'succeeded' && Boolean(output.url))
+    outputs.find(
+      (output) =>
+        output.status === 'succeeded' &&
+        Boolean(output.url || output.resultText)
+    )
       ?.id ??
     outputs[0]?.id ??
     null

@@ -27,6 +27,10 @@ import {
 import { getDraftDefaultsFromModel } from '@/core/beatcanvas/draft-defaults';
 import { buildDraftShapeText } from '@/core/beatcanvas/draft-shape';
 import { getSelectableModel } from '@/core/beatcanvas/generation-controller';
+import {
+  resolveReferenceDrivenDraftAspectRatio,
+  resolveWorkspaceAspectRatioFromDimensions,
+} from '@/core/beatcanvas/composer';
 import { resolveCanvasBatchOffset } from '@/core/beatcanvas/upload-layout';
 import {
   type MutableRefObject,
@@ -125,6 +129,9 @@ const getDraftShapeSignature = (
   [
     card.name,
     card.type,
+    card.generationMode ?? card.type,
+    card.analysisDepth ?? '',
+    card.resultText ?? '',
     card.aspectRatio,
     card.status,
     card.error ?? '',
@@ -137,6 +144,7 @@ const getDraftShapeSignature = (
           output.id,
           output.status,
           output.url ?? '',
+          output.resultText ?? '',
           output.error ?? '',
           output.generationSnapshot.modelId,
           output.generationSnapshot.aspectRatio,
@@ -176,17 +184,28 @@ export const buildGenerationCardPresentation = ({
         (output) =>
           output.id === card.pinnedOutputId &&
           output.status === 'succeeded' &&
-          Boolean(output.url)
+          Boolean(output.url || output.resultText)
       ) ?? null
     : null;
   const latestSucceededOutput = [...orderedOutputs]
     .reverse()
-    .find((output) => output.status === 'succeeded' && Boolean(output.url));
+    .find(
+      (output) =>
+        output.status === 'succeeded' &&
+        Boolean(output.url || output.resultText)
+    );
+  const isAnalysis = card.generationMode === 'analysis';
 
   return {
     status: latestOutput?.status ?? card.status,
+    isAnalysis,
     latestOutputUrl:
       pinnedOutput?.url ?? latestSucceededOutput?.url ?? card.url ?? null,
+    latestOutputText:
+      pinnedOutput?.resultText ??
+      latestSucceededOutput?.resultText ??
+      card.resultText ??
+      null,
     takes: buildGenerationTakes({
       outputs: orderedOutputs,
       pinnedOutputId: card.pinnedOutputId,
@@ -852,6 +871,12 @@ export function useBeatCanvasReactFlowAdapter({
       const nextSize = frame
         ? { w: frame.w, h: frame.h }
         : (size ?? getAssetFrameSize(type));
+      const inferredAspectRatio = resolveWorkspaceAspectRatioFromDimensions({
+        width: nextSize.w,
+        height: nextSize.h,
+        fallback:
+          existingCard?.aspectRatio ?? (type === 'image' ? '1:1' : '16:9'),
+      });
       const fallbackPlacement = getCanvasPlacement(
         anchorCardIds ?? sourceCardIds,
         placementOffsetIndex,
@@ -896,27 +921,29 @@ export function useBeatCanvasReactFlowAdapter({
       }
 
       setCanvasCard(
-        existingCard ?? {
-          id: nextShapeId,
-          assetId: assetId ?? null,
-          kind,
-          type,
-          name,
-          url,
-          prompt: '',
-          referenceCardIds: sourceCardIds,
-          workflowTemplateId,
-          status: 'succeeded',
-          error: null,
-          modelId: '',
-          aspectRatio: type === 'image' ? '1:1' : '16:9',
-          outputQuality: type === 'image' ? '1k' : '1080p',
-          duration: '5s',
-          mode: 'quality',
-          variant: 'standard',
-          quality: 'standard',
-          sourceGenerationId: sourceGenerationId ?? null,
-        }
+        existingCard
+          ? { ...existingCard, aspectRatio: inferredAspectRatio }
+          : {
+              id: nextShapeId,
+              assetId: assetId ?? null,
+              kind,
+              type,
+              name,
+              url,
+              prompt: '',
+              referenceCardIds: sourceCardIds,
+              workflowTemplateId,
+              status: 'succeeded',
+              error: null,
+              modelId: '',
+              aspectRatio: inferredAspectRatio,
+              outputQuality: type === 'image' ? '1k' : '1080p',
+              duration: '5s',
+              mode: 'quality',
+              variant: 'standard',
+              quality: 'standard',
+              sourceGenerationId: sourceGenerationId ?? null,
+            }
       );
 
       if (activateOnInsert) {
@@ -954,8 +981,16 @@ export function useBeatCanvasReactFlowAdapter({
       if (!editorRef.current) return null;
 
       const outputCardId = shapeId ?? `output:${makeId()}`;
+      const models = draftCard.type === 'image' ? imageModels : videoModels;
+      const model = getSelectableModel(models, draftCard.modelId);
+      const resolvedAspectRatio = resolveReferenceDrivenDraftAspectRatio({
+        draftCard,
+        cards: canvasCardsRef.current,
+        model,
+      });
       const nextCard: CanvasOutputCard = existingCard ?? {
         ...draftCard,
+        aspectRatio: resolvedAspectRatio,
         id: outputCardId,
         kind: 'output',
         name,
@@ -968,11 +1003,13 @@ export function useBeatCanvasReactFlowAdapter({
         generationRunId: `run:${makeId()}`,
         generationSnapshot: {
           type: draftCard.type,
+          generationMode: draftCard.generationMode,
+          analysisDepth: draftCard.analysisDepth,
           prompt: draftCard.prompt,
           referenceCardIds: [...draftCard.referenceCardIds],
           workflowTemplateId: draftCard.workflowTemplateId,
           modelId: draftCard.modelId,
-          aspectRatio: draftCard.aspectRatio,
+          aspectRatio: resolvedAspectRatio,
           outputQuality: draftCard.outputQuality,
           duration: draftCard.duration,
           language: draftCard.language,
@@ -985,6 +1022,7 @@ export function useBeatCanvasReactFlowAdapter({
           ...(draftCard.backgroundSource
             ? { backgroundSource: draftCard.backgroundSource }
             : {}),
+          resultText: draftCard.resultText ?? null,
           capturedAt: new Date().toISOString(),
         },
       };
@@ -995,7 +1033,13 @@ export function useBeatCanvasReactFlowAdapter({
       }
       return outputCardId;
     },
-    [focusShape, setCanvasCard]
+    [
+      canvasCardsRef,
+      focusShape,
+      imageModels,
+      setCanvasCard,
+      videoModels,
+    ]
   );
 
   const updateGenerationOutput = useCallback(
@@ -1015,13 +1059,15 @@ export function useBeatCanvasReactFlowAdapter({
       outputCardId,
       draftCard,
       url,
+      resultText = null,
       name,
       sourceGenerationId = null,
       suppressFocus = false,
     }: {
       outputCardId: string;
       draftCard: CanvasDraftCard;
-      url: string;
+      url?: string | null;
+      resultText?: string | null;
       name: string;
       sourceGenerationId?: string | null;
       suppressFocus?: boolean;
@@ -1032,14 +1078,16 @@ export function useBeatCanvasReactFlowAdapter({
       setCanvasCard({
         ...current,
         name,
-        url,
+        url: url ?? null,
+        resultText,
         status: 'succeeded',
         error: null,
         sourceGenerationId,
       });
       setCanvasCard({
         ...draftCard,
-        url,
+        url: url ?? null,
+        resultText,
       });
       if (!suppressFocus) {
         focusShape(draftCard.id);
@@ -1101,10 +1149,11 @@ export function useBeatCanvasReactFlowAdapter({
 
       const defaults = getDraftDefaultsFromModel(taskType, model);
       const cardId = shapeId ?? `shape:${makeId()}`;
-      const nextCard: CanvasDraftCard = existingCard ?? {
+      const baseNextCard: CanvasDraftCard = existingCard ?? {
         id: cardId,
         kind: 'generation',
         type: defaults.type,
+        generationMode: defaults.type,
         name:
           presetName ??
           (defaults.type === 'image'
@@ -1131,6 +1180,18 @@ export function useBeatCanvasReactFlowAdapter({
           ? { backgroundSource: defaults.backgroundSource }
           : {}),
         sourceGenerationId: null,
+      };
+      const selectedCardModel = getSelectableModel(
+        taskType === 'image' ? imageModels : videoModels,
+        baseNextCard.modelId
+      );
+      const nextCard: CanvasDraftCard = {
+        ...baseNextCard,
+        aspectRatio: resolveReferenceDrivenDraftAspectRatio({
+          draftCard: baseNextCard,
+          cards: canvasCardsRef.current,
+          model: selectedCardModel,
+        }),
       };
       const size = frame
         ? { w: frame.w, h: frame.h }
@@ -1197,6 +1258,7 @@ export function useBeatCanvasReactFlowAdapter({
       setActiveComposerCardId,
       setCanvasCard,
       recordCanvasHistory,
+      canvasCardsRef,
       studioT,
       videoModels,
     ]

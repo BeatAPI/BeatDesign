@@ -25,6 +25,7 @@ export async function persistEffectOutputIfNeeded({
   effectId: number;
   effectType: number;
 }) {
+  if (effectType === 3) return output;
   const media = resolveOutputMedia(output);
   const urls = Array.from(
     new Set(

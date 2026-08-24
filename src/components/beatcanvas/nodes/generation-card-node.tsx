@@ -7,7 +7,7 @@ import {
   type NodeProps,
   useInternalNode,
 } from '@xyflow/react';
-import { Sparkles } from 'lucide-react';
+import { ScanSearch, Sparkles } from 'lucide-react';
 
 import type { GenerationTake } from '@/core/beatcanvas/generation-history';
 
@@ -37,12 +37,14 @@ export function GenerationCardNode({
     cardMediaType,
     label,
     status,
+    isAnalysis = false,
     latestOutputUrl = null,
+    latestOutputText = null,
     takes = [],
   } = props;
   const isBusy = status === 'pending' || status === 'processing';
   const isFailed = status === 'failed';
-  const hasResult = Boolean(latestOutputUrl);
+  const hasResult = Boolean(latestOutputUrl || latestOutputText);
   const isEmptySlot = !hasResult && !isFailed;
   const emptySlotAccent =
     cardMediaType === 'video' ? 'var(--beat-graph)' : 'var(--beat-accent)';
@@ -64,6 +66,7 @@ export function GenerationCardNode({
   const isCompactActionNode = w <= 128 && h <= 128;
   const visibleTakes = takes.slice(-MAX_VISIBLE_TAKES);
   const showTakeStrip =
+    !isAnalysis &&
     !isCompactActionNode &&
     (takes.length > 1 || (isBusy && takes.length > 0));
 
@@ -80,6 +83,25 @@ export function GenerationCardNode({
           type: take.type,
           url: take.url,
           title: `${displayLabel} ${take.takeNumber}`,
+        },
+      })
+    );
+  };
+
+  const handlePreviewLatestOutput = () => {
+    if (
+      !latestOutputUrl ||
+      cardMediaType !== 'video' ||
+      typeof window === 'undefined'
+    ) {
+      return;
+    }
+    window.dispatchEvent(
+      new CustomEvent('beatcanvas:preview-media', {
+        detail: {
+          type: 'video',
+          url: latestOutputUrl,
+          title: displayLabel,
         },
       })
     );
@@ -224,18 +246,35 @@ export function GenerationCardNode({
               </div>
             ) : null}
             {hasResult ? (
-              cardMediaType === 'video' ? (
+              isAnalysis && latestOutputText ? (
+                <div className="nowheel h-full overflow-y-auto p-4 text-left text-[12px] leading-5 text-[var(--beat-text-2)]">
+                  <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--beat-graph)]">
+                    <ScanSearch className="size-3.5" />
+                    {displayLabel}
+                  </div>
+                  <p className="whitespace-pre-wrap break-words">
+                    {latestOutputText}
+                  </p>
+                </div>
+              ) : cardMediaType === 'video' ? (
                 <video
                   src={latestOutputUrl ?? undefined}
                   muted
                   playsInline
                   preload="metadata"
+                  draggable={false}
+                  onDoubleClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handlePreviewLatestOutput();
+                  }}
                   className="nowheel"
                   style={{
                     display: 'block',
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
+                    cursor: 'zoom-in',
                   }}
                 />
               ) : (
@@ -302,6 +341,24 @@ export function GenerationCardNode({
               </div>
             )}
 
+            {hasResult && cardMediaType === 'video' && !isAnalysis ? (
+              <button
+                type="button"
+                aria-label={`${shapeCopy.viewResult}: ${displayLabel}`}
+                className="nodrag nopan nowheel absolute left-1/2 top-1/2 z-[3] grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-black/65 text-xl text-white opacity-80 shadow-lg transition-[opacity,transform,background-color] hover:scale-105 hover:bg-black/80 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--beat-graph)] group-hover:opacity-100"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handlePreviewLatestOutput();
+                }}
+              >
+                <span aria-hidden="true" className="ml-0.5">
+                  ▶
+                </span>
+              </button>
+            ) : null}
+
             {isBusy && (
               <div
                 style={{
@@ -336,7 +393,6 @@ export function GenerationCardNode({
                   : shapeCopy.pending}
               </div>
             )}
-
           </div>
         )}
 

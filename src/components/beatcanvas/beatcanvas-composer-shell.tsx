@@ -10,7 +10,7 @@ import {
   type ActiveCanvasReferenceMention,
   type CanvasReferenceMention,
 } from '@/core/beatcanvas/reference-mentions';
-import { ArrowUp, Image, Loader2, RotateCw, Video, X } from 'lucide-react';
+import { ArrowUp, Image, Loader2, Video, X } from 'lucide-react';
 import { useRef, useState, type ReactNode, type RefObject } from 'react';
 
 import {
@@ -38,6 +38,7 @@ export function BeatCanvasComposerShell({
   onPromptCommit,
   onGenerateDraft,
   onPromptCompositionChange,
+  primaryButtonLabel: primaryButtonLabelOverride,
   promptCharacterCount,
   promptCharacterLimit,
   promptInputValue,
@@ -46,7 +47,7 @@ export function BeatCanvasComposerShell({
   promptAccessory,
   promptReferences = [],
   position,
-  takeCount = 0,
+  takeCount: _takeCount = 0,
 }: {
   activeDraftCard: CanvasGenerationCard;
   children: ReactNode;
@@ -59,6 +60,7 @@ export function BeatCanvasComposerShell({
   onPromptCommit: (nextPrompt: string) => void;
   onGenerateDraft: (draftId: string) => void;
   onPromptCompositionChange: (composing: boolean) => void;
+  primaryButtonLabel?: string;
   promptCharacterCount: number;
   promptCharacterLimit: number;
   promptInputValue: string;
@@ -77,12 +79,9 @@ export function BeatCanvasComposerShell({
   const [activeMention, setActiveMention] =
     useState<ActiveCanvasReferenceMention | null>(null);
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
-  const hasExistingTakes = takeCount > 0;
-  const primaryButtonLabel = isDraftBusy
-    ? labels.generatingLabel
-    : hasExistingTakes
-      ? labels.regenerateLabel
-      : labels.generateLabel;
+  const primaryButtonLabel =
+    primaryButtonLabelOverride ??
+    (isDraftBusy ? labels.generatingLabel : labels.generateLabel);
   const isPrimaryDisabled = isDraftBusy || isPromptComposing;
   const mentionOptions = activeMention
     ? filterCanvasReferenceMentions({
@@ -328,16 +327,9 @@ export function BeatCanvasComposerShell({
             >
               {isDraftBusy ? (
                 <Loader2 className="size-3.5 animate-spin" />
-              ) : hasExistingTakes ? (
-                <RotateCw className="size-3.5" />
               ) : (
                 <ArrowUp className="size-3.5" />
               )}
-              {hasExistingTakes ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--beat-surface-2)] px-1 text-[9px] font-bold tabular-nums text-[var(--beat-text-1)] ring-1 ring-white/12">
-                  {takeCount}
-                </span>
-              ) : null}
             </button>
           </div>
         </div>

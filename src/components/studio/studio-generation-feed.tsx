@@ -21,20 +21,27 @@ const chipClassName =
 function StudioHistoryItem({
   item,
   onOpen,
+  onReuse,
 }: {
   item: ProjectGenerationItem;
   onOpen: () => void;
+  onReuse: () => void;
 }) {
   const t = useTranslations('AppShell.studio.feed');
   const isBusy = item.status === 'pending' || item.status === 'processing';
+  const isAnalysis = item.mediaType === 'analysis';
   const isVideo = item.mediaType === 'video';
   const previewUrl = item.resultUrl;
 
   return (
     <article className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={onReuse}
+        className="flex flex-wrap items-center gap-2 text-left"
+      >
         <span className={chipClassName}>
-          {isVideo ? t('video') : t('image')}
+          {isAnalysis ? t('analysis') : isVideo ? t('video') : t('image')}
         </span>
         <span className={chipClassName}>
           {item.modelName || item.modelId || t('result')}
@@ -42,7 +49,7 @@ function StudioHistoryItem({
         <span className="text-[12px] text-[var(--beat-text-3)]">
           {formatStudioHistoryDateTime(new Date(item.createdAt))}
         </span>
-      </div>
+      </button>
       <button
         type="button"
         onClick={onOpen}
@@ -50,7 +57,13 @@ function StudioHistoryItem({
         className="block text-left"
       >
         <div className="h-[240px] w-[min(100%,400px)] overflow-hidden rounded-[16px] bg-black/20">
-          {previewUrl ? (
+          {isAnalysis && item.resultText ? (
+            <div className="h-full overflow-hidden p-5">
+              <p className="line-clamp-[8] whitespace-pre-wrap break-words text-[13px] leading-6 text-[var(--beat-text-2)]">
+                {item.resultText}
+              </p>
+            </div>
+          ) : previewUrl ? (
             isVideo ? (
               <video
                 src={previewUrl}
@@ -83,8 +96,10 @@ function StudioHistoryItem({
 
 export function StudioGenerationFeed({
   items,
+  onReuse,
 }: {
   items: ProjectGenerationItem[];
+  onReuse: (item: ProjectGenerationItem) => void;
 }) {
   const t = useTranslations('AppShell.studio.feed');
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -93,7 +108,12 @@ export function StudioGenerationFeed({
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
-  }, [items.length, items.at(-1)?.status, items.at(-1)?.resultUrl]);
+  }, [
+    items.length,
+    items.at(-1)?.status,
+    items.at(-1)?.resultUrl,
+    items.at(-1)?.resultText,
+  ]);
 
   return (
     <>
@@ -103,6 +123,7 @@ export function StudioGenerationFeed({
             key={item.id}
             item={item}
             onOpen={() => setSelectedId(item.id)}
+            onReuse={() => onReuse(item)}
           />
         ))}
         <div ref={endRef} />
@@ -131,7 +152,16 @@ export function StudioGenerationFeed({
             </DialogClose>
             <div className="grid h-full min-h-0 xl:grid-cols-[minmax(0,1.12fr)_420px]">
               <div className="relative flex items-center justify-center overflow-hidden bg-black/40 px-6 py-6">
-                {selected.mediaType === 'video' && selected.resultUrl ? (
+                {selected.mediaType === 'analysis' ? (
+                  <div className="h-full w-full overflow-y-auto rounded-[var(--beat-radius-sm)] border border-white/[0.08] bg-white/[0.025] p-6 sm:p-8">
+                    <p className="mb-4 text-xs font-medium uppercase tracking-[0.14em] text-[var(--beat-text-3)]">
+                      {t('analysisResult')}
+                    </p>
+                    <p className="whitespace-pre-wrap break-words text-[14px] leading-7 text-[var(--beat-text-1)] sm:text-[15px]">
+                      {selected.resultText || (selected.status === 'processing' ? t('generating') : t('failed'))}
+                    </p>
+                  </div>
+                ) : selected.mediaType === 'video' && selected.resultUrl ? (
                   <video
                     src={selected.resultUrl}
                     controls
@@ -148,7 +178,11 @@ export function StudioGenerationFeed({
               <div className="flex min-h-0 flex-col border-t border-white/[0.08] xl:border-l xl:border-t-0">
                 <div className="flex flex-wrap items-center gap-1.5 border-b border-white/[0.08] px-6 py-5">
                   <span className={chipClassName}>
-                    {selected.mediaType === 'video' ? t('video') : t('image')}
+                    {selected.mediaType === 'analysis'
+                      ? t('analysis')
+                      : selected.mediaType === 'video'
+                        ? t('video')
+                        : t('image')}
                   </span>
                   <span className={chipClassName}>
                     {selected.modelName || selected.modelId || t('result')}

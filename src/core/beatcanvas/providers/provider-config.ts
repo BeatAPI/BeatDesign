@@ -7,7 +7,7 @@ export type BeatCanvasProviderPublicConfig = {
   id: BeatCanvasProviderId;
   label: string;
   isDefault: boolean;
-  supports: readonly ['image', 'video'];
+  supports: readonly ['image', 'video', 'analysis'];
 };
 
 export type BeatCanvasProviderServerConfig =
@@ -54,7 +54,7 @@ export const getBeatCanvasProviderPublicConfig = (
     id,
     label: 'BeatAPI',
     isDefault: true,
-    supports: ['image', 'video'],
+    supports: ['image', 'video', 'analysis'],
   };
 };
 
