@@ -6,8 +6,9 @@ import {
   ImageIcon,
   ImagePlus,
   Loader2,
-  RotateCw,
+  ScanSearch,
   Sparkles,
+  Video,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 
@@ -22,6 +23,7 @@ import { useCanvasComposerLabels } from '@/components/beatcanvas/use-canvas-comp
 import type { CanvasGenerationCard } from '@/core/beatcanvas/canvas-types';
 import {
   countPromptCharacters,
+  getGenerationPromptConstraints,
   truncatePromptToMaxChars,
 } from '@/core/effects/validation';
 import {
@@ -29,38 +31,65 @@ import {
   type WorkspaceModelOption,
 } from '@/core/effects/workspace-models';
 import { getModelIconPathByModelId } from '@/core/workspace-lib/model-icons';
+import type { StudioMedia } from '@/core/studio/studio-runtime';
+import type { VideoAnalysisDepth } from '@/core/effects/video-analysis';
+import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { cn } from '@/lib/utils';
 
 export function StudioComposer({
   draft,
+  media,
   imageModels,
   videoModels,
   isBusy,
   promptCharacterLimit,
-  takeCount = 0,
+  takeCount: _takeCount = 0,
+  analysisDepth,
+  analysisFileName,
   onDraftChange,
+  onMediaChange,
+  onAnalysisDepthChange,
+  onAnalysisFileSelect,
+  onClearAnalysisFile,
   onGenerate,
+  referenceUrls = [],
+  onRemoveReference,
 }: {
   draft: CanvasGenerationCard;
+  media: StudioMedia;
   imageModels: WorkspaceModelOption[];
   videoModels: WorkspaceModelOption[];
   isBusy: boolean;
   promptCharacterLimit: number;
   takeCount?: number;
+  analysisDepth: VideoAnalysisDepth;
+  analysisFileName: string | null;
   onDraftChange: (next: CanvasGenerationCard) => void;
+  onMediaChange: (next: StudioMedia) => void;
+  onAnalysisDepthChange: (next: VideoAnalysisDepth) => void;
+  onAnalysisFileSelect: (file: File) => void;
+  onClearAnalysisFile: () => void;
   onGenerate: () => void;
+  referenceUrls?: string[];
+  onRemoveReference?: (url: string) => void;
 }) {
   const labels = useCanvasComposerLabels();
+  const t = useTranslations('AppShell.studio.analysis');
+  const analysisFileInputRef = useRef<HTMLInputElement | null>(null);
   const parameterPickerRef = useRef<HTMLDivElement | null>(null);
   const [isParameterOpen, setIsParameterOpen] = useState(false);
-  const models = draft.type === 'video' ? videoModels : imageModels;
+  const isAnalysis = media === 'analysis';
+  const models = media === 'video' ? videoModels : imageModels;
   const selectedModel =
     findWorkspaceModelOption(models, draft.modelId) ?? models[0] ?? null;
+  const promptRequired = getGenerationPromptConstraints({
+    modelId: isAnalysis ? 'video-analysis' : selectedModel?.id,
+  }).required;
   const selectedModeOptions = selectedModel?.modeOptions ?? [];
   const selectedVariantOptions = selectedModel?.variantOptions ?? [];
   const selectedQualityOptions = selectedModel?.qualityOptions ?? [];
   const selectedDurationOptions =
-    draft.type === 'video' ? (selectedModel?.supportedDurations ?? []) : [];
+    media === 'video' ? (selectedModel?.supportedDurations ?? []) : [];
   const selectedLanguageOptions = selectedModel?.supportedLanguages ?? [];
   const selectedAspectRatioOptions = selectedModel?.supportedAspectRatios ?? [];
   const selectedOutputQualities = selectedModel?.supportedOutputQualities ?? [];
@@ -87,12 +116,37 @@ export function StudioComposer({
       : []),
   ];
   const promptCharacterCount = countPromptCharacters(draft.prompt);
-  const hasExistingTakes = takeCount > 0;
   const primaryButtonLabel = isBusy
-    ? labels.generatingLabel
-    : hasExistingTakes
-      ? labels.regenerateLabel
+    ? isAnalysis
+      ? t('analyzing')
+      : labels.generatingLabel
+    : isAnalysis
+      ? t('analyze')
       : labels.generateLabel;
+  const analysisModelOptions = [
+    {
+      value: 'standard',
+      label: t('standardModel'),
+      modelId: 'video-analysis-standard',
+    },
+    {
+      value: 'deep',
+      label: t('proModel'),
+      modelId: 'video-analysis-pro',
+    },
+  ].map((option) => ({
+    value: option.value,
+    label: option.label,
+    leading: (
+      <span className="grid size-4 shrink-0 place-items-center rounded-[4px] bg-white/90 ring-1 ring-black/10">
+        <img
+          src={getModelIconPathByModelId(option.modelId) || '/logo.png'}
+          alt=""
+          className="size-3 rounded-[2px]"
+        />
+      </span>
+    ),
+  }));
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#09090a] via-[#09090a]/96 to-transparent px-3 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-14">
@@ -103,15 +157,47 @@ export function StudioComposer({
         )}
         data-beatapi-composer=""
       >
+        {referenceUrls.length > 0 ? (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {referenceUrls.map((url) => (
+              <button
+                key={url}
+                type="button"
+                onClick={() => onRemoveReference?.(url)}
+                className="size-9 overflow-hidden rounded-[10px] border border-white/[0.1]"
+              >
+                <img src={url} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="relative">
           <button
             type="button"
-            aria-label={labels.uploadImageLabel}
-            title="Reference upload coming next"
+            aria-label={isAnalysis ? t('uploadVideo') : labels.uploadImageLabel}
+            title={isAnalysis ? t('uploadVideo') : t('referenceUploadSoon')}
+            onClick={() => {
+              if (isAnalysis) analysisFileInputRef.current?.click();
+            }}
             className="absolute left-0 top-0 z-10 flex size-9 rotate-[-5deg] items-center justify-center rounded-[10px] border border-dashed border-white/[0.13] bg-white/[0.03] text-[var(--beat-text-2)] shadow-[0_8px_20px_rgba(0,0,0,0.24)] transition hover:border-white/25 hover:bg-white/[0.06]"
           >
-            <ImagePlus className="size-3.5" />
+            {isAnalysis ? (
+              <Video className="size-3.5" />
+            ) : (
+              <ImagePlus className="size-3.5" />
+            )}
           </button>
+          <input
+            ref={analysisFileInputRef}
+            type="file"
+            accept=".mp4,.mov,video/mp4,video/quicktime"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onAnalysisFileSelect(file);
+              event.currentTarget.value = '';
+            }}
+          />
           <textarea
             value={draft.prompt}
             onChange={(event) =>
@@ -124,7 +210,9 @@ export function StudioComposer({
               })
             }
             placeholder={
-              draft.type === 'video'
+              isAnalysis
+                ? t('promptPlaceholder')
+                : media === 'video'
                 ? labels.videoPromptPlaceholder
                 : labels.imagePromptPlaceholder
             }
@@ -138,7 +226,7 @@ export function StudioComposer({
             <WorkspaceSelect
               ariaLabel="Media type"
               triggerClassName="min-w-[96px]"
-              value={draft.type}
+              value={media}
               options={[
                 {
                   value: 'image',
@@ -154,15 +242,44 @@ export function StudioComposer({
                     <Film className="size-3.5 shrink-0 text-[var(--beat-text-2)]" />
                   ),
                 },
+                {
+                  value: 'analysis',
+                  label: t('modeLabel'),
+                  leading: (
+                    <ScanSearch className="size-3.5 shrink-0 text-[var(--beat-text-2)]" />
+                  ),
+                },
               ]}
               onChange={(type) =>
-                onDraftChange({
-                  ...draft,
-                  type: type === 'video' ? 'video' : 'image',
-                })
+                onMediaChange(
+                  type === 'analysis' ? 'analysis' : type === 'video' ? 'video' : 'image'
+                )
               }
             />
 
+            {isAnalysis ? (
+              <>
+                <WorkspaceSelect
+                  ariaLabel={t('modelLabel')}
+                  triggerClassName="w-fit max-w-full"
+                  value={analysisDepth}
+                  options={analysisModelOptions}
+                  onChange={(value) =>
+                    onAnalysisDepthChange(value === 'deep' ? 'deep' : 'standard')
+                  }
+                />
+                {analysisFileName ? (
+                  <button
+                    type="button"
+                    onClick={onClearAnalysisFile}
+                    className="max-w-[220px] truncate rounded-full border border-white/[0.09] bg-white/[0.035] px-2.5 py-1 text-[11px] text-[var(--beat-text-2)]"
+                    title={t('removeVideo')}
+                  >
+                    {analysisFileName}
+                  </button>
+                ) : null}
+              </>
+            ) : (
             <WorkspaceSelect
               ariaLabel="Model"
               triggerClassName="w-fit max-w-full"
@@ -185,8 +302,9 @@ export function StudioComposer({
                 <Sparkles className="size-3.5 shrink-0 text-[var(--beat-text-2)]" />
               }
             />
+            )}
 
-            {visibleParameterSummaryTokens.length > 0 ? (
+            {!isAnalysis && visibleParameterSummaryTokens.length > 0 ? (
               <BeatCanvasComposerParameterPicker
                 activeDraftCard={draft}
                 containerRef={parameterPickerRef}
@@ -255,7 +373,11 @@ export function StudioComposer({
             <button
               type="button"
               onClick={onGenerate}
-              disabled={isBusy || !draft.prompt.trim() || !selectedModel}
+              disabled={
+                isBusy ||
+                (promptRequired && !draft.prompt.trim()) ||
+                (isAnalysis ? !analysisFileName : !selectedModel)
+              }
               className={cn(
                 composerGenerateButtonClassName,
                 'active:translate-y-px'
@@ -264,16 +386,9 @@ export function StudioComposer({
             >
               {isBusy ? (
                 <Loader2 className="size-3.5 animate-spin" />
-              ) : hasExistingTakes ? (
-                <RotateCw className="size-3.5" />
               ) : (
                 <ArrowUp className="size-3.5" />
               )}
-              {hasExistingTakes ? (
-                <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--beat-surface-2)] px-1 text-[9px] font-bold tabular-nums text-[var(--beat-text-1)] ring-1 ring-white/12">
-                  {takeCount}
-                </span>
-              ) : null}
             </button>
           </div>
         </div>

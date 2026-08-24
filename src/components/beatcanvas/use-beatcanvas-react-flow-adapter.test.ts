@@ -113,3 +113,49 @@ test('keeps the latest successful media on one generation node', () => {
   assert.equal(presentation.takes[0]?.isPinned, true);
   assert.equal('history' in presentation, false);
 });
+
+test('keeps the latest video analysis text on the Canvas node', () => {
+  const draft = {
+    ...makeDraft('video', '16:9'),
+    generationMode: 'analysis' as const,
+    analysisDepth: 'deep' as const,
+    modelId: 'video-analysis',
+  };
+  const output: CanvasOutputCard = {
+    ...draft,
+    id: 'output:analysis',
+    kind: 'output',
+    name: 'Video Analysis Pro result',
+    resultText: '00:00-00:03 The subject walks into frame.',
+    status: 'succeeded',
+    referenceCardIds: [draft.id],
+    sourceConfigCardId: draft.id,
+    generationRunId: 'run:analysis',
+    generationSnapshot: {
+      type: 'video',
+      generationMode: 'analysis',
+      analysisDepth: 'deep',
+      prompt: 'Return timestamps.',
+      referenceCardIds: ['asset:video'],
+      workflowTemplateId: null,
+      modelId: 'video-analysis',
+      aspectRatio: '16:9',
+      outputQuality: '720p',
+      duration: '5s',
+      mode: 'quality',
+      variant: 'standard',
+      quality: 'standard',
+      resultText: null,
+      capturedAt: '2026-08-24T00:00:00.000Z',
+    },
+  };
+
+  const presentation = buildGenerationCardPresentation({
+    card: draft,
+    outputs: [output],
+  });
+
+  assert.equal(presentation.isAnalysis, true);
+  assert.equal(presentation.latestOutputUrl, null);
+  assert.equal(presentation.latestOutputText, output.resultText);
+});

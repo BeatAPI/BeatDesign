@@ -14,3 +14,14 @@ test('project title field uses the available header width instead of a short cha
   assert.match(source, /className="min-w-0 flex-1"/);
   assert.match(source, /className="h-9 w-full/);
 });
+
+test('editing a title is not reset by an unstable translation function identity', () => {
+  const source = readFileSync(
+    new URL('./product-page-shell.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(source, /const untitledWorkspaceName = t\('header\.untitledCanvas'\)/);
+  assert.match(source, /\[untitledWorkspaceName\]/);
+  assert.doesNotMatch(source, /\[t\]\s*\n\s*\)/);
+});

@@ -33,7 +33,9 @@ export type GenerationCardNodeProps = {
   cardMediaType: 'image' | 'video';
   label: string;
   status: 'idle' | 'pending' | 'processing' | 'succeeded' | 'failed';
+  isAnalysis?: boolean;
   latestOutputUrl?: string | null;
+  latestOutputText?: string | null;
   takes?: GenerationTake[];
 };
 

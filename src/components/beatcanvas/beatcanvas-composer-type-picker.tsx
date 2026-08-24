@@ -1,8 +1,9 @@
 'use client';
 
-import type { CanvasCardMediaType } from '@/core/beatcanvas/canvas-types';
+import type { CanvasGenerationMode } from '@/core/beatcanvas/canvas-types';
 import { cn } from '@/lib/utils';
-import { Check, ChevronDown, ImageIcon, Video } from 'lucide-react';import type { RefObject } from 'react';
+import { Check, ChevronDown, ImageIcon, ScanSearch, Video } from 'lucide-react';
+import type { RefObject } from 'react';
 
 import {
   composerFieldButtonClassName,
@@ -12,7 +13,7 @@ import {
 } from './beatcanvas-composer-utils';
 import type { CanvasLabels } from './beatcanvas-front-layer-context';
 
-const TASK_TYPES: CanvasCardMediaType[] = ['image', 'video'];
+const TASK_TYPES: CanvasGenerationMode[] = ['image', 'video', 'analysis'];
 
 export function BeatCanvasComposerTypePicker({
   activeDraftId,
@@ -31,13 +32,17 @@ export function BeatCanvasComposerTypePicker({
   labels: CanvasLabels;
   onDraftTaskTypeChange: (
     draftId: string,
-    taskType: CanvasCardMediaType
+    taskType: CanvasGenerationMode
   ) => void;
   onOpenChange: (nextOpen: boolean) => void;
-  selectedType: CanvasCardMediaType;
+  selectedType: CanvasGenerationMode;
 }) {
   const selectedLabel =
-    selectedType === 'image' ? labels.imageModeLabel : labels.videoModeLabel;
+    selectedType === 'image'
+      ? labels.imageModeLabel
+      : selectedType === 'analysis'
+        ? labels.analysisModeLabel
+        : labels.videoModeLabel;
 
   return (
     <div ref={containerRef} className="relative shrink-0">
@@ -52,6 +57,8 @@ export function BeatCanvasComposerTypePicker({
       >
         {selectedType === 'image' ? (
           <ImageIcon className="size-3.5 shrink-0 text-white/70" />
+        ) : selectedType === 'analysis' ? (
+          <ScanSearch className="size-3.5 shrink-0 text-white/70" />
         ) : (
           <Video className="size-3.5 shrink-0 text-white/70" />
         )}
@@ -80,7 +87,9 @@ export function BeatCanvasComposerTypePicker({
               const label =
                 taskType === 'image'
                   ? labels.imageModeLabel
-                  : labels.videoModeLabel;
+                  : taskType === 'analysis'
+                    ? labels.analysisModeLabel
+                    : labels.videoModeLabel;
 
               return (
                 <button
@@ -99,6 +108,8 @@ export function BeatCanvasComposerTypePicker({
                 >
                   {taskType === 'image' ? (
                     <ImageIcon className="size-3.5 shrink-0 text-white/60" />
+                  ) : taskType === 'analysis' ? (
+                    <ScanSearch className="size-3.5 shrink-0 text-white/60" />
                   ) : (
                     <Video className="size-3.5 shrink-0 text-white/60" />
                   )}

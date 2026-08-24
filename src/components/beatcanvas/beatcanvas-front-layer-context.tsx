@@ -13,10 +13,12 @@ import type {
 } from '@/core/effects/workspace-models';
 import type {
   CanvasCard,
+  CanvasGenerationMode,
   CanvasCardMediaType,
   CanvasGenerationCard,
 } from '@/core/beatcanvas/canvas-types';
 import type { ReactNode } from 'react';
+import type { VideoAnalysisDepth } from '@/core/effects/video-analysis';
 import { createContext, useContext } from 'react';
 
 /**
@@ -29,6 +31,13 @@ type CanvasLabels = {
   videoTitle: string;
   imageModeLabel: string;
   videoModeLabel: string;
+  analysisModeLabel: string;
+  analysisModelLabel: string;
+  analysisStandardModelLabel: string;
+  analysisProModelLabel: string;
+  analysisPromptPlaceholder: string;
+  analyzeLabel: string;
+  analyzingLabel: string;
   createGenerationCardLabel: string;
   createImageGenerationCardLabel: string;
   createVideoGenerationCardLabel: string;
@@ -146,7 +155,11 @@ export type BeatCanvasFrontLayerValue = {
   onDraftPromptChange: (draftId: string, prompt: string) => void;
   onDraftTaskTypeChange: (
     draftId: string,
-    taskType: CanvasCardMediaType
+    taskType: CanvasGenerationMode
+  ) => void;
+  onDraftAnalysisDepthChange: (
+    draftId: string,
+    analysisDepth: VideoAnalysisDepth
   ) => void;
   onDraftModelChange: (
     draftId: string,

@@ -19,7 +19,7 @@ Studio, Canvas, and Assets are three views over the same project, generation, an
 
 ## Runtime flow
 
-The browser calls local `/api` routes. Server routes validate input and call the BeatAPI adapter. The adapter submits image/video tasks and checks `/v1/tasks/:id`. Generation state is stored locally, while provider result URLs are indexed as project assets.
+The browser calls local `/api` routes. Server routes validate input and call the BeatAPI adapter. The adapter submits image/video generation tasks or the stable `/v1/video-analysis/tasks` workflow, then checks `/v1/tasks/:id`. Generation state and analysis text are stored locally, while provider result URLs are indexed as project assets.
 
 Provider credentials are read from environment variables or the local `config` table. Browser components never receive the raw API key.
 

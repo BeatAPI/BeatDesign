@@ -152,14 +152,19 @@ export function AssetCardNode({
               }}
             />
             {mediaStatus === 'ready' ? (
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 grid place-items-center bg-black/10 opacity-80 transition-opacity group-hover:opacity-100"
+              <button
+                type="button"
+                aria-label={`${shapeCopy.viewResult}: ${
+                  title || shapeCopy.video
+                }`}
+                className="nodrag nopan nowheel absolute left-1/2 top-1/2 grid size-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/15 bg-black/65 text-lg text-white opacity-80 shadow-lg transition-[opacity,transform,background-color] hover:scale-105 hover:bg-black/80 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--beat-graph)] group-hover:opacity-100"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={handlePreviewMedia}
               >
-                <span className="grid size-10 place-items-center rounded-full bg-black/65 text-lg text-white shadow-lg">
+                <span aria-hidden="true" className="ml-0.5">
                   ▶
                 </span>
-              </div>
+              </button>
             ) : null}
           </>
         ) : thumbnailUrl ? (

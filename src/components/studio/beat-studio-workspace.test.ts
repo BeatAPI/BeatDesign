@@ -34,7 +34,8 @@ test('studio keeps the original wide composer and a project generation feed', ()
   assert.match(composerSource, /WorkspaceSelect/);
   assert.match(composerSource, /BeatCanvasComposerParameterPicker/);
   assert.match(composerSource, /truncatePromptToMaxChars/);
-  assert.match(composerSource, /labels\.regenerateLabel/);
+  assert.match(composerSource, /labels\.generateLabel/);
+  assert.doesNotMatch(composerSource, /RotateCw/);
   assert.match(feedSource, /max-w-\[1138px\]/);
   assert.match(feedSource, /formatStudioHistoryDateTime/);
   assert.match(feedSource, /h-\[240px\]/);
@@ -43,6 +44,16 @@ test('studio keeps the original wide composer and a project generation feed', ()
   assert.match(studioSource, /justify-end/);
   assert.match(startHereSource, /Create Here/);
   assert.match(studioSource, /fetchProjectGenerations/);
+  assert.match(studioSource, /VIDEO_ANALYSIS_EFFECT_ID/);
+  assert.match(composerSource, /value: 'analysis'/);
+  assert.match(composerSource, /accept="\.mp4,\.mov,video\/mp4,video\/quicktime"/);
+  assert.match(composerSource, /standardModel/);
+  assert.match(composerSource, /proModel/);
+  assert.doesNotMatch(composerSource, /workflowLabel/);
+  assert.doesNotMatch(composerSource, /tokenBudget/);
+  assert.doesNotMatch(composerSource, /fileRequired/);
+  assert.doesNotMatch(studioSource, /analysisOutputTokens/);
+  assert.match(feedSource, /selected\.resultText/);
 });
 
 test('studio model selector follows the selected model name width', () => {

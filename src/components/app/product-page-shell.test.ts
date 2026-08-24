@@ -19,7 +19,17 @@ const apiConfigSource = readFileSync(
 test('workspace header keeps mode switching, shared assets, and API configuration actions', () => {
   assert.match(shellSource, /WorkspaceApiConfigDialog/);
   assert.match(shellSource, /\/assets\//);
-  assert.match(shellSource, />Assets<\/span>/);
+  assert.match(shellSource, /header\.studio/);
+  assert.match(shellSource, /header\.canvas/);
+  assert.match(shellSource, /header\.assets/);
+  assert.match(shellSource, /href=\{`\/studio\/\$\{projectId\}`\}/);
+  assert.match(shellSource, /href=\{`\/canvas\/\$\{projectId\}`\}/);
+  assert.match(shellSource, /aria-current=\{workspaceMode === 'studio'/);
+  assert.match(shellSource, /aria-current=\{workspaceMode === 'canvas'/);
+  assert.match(shellSource, /aria-current=\{workspaceMode === 'assets'/);
+  assert.doesNotMatch(shellSource, /DropdownMenu/);
+  assert.doesNotMatch(shellSource, /ChevronDown/);
+  assert.doesNotMatch(shellSource, /header\.create/);
   assert.match(shellSource, /GitHubIcon/);
   assert.match(
     shellSource,
@@ -27,8 +37,6 @@ test('workspace header keeps mode switching, shared assets, and API configuratio
   );
   assert.match(shellSource, /target="_blank"/);
   assert.match(shellSource, /rel="noreferrer"/);
-  assert.match(shellSource, />Studio<\/span>/);
-  assert.match(shellSource, />Canvas<\/span>/);
   assert.match(shellSource, /\{ workspaceMode \}/);
   assert.doesNotMatch(shellSource, /usePricingModal/);
   assert.doesNotMatch(shellSource, /credits\.upgrade/);

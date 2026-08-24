@@ -27,3 +27,17 @@ test('asset cards render videos as draggable video surfaces', () => {
   assert.doesNotMatch(source, /className="nodrag nowheel"/);
   assert.match(source, /cursor-grab active:cursor-grabbing/);
 });
+
+test('asset video cards expose a clickable playback entry', () => {
+  const source = readFileSync(
+    new URL('./asset-card-node.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(
+    source,
+    /mediaStatus === 'ready'[\s\S]*?<button[\s\S]*?onClick=\{handlePreviewMedia\}/
+  );
+  assert.match(source, /className="nodrag nopan nowheel/);
+  assert.match(source, /aria-label=\{`\$\{shapeCopy\.viewResult\}/);
+});

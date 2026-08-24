@@ -75,7 +75,7 @@ export function BeatCanvasComposerVersionPicker({
                 <button
                   key={output.id}
                   type="button"
-                  disabled={isDraftBusy || !output.url}
+                  disabled={isDraftBusy || (!output.url && !output.resultText)}
                   onClick={() => {
                     onPinGenerationOutput(activeDraftId, output.id);
                     onOpenChange(false);
@@ -85,7 +85,7 @@ export function BeatCanvasComposerVersionPicker({
                     isActive
                       ? 'bg-white/[0.08]'
                       : 'hover:bg-white/[0.05]',
-                    !output.url && 'opacity-60'
+                    !output.url && !output.resultText && 'opacity-60'
                   )}
                 >
                   {output.url && output.type === 'image' ? (

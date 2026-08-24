@@ -325,6 +325,8 @@
         "missingVideoUrl": "缺少视频地址。",
         "readVideoDurationFailed": "无法读取视频时长。",
         "videoMetadataLoadFailed": "无法加载视频元数据。",
+        "analysisVideoRequired": "请添加且仅添加一个 MP4 或 MOV 视频进行分析。",
+        "analysisCompletedWithoutText": "分析已完成，但没有返回文本结果。",
         "addTextNoteSuccess": "文本备注已加入画布。"
       },
       "dock": {
@@ -435,6 +437,18 @@
         "freeGenerate": "自由生成",
         "uploadStart": "上传图片"
       },
+      "analysis": {
+        "modeLabel": "分析",
+        "modelLabel": "分析模型",
+        "standardModel": "视频分析 Standard",
+        "proModel": "视频分析 Pro",
+        "promptPlaceholder": "说明你想检查视频中的什么，可要求时间戳、动作、场景或问题定位……",
+        "uploadVideo": "添加 MP4 或 MOV 视频",
+        "removeVideo": "移除已选视频",
+        "analyze": "开始分析",
+        "analyzing": "分析中……",
+        "referenceUploadSoon": "该模式的参考素材上传暂未开放"
+      },
       "feed": {
         "history": "历史",
         "result": "生成结果",
@@ -450,6 +464,8 @@
         "params": "参数",
         "image": "图片",
         "video": "视频",
+        "analysis": "分析",
+        "analysisResult": "分析结果",
         "references": "参考图"
       },
       "textNote": {
@@ -545,6 +561,13 @@
       "projects": "项目",
       "projectsLabel": "打开项目列表",
       "githubRepository": "在 GitHub 打开 BeatDesign",
+      "workspaceView": "工作区视图",
+      "create": "创作",
+      "studio": "Studio",
+      "studioDescription": "专注生成与分析",
+      "canvas": "Canvas",
+      "canvasDescription": "可视化多步骤工作流",
+      "assets": "素材",
       "projectAssets": {
         "triggerLabel": "项目素材",
         "title": "项目素材",

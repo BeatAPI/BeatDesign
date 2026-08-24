@@ -2,7 +2,7 @@
 
 **Beat complexity. Design freely.**
 
-The open-source, local-first AI canvas for image and video creation. BeatDesign brings Projects, a guided Studio, a node-based Canvas, shared assets, generation history, configurable storage, and an official BeatAPI connection into one focused workspace.
+The open-source, local-first AI canvas for image and video creation and analysis. BeatDesign brings Projects, a guided Studio, a node-based Canvas, shared assets, generation history, configurable storage, and an official BeatAPI connection into one focused workspace.
 
 There is no login, account system, payment flow, subscription, local credit ledger, admin panel, or API-key issuing service in this repository.
 
@@ -10,7 +10,7 @@ There is no login, account system, payment flow, subscription, local credit ledg
 
 ## What is included
 
-- Studio for prompt-first image and video generation.
+- Studio for prompt-first image and video generation, plus Standard and Deep video analysis.
 - React Flow Canvas for connected, multi-step creative workflows.
 - A project-scoped Assets view shared by Studio and Canvas.
 - Local projects, snapshots, generation history, and asset indexing.
@@ -48,7 +48,7 @@ Studio / Canvas / Assets
   -> local generation history and asset index
 ```
 
-The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. In local SQLite mode, imported image and video files are copied immediately into the project-owned `data/project-assets/<project-id>/` directory and indexed in SQLite before a card is added to the Canvas. Generated files remain at the public URLs returned by the provider and are indexed locally instead of being copied again.
+The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. In local SQLite mode, imported image and video files are copied immediately into the project-owned `data/project-assets/<project-id>/` directory and indexed in SQLite before a card is added to the Canvas. Video analysis uploads MP4/MOV input through BeatAPI's file endpoint and stores the resulting text in the same project generation history. Generated files remain at the public URLs returned by the provider and are indexed locally instead of being copied again.
 
 Canvas state is saved as a complete project snapshot after changes, checked again every five seconds while dirty, and flushed when the page is hidden, refreshed, or closed. A populated snapshot cannot be replaced by an unconfirmed empty snapshot.
 

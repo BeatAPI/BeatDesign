@@ -33,6 +33,13 @@ const labels = {
   videoTitle: 'Video',
   imageModeLabel: 'Image',
   videoModeLabel: 'Video',
+  analysisModeLabel: 'Analyze',
+  analysisModelLabel: 'Analysis model',
+  analysisStandardModelLabel: 'Video Analysis Standard',
+  analysisProModelLabel: 'Video Analysis Pro',
+  analysisPromptPlaceholder: 'Ask what to inspect',
+  analyzeLabel: 'Analyze',
+  analyzingLabel: 'Analyzing',
   createGenerationCardLabel: 'Create generation card',
   createImageGenerationCardLabel: 'Image Generation Card',
   createVideoGenerationCardLabel: 'Video Generation Card',
@@ -202,7 +209,7 @@ test('default composer does not gate generate on local credits', () => {
   assert.match(html, /Generate/);
 });
 
-test('composer switches the primary CTA to regenerate after the first take exists', () => {
+test('composer keeps the generate arrow after the first take exists', () => {
   const html = renderToStaticMarkup(
     <BeatCanvasComposerShell
       activeDraftCard={draftCard}
@@ -226,8 +233,7 @@ test('composer switches the primary CTA to regenerate after the first take exist
     </BeatCanvasComposerShell>
   );
 
-  assert.match(html, /aria-label="Regenerate"/);
-  assert.match(html, /lucide-rotate-cw/);
-  assert.match(html, />2<\/span>/);
-  assert.doesNotMatch(html, /lucide-arrow-up/);
+  assert.match(html, /aria-label="Generate"/);
+  assert.match(html, /lucide-arrow-up/);
+  assert.doesNotMatch(html, /lucide-rotate-cw/);
 });
