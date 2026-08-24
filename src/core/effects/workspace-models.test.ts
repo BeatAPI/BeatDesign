@@ -103,3 +103,15 @@ test('Veo 3.1 exposes Lite, Fast, and Quality as composer modes', () => {
   assert.deepEqual(veo?.modeOptions, ['quality', 'fast', 'lite']);
   assert.deepEqual(veo?.supportedOutputQualities, ['720p', '1080p', '4k']);
 });
+
+test('Composer metadata matches BeatAPI H3 and Seedance 2.5 contracts', () => {
+  const videoModels = getWorkspaceModelsByType('ai-video');
+  const h3 = findWorkspaceModelOption(videoModels, 'minimax-h3');
+  const seedance25 = findWorkspaceModelOption(videoModels, 'seedance-2.5');
+
+  assert.equal(h3?.defaultAspectRatio, '16:9');
+  assert.equal(h3?.maxReferenceImages, 9);
+  assert.equal(seedance25?.maxReferenceImages, 30);
+  assert.equal(seedance25?.maxSourceVideos, 10);
+  assert.equal(seedance25?.maxReferenceAudios, 10);
+});

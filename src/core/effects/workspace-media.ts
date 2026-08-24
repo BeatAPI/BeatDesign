@@ -1,4 +1,8 @@
 import { getWorkspaceEffectRegistryEntry } from './effect-registry';
+import {
+  getBeatApiImageReferenceLimit,
+  getBeatApiVideoReferenceContract,
+} from './beatapi-model-contract';
 
 export type WorkspaceMediaCategory = 'image' | 'video' | 'audio';
 
@@ -30,9 +34,9 @@ export type WorkspaceMediaSchema = {
 
 export type WorkspaceMediaSlotUrls = Array<string | null>;
 
-const MAX_REFERENCE_IMAGE_SLOTS = 16;
-const MAX_REFERENCE_VIDEO_SLOTS = 3;
-const MAX_REFERENCE_AUDIO_SLOTS = 3;
+const MAX_REFERENCE_IMAGE_SLOTS = 30;
+const MAX_REFERENCE_VIDEO_SLOTS = 10;
+const MAX_REFERENCE_AUDIO_SLOTS = 10;
 
 const createSection = (
   max: number,
@@ -61,6 +65,23 @@ const createGenericSection = (
   return createSection(max, repeatSlots(kind, max));
 };
 
+const createVideoContractSection = (
+  modelId: string,
+  kind: 'reference-image' | 'reference-video' | 'reference-audio'
+) => {
+  const contract = getBeatApiVideoReferenceContract(modelId);
+  if (!contract) {
+    throw new Error(`Missing BeatAPI media contract for ${modelId}`);
+  }
+  const count =
+    kind === 'reference-image'
+      ? contract.maxReferenceImages
+      : kind === 'reference-video'
+        ? contract.maxReferenceVideos
+        : contract.maxReferenceAudios;
+  return createGenericSection(kind, count);
+};
+
 const emptySection = createSection(0, []);
 
 const firstLastFrameSection = createSection(2, [
@@ -70,52 +91,64 @@ const firstLastFrameSection = createSection(2, [
 
 export const WORKSPACE_MEDIA_SCHEMAS = {
   'nano-banana': {
-    image: emptySection,
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('nano-banana')
+    ),
     video: emptySection,
     audio: emptySection,
   },
   'nano-banana-pro': {
-    image: createGenericSection('reference-image', 8),
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('nano-banana-pro')
+    ),
     video: emptySection,
     audio: emptySection,
   },
   'gpt-image-2': {
-    image: createGenericSection('reference-image', 16),
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('gpt-image-2')
+    ),
     video: emptySection,
     audio: emptySection,
   },
   'seedream-5-pro': {
-    image: createGenericSection('reference-image', 10),
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('seedream-5-pro')
+    ),
     video: emptySection,
     audio: emptySection,
   },
   'seedance-2': {
-    image: createGenericSection('reference-image', 9),
-    video: createGenericSection('reference-video', 3),
-    audio: createGenericSection('reference-audio', 3),
+    image: createVideoContractSection('seedance-2', 'reference-image'),
+    video: createVideoContractSection('seedance-2', 'reference-video'),
+    audio: createVideoContractSection('seedance-2', 'reference-audio'),
   },
   'seedance-2-fast': {
-    image: createGenericSection('reference-image', 9),
-    video: createGenericSection('reference-video', 3),
-    audio: createGenericSection('reference-audio', 3),
+    image: createVideoContractSection('seedance-2-fast', 'reference-image'),
+    video: createVideoContractSection('seedance-2-fast', 'reference-video'),
+    audio: createVideoContractSection('seedance-2-fast', 'reference-audio'),
   },
   'seedance-2-mini': {
-    image: createGenericSection('reference-image', 9),
-    video: createGenericSection('reference-video', 3),
-    audio: createGenericSection('reference-audio', 3),
+    image: createVideoContractSection('seedance-2-mini', 'reference-image'),
+    video: createVideoContractSection('seedance-2-mini', 'reference-video'),
+    audio: createVideoContractSection('seedance-2-mini', 'reference-audio'),
   },
   'seedance-2.5': {
-    image: createGenericSection('reference-image', 12),
-    video: createGenericSection('reference-video', 3),
-    audio: createGenericSection('reference-audio', 3),
+    image: createVideoContractSection('seedance-2.5', 'reference-image'),
+    video: createVideoContractSection('seedance-2.5', 'reference-video'),
+    audio: createVideoContractSection('seedance-2.5', 'reference-audio'),
   },
   'minimax-h3': {
-    image: createGenericSection('reference-image', 9),
-    video: createGenericSection('reference-video', 3),
-    audio: createGenericSection('reference-audio', 3),
+    image: createVideoContractSection('minimax-h3', 'reference-image'),
+    video: createVideoContractSection('minimax-h3', 'reference-video'),
+    audio: createVideoContractSection('minimax-h3', 'reference-audio'),
   },
   'veo-3.1': {
-    image: createGenericSection('reference-image', 3),
+    image: createVideoContractSection('veo-3.1', 'reference-image'),
     video: emptySection,
     audio: emptySection,
   },

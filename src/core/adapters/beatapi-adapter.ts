@@ -1,11 +1,16 @@
 import { z } from 'zod';
 
 import { getBeatCanvasProviderServerConfig } from '@/core/beatcanvas/providers/provider-config';
+import {
+  getBeatApiImageReferenceLimit,
+  getBeatApiVideoReferenceContract,
+} from '@/core/effects/beatapi-model-contract';
 import { ensureMotionControlInputUrls } from '@/core/effects/beatapi-input-upload';
 import {
   isOfficialBeatApiMediaUrl,
   isPublicHttpMediaUrl,
 } from '@/core/effects/beatapi-media-url';
+import { VIDEO_ANALYSIS_DEFAULT_OUTPUT_TOKENS } from '@/core/effects/video-analysis';
 import { getConfig } from '@/modules/config/service';
 import { BaseAdapter, type GenerationResult } from './base-adapter';
 
@@ -32,7 +37,7 @@ const BEATAPI_REQUEST_TIMEOUT_MS = 30_000;
 const MAX_BEATAPI_RESPONSE_BYTES = 1_000_000;
 
 const inputSchema = z.object({
-  prompt: z.string().min(1, 'prompt is required'),
+  prompt: z.string(),
   aspect_ratio: z.string().optional(),
   wmDuration: z.string().optional(),
   wmOutputQuality: z.string().optional(),
@@ -41,7 +46,10 @@ const inputSchema = z.object({
   image_urls: z.array(z.string().url()).optional(),
   image_url: z.string().url().optional(),
   video_urls: z.array(z.string().url()).optional(),
+  video_url: z.string().url().optional(),
   audio_urls: z.array(z.string().url()).optional(),
+  analysis_depth: z.enum(['standard', 'deep']).optional(),
+  max_output_tokens: z.number().int().min(256).max(8192).optional(),
   sourceVideoDurationSeconds: z.number().positive().optional(),
   characterOrientation: z.enum(['image', 'video']).optional(),
   backgroundSource: z.enum(['input_image', 'input_video']).optional(),
@@ -63,6 +71,8 @@ type BeatApiTask = {
   output?: {
     media?: BeatApiMedia[];
     r2_url?: unknown;
+    text?: unknown;
+    usage?: unknown;
   } | null;
 };
 
@@ -121,6 +131,170 @@ const mapVeoResolution = (value: string | undefined) => {
   return '720p';
 };
 
+const assertAtMost = (label: string, count: number, max: number) => {
+  if (count > max) {
+    throw new Error(`${label} accepts at most ${max} references`);
+  }
+};
+
+const FRAME_ROLE_PATTERNS = {
+  first: '(?:首帧|起始帧|开始帧|first[\\s-]*frame|start(?:ing)?[\\s-]*frame)',
+  last: '(?:尾帧|末帧|结束帧|last[\\s-]*frame|end(?:ing)?[\\s-]*frame)',
+} as const;
+
+const resolveImageIndexForRole = ({
+  prompt,
+  role,
+  imageCount,
+}: {
+  prompt: string;
+  role: keyof typeof FRAME_ROLE_PATTERNS;
+  imageCount: number;
+}): number | null => {
+  const aliases = [...prompt.matchAll(/@Image(\d+)/giu)].flatMap((match) => {
+    const imageIndex = Number.parseInt(match[1] ?? '', 10) - 1;
+    return imageIndex >= 0 && imageIndex < imageCount && match.index !== undefined
+      ? [{ imageIndex, start: match.index, end: match.index + match[0].length }]
+      : [];
+  });
+  const rolePattern = new RegExp(FRAME_ROLE_PATTERNS[role], 'iu');
+  for (const [aliasIndex, alias] of aliases.entries()) {
+    const nextAliasStart = aliases[aliasIndex + 1]?.start ?? prompt.length;
+    const assignedText = prompt.slice(
+      alias.end,
+      Math.min(nextAliasStart, alias.end + 48)
+    );
+    if (rolePattern.test(assignedText)) return alias.imageIndex;
+  }
+  return null;
+};
+
+const resolveExplicitFrameImages = ({
+  prompt,
+  images,
+}: {
+  prompt: string;
+  images: string[];
+}): string[] | null => {
+  const firstIndex = resolveImageIndexForRole({
+    prompt,
+    role: 'first',
+    imageCount: images.length,
+  });
+  if (images.length === 1) {
+    return firstIndex === 0 ? images : null;
+  }
+  if (images.length !== 2) return null;
+
+  const lastIndex = resolveImageIndexForRole({
+    prompt,
+    role: 'last',
+    imageCount: images.length,
+  });
+  if (
+    firstIndex === null ||
+    lastIndex === null ||
+    firstIndex === lastIndex
+  ) {
+    return null;
+  }
+  return [images[firstIndex], images[lastIndex]];
+};
+
+const resolveVideoReferenceFields = ({
+  model,
+  prompt,
+  images,
+  videoUrls,
+  audioUrls,
+}: {
+  model: string;
+  prompt: string;
+  images: string[];
+  videoUrls: string[];
+  audioUrls: string[];
+}) => {
+  const frameImages = resolveExplicitFrameImages({ prompt, images });
+  if (frameImages && (videoUrls.length || audioUrls.length)) {
+    throw new Error('Frame input cannot be combined with reference video or audio');
+  }
+
+  if (model === 'kling-3') {
+    assertAtMost('Kling 3', images.length, 2);
+    if (videoUrls.length || audioUrls.length) {
+      throw new Error('Kling 3 does not support reference video or audio');
+    }
+    if (images.length > 0 && !frameImages) {
+      throw new Error(
+        'Kling 3 image input must explicitly assign @Image as the first frame or first and last frames'
+      );
+    }
+    return {
+      mode:
+        frameImages?.length === 2
+          ? 'frames'
+          : frameImages?.length === 1
+            ? 'image'
+            : 'text',
+      fields: frameImages ? { images: frameImages } : {},
+    } as const;
+  }
+
+  const contract = getBeatApiVideoReferenceContract(model);
+  if (!contract) {
+    if (images.length || videoUrls.length || audioUrls.length) {
+      throw new Error(`${model} does not support reference media`);
+    }
+    return { mode: 'text', fields: {} } as const;
+  }
+
+  if (frameImages) {
+    return {
+      mode: frameImages.length === 2 ? 'frames' : 'image',
+      fields: { images: frameImages },
+    } as const;
+  }
+
+  const usesReferenceMode =
+    images.length > 0 || videoUrls.length > 0 || audioUrls.length > 0;
+  if (!usesReferenceMode) return { mode: 'text', fields: {} } as const;
+
+  assertAtMost(
+    `${model} image reference mode`,
+    images.length,
+    contract.maxReferenceImages
+  );
+  assertAtMost(
+    `${model} video reference mode`,
+    videoUrls.length,
+    contract.maxReferenceVideos
+  );
+  assertAtMost(
+    `${model} audio reference mode`,
+    audioUrls.length,
+    contract.maxReferenceAudios
+  );
+  if (
+    audioUrls.length > 0 &&
+    images.length === 0 &&
+    videoUrls.length === 0 &&
+    !contract.allowsAudioOnly
+  ) {
+    throw new Error(
+      `${model} audio reference requires at least one image or video reference`
+    );
+  }
+
+  return {
+    mode: 'reference',
+    fields: {
+      ...(images.length ? { reference_images: images } : {}),
+      ...(videoUrls.length ? { reference_videos: videoUrls } : {}),
+      ...(audioUrls.length ? { reference_audios: audioUrls } : {}),
+    },
+  } as const;
+};
+
 export const buildBeatApiTaskRequest = ({
   effectType,
   model,
@@ -133,10 +307,30 @@ export const buildBeatApiTaskRequest = ({
   const images = imageUrlsFromInput(input);
   const prompt = input.prompt.trim();
 
+  if (effectType === 3) {
+    if (model !== 'video-analysis') {
+      throw new Error(`Unsupported BeatAPI analysis model: ${model}`);
+    }
+    if (!input.video_url) {
+      throw new Error('Video analysis requires one uploaded video');
+    }
+    return {
+      path: '/v1/video-analysis/tasks',
+      body: {
+        video_url: input.video_url,
+        prompt,
+        analysis_depth: input.analysis_depth ?? 'standard',
+        max_output_tokens:
+          input.max_output_tokens ?? VIDEO_ANALYSIS_DEFAULT_OUTPUT_TOKENS,
+      },
+    };
+  }
+
   if (effectType === 2) {
     if (!IMAGE_MODELS.has(model)) {
       throw new Error(`Unsupported BeatAPI image model: ${model}`);
     }
+    assertAtMost(model, images.length, getBeatApiImageReferenceLimit(model));
 
     return {
       path: '/v1/images/tasks',
@@ -210,11 +404,42 @@ export const buildBeatApiTaskRequest = ({
   }
 
   const duration = parseDuration(input.wmDuration);
+  const references = resolveVideoReferenceFields({
+    model,
+    prompt,
+    images,
+    videoUrls: input.video_urls ?? [],
+    audioUrls: input.audio_urls ?? [],
+  });
+  const aspectRatio =
+    model === 'minimax-h3' &&
+    references.mode === 'text' &&
+    input.aspect_ratio === 'adaptive'
+      ? '16:9'
+      : input.aspect_ratio;
+  if (
+    model === 'seedance-2' &&
+    references.mode === 'reference' &&
+    input.wmOutputQuality === '1080p'
+  ) {
+    throw new Error(
+      'Seedance 2 does not support 1080p in reference image mode'
+    );
+  }
+  if (
+    model === 'veo-3.1' &&
+    references.mode === 'reference' &&
+    aspectRatio === 'auto'
+  ) {
+    throw new Error(
+      'Veo 3.1 reference mode requires aspect_ratio 16:9 or 9:16'
+    );
+  }
   const body: Record<string, unknown> = {
     model,
     prompt,
-    ...(images.length > 0 ? { images } : {}),
-    ...(input.aspect_ratio ? { aspect_ratio: input.aspect_ratio } : {}),
+    ...references.fields,
+    ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
   };
 
   if (model !== 'veo-3.1') {
@@ -233,26 +458,14 @@ export const buildBeatApiTaskRequest = ({
     body.generate_audio = input.wmSound ?? true;
   } else if (model === 'veo-3.1') {
     body.resolution = mapVeoResolution(input.wmOutputQuality);
-    body.quality = mapVeoQuality(input.mode);
+    const requestedQuality = mapVeoQuality(input.mode);
+    body.quality =
+      references.mode === 'reference' && requestedQuality === 'Quality'
+        ? 'Fast'
+        : requestedQuality;
   } else if (model === 'kling-3') {
     body.resolution = mapKlingResolution(input.wmOutputQuality);
     body.sound = input.wmSound ?? true;
-  }
-
-  if (model === 'minimax-h3' || model.startsWith('seedance-')) {
-    const hasMultimodalRefs = Boolean(
-      input.video_urls?.length || input.audio_urls?.length
-    );
-    if (hasMultimodalRefs) {
-      delete body.images;
-      if (images.length) body.reference_images = images;
-      if (input.video_urls?.length) {
-        body.reference_videos = input.video_urls;
-      }
-      if (input.audio_urls?.length) {
-        body.reference_audios = input.audio_urls;
-      }
-    }
   }
 
   return { path: '/v1/videos/tasks', body };
@@ -288,6 +501,7 @@ export const normalizeBeatApiTaskResult = (task: BeatApiTask): GenerationResult 
     .map((item) => readString(item.url))
     .filter((item): item is string => Boolean(item));
   const resultUrl = r2Url ?? resultUrls[0] ?? null;
+  const analysisText = readString(task.output?.text);
   const output = {
     taskId,
     provider: 'beatapi',
@@ -297,6 +511,8 @@ export const normalizeBeatApiTaskResult = (task: BeatApiTask): GenerationResult 
     ...(resultUrls.length ? { resultUrls } : {}),
     ...(imageUrls.length ? { image_urls: imageUrls } : {}),
     ...(videoUrls.length ? { video_urls: videoUrls } : {}),
+    ...(analysisText ? { analysis_text: analysisText } : {}),
+    ...(task.output?.usage !== undefined ? { usage: task.output.usage } : {}),
   };
 
   if (status === 'succeeded') return { status: 'succeeded', output };

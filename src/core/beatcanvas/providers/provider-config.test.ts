@@ -15,7 +15,7 @@ test('BeatAPI is the default BeatCanvas generation provider', () => {
     id: 'beatapi',
     label: 'BeatAPI',
     isDefault: true,
-    supports: ['image', 'video'],
+    supports: ['image', 'video', 'analysis'],
   });
 });
 

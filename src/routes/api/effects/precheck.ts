@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { buildBeatApiTaskRequest } from '@/core/adapters/beatapi-adapter';
 import { getEffectById } from '@/core/effects/effects';
 import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
+import { isVideoAnalysisEffectId } from '@/core/effects/video-analysis';
 import {
   getGenerationConcurrencyErrorMessage,
   resolveGenerationConcurrencyGate,
@@ -9,7 +11,7 @@ import {
   countRunningGenerationsForProject,
   findActiveProject,
 } from '@/core/effects/record-generation';
-import { getGenerationPromptMaxChars, validateGenerationPrompt } from '@/core/effects/validation';
+import { getGenerationPromptConstraints, validateGenerationPrompt } from '@/core/effects/validation';
 import { getProject } from '@/core/projects/projects';
 import {
   expireGenerationUploadIntents,
@@ -53,7 +55,11 @@ async function POST({ request }: { request: Request }) {
   }
   const effectId = payload.effectId ?? Number.NaN;
   const effect = Number.isFinite(effectId) ? await getEffectById(effectId) : null;
-  if (!effect || !getWorkspaceEffectRegistryEntryByEffectId(effectId)) {
+  if (
+    !effect ||
+    (!getWorkspaceEffectRegistryEntryByEffectId(effectId) &&
+      !isVideoAnalysisEffectId(effectId))
+  ) {
     return Response.json({ error: 'Model not found' }, { status: 404 });
   }
   const projectId = payload.projectId?.trim();
@@ -86,9 +92,13 @@ async function POST({ request }: { request: Request }) {
   const input = payload.input && typeof payload.input === 'object'
     ? (payload.input as Record<string, unknown>)
     : {};
+  const promptConstraints = getGenerationPromptConstraints({
+    modelId: effect.model,
+    provider: effect.provider,
+  });
   const prompt = validateGenerationPrompt(
     typeof input.prompt === 'string' ? input.prompt : '',
-    { required: true, maxChars: getGenerationPromptMaxChars({ modelId: effect.model, provider: effect.provider }) }
+    promptConstraints
   );
   if (!prompt.ok) {
     return Response.json({ error: prompt.code === 'PROMPT_TOO_LONG'
@@ -110,6 +120,28 @@ async function POST({ request }: { request: Request }) {
       { error: 'Invalid generation upload count.' },
       { status: 400 }
     );
+  }
+  if (expectedUploadCount === 0 && effect.provider === 'beatapi') {
+    try {
+      buildBeatApiTaskRequest({
+        effectType: effect.type,
+        model: effect.model,
+        input: {
+          ...input,
+          prompt: prompt.trimmedPrompt,
+        } as Parameters<typeof buildBeatApiTaskRequest>[0]['input'],
+      });
+    } catch (error) {
+      return Response.json(
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : 'Invalid BeatAPI model parameters.',
+        },
+        { status: 400 }
+      );
+    }
   }
   await expireGenerationUploadIntents();
   try {

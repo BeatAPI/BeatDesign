@@ -5,10 +5,14 @@ import {
   REFERENCE_VIDEO_MAX_FILE_SIZE,
 } from '@/core/workspace-lib/constants';
 
-export const MAX_GENERATION_PROMPT_CHARS = 2000;
-export const GPT_IMAGE_2_GENERATION_PROMPT_CHARS = 6000;
-const GPT_IMAGE_2_MODEL_ID = 'gpt-image-2';
-const GPT_IMAGE_2_PROVIDERS = new Set(['beatapi']);
+export const MAX_GENERATION_PROMPT_CHARS = 5000;
+export const MOTION_CONTROL_GENERATION_PROMPT_CHARS = 2500;
+export const VIDEO_ANALYSIS_GENERATION_PROMPT_CHARS = 12000;
+const VIDEO_ANALYSIS_MODEL_ID = 'video-analysis';
+const MOTION_CONTROL_MODEL_IDS = new Set([
+  'kling-2.6-motion-control',
+  'kling-3-motion-control',
+]);
 
 export type GenerationValidationCode =
   | 'PROMPT_REQUIRED'
@@ -182,17 +186,33 @@ export const truncatePromptToMaxChars = (
   maxChars = MAX_GENERATION_PROMPT_CHARS
 ) => Array.from(prompt).slice(0, maxChars).join('');
 
-export const getGenerationPromptMaxChars = ({
+export const getGenerationPromptConstraints = ({
   modelId,
-  provider,
 }: {
   modelId?: string | null;
   provider?: string | null;
-} = {}) =>
-  modelId === GPT_IMAGE_2_MODEL_ID ||
-  (provider ? GPT_IMAGE_2_PROVIDERS.has(provider) : false)
-    ? GPT_IMAGE_2_GENERATION_PROMPT_CHARS
-    : MAX_GENERATION_PROMPT_CHARS;
+} = {}) => {
+  if (modelId === VIDEO_ANALYSIS_MODEL_ID) {
+    return {
+      required: true,
+      maxChars: VIDEO_ANALYSIS_GENERATION_PROMPT_CHARS,
+    } as const;
+  }
+  if (modelId && MOTION_CONTROL_MODEL_IDS.has(modelId)) {
+    return {
+      required: false,
+      maxChars: MOTION_CONTROL_GENERATION_PROMPT_CHARS,
+    } as const;
+  }
+  return {
+    required: true,
+    maxChars: MAX_GENERATION_PROMPT_CHARS,
+  } as const;
+};
+
+export const getGenerationPromptMaxChars = (
+  options: Parameters<typeof getGenerationPromptConstraints>[0] = {}
+) => getGenerationPromptConstraints(options).maxChars;
 
 export const validateGenerationPrompt = (
   prompt: string,

@@ -5,6 +5,7 @@ import {
   toChronologicalProjectGenerationItems,
   toProjectGenerationItem,
 } from './project-generations';
+import { VIDEO_ANALYSIS_EFFECT_ID } from './video-analysis';
 
 test('maps a stored generation onto the studio feed card', () => {
   const item = toProjectGenerationItem({
@@ -33,6 +34,31 @@ test('maps a stored generation onto the studio feed card', () => {
   assert.equal(item.aspectRatio, '9:16');
   assert.deepEqual(item.referenceImages, [
     'https://media.beatapi.io/inputs/ref.png',
+  ]);
+});
+
+test('maps video analysis text, depth, and source video onto the studio feed', () => {
+  const item = toProjectGenerationItem({
+    id: 'analysis-1',
+    status: 'succeeded',
+    submittedPrompt: 'Find continuity issues',
+    effectId: VIDEO_ANALYSIS_EFFECT_ID,
+    input: {
+      video_url: 'https://media.beatapi.io/inputs/review.mp4',
+      analysis_depth: 'deep',
+      max_output_tokens: 4096,
+    },
+    output: { analysis_text: 'One continuity issue at 00:12.' },
+    error: null,
+    createdAt: new Date('2026-08-23T00:00:00.000Z'),
+  });
+
+  assert.equal(item.mediaType, 'analysis');
+  assert.equal(item.modelName, 'Video Analysis Pro');
+  assert.equal(item.resultText, 'One continuity issue at 00:12.');
+  assert.equal(item.paramsLabel, null);
+  assert.deepEqual(item.referenceVideos, [
+    'https://media.beatapi.io/inputs/review.mp4',
   ]);
 });
 

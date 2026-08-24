@@ -12,11 +12,13 @@ import type {
 } from '@/core/effects/workspace-models';
 import type {
   CanvasCard,
+  CanvasGenerationMode,
   CanvasCardMediaType,
   CanvasCardStatus,
   CanvasDraftCard,
   CanvasGenerationCard,
 } from './canvas-types';
+import { isCanvasAnalysisCard } from './canvas-types';
 
 type DraftModelSettings = Pick<
   CanvasGenerationCard,
@@ -55,10 +57,110 @@ const INTERACTIVE_SHORTCUT_TAGS = new Set([
   'TEXTAREA',
 ]);
 
-const STRICT_REFERENCE_LIMIT_MODEL_IDS = new Set([
-  'kling-2.6-motion-control',
-  'kling-3-motion-control',
-]);
+const NUMERIC_WORKSPACE_ASPECT_RATIOS = [
+  '21:9',
+  '16:9',
+  '3:2',
+  '4:3',
+  '5:4',
+  '1:1',
+  '4:5',
+  '3:4',
+  '2:3',
+  '9:16',
+  '1:2',
+  '9:21',
+  '1:3',
+  '2:1',
+  '3:1',
+] as const satisfies readonly WorkspaceAspectRatio[];
+
+const toNumericAspectRatio = (value: WorkspaceAspectRatio) => {
+  const match = /^(\d+):(\d+)$/.exec(value);
+  if (match) {
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    return width > 0 && height > 0 ? width / height : null;
+  }
+
+  if (value === 'landscape') return 16 / 9;
+  if (value === 'portrait') return 9 / 16;
+  return null;
+};
+
+export const resolveWorkspaceAspectRatioFromDimensions = ({
+  width,
+  height,
+  fallback,
+}: {
+  width: number;
+  height: number;
+  fallback: WorkspaceAspectRatio;
+}): WorkspaceAspectRatio => {
+  if (
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return fallback;
+  }
+
+  const targetRatio = width / height;
+  return NUMERIC_WORKSPACE_ASPECT_RATIOS.reduce((closest, candidate) => {
+    const closestRatio = toNumericAspectRatio(closest) ?? targetRatio;
+    const candidateRatio = toNumericAspectRatio(candidate) ?? targetRatio;
+    const closestDistance = Math.abs(Math.log(targetRatio / closestRatio));
+    const candidateDistance = Math.abs(Math.log(targetRatio / candidateRatio));
+    return candidateDistance < closestDistance ? candidate : closest;
+  });
+};
+
+export const resolveReferenceDrivenDraftAspectRatio = ({
+  draftCard,
+  cards,
+  model,
+  getReferenceDimensions,
+}: {
+  draftCard: CanvasGenerationCard;
+  cards: Record<string, CanvasCard | undefined>;
+  model: WorkspaceModelOption | null;
+  getReferenceDimensions?: (
+    card: CanvasCard
+  ) => { width: number; height: number } | null;
+}): WorkspaceAspectRatio => {
+  if (
+    !model?.characterOrientationOptions?.length ||
+    model.supportedAspectRatios?.length
+  ) {
+    return draftCard.aspectRatio;
+  }
+
+  const fallback = model.defaultAspectRatio ?? '16:9';
+  const referenceType =
+    draftCard.characterOrientation ??
+    model.defaultCharacterOrientation ??
+    'video';
+  const referenceCard = draftCard.referenceCardIds
+    .map((cardId) => cards[cardId])
+    .find((card): card is CanvasCard => card?.type === referenceType);
+
+  if (!referenceCard) {
+    return fallback;
+  }
+
+  const dimensions = getReferenceDimensions?.(referenceCard);
+  if (dimensions) {
+    return resolveWorkspaceAspectRatioFromDimensions({
+      ...dimensions,
+      fallback,
+    });
+  }
+
+  return toNumericAspectRatio(referenceCard.aspectRatio)
+    ? referenceCard.aspectRatio
+    : fallback;
+};
 
 const resolveSupportedValue = <T extends string>({
   current,
@@ -140,15 +242,19 @@ export const getDraftReferencePickerOptions = ({
   cards: Record<string, CanvasCard | undefined>;
   model: WorkspaceModelOption | null;
 }): DraftReferencePickerOption[] => {
+  const referenceCounts = getReferenceCounts({ draftCard, cards });
+  if (isCanvasAnalysisCard(draftCard)) {
+    const videoRemaining = Math.max(1 - referenceCounts.video, 0);
+    return videoRemaining > 0
+      ? [{ intent: 'video', remaining: videoRemaining }]
+      : [];
+  }
+
   if (!model) {
     return [];
   }
 
-  const referenceCounts = getReferenceCounts({ draftCard, cards });
-  const strictReferenceLimits = STRICT_REFERENCE_LIMIT_MODEL_IDS.has(model.id);
-  const imageLimit = strictReferenceLimits
-    ? Math.max(model.maxReferenceImages ?? 0, 0)
-    : Number.POSITIVE_INFINITY;
+  const imageLimit = Math.max(model.maxReferenceImages ?? 0, 0);
   const imageRemaining = Math.max(imageLimit - referenceCounts.image, 0);
   const videoLimit = Math.max(model.maxSourceVideos ?? 0, 0);
   const videoRemaining = Math.max(videoLimit - referenceCounts.video, 0);
@@ -157,7 +263,7 @@ export const getDraftReferencePickerOptions = ({
   if (imageRemaining > 0) {
     options.push({
       intent: 'image',
-      remaining: Number.isFinite(imageRemaining) ? imageRemaining : null,
+      remaining: imageRemaining,
     });
   }
 
@@ -175,11 +281,17 @@ export const canUseCanvasCardAsGenerationReference = ({
   sourceCard,
   targetType,
   targetModel,
+  targetGenerationMode,
 }: {
   sourceCard: CanvasCard;
   targetType: CanvasCardMediaType;
   targetModel: WorkspaceModelOption | null;
+  targetGenerationMode?: CanvasGenerationMode;
 }) => {
+  if (targetGenerationMode === 'analysis') {
+    return sourceCard.type === 'video';
+  }
+
   if (sourceCard.type === 'image') {
     return true;
   }
@@ -198,27 +310,31 @@ export const listCompatibleCanvasReferenceCards = ({
 }) => {
   const attachedIds = new Set(draftCard.referenceCardIds);
   const referenceCounts = getReferenceCounts({ draftCard, cards });
-  const strictReferenceLimits = Boolean(
-    model && STRICT_REFERENCE_LIMIT_MODEL_IDS.has(model.id)
+  const isAnalysis = isCanvasAnalysisCard(draftCard);
+  const imageRemaining = Math.max(
+    (model?.maxReferenceImages ?? 0) - referenceCounts.image,
+    0
   );
-  const imageRemaining = strictReferenceLimits
-    ? Math.max(
-        (model?.maxReferenceImages ?? 0) - referenceCounts.image,
-        0
-      )
-    : Number.POSITIVE_INFINITY;
   const videoRemaining = Math.max(
     (model?.maxSourceVideos ?? 0) - referenceCounts.video,
     0
   );
 
   return Object.values(cards).filter((card): card is CanvasCard => {
-    if (!card || card.id === draftCard.id || card.kind === 'output') {
+    if (!card || card.id === draftCard.id) {
+      return false;
+    }
+
+    if (card.kind === 'output' && !isAnalysis) {
       return false;
     }
 
     if (!card.url || attachedIds.has(card.id)) {
       return false;
+    }
+
+    if (isAnalysis) {
+      return card.type === 'video' && referenceCounts.video < 1;
     }
 
     if (
@@ -239,6 +355,7 @@ export const listCompatibleCanvasReferenceCards = ({
       sourceCard: card,
       targetType: draftCard.type,
       targetModel: model,
+      targetGenerationMode: draftCard.generationMode,
     });
   });
 };

@@ -8,6 +8,8 @@ import {
   getDraftReferencePickerOptions,
   listCompatibleCanvasReferenceCards,
   removeReferenceCardId,
+  resolveReferenceDrivenDraftAspectRatio,
+  resolveWorkspaceAspectRatioFromDimensions,
   shouldIgnoreCanvasModifierShortcut,
 } from './composer';
 import { resolveReferencePayload } from './canvas-workflows';
@@ -60,14 +62,19 @@ const makeDraft = (): CanvasGenerationCard => ({
   kind: 'generation',
 });
 
-test('keeps image references available before model-specific limits are configured', () => {
+test('Composer stops offering @Image references at the model limit', () => {
+  const first = makeCard({ id: 'image-1' });
+  const last = makeCard({ id: 'image-2' });
   assert.deepEqual(
     getDraftReferencePickerOptions({
-      draftCard: makeDraft(),
-      cards: {},
-      model: makeModel(),
+      draftCard: {
+        ...makeDraft(),
+        referenceCardIds: [first.id, last.id],
+      },
+      cards: { [first.id]: first, [last.id]: last },
+      model: makeModel({ maxReferenceImages: 2 }),
     }),
-    [{ intent: 'image', remaining: null }]
+    []
   );
 });
 
@@ -98,6 +105,191 @@ test('Motion Control stops offering references after one image and one video', (
       }),
     }),
     []
+  );
+});
+
+test('video analysis accepts exactly one video reference and no images', () => {
+  const video = makeCard({
+    id: 'video-1',
+    type: 'video',
+    url: 'https://example.com/source.mp4',
+  });
+  const image = makeCard({ id: 'image-1', type: 'image' });
+  const draft = {
+    ...makeDraft(),
+    type: 'video' as const,
+    generationMode: 'analysis' as const,
+    modelId: 'video-analysis',
+  };
+
+  assert.deepEqual(
+    getDraftReferencePickerOptions({
+      draftCard: draft,
+      cards: { [video.id]: video, [image.id]: image },
+      model: null,
+    }),
+    [{ intent: 'video', remaining: 1 }]
+  );
+  assert.deepEqual(
+    listCompatibleCanvasReferenceCards({
+      draftCard: draft,
+      cards: { [video.id]: video, [image.id]: image },
+      model: null,
+    }).map((card) => card.id),
+    [video.id]
+  );
+  assert.deepEqual(
+    getDraftReferencePickerOptions({
+      draftCard: { ...draft, referenceCardIds: [video.id] },
+      cards: { [video.id]: video },
+      model: null,
+    }),
+    []
+  );
+});
+
+test('video analysis can select a generated output as @Video', () => {
+  const output = makeCard({
+    id: 'output-video',
+    kind: 'output',
+    type: 'video',
+    url: 'https://media.beatapi.io/outputs/generated.mp4',
+    sourceConfigCardId: 'generator',
+    generationRunId: 'run-1',
+    generationSnapshot: {
+      type: 'video',
+      generationMode: 'video',
+      prompt: 'Generate',
+      referenceCardIds: [],
+      workflowTemplateId: null,
+      modelId: 'seedance-2',
+      aspectRatio: '16:9',
+      outputQuality: '720p',
+      duration: '5s',
+      mode: 'quality',
+      variant: 'standard',
+      quality: 'standard',
+      capturedAt: '2026-08-24T00:00:00.000Z',
+    },
+  });
+  const draft = {
+    ...makeDraft(),
+    type: 'video' as const,
+    generationMode: 'analysis' as const,
+    modelId: 'video-analysis',
+  };
+
+  assert.deepEqual(
+    listCompatibleCanvasReferenceCards({
+      draftCard: draft,
+      cards: { [output.id]: output },
+      model: null,
+    }).map((card) => card.id),
+    [output.id]
+  );
+});
+
+test('maps real media dimensions to the nearest supported canvas ratio', () => {
+  assert.equal(
+    resolveWorkspaceAspectRatioFromDimensions({
+      width: 1080,
+      height: 1920,
+      fallback: '16:9',
+    }),
+    '9:16'
+  );
+  assert.equal(
+    resolveWorkspaceAspectRatioFromDimensions({
+      width: 1080,
+      height: 1440,
+      fallback: '16:9',
+    }),
+    '3:4'
+  );
+  assert.equal(
+    resolveWorkspaceAspectRatioFromDimensions({
+      width: 0,
+      height: 0,
+      fallback: '16:9',
+    }),
+    '16:9'
+  );
+});
+
+test('Motion Control follows the selected reference ratio and falls back to 16:9', () => {
+  const model = makeModel({
+    id: 'kling-3-motion-control',
+    characterOrientationOptions: ['image', 'video'],
+    defaultCharacterOrientation: 'video',
+  });
+  const image = makeCard({
+    id: 'image-1',
+    type: 'image',
+    aspectRatio: '3:4',
+  });
+  const video = makeCard({
+    id: 'video-1',
+    type: 'video',
+    aspectRatio: '16:9',
+  });
+  const draft = {
+    ...makeDraft(),
+    modelId: model.id,
+    type: 'video' as const,
+    aspectRatio: '16:9' as const,
+    referenceCardIds: [image.id, video.id],
+    characterOrientation: 'video' as const,
+  };
+  const cards = { [image.id]: image, [video.id]: video };
+
+  assert.equal(
+    resolveReferenceDrivenDraftAspectRatio({
+      draftCard: draft,
+      cards,
+      model,
+      getReferenceDimensions: (card) =>
+        card.id === video.id ? { width: 203, height: 360 } : null,
+    }),
+    '9:16'
+  );
+  assert.equal(
+    resolveReferenceDrivenDraftAspectRatio({
+      draftCard: { ...draft, characterOrientation: 'image' },
+      cards,
+      model,
+    }),
+    '3:4'
+  );
+  assert.equal(
+    resolveReferenceDrivenDraftAspectRatio({
+      draftCard: { ...draft, referenceCardIds: [] },
+      cards,
+      model,
+    }),
+    '16:9'
+  );
+});
+
+test('models with an explicit ratio selector keep the user selection', () => {
+  const model = makeModel({
+    supportedAspectRatios: ['16:9', '9:16', '1:1'],
+    characterOrientationOptions: ['image', 'video'],
+  });
+  const image = makeCard({ aspectRatio: '9:16' });
+  const draft = {
+    ...makeDraft(),
+    aspectRatio: '1:1' as const,
+    referenceCardIds: [image.id],
+    characterOrientation: 'image' as const,
+  };
+
+  assert.equal(
+    resolveReferenceDrivenDraftAspectRatio({
+      draftCard: draft,
+      cards: { [image.id]: image },
+      model,
+    }),
+    '1:1'
   );
 });
 
@@ -161,7 +353,7 @@ test('lists unused canvas cards that can be attached as references', () => {
         [available.id]: available,
         [noUrl.id]: noUrl,
       },
-      model: makeModel(),
+      model: makeModel({ maxReferenceImages: 2 }),
     }).map((card) => card.id),
     [available.id]
   );

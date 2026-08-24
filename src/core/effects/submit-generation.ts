@@ -1,6 +1,7 @@
 import { createAdapter } from '@/core/adapters/adapter-factory';
 import { getEffectById } from '@/core/effects/effects';
 import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
+import { isVideoAnalysisEffectId } from '@/core/effects/video-analysis';
 import {
   getGenerationConcurrencyErrorMessage,
   resolveGenerationConcurrencyGate,
@@ -19,7 +20,7 @@ import {
 import { startBackendPollingForGeneration } from '@/core/effects/server-poller';
 import { withGenerationSubmissionLock } from '@/core/effects/generation-submission-lock';
 import {
-  getGenerationPromptMaxChars,
+  getGenerationPromptConstraints,
   validateGenerationPrompt,
 } from '@/core/effects/validation';
 import { getProject } from '@/core/projects/projects';
@@ -133,11 +134,15 @@ export async function submitEffectGeneration({
     return { status: 400, body: { error: 'effectId is required' } };
   }
   const effect = await getEffectById(effectId);
-  if (!effect || !getWorkspaceEffectRegistryEntryByEffectId(effectId)) {
+  if (
+    !effect ||
+    (!getWorkspaceEffectRegistryEntryByEffectId(effectId) &&
+      !isVideoAnalysisEffectId(effectId))
+  ) {
     return { status: 404, body: { error: 'Model not found' } };
   }
-  if (effect.type !== 1 && effect.type !== 2) {
-    return { status: 400, body: { error: 'Only image and video models are supported.' } };
+  if (effect.type !== 1 && effect.type !== 2 && effect.type !== 3) {
+    return { status: 400, body: { error: 'Unsupported task type.' } };
   }
 
   const normalizedProjectId = projectId?.trim() || null;
@@ -150,15 +155,13 @@ export async function submitEffectGeneration({
 
   const rawInput = asObject(input);
   const { callBackUrl: _callback, callbackUrl: _callbackLower, ...safeInput } = rawInput;
+  const promptConstraints = getGenerationPromptConstraints({
+    modelId: effect.model,
+    provider: effect.provider,
+  });
   const prompt = validateGenerationPrompt(
     typeof safeInput.prompt === 'string' ? safeInput.prompt : '',
-    {
-      required: true,
-      maxChars: getGenerationPromptMaxChars({
-        modelId: effect.model,
-        provider: effect.provider,
-      }),
-    }
+    promptConstraints
   );
   if (!prompt.ok) {
     return {

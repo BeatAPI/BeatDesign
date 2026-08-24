@@ -307,7 +307,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       routeOrder: 30,
       defaultDuration: '5s',
       supportedDurations: durationRange(4, 15),
-      defaultAspectRatio: 'adaptive',
+      defaultAspectRatio: '16:9',
       supportedAspectRatios: [...SEEDANCE_ASPECT_RATIOS],
       defaultOutputQuality: '768p',
       supportedOutputQualities: ['768p', '2k'],

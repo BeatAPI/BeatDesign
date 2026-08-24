@@ -3,6 +3,10 @@ import { desc, eq } from 'drizzle-orm';
 import { generationHistory } from '@/config/db/schema';
 import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
 import { resolveOutputMedia } from '@/core/effects/output-media';
+import {
+  isVideoAnalysisEffectId,
+  resolveVideoAnalysisText,
+} from '@/core/effects/video-analysis';
 import { getDb } from '@/core/workspace-lib/db-adapter';
 
 import type { GenerationStatus } from './record-generation';
@@ -13,8 +17,9 @@ export type ProjectGenerationItem = {
   prompt: string | null;
   modelId: string | null;
   modelName: string | null;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'analysis';
   resultUrl: string | null;
+  resultText: string | null;
   paramsLabel: string | null;
   aspectRatio: string | null;
   outputQuality: string | null;
@@ -63,7 +68,12 @@ const formatParamsLabel = (input: Record<string, unknown> | null) => {
   const duration = readString(input.wmDuration);
   const aspectRatio = readString(input.aspect_ratio);
   const quality = readString(input.wmOutputQuality)?.toUpperCase() ?? null;
-  const parts = [mode, duration, aspectRatio, quality].filter(
+  const parts = [
+    mode,
+    duration,
+    aspectRatio,
+    quality,
+  ].filter(
     (value): value is string => Boolean(value)
   );
   return parts.length > 0 ? parts.join(' · ') : null;
@@ -84,8 +94,13 @@ export const toProjectGenerationItem = (
   row: ProjectGenerationRow
 ): ProjectGenerationItem => {
   const entry = getWorkspaceEffectRegistryEntryByEffectId(row.effectId);
+  const isAnalysis = isVideoAnalysisEffectId(row.effectId);
   const input = asRecord(row.input);
   const media = resolveOutputMedia(row.output);
+  const analysisModelName =
+    input?.analysis_depth === 'deep'
+      ? 'Video Analysis Pro'
+      : 'Video Analysis Standard';
   const createdAt =
     row.createdAt instanceof Date
       ? row.createdAt.toISOString()
@@ -95,10 +110,16 @@ export const toProjectGenerationItem = (
     id: row.id,
     status: row.status as GenerationStatus,
     prompt: row.submittedPrompt,
-    modelId: readString(input?.model) ?? entry?.id ?? null,
-    modelName: entry?.name ?? null,
-    mediaType: entry?.workspaceType === 'ai-image' ? 'image' : 'video',
+    modelId:
+      readString(input?.model) ?? entry?.id ?? (isAnalysis ? 'video-analysis' : null),
+    modelName: entry?.name ?? (isAnalysis ? analysisModelName : null),
+    mediaType: isAnalysis
+      ? 'analysis'
+      : entry?.workspaceType === 'ai-image'
+        ? 'image'
+        : 'video',
     resultUrl: media.resultUrl,
+    resultText: resolveVideoAnalysisText(row.output),
     paramsLabel: formatParamsLabel(input),
     aspectRatio: readString(input?.aspect_ratio),
     outputQuality: readString(input?.wmOutputQuality),

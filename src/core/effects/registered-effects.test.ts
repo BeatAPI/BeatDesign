@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { getEffectById, getEffectsByIds } from './effects';
 import { getRegisteredEffectById } from './registered-effects';
+import { VIDEO_ANALYSIS_EFFECT_ID } from './video-analysis';
 
 test('official BeatAPI models resolve from the code registry', async () => {
   const nanoBananaPro = await getEffectById(6);
@@ -15,6 +16,20 @@ test('official BeatAPI models resolve from the code registry', async () => {
   assert.equal(seedance?.model, 'seedance-2');
   assert.equal(seedance?.type, 1);
   assert.equal(missing, null);
+});
+
+test('video analysis is a separate registered workflow with two depths', () => {
+  const analysis = getRegisteredEffectById(VIDEO_ANALYSIS_EFFECT_ID);
+  const schema = analysis?.inputSchema as Record<string, unknown>;
+
+  assert.equal(analysis?.model, 'video-analysis');
+  assert.equal(analysis?.type, 3);
+  assert.equal(analysis?.api, 'https://api.beatapi.io/v1/video-analysis/tasks');
+  assert.deepEqual(
+    (schema.analysis_depth as { values?: string[] }).values,
+    ['standard', 'deep']
+  );
+  assert.ok(schema.video_url);
 });
 
 test('registry effects include the input fields the canvas already sends', () => {

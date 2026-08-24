@@ -18,6 +18,7 @@ import {
 } from '@/lib/request-body-limit';
 import { readResponseJsonWithLimit } from '@/lib/response-body-limit';
 import { isPublicHttpMediaUrl } from '@/core/effects/beatapi-media-url';
+import { isVideoAnalysisEffectId } from '@/core/effects/video-analysis';
 
 const MAX_DEFAULT_FILE_BYTES = 50 * 1024 * 1024;
 const MAX_MOTION_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -269,9 +270,25 @@ async function POST({ request }: { request: Request }) {
     const intentModel = intentEffectId
       ? getWorkspaceEffectRegistryEntryByEffectId(intentEffectId)?.id
       : null;
+    const isVideoAnalysis = Boolean(
+      intentEffectId && isVideoAnalysisEffectId(intentEffectId)
+    );
     const isMotionControl = Boolean(
       intentModel && MOTION_CONTROL_MODELS.has(intentModel)
     );
+    if (
+      isVideoAnalysis &&
+      !(
+        file.type === 'video/mp4' ||
+        file.type === 'video/quicktime' ||
+        /\.(mp4|mov)$/i.test(file.name)
+      )
+    ) {
+      return Response.json(
+        { error: 'Video analysis supports MP4 and MOV files only' },
+        { status: 415 }
+      );
+    }
     if (
       isMotionControl &&
       !isVideo &&
@@ -306,7 +323,7 @@ async function POST({ request }: { request: Request }) {
     } | null = null;
     try {
       result =
-        isMotionControl
+        isMotionControl || isVideoAnalysis
           ? canUseBeatApi
             ? await uploadToBeatApi(file)
             : null
