@@ -55,6 +55,66 @@ export const normalizeExpectedUploadCount = (value: unknown) => {
   return count >= 0 && count <= MAX_GENERATION_UPLOADS ? count : null;
 };
 
+export type GenerationUploadIntentAdmissionState =
+  | { status: 'missing' | 'invalid' | 'used' }
+  | { status: 'expired'; refreshableWithoutUploads: boolean }
+  | { status: 'incomplete' | 'ready'; expectedUploadCount: number };
+
+export async function getGenerationUploadIntentAdmissionState({
+  intentId,
+  projectId,
+  effectId,
+  now = new Date(),
+  dbClient,
+}: {
+  intentId: string;
+  projectId: string;
+  effectId: number;
+  now?: Date;
+  dbClient?: DbClient;
+}): Promise<GenerationUploadIntentAdmissionState> {
+  const db = await resolveDb(dbClient);
+  const rows = await db
+    .select()
+    .from(generationUploadIntent)
+    .where(eq(generationUploadIntent.id, intentId))
+    .limit(1);
+  const intent = rows[0];
+
+  if (!intent) return { status: 'missing' };
+  if (intent.projectId !== projectId || intent.effectId !== effectId) {
+    return { status: 'invalid' };
+  }
+  if (intent.status === 'submitting' || intent.status === 'consumed') {
+    return { status: 'used' };
+  }
+  if (intent.status !== 'pending') {
+    return { status: 'invalid' };
+  }
+  if (intent.expiresAt <= now) {
+    return {
+      status: 'expired',
+      refreshableWithoutUploads:
+        intent.expectedUploadCount === 0 &&
+        intent.reservedUploadCount === 0 &&
+        intent.completedUploadCount === 0,
+    };
+  }
+  if (
+    intent.reservedUploadCount !== intent.expectedUploadCount ||
+    intent.completedUploadCount !== intent.expectedUploadCount
+  ) {
+    return {
+      status: 'incomplete',
+      expectedUploadCount: intent.expectedUploadCount,
+    };
+  }
+  return {
+    status: 'ready',
+    expectedUploadCount: intent.expectedUploadCount,
+  };
+}
+
 export async function issueGenerationUploadIntent({
   projectId,
   effectId,
