@@ -44,6 +44,7 @@ import {
   ASSET_CARD_NODE_TYPE,
   GENERATION_CARD_NODE_TYPE,
   type BeatCanvasEditor,
+  type GenerationCardNodeProps,
 } from './react-flow/beatcanvas-react-flow-types';
 import type { StudioTranslateFn } from './beatcanvas-types';
 
@@ -68,6 +69,7 @@ const CARD_SOURCE_META_KEY = 'visugenCardSource';
 const CARD_WORKFLOW_TEMPLATE_META_KEY = 'visugenWorkflowTemplateId';
 const CARD_RESULT_SIZE = 360;
 const VIDEO_FRAME_HEIGHT = 236;
+const ANALYSIS_REPORT_FRAME_SIZE = { w: 480, h: 340 } as const;
 
 const makeId = () => Math.random().toString(36).slice(2, 10);
 
@@ -195,21 +197,56 @@ export const buildGenerationCardPresentation = ({
         Boolean(output.url || output.resultText)
     );
   const isAnalysis = card.generationMode === 'analysis';
+  const analysisReportCount = isAnalysis
+    ? orderedOutputs.filter(
+        (output) => output.status === 'succeeded' && Boolean(output.resultText)
+      ).length
+    : 0;
 
   return {
     status: latestOutput?.status ?? card.status,
     isAnalysis,
-    latestOutputUrl:
-      pinnedOutput?.url ?? latestSucceededOutput?.url ?? card.url ?? null,
+    latestOutputUrl: isAnalysis
+      ? null
+      : pinnedOutput?.url ?? latestSucceededOutput?.url ?? card.url ?? null,
     latestOutputText:
-      pinnedOutput?.resultText ??
-      latestSucceededOutput?.resultText ??
-      card.resultText ??
-      null,
+      isAnalysis
+        ? null
+        : pinnedOutput?.resultText ??
+          latestSucceededOutput?.resultText ??
+          card.resultText ??
+          null,
+    analysisReportCount,
     takes: buildGenerationTakes({
       outputs: orderedOutputs,
       pinnedOutputId: card.pinnedOutputId,
     }),
+  };
+};
+
+export const buildAnalysisReportNodeProps = (
+  outputCard: CanvasOutputCard,
+  label: string
+): GenerationCardNodeProps | null => {
+  if (
+    outputCard.generationSnapshot.generationMode !== 'analysis' ||
+    outputCard.status !== 'succeeded' ||
+    !outputCard.resultText
+  ) {
+    return null;
+  }
+
+  return {
+    w: ANALYSIS_REPORT_FRAME_SIZE.w,
+    h: ANALYSIS_REPORT_FRAME_SIZE.h,
+    cardMediaType: 'video',
+    label,
+    status: 'succeeded',
+    isAnalysis: true,
+    latestOutputUrl: null,
+    latestOutputText: outputCard.resultText,
+    analysisReportCount: 0,
+    takes: [],
   };
 };
 
@@ -962,13 +999,81 @@ export function useBeatCanvasReactFlowAdapter({
     ]
   );
 
+  const materializeAnalysisReport = useCallback(
+    ({
+      outputCard,
+      draftCard,
+      frame,
+      connectSource = true,
+    }: {
+      outputCard: CanvasOutputCard;
+      draftCard: CanvasDraftCard;
+      frame?: ProjectSnapshotShapeFrame;
+      connectSource?: boolean;
+    }) => {
+      const editor = editorRef.current;
+      const reportProps = buildAnalysisReportNodeProps(
+        outputCard,
+        studioT('canvas.shapes.analysisReport')
+      );
+      if (!editor || !reportProps) return false;
+
+      const reportIndex = Object.values(canvasCardsRef.current).filter(
+        (candidate) =>
+          isCanvasOutputCard(candidate) &&
+          candidate.id !== outputCard.id &&
+          candidate.sourceConfigCardId === draftCard.id &&
+          candidate.generationSnapshot.generationMode === 'analysis' &&
+          candidate.status === 'succeeded' &&
+          Boolean(candidate.resultText)
+      ).length;
+      const reportSize = frame
+        ? { w: frame.w, h: frame.h }
+        : ANALYSIS_REPORT_FRAME_SIZE;
+      const placement =
+        frame ??
+        getCanvasPlacement(
+          [draftCard.id],
+          reportIndex,
+          reportSize,
+          'right'
+        );
+
+      editor.createShape({
+        id: outputCard.id,
+        type: GENERATION_CARD_NODE_TYPE,
+        x: placement.x,
+        y: placement.y,
+        meta: {
+          [CARD_KIND_META_KEY]: 'output',
+          [CARD_TYPE_META_KEY]: 'video',
+          ...(outputCard.sourceGenerationId
+            ? { [CARD_SOURCE_META_KEY]: outputCard.sourceGenerationId }
+            : {}),
+        },
+        props: {
+          ...reportProps,
+          w: reportSize.w,
+          h: reportSize.h,
+        },
+      });
+      if (connectSource) {
+        createConnectorBetweenCards(draftCard.id, outputCard.id);
+      }
+      return true;
+    },
+    [canvasCardsRef, createConnectorBetweenCards, getCanvasPlacement, studioT]
+  );
+
   const createGenerationOutput = useCallback(
     ({
       draftCard,
       name,
       suppressFocus = false,
       shapeId,
+      frame,
       existingCard,
+      connectSource = true,
     }: {
       draftCard: CanvasDraftCard;
       name: string;
@@ -1028,7 +1133,16 @@ export function useBeatCanvasReactFlowAdapter({
       };
       setCanvasCard(nextCard);
 
-      if (!suppressFocus) {
+      const createdReportShape = materializeAnalysisReport({
+        outputCard: nextCard,
+        draftCard,
+        frame,
+        connectSource,
+      });
+
+      if (!suppressFocus && createdReportShape) {
+        focusShape(nextCard.id);
+      } else if (!suppressFocus) {
         focusShape(draftCard.id);
       }
       return outputCardId;
@@ -1037,6 +1151,7 @@ export function useBeatCanvasReactFlowAdapter({
       canvasCardsRef,
       focusShape,
       imageModels,
+      materializeAnalysisReport,
       setCanvasCard,
       videoModels,
     ]
@@ -1075,7 +1190,7 @@ export function useBeatCanvasReactFlowAdapter({
       const current = canvasCardsRef.current[outputCardId];
       if (!editorRef.current || !isCanvasOutputCard(current)) return null;
 
-      setCanvasCard({
+      const completedOutputCard: CanvasOutputCard = {
         ...current,
         name,
         url: url ?? null,
@@ -1083,18 +1198,34 @@ export function useBeatCanvasReactFlowAdapter({
         status: 'succeeded',
         error: null,
         sourceGenerationId,
-      });
+      };
+      const isAnalysisOutput =
+        completedOutputCard.generationSnapshot.generationMode === 'analysis';
+      setCanvasCard(completedOutputCard);
       setCanvasCard({
         ...draftCard,
-        url: url ?? null,
-        resultText,
+        url: isAnalysisOutput ? null : (url ?? null),
+        resultText: isAnalysisOutput ? null : resultText,
       });
-      if (!suppressFocus) {
+
+      const createdReportShape = materializeAnalysisReport({
+        outputCard: completedOutputCard,
+        draftCard,
+      });
+
+      if (!suppressFocus && createdReportShape) {
+        focusShape(completedOutputCard.id);
+      } else if (!suppressFocus) {
         focusShape(draftCard.id);
       }
       return outputCardId;
     },
-    [canvasCardsRef, focusShape, setCanvasCard]
+    [
+      canvasCardsRef,
+      focusShape,
+      materializeAnalysisReport,
+      setCanvasCard,
+    ]
   );
 
   const createDraftCard = useCallback(
@@ -1326,7 +1457,7 @@ export function useBeatCanvasReactFlowAdapter({
           shapeId: item.card.id,
           frame: item.frame,
           existingCard: item.card,
-          connectSource: false,
+          connectSource: true,
         });
         if (insertedOutputCardId) {
           restoredCardIds.push(insertedOutputCardId);
@@ -1479,6 +1610,35 @@ export function useBeatCanvasReactFlowAdapter({
 
     syncedAssetShapeSignaturesRef.current = nextSignatures;
   }, [canvasCards, syncAssetShape]);
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const visibleReportIds = new Set(
+      Object.values(canvasCards)
+        .filter(
+          (card): card is CanvasOutputCard =>
+            isCanvasOutputCard(card) &&
+            card.generationSnapshot.generationMode === 'analysis' &&
+            card.status === 'succeeded' &&
+            Boolean(card.resultText)
+        )
+        .map((card) => card.id)
+    );
+    const orphanedReportShapeIds = editor
+      .getCurrentPageShapes()
+      .filter(
+        (shape) =>
+          shape.meta[CARD_KIND_META_KEY] === 'output' &&
+          !visibleReportIds.has(shape.id)
+      )
+      .map((shape) => shape.id);
+
+    if (orphanedReportShapeIds.length > 0) {
+      editor.deleteShapes(orphanedReportShapeIds);
+    }
+  }, [canvasCards]);
 
   const deleteCanvasCard = useCallback(
     (cardId: string) => {

@@ -8,7 +8,9 @@ import {
   claimGenerationUploadSlot,
   completeGenerationUploadSlot,
   consumeGenerationUploadIntent,
+  failGenerationUploadIntent,
   GenerationIntentQuotaError,
+  getGenerationUploadIntentAdmissionState,
   issueGenerationUploadIntent,
 } from './generation-upload-intent';
 
@@ -222,6 +224,86 @@ test('zero-upload intents remain valid once and expired intents are rejected', a
         dbClient: db,
       }),
       null
+    );
+  } finally {
+    client.close();
+  }
+});
+
+test('classifies intent failures so only safe zero-upload expiry can auto-refresh', async () => {
+  const { client, db } = await createTestDb();
+  try {
+    const zeroUploadId = await issueGenerationUploadIntent({
+      projectId: 'project-1',
+      effectId: 401,
+      expectedUploadCount: 0,
+      now: new Date(1_000),
+      dbClient: db,
+    });
+    assert.deepEqual(
+      await getGenerationUploadIntentAdmissionState({
+        intentId: zeroUploadId,
+        projectId: 'project-1',
+        effectId: 401,
+        now: new Date(601_000),
+        dbClient: db,
+      }),
+      { status: 'expired', refreshableWithoutUploads: true }
+    );
+
+    const uploadIntentId = await issueGenerationUploadIntent({
+      projectId: 'project-1',
+      effectId: 402,
+      expectedUploadCount: 1,
+      now: new Date(1_000),
+      dbClient: db,
+    });
+    assert.deepEqual(
+      await getGenerationUploadIntentAdmissionState({
+        intentId: uploadIntentId,
+        projectId: 'project-1',
+        effectId: 402,
+        now: new Date(2_000),
+        dbClient: db,
+      }),
+      { status: 'incomplete', expectedUploadCount: 1 }
+    );
+
+    assert.ok(
+      await consumeGenerationUploadIntent({
+        intentId: zeroUploadId,
+        projectId: 'project-1',
+        effectId: 401,
+        referencedUrls: [],
+        now: new Date(2_000),
+        dbClient: db,
+      })
+    );
+    assert.deepEqual(
+      await getGenerationUploadIntentAdmissionState({
+        intentId: zeroUploadId,
+        projectId: 'project-1',
+        effectId: 401,
+        now: new Date(3_000),
+        dbClient: db,
+      }),
+      { status: 'used' }
+    );
+
+    await failGenerationUploadIntent({
+      intentId: uploadIntentId,
+      now: new Date(3_000),
+      dbClient: db,
+    });
+    assert.deepEqual(
+      await getGenerationUploadIntentAdmissionState({
+        intentId: uploadIntentId,
+        projectId: 'project-1',
+        effectId: 402,
+        now: new Date(4_000),
+        dbClient: db,
+      }),
+      { status: 'invalid' }
     );
   } finally {
     client.close();

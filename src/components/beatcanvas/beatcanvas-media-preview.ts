@@ -1,14 +1,24 @@
 import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
 
-export const isPreviewableCanvasCard = (
+export const isDownloadableCanvasCard = (
   card: CanvasCard | null | undefined
 ) =>
   Boolean(
     card?.url &&
-      card.kind === 'asset' &&
+      card.generationMode !== 'analysis' &&
+      !(
+        card.type === 'image' && card.url.startsWith('data:image/svg+xml')
+      )
+  );
+
+export const isPreviewableCanvasCard = (
+  card: CanvasCard | null | undefined
+) =>
+  Boolean(
+    isDownloadableCanvasCard(card) &&
+      card &&
       (card.type === 'video' ||
-        (card.type === 'image' &&
-          !card.url.startsWith('data:image/svg+xml')))
+        card.type === 'image')
   );
 
 export const getPreviewableCanvasCardFromSelection = ({

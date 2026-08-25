@@ -19,16 +19,22 @@ import {
 } from '@/core/effects/record-generation';
 import { startBackendPollingForGeneration } from '@/core/effects/server-poller';
 import { withGenerationSubmissionLock } from '@/core/effects/generation-submission-lock';
+import { resolveAuthorizedProjectReferenceUrls } from '@/core/effects/project-reference-authorization';
 import {
   getGenerationPromptConstraints,
   validateGenerationPrompt,
 } from '@/core/effects/validation';
-import { getProject } from '@/core/projects/projects';
+import {
+  getProject,
+  loadProjectWithLatestSnapshot,
+} from '@/core/projects/projects';
 import {
   completeGenerationUploadIntent,
   consumeGenerationUploadIntent,
   failGenerationUploadIntent,
   getCompletedIntentUploads,
+  getGenerationUploadIntentAdmissionState,
+  issueGenerationUploadIntent,
 } from '@/core/effects/generation-upload-intent';
 import {
   linkGenerationAsset,
@@ -188,7 +194,7 @@ export async function submitEffectGeneration({
     : adapterInput;
   const admission = await withGenerationSubmissionLock<
     | { result: SubmitEffectGenerationResult }
-    | { generationId: string }
+    | { generationId: string; intentId: string }
   >(async () => {
     const [activeProjectId, runningCount] = await Promise.all([
       findActiveProject(),
@@ -235,25 +241,94 @@ export async function submitEffectGeneration({
         } satisfies SubmitEffectGenerationResult,
       };
     }
-    const authorizedProjectUrls = await getProjectAssetUrls({
-      projectId: normalizedProjectId,
-      urls: referencedUrls,
+    const [projectAssetUrls, projectState] = await Promise.all([
+      getProjectAssetUrls({
+        projectId: normalizedProjectId,
+        urls: referencedUrls,
+      }),
+      loadProjectWithLatestSnapshot({ projectId: normalizedProjectId }),
+    ]);
+    const authorizedProjectUrls = resolveAuthorizedProjectReferenceUrls({
+      referencedUrls,
+      projectAssetUrls,
+      snapshot: projectState?.snapshot,
     });
-    const intent = await consumeGenerationUploadIntent({
-      intentId: normalizedIntentId,
+    let admittedIntentId = normalizedIntentId;
+    let intent = await consumeGenerationUploadIntent({
+      intentId: admittedIntentId,
       projectId: normalizedProjectId,
       effectId,
       referencedUrls,
       authorizedProjectUrls,
     });
+    let intentState = intent
+      ? null
+      : await getGenerationUploadIntentAdmissionState({
+          intentId: admittedIntentId,
+          projectId: normalizedProjectId,
+          effectId,
+        });
+    if (
+      !intent &&
+      intentState?.status === 'expired' &&
+      intentState.refreshableWithoutUploads
+    ) {
+      await failGenerationUploadIntent({ intentId: admittedIntentId });
+      admittedIntentId = await issueGenerationUploadIntent({
+        projectId: normalizedProjectId,
+        effectId,
+        expectedUploadCount: 0,
+      });
+      intent = await consumeGenerationUploadIntent({
+        intentId: admittedIntentId,
+        projectId: normalizedProjectId,
+        effectId,
+        referencedUrls,
+        authorizedProjectUrls,
+      });
+      intentState = intent
+        ? null
+        : await getGenerationUploadIntentAdmissionState({
+            intentId: admittedIntentId,
+            projectId: normalizedProjectId,
+            effectId,
+          });
+    }
     if (!intent) {
+      // Only retire an otherwise valid pending intent that failed reference
+      // authorization. A submitting intent may belong to an in-flight paid
+      // request, while an incomplete one may still have uploads finishing.
+      if (intentState?.status === 'ready') {
+        await failGenerationUploadIntent({ intentId: admittedIntentId });
+      }
+      const failure =
+        intentState?.status === 'used'
+          ? {
+              code: 'GENERATION_ALREADY_SUBMITTED',
+              error:
+                'This generation was already submitted. Check History before trying again.',
+            }
+          : intentState?.status === 'incomplete'
+            ? {
+                code: 'GENERATION_REFERENCES_PREPARING',
+                error:
+                  'A reference file is still being prepared. Wait a moment and try Generate again.',
+              }
+            : intentState?.status === 'ready'
+              ? {
+                  code: 'GENERATION_REFERENCE_NOT_AUTHORIZED',
+                  error:
+                    'A reference is no longer available in this canvas. Re-add it and try Generate again.',
+                }
+              : {
+                  code: 'GENERATION_REQUEST_CHANGED',
+                  error:
+                    'The generation request changed before submission. Try Generate again.',
+                };
       return {
         result: {
           status: 409,
-          body: {
-            error:
-              'Generation intent is invalid, expired, incomplete, or already used.',
-          },
+          body: failure,
         } satisfies SubmitEffectGenerationResult,
       };
     }
@@ -265,7 +340,7 @@ export async function submitEffectGeneration({
       input: recordedInput,
     });
     if (!generationId) {
-      await failGenerationUploadIntent({ intentId: normalizedIntentId });
+      await failGenerationUploadIntent({ intentId: admittedIntentId });
       return {
         result: {
           status: 500,
@@ -273,10 +348,10 @@ export async function submitEffectGeneration({
         } satisfies SubmitEffectGenerationResult,
       };
     }
-    return { generationId };
+    return { generationId, intentId: admittedIntentId };
   });
   if ('result' in admission) return admission.result;
-  const { generationId } = admission;
+  const { generationId, intentId } = admission;
 
   try {
     await linkInputAssets(generationId, adapterInput);
@@ -299,10 +374,10 @@ export async function submitEffectGeneration({
           })
         : transition.output;
     if (result.status === 'failed') {
-      await failGenerationUploadIntent({ intentId: normalizedIntentId });
+      await failGenerationUploadIntent({ intentId });
     } else {
       await finalizeIntentUploads({
-        intentId: normalizedIntentId,
+        intentId,
         generationId,
       });
     }
@@ -327,7 +402,7 @@ export async function submitEffectGeneration({
     };
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : 'Generation failed';
-    await failGenerationUploadIntent({ intentId: normalizedIntentId });
+    await failGenerationUploadIntent({ intentId });
     await updateGenerationById({ id: generationId, status: 'failed', error: message });
     return { status: 500, body: { error: message } };
   }

@@ -15,7 +15,7 @@ test('generation media remains a full-card drag surface', () => {
   );
   assert.match(
     source,
-    /<img[\s\S]*?draggable=\{false\}\s+className="nowheel"/
+    /<img[\s\S]*?draggable=\{false\}[\s\S]*?className="nowheel"/
   );
 });
 
@@ -29,6 +29,21 @@ test('generation node leaves prompt and parameters to the attached Composer', ()
   assert.match(source, /Take \$\{take\.takeNumber\}/);
 });
 
+test('analysis reports expose selectable read-only text without dragging the node', () => {
+  assert.match(
+    source,
+    /<textarea[\s\S]*?readOnly[\s\S]*?value=\{latestOutputText\}/
+  );
+  assert.match(
+    source,
+    /className="nodrag nopan nowheel[^"]*cursor-text[^"]*selection:bg-/
+  );
+  assert.match(
+    source,
+    /onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}/
+  );
+});
+
 test('generated videos expose a direct playback entry', () => {
   assert.match(source, /const handlePreviewLatestOutput/);
   assert.match(
@@ -39,4 +54,13 @@ test('generated videos expose a direct playback entry', () => {
     source,
     /<video[\s\S]*?onDoubleClick=\{[\s\S]*?handlePreviewLatestOutput/
   );
+});
+
+test('generated images open the same unified media preview on double click', () => {
+  assert.match(
+    source,
+    /<img[\s\S]*?onDoubleClick=\{[\s\S]*?handlePreviewLatestOutput/
+  );
+  assert.match(source, /type: cardMediaType/);
+  assert.match(source, /cursor: 'zoom-in'/);
 });

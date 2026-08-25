@@ -61,6 +61,7 @@ import { registerCardConnectorCallback } from './beatcanvas-card-connector-bridg
 import type { BeatCanvasPreviewMedia } from './beatcanvas-media-preview-overlay';
 import {
   getPreviewableCanvasCardFromSelection,
+  isDownloadableCanvasCard,
   resolveBatchCanvasCardSelection,
 } from './beatcanvas-media-preview';
 import BeatCanvasSidebar from './beatcanvas-sidebar';
@@ -856,22 +857,12 @@ export function BeatCanvasShell({
     [canvasCards, selectedCanvasCardIds, selectedGroupCards]
   );
 
-  const isDownloadableCanvasCard = useCallback(
-    (card: CanvasCard | null | undefined) => {
-      if (!card?.url || card.kind !== 'asset') {
-        return false;
-      }
-
-      return !card.url.startsWith('data:image/svg+xml');
-    },
-    []
-  );
   const downloadableGroupCards = useMemo(
     () =>
       effectiveSelectedGroupCards.filter((card: CanvasCard) =>
         isDownloadableCanvasCard(card)
       ),
-    [effectiveSelectedGroupCards, isDownloadableCanvasCard]
+    [effectiveSelectedGroupCards]
   );
   const isSingleDownloadable = isDownloadableCanvasCard(selectedSingleCard);
   const previewableSelectedCard = useMemo(

@@ -415,6 +415,10 @@
         "shapes": {
           "imageGeneration": "Image generation",
           "videoGeneration": "Video generation",
+          "videoAnalysis": "Video analysis",
+          "analysisReport": "Analysis report",
+          "analysisComplete": "Analysis complete",
+          "analysisReportReady": "Report added after this node",
           "image": "Image",
           "video": "Video",
           "previewLoading": "Loading preview...",
