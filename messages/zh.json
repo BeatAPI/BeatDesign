@@ -416,6 +416,10 @@
         "shapes": {
           "imageGeneration": "图片生成",
           "videoGeneration": "视频生成",
+          "videoAnalysis": "视频分析",
+          "analysisReport": "分析报告",
+          "analysisComplete": "分析完成",
+          "analysisReportReady": "报告已生成在此节点后方",
           "image": "图片",
           "video": "视频",
           "previewLoading": "正在加载预览...",

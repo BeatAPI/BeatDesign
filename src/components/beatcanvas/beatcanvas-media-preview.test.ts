@@ -5,6 +5,7 @@ import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
 
 import {
   getPreviewableCanvasCardFromSelection,
+  isDownloadableCanvasCard,
   isPreviewableCanvasCard,
   resolveBatchCanvasCardSelection,
 } from './beatcanvas-media-preview';
@@ -31,8 +32,9 @@ const makeCard = (overrides: Partial<CanvasCard>): CanvasCard => ({
   ...overrides,
 });
 
-test('recognizes real image and video asset cards as previewable', () => {
+test('recognizes real asset and generated media cards as previewable and downloadable', () => {
   assert.equal(isPreviewableCanvasCard(makeCard({})), true);
+  assert.equal(isDownloadableCanvasCard(makeCard({})), true);
   assert.equal(
     isPreviewableCanvasCard(
       makeCard({ url: 'data:image/svg+xml;charset=utf-8,%3Csvg%3E' })
@@ -42,6 +44,22 @@ test('recognizes real image and video asset cards as previewable', () => {
   assert.equal(isPreviewableCanvasCard(makeCard({ type: 'video' })), true);
   assert.equal(
     isPreviewableCanvasCard(makeCard({ kind: 'generation' })),
+    true
+  );
+  assert.equal(
+    isDownloadableCanvasCard(makeCard({ kind: 'generation' })),
+    true
+  );
+  assert.equal(
+    isPreviewableCanvasCard(
+      makeCard({ kind: 'output', type: 'video' })
+    ),
+    true
+  );
+  assert.equal(
+    isPreviewableCanvasCard(
+      makeCard({ kind: 'generation', generationMode: 'analysis' })
+    ),
     false
   );
 });

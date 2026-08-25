@@ -36,6 +36,7 @@ export type GenerationCardNodeProps = {
   isAnalysis?: boolean;
   latestOutputUrl?: string | null;
   latestOutputText?: string | null;
+  analysisReportCount?: number;
   takes?: GenerationTake[];
 };
 

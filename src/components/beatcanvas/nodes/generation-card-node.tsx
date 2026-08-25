@@ -40,11 +40,16 @@ export function GenerationCardNode({
     isAnalysis = false,
     latestOutputUrl = null,
     latestOutputText = null,
+    analysisReportCount = 0,
     takes = [],
   } = props;
   const isBusy = status === 'pending' || status === 'processing';
   const isFailed = status === 'failed';
-  const hasResult = Boolean(latestOutputUrl || latestOutputText);
+  const hasResult = Boolean(
+    latestOutputUrl ||
+      latestOutputText ||
+      (isAnalysis && analysisReportCount > 0)
+  );
   const isEmptySlot = !hasResult && !isFailed;
   const emptySlotAccent =
     cardMediaType === 'video' ? 'var(--beat-graph)' : 'var(--beat-accent)';
@@ -60,9 +65,11 @@ export function GenerationCardNode({
   const isInsideGroup = Boolean(internalNode?.parentId);
   const displayLabel =
     label ||
-    (cardMediaType === 'image'
-      ? shapeCopy.imageGeneration
-      : shapeCopy.videoGeneration);
+    (isAnalysis
+      ? shapeCopy.videoAnalysis
+      : cardMediaType === 'image'
+        ? shapeCopy.imageGeneration
+        : shapeCopy.videoGeneration);
   const isCompactActionNode = w <= 128 && h <= 128;
   const visibleTakes = takes.slice(-MAX_VISIBLE_TAKES);
   const showTakeStrip =
@@ -91,7 +98,7 @@ export function GenerationCardNode({
   const handlePreviewLatestOutput = () => {
     if (
       !latestOutputUrl ||
-      cardMediaType !== 'video' ||
+      isAnalysis ||
       typeof window === 'undefined'
     ) {
       return;
@@ -99,7 +106,7 @@ export function GenerationCardNode({
     window.dispatchEvent(
       new CustomEvent('beatcanvas:preview-media', {
         detail: {
-          type: 'video',
+          type: cardMediaType,
           url: latestOutputUrl,
           title: displayLabel,
         },
@@ -247,14 +254,34 @@ export function GenerationCardNode({
             ) : null}
             {hasResult ? (
               isAnalysis && latestOutputText ? (
-                <div className="nowheel h-full overflow-y-auto p-4 text-left text-[12px] leading-5 text-[var(--beat-text-2)]">
-                  <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--beat-graph)]">
+                <div className="nodrag nopan nowheel flex h-full cursor-default flex-col p-4 text-left">
+                  <div className="mb-2 flex shrink-0 items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--beat-graph)]">
                     <ScanSearch className="size-3.5" />
                     {displayLabel}
                   </div>
-                  <p className="whitespace-pre-wrap break-words">
-                    {latestOutputText}
-                  </p>
+                  <textarea
+                    aria-label={displayLabel}
+                    readOnly
+                    spellCheck={false}
+                    value={latestOutputText}
+                    className="nodrag nopan nowheel min-h-0 flex-1 cursor-text resize-none overflow-y-auto border-0 bg-transparent p-0 text-[12px] leading-5 text-[var(--beat-text-2)] outline-none selection:bg-[rgba(127,176,242,0.28)] selection:text-[var(--beat-text-1)] focus-visible:ring-0"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onDoubleClick={(event) => event.stopPropagation()}
+                  />
+                </div>
+              ) : isAnalysis && analysisReportCount > 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+                  <div className="grid size-12 place-items-center rounded-2xl border border-[rgba(127,176,242,0.28)] bg-[var(--beat-graph-soft)] text-[var(--beat-graph)] shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+                    <ScanSearch className="size-6" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-[var(--beat-text-1)]">
+                      {shapeCopy.analysisComplete}
+                    </div>
+                    <div className="mt-1 text-[11px] leading-4 text-[var(--beat-text-3)]">
+                      {shapeCopy.analysisReportReady}
+                    </div>
+                  </div>
                 </div>
               ) : cardMediaType === 'video' ? (
                 <video
@@ -282,12 +309,18 @@ export function GenerationCardNode({
                   src={latestOutputUrl ?? undefined}
                   alt={displayLabel}
                   draggable={false}
+                  onDoubleClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handlePreviewLatestOutput();
+                  }}
                   className="nowheel"
                   style={{
                     display: 'block',
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
+                    cursor: 'zoom-in',
                   }}
                 />
               )
@@ -303,30 +336,38 @@ export function GenerationCardNode({
                   gap: 12,
                 }}
               >
-                <svg
-                  width="86"
-                  height="64"
-                  viewBox="0 0 104 76"
-                  fill="none"
-                  aria-hidden="true"
-                  style={{
-                    display: 'block',
-                    maxWidth: isInsideGroup ? '26%' : '24%',
-                    height: 'auto',
-                    color: isFailed
-                      ? 'rgba(255,107,115,0.22)'
-                      : isEmptySlot
-                        ? emptySlotAccent
-                        : PLACEHOLDER_COLOR,
-                    opacity: isEmptySlot ? 0.42 : isInsideGroup ? 0.72 : 1,
-                  }}
-                >
-                  <circle cx="72.5" cy="17.5" r="8.5" fill="currentColor" />
-                  <path
-                    d="M8.55 64.5C5.95 64.5 4.34 61.71 5.64 59.47L39.26 10.48C40.54 8.28 43.72 8.28 45 10.48L67.12 48.44L75.04 35.66C76.37 33.52 79.52 33.58 80.77 35.77L99.3 59.61C100.55 61.86 98.93 64.5 96.37 64.5H8.55Z"
-                    fill="currentColor"
+                {isAnalysis ? (
+                  <ScanSearch
+                    aria-hidden="true"
+                    className="size-12 text-[var(--beat-graph)] opacity-40"
+                    strokeWidth={1.35}
                   />
-                </svg>
+                ) : (
+                  <svg
+                    width="86"
+                    height="64"
+                    viewBox="0 0 104 76"
+                    fill="none"
+                    aria-hidden="true"
+                    style={{
+                      display: 'block',
+                      maxWidth: isInsideGroup ? '26%' : '24%',
+                      height: 'auto',
+                      color: isFailed
+                        ? 'rgba(255,107,115,0.22)'
+                        : isEmptySlot
+                          ? emptySlotAccent
+                          : PLACEHOLDER_COLOR,
+                      opacity: isEmptySlot ? 0.42 : isInsideGroup ? 0.72 : 1,
+                    }}
+                  >
+                    <circle cx="72.5" cy="17.5" r="8.5" fill="currentColor" />
+                    <path
+                      d="M8.55 64.5C5.95 64.5 4.34 61.71 5.64 59.47L39.26 10.48C40.54 8.28 43.72 8.28 45 10.48L67.12 48.44L75.04 35.66C76.37 33.52 79.52 33.58 80.77 35.77L99.3 59.61C100.55 61.86 98.93 64.5 96.37 64.5H8.55Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                )}
                 {isFailed && (
                   <div
                     style={{

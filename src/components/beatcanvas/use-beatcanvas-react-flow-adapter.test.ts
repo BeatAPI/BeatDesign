@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import type {
@@ -7,6 +8,7 @@ import type {
 } from '@/core/beatcanvas/canvas-types';
 
 import {
+  buildAnalysisReportNodeProps,
   buildGenerationCardPresentation,
   resolveDraftShapeSize,
 } from './use-beatcanvas-react-flow-adapter';
@@ -114,7 +116,7 @@ test('keeps the latest successful media on one generation node', () => {
   assert.equal('history' in presentation, false);
 });
 
-test('keeps the latest video analysis text on the Canvas node', () => {
+test('moves successful video analysis text into a separate report node', () => {
   const draft = {
     ...makeDraft('video', '16:9'),
     generationMode: 'analysis' as const,
@@ -157,5 +159,73 @@ test('keeps the latest video analysis text on the Canvas node', () => {
 
   assert.equal(presentation.isAnalysis, true);
   assert.equal(presentation.latestOutputUrl, null);
-  assert.equal(presentation.latestOutputText, output.resultText);
+  assert.equal(presentation.latestOutputText, null);
+  assert.equal(presentation.analysisReportCount, 1);
+
+  const reportProps = buildAnalysisReportNodeProps(output, 'Analysis report');
+  assert.deepEqual(reportProps, {
+    w: 480,
+    h: 340,
+    cardMediaType: 'video',
+    label: 'Analysis report',
+    status: 'succeeded',
+    isAnalysis: true,
+    latestOutputUrl: null,
+    latestOutputText: output.resultText,
+    analysisReportCount: 0,
+    takes: [],
+  });
+});
+
+test('does not materialize pending or media outputs as analysis reports', () => {
+  const draft = {
+    ...makeDraft('video', '16:9'),
+    generationMode: 'analysis' as const,
+    modelId: 'video-analysis',
+  };
+  const pendingOutput: CanvasOutputCard = {
+    ...draft,
+    id: 'output:pending-analysis',
+    kind: 'output',
+    name: 'Pending analysis',
+    resultText: null,
+    status: 'processing',
+    referenceCardIds: [draft.id],
+    sourceConfigCardId: draft.id,
+    generationRunId: 'run:pending-analysis',
+    generationSnapshot: {
+      type: 'video',
+      generationMode: 'analysis',
+      prompt: 'Analyze this video.',
+      referenceCardIds: ['asset:video'],
+      workflowTemplateId: null,
+      modelId: 'video-analysis',
+      aspectRatio: '16:9',
+      outputQuality: '720p',
+      duration: '5s',
+      mode: 'quality',
+      variant: 'standard',
+      quality: 'standard',
+      capturedAt: '2026-08-25T00:00:00.000Z',
+    },
+  };
+
+  assert.equal(
+    buildAnalysisReportNodeProps(pendingOutput, 'Analysis report'),
+    null
+  );
+});
+
+test('materializes and connects a completed analysis report after its source node', () => {
+  const source = readFileSync(
+    new URL('./use-beatcanvas-react-flow-adapter.ts', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(
+    source,
+    /createConnectorBetweenCards\(draftCard\.id, outputCard\.id\)/
+  );
+  assert.match(source, /resultText: isAnalysisOutput \? null : resultText/);
+  assert.match(source, /studioT\('canvas\.shapes\.analysisReport'\)/);
 });

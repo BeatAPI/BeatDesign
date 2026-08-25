@@ -6,6 +6,9 @@ type BeatCanvasNodeLocale = 'en' | 'zh';
 type BeatCanvasNodeCopy = {
   imageGeneration: string;
   videoGeneration: string;
+  videoAnalysis: string;
+  analysisComplete: string;
+  analysisReportReady: string;
   image: string;
   video: string;
   previewLoading: string;
@@ -49,6 +52,18 @@ const getNodeCopyForLocale = (locale: BeatCanvasNodeLocale): BeatCanvasNodeCopy 
     { locale }
   ),
   videoGeneration: m['AppShell.studio.canvas.shapes.videoGeneration'](
+    {},
+    { locale }
+  ),
+  videoAnalysis: m['AppShell.studio.canvas.shapes.videoAnalysis'](
+    {},
+    { locale }
+  ),
+  analysisComplete: m['AppShell.studio.canvas.shapes.analysisComplete'](
+    {},
+    { locale }
+  ),
+  analysisReportReady: m['AppShell.studio.canvas.shapes.analysisReportReady'](
     {},
     { locale }
   ),
