@@ -14,6 +14,10 @@ export type ComparisonSpec = {
   beatapi: number;
   competitor?: number;
   higgsfieldCredits?: number;
+  billingUnit?: 'second';
+  beatapiUnitPrice?: number;
+  competitorUnitPrice?: number;
+  exampleQuantity?: number;
 };
 
 export type ComparisonGroup = {

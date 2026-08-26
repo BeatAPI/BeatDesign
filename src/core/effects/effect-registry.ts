@@ -72,6 +72,7 @@ export type WorkspaceEffectRegistryEntry = {
   supportedDurations?: WorkspaceRegistryDuration[];
   defaultAspectRatio?: WorkspaceRegistryAspectRatio;
   supportedAspectRatios?: WorkspaceRegistryAspectRatio[];
+  referenceOnlyAspectRatios?: WorkspaceRegistryAspectRatio[];
   defaultOutputQuality?: WorkspaceRegistryOutputQuality;
   supportedOutputQualities?: WorkspaceRegistryOutputQuality[];
   defaultQuality?: WorkspaceRegistryQualityOption;
@@ -227,6 +228,20 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       supportedOutputQualities: ['1k', '2k'],
     },
     {
+      id: 'grok-imagine-image-2.0',
+      name: 'Grok Imagine Image 2.0',
+      effectId: 23,
+      workspaceType: 'ai-image',
+      uploadPath: 'effects/grok-imagine-image-2-0',
+      imageBucketName: 'image',
+      routeSlug: 'grok-imagine-image-2-0',
+      routeAliases: ['grok-imagine-image-2.0'],
+      routeOrder: 50,
+      defaultAspectRatio: '1:1',
+      supportedAspectRatios: ['1:1', '2:3', '3:2', '16:9', '9:16'],
+      referenceOnlyAspectRatios: ['auto'],
+    },
+    {
       id: 'seedance-2',
       name: 'Seedance 2',
       effectId: 9,
@@ -353,6 +368,23 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       defaultOutputQuality: 'pro',
       supportedOutputQualities: ['std', 'pro', '4k'],
       modelAliases: ['kling30'],
+    },
+    {
+      id: 'grok-imagine-video-1.5',
+      name: 'Grok Imagine Video 1.5',
+      effectId: 24,
+      workspaceType: 'ai-video',
+      uploadPath: 'effects/grok-imagine-video-1-5',
+      imageBucketName: 'image',
+      routeSlug: 'grok-imagine-video-1-5',
+      routeAliases: ['grok-imagine-video-1.5'],
+      routeOrder: 55,
+      defaultDuration: '8s',
+      supportedDurations: durationRange(1, 15),
+      defaultAspectRatio: '16:9',
+      supportedAspectRatios: ['1:1', '16:9', '9:16', '3:2', '2:3', 'auto'],
+      defaultOutputQuality: '720p',
+      supportedOutputQualities: ['480p', '720p', '1080p'],
     },
     {
       id: 'kling-2.6-motion-control',

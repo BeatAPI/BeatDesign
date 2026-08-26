@@ -10,6 +10,7 @@ export const BEATAPI_IMAGE_REFERENCE_LIMITS = {
   'nano-banana-pro': 8,
   'gpt-image-2': 16,
   'seedream-5-pro': 10,
+  'grok-imagine-image-2.0': 5,
 } as const;
 
 export const BEATAPI_VIDEO_REFERENCE_CONTRACTS = {
@@ -45,6 +46,12 @@ export const BEATAPI_VIDEO_REFERENCE_CONTRACTS = {
   },
   'veo-3.1': {
     maxReferenceImages: 3,
+    maxReferenceVideos: 0,
+    maxReferenceAudios: 0,
+    allowsAudioOnly: false,
+  },
+  'grok-imagine-video-1.5': {
+    maxReferenceImages: 7,
     maxReferenceVideos: 0,
     maxReferenceAudios: 0,
     allowsAudioOnly: false,

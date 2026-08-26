@@ -26,16 +26,45 @@ test('workflow and realtime exclusive cards stay off the public page for now', (
 test('catalog keeps one card per model and groups the Seedance family together', () => {
   const names = comparisonGroups.map((group) => group.model);
   assert.deepEqual(
-    names.slice(1, 5),
+    names.slice(3, 7),
     ['Seedance 2.0', 'Seedance 2.0 Mini', 'Seedance 2.0 Fast', 'Seedance 2.5']
   );
   assert.equal(new Set(names).size, names.length);
 });
 
 test('pricing filters count selectable model families rather than variant cards', () => {
-  assert.equal(countPricingModelFamilies(), 11);
-  assert.equal(countPricingModelFamilies('video'), 7);
-  assert.equal(countPricingModelFamilies('image'), 4);
+  assert.equal(countPricingModelFamilies(), 13);
+  assert.equal(countPricingModelFamilies('video'), 8);
+  assert.equal(countPricingModelFamilies('image'), 5);
+});
+
+test('Grok pricing matches the official BeatAPI list prices', () => {
+  const image = comparisonGroups.find(
+    (group) => group.model === 'Grok Imagine Image 2.0'
+  );
+  const video = comparisonGroups.find(
+    (group) => group.model === 'Grok Imagine Video 1.5'
+  );
+
+  assert.equal(image?.specs[0]?.beatapi, 0.03);
+  assert.equal(image?.specs[0]?.competitor, 0.04);
+  const video480 = video?.specs.find((spec) => spec.id.endsWith('480p'));
+  const video720 = video?.specs.find((spec) => spec.id.endsWith('720p'));
+  const video1080 = video?.specs.find((spec) => spec.id.endsWith('1080p'));
+  assert.equal(video480?.beatapiUnitPrice, 0.025);
+  assert.equal(video480?.exampleQuantity, 8);
+  assert.equal(video480?.beatapi, 0.025 * 8);
+  assert.match(video480?.spec ?? '', /8 sec example/);
+  assert.equal(video720?.beatapiUnitPrice, 0.05);
+  assert.equal(video720?.exampleQuantity, 8);
+  assert.equal(video720?.beatapi, 0.05 * 8);
+  assert.match(video720?.specZh ?? '', /8 秒示例/);
+  assert.equal(video1080?.beatapiUnitPrice, 0.09);
+  assert.equal(video1080?.competitorUnitPrice, 0.25);
+  assert.equal(video1080?.exampleQuantity, 8);
+  assert.equal(video1080?.beatapi, 0.09 * 8);
+  assert.equal(video1080?.competitor, 0.25 * 8);
+  assert.match(video1080?.specZh ?? '', /最多 1 张图/);
 });
 
 test('Seedance 2.0 uses the official BeatAPI list prices', () => {

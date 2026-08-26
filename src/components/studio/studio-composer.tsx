@@ -10,7 +10,7 @@ import {
   Sparkles,
   Video,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   composerCardClassName,
@@ -28,6 +28,7 @@ import {
 } from '@/core/effects/validation';
 import {
   findWorkspaceModelOption,
+  getWorkspaceAspectRatioOptions,
   type WorkspaceModelOption,
 } from '@/core/effects/workspace-models';
 import { getModelIconPathByModelId } from '@/core/workspace-lib/model-icons';
@@ -91,7 +92,14 @@ export function StudioComposer({
   const selectedDurationOptions =
     media === 'video' ? (selectedModel?.supportedDurations ?? []) : [];
   const selectedLanguageOptions = selectedModel?.supportedLanguages ?? [];
-  const selectedAspectRatioOptions = selectedModel?.supportedAspectRatios ?? [];
+  const selectedAspectRatioOptions = useMemo(
+    () =>
+      getWorkspaceAspectRatioOptions({
+        model: selectedModel,
+        hasImageReferences: referenceUrls.length > 0,
+      }),
+    [referenceUrls.length, selectedModel]
+  );
   const selectedOutputQualities = selectedModel?.supportedOutputQualities ?? [];
   const selectedCharacterOrientationOptions =
     selectedModel?.characterOrientationOptions ?? [];
@@ -147,6 +155,27 @@ export function StudioComposer({
       </span>
     ),
   }));
+
+  useEffect(() => {
+    if (
+      isAnalysis ||
+      selectedAspectRatioOptions.length === 0 ||
+      selectedAspectRatioOptions.includes(draft.aspectRatio)
+    ) {
+      return;
+    }
+    onDraftChange({
+      ...draft,
+      aspectRatio:
+        selectedModel?.defaultAspectRatio ?? selectedAspectRatioOptions[0],
+    });
+  }, [
+    draft,
+    isAnalysis,
+    onDraftChange,
+    selectedAspectRatioOptions,
+    selectedModel?.defaultAspectRatio,
+  ]);
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-[#09090a] via-[#09090a]/96 to-transparent px-3 pb-3 pt-12 sm:px-6 sm:pb-5 sm:pt-14">

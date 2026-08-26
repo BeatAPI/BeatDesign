@@ -1,6 +1,22 @@
 {
   "groups": [
     {
+      "model": "Grok Imagine Image 2.0",
+      "category": "image",
+      "specs": [
+        { "id": "grok-imagine-image-2.0-default", "spec": "1 image · generation or edit", "specZh": "1 张图片 · 生成或编辑", "beatapi": 0.03, "competitor": 0.04 }
+      ]
+    },
+    {
+      "model": "Grok Imagine Video 1.5",
+      "category": "video",
+      "specs": [
+        { "id": "grok-imagine-video-1.5-480p", "spec": "8 sec example · 480p", "specZh": "8 秒示例 · 480p", "beatapi": 0.2, "competitor": 0.64, "billingUnit": "second", "beatapiUnitPrice": 0.025, "competitorUnitPrice": 0.08, "exampleQuantity": 8 },
+        { "id": "grok-imagine-video-1.5-720p", "spec": "8 sec example · 720p", "specZh": "8 秒示例 · 720p", "beatapi": 0.4, "competitor": 1.12, "billingUnit": "second", "beatapiUnitPrice": 0.05, "competitorUnitPrice": 0.14, "exampleQuantity": 8 },
+        { "id": "grok-imagine-video-1.5-1080p", "spec": "8 sec example · 1080p · max 1 image", "specZh": "8 秒示例 · 1080p · 最多 1 张图", "beatapi": 0.72, "competitor": 2, "billingUnit": "second", "beatapiUnitPrice": 0.09, "competitorUnitPrice": 0.25, "exampleQuantity": 8 }
+      ]
+    },
+    {
       "model": "MiniMax H3",
       "category": "video",
       "specs": [

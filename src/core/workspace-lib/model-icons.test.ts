@@ -15,3 +15,12 @@ test('all Kling models reuse the verified Kling SVG', () => {
     );
   }
 });
+
+test('Grok Imagine image and video models reuse the Grok SVG', () => {
+  for (const modelId of [
+    'grok-imagine-image-2.0',
+    'grok-imagine-video-1.5',
+  ]) {
+    assert.equal(getModelIconPathByModelId(modelId), '/model-icons/grok.svg');
+  }
+});

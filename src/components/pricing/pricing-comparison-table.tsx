@@ -120,12 +120,28 @@ export function PricingModelCard({
                   {locale === 'zh' ? spec.specZh : spec.spec}
                 </td>
                 <td className="bg-[#ff7a33]/[0.05] px-5 py-3.5 text-center text-[14px] font-semibold tabular-nums text-[#f6f6f4]">
-                  {formatPrice(spec.beatapi)}
+                  <div>{formatPrice(spec.beatapi)}</div>
+                  {spec.billingUnit === 'second' &&
+                  spec.beatapiUnitPrice !== undefined ? (
+                    <div className="mt-0.5 text-[10px] font-medium text-white/35">
+                      {formatPrice(spec.beatapiUnitPrice)}
+                      /s
+                    </div>
+                  ) : null}
                 </td>
                 <td className="px-5 py-3.5 text-center text-[14px] tabular-nums text-white/50">
-                  {spec.competitor !== undefined
-                    ? formatCompetitorPrice(spec.competitor)
-                    : '—'}
+                  <div>
+                    {spec.competitor !== undefined
+                      ? formatCompetitorPrice(spec.competitor)
+                      : '—'}
+                  </div>
+                  {spec.billingUnit === 'second' &&
+                  spec.competitorUnitPrice !== undefined ? (
+                    <div className="mt-0.5 text-[10px] text-white/30">
+                      {formatCompetitorPrice(spec.competitorUnitPrice)}
+                      /s
+                    </div>
+                  ) : null}
                 </td>
                 <td className="px-5 py-3.5 text-center text-[14px]">
                   <HiggsfieldCell spec={spec} />
@@ -153,6 +169,13 @@ export function PricingModelCard({
                   <p className="text-[15px] font-semibold tabular-nums text-[#f6f6f4]">
                     {formatPrice(spec.beatapi)}
                   </p>
+                  {spec.billingUnit === 'second' &&
+                  spec.beatapiUnitPrice !== undefined ? (
+                    <p className="mt-0.5 text-[11px] tabular-nums text-white/35">
+                      {formatPrice(spec.beatapiUnitPrice)}
+                      /s
+                    </p>
+                  ) : null}
                   <p className="mt-0.5 text-[11px] tabular-nums text-white/35">
                     {spec.competitor !== undefined
                       ? formatCompetitorPrice(spec.competitor)

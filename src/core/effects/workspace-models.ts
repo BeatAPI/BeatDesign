@@ -50,6 +50,7 @@ export type WorkspaceModelOption = {
   supportedDurations?: WorkspaceDuration[];
   defaultAspectRatio?: WorkspaceAspectRatio;
   supportedAspectRatios?: WorkspaceAspectRatio[];
+  referenceOnlyAspectRatios?: WorkspaceAspectRatio[];
   defaultOutputQuality?: WorkspaceOutputQuality;
   supportedOutputQualities?: WorkspaceOutputQuality[];
   defaultQuality?: WorkspaceQualityOption;
@@ -111,6 +112,9 @@ const toWorkspaceModelOption = (
     defaultAspectRatio: entry.defaultAspectRatio,
     supportedAspectRatios: entry.supportedAspectRatios
       ? [...entry.supportedAspectRatios]
+      : undefined,
+    referenceOnlyAspectRatios: entry.referenceOnlyAspectRatios
+      ? [...entry.referenceOnlyAspectRatios]
       : undefined,
     defaultOutputQuality: entry.defaultOutputQuality,
     supportedOutputQualities: entry.supportedOutputQualities
@@ -192,6 +196,17 @@ export const getWorkspaceModelsByType = (
 ): WorkspaceModelOption[] => {
   return workspaceType === 'ai-image' ? IMAGE_MODELS : VIDEO_MODELS;
 };
+
+export const getWorkspaceAspectRatioOptions = ({
+  model,
+  hasImageReferences,
+}: {
+  model: WorkspaceModelOption | null;
+  hasImageReferences: boolean;
+}): WorkspaceAspectRatio[] => [
+  ...(model?.supportedAspectRatios ?? []),
+  ...(hasImageReferences ? (model?.referenceOnlyAspectRatios ?? []) : []),
+];
 
 export const getCanonicalWorkspaceModelId = (modelId: string): string =>
   WORKSPACE_MODEL_ALIASES[modelId] ?? modelId;

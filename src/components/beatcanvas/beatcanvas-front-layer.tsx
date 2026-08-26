@@ -7,7 +7,10 @@ import {
   truncatePromptToMaxChars,
 } from '@/core/effects/validation';
 import { VIDEO_ANALYSIS_MODEL_ID } from '@/core/effects/video-analysis';
-import { findWorkspaceModelOption } from '@/core/effects/workspace-models';
+import {
+  findWorkspaceModelOption,
+  getWorkspaceAspectRatioOptions,
+} from '@/core/effects/workspace-models';
 import { cn } from '@/lib/utils';
 import { StudioStartHere } from '@/components/studio/studio-start-here';
 import {
@@ -356,7 +359,18 @@ export function BeatCanvasFrontLayer() {
       ? (selectedModel?.supportedDurations ?? [])
       : [];
   const selectedLanguageOptions = selectedModel?.supportedLanguages ?? [];
-  const selectedAspectRatioOptions = selectedModel?.supportedAspectRatios ?? [];
+  const hasImageReferences =
+    activeDraftCard?.referenceCardIds.some(
+      (cardId) => cards[cardId]?.type === 'image'
+    ) ?? false;
+  const selectedAspectRatioOptions = useMemo(
+    () =>
+      getWorkspaceAspectRatioOptions({
+        model: selectedModel,
+        hasImageReferences,
+      }),
+    [hasImageReferences, selectedModel]
+  );
   const selectedOutputQualities = selectedModel?.supportedOutputQualities ?? [];
   const selectedCharacterOrientationOptions =
     selectedModel?.characterOrientationOptions ?? [];
@@ -368,6 +382,17 @@ export function BeatCanvasFrontLayer() {
 
   useEffect(() => {
     if (!activeDraftCard || !selectedModel || isDraftBusy) {
+      return;
+    }
+
+    if (
+      selectedAspectRatioOptions.length > 0 &&
+      !selectedAspectRatioOptions.includes(activeDraftCard.aspectRatio)
+    ) {
+      onDraftAspectRatioChange(
+        activeDraftCard.id,
+        selectedModel.defaultAspectRatio ?? selectedAspectRatioOptions[0]
+      );
       return;
     }
 
@@ -392,6 +417,7 @@ export function BeatCanvasFrontLayer() {
     editor,
     isDraftBusy,
     onDraftAspectRatioChange,
+    selectedAspectRatioOptions,
     selectedModel,
   ]);
 

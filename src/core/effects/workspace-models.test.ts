@@ -5,6 +5,7 @@ import {
   findWorkspaceModelOption,
   getCanonicalWorkspaceModelId,
   getDefaultSelectableWorkspaceModel,
+  getWorkspaceAspectRatioOptions,
   getWorkspaceModelsByType,
 } from './workspace-models';
 
@@ -17,6 +18,7 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
     'nano-banana',
     'gpt-image-2',
     'seedream-5-pro',
+    'grok-imagine-image-2.0',
   ]);
   assert.deepEqual(videoIds, [
     'seedance-2',
@@ -26,6 +28,7 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
     'minimax-h3',
     'veo-3.1',
     'kling-3',
+    'grok-imagine-video-1.5',
     'kling-2.6-motion-control',
     'kling-3-motion-control',
   ]);
@@ -114,4 +117,42 @@ test('Composer metadata matches BeatAPI H3 and Seedance 2.5 contracts', () => {
   assert.equal(seedance25?.maxReferenceImages, 30);
   assert.equal(seedance25?.maxSourceVideos, 10);
   assert.equal(seedance25?.maxReferenceAudios, 10);
+});
+
+test('Grok Composer metadata matches the public BeatAPI contracts', () => {
+  const image = findWorkspaceModelOption(
+    getWorkspaceModelsByType('ai-image'),
+    'grok-imagine-image-2.0'
+  );
+  const video = findWorkspaceModelOption(
+    getWorkspaceModelsByType('ai-video'),
+    'grok-imagine-video-1.5'
+  );
+
+  assert.equal(image?.effectId, 23);
+  assert.equal(image?.maxReferenceImages, 5);
+  assert.deepEqual(
+    getWorkspaceAspectRatioOptions({
+      model: image,
+      hasImageReferences: false,
+    }),
+    ['1:1', '2:3', '3:2', '16:9', '9:16']
+  );
+  assert.deepEqual(
+    getWorkspaceAspectRatioOptions({
+      model: image,
+      hasImageReferences: true,
+    }),
+    ['1:1', '2:3', '3:2', '16:9', '9:16', 'auto']
+  );
+  assert.equal(video?.effectId, 24);
+  assert.equal(video?.defaultDuration, '8s');
+  assert.equal(video?.supportedDurations?.length, 15);
+  assert.deepEqual(video?.supportedOutputQualities, [
+    '480p',
+    '720p',
+    '1080p',
+  ]);
+  assert.equal(video?.maxReferenceImages, 7);
+  assert.equal(video?.maxSourceVideos, 0);
 });
