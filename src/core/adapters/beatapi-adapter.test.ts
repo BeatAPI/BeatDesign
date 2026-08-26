@@ -62,6 +62,26 @@ test('maps a canvas video request to BeatAPI video tasks', () => {
       },
     }
   );
+
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'grok-imagine-video-1.5',
+      input: {
+        prompt: 'A native 1080p cinematic landscape',
+        aspect_ratio: '16:9',
+        wmDuration: '12s',
+        wmOutputQuality: '1080p',
+      },
+    }).body,
+    {
+      model: 'grok-imagine-video-1.5',
+      prompt: 'A native 1080p cinematic landscape',
+      aspect_ratio: '16:9',
+      duration: 12,
+      resolution: '1080p',
+    }
+  );
 });
 
 test('maps standard and deep video analysis to the stable BeatAPI workflow', () => {
@@ -491,6 +511,158 @@ test('maps Veo 3.1 quality tiers and resolution into BeatAPI fields', () => {
       input: { prompt: 'Storyboard draft', mode: 'lite', wmOutputQuality: '4k' },
     }).body.quality,
     'Lite'
+  );
+});
+
+test('maps Grok Imagine Image 2.0 generation and editing requests', () => {
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 2,
+      model: 'grok-imagine-image-2.0',
+      input: {
+        prompt: 'Editorial portrait',
+        aspect_ratio: '3:2',
+      },
+    }).body,
+    {
+      model: 'grok-imagine-image-2.0',
+      prompt: 'Editorial portrait',
+      aspect_ratio: '3:2',
+    }
+  );
+
+  const references = Array.from(
+    { length: 5 },
+    (_, index) => `https://example.com/reference-${index + 1}.png`
+  );
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 2,
+      model: 'grok-imagine-image-2.0',
+      input: {
+        prompt: 'Preserve the source composition',
+        image_urls: references,
+        aspect_ratio: 'auto',
+      },
+    }).body,
+    {
+      model: 'grok-imagine-image-2.0',
+      prompt: 'Preserve the source composition',
+      images: references,
+      aspect_ratio: 'auto',
+    }
+  );
+
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 2,
+        model: 'grok-imagine-image-2.0',
+        input: { prompt: 'Invalid auto ratio', aspect_ratio: 'auto' },
+      }),
+    /auto aspect ratio requires a reference image/
+  );
+});
+
+test('maps Grok Imagine Video 1.5 text, reference, and first-frame modes', () => {
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'grok-imagine-video-1.5',
+      input: {
+        prompt: 'A cinematic product reveal',
+        aspect_ratio: '16:9',
+        wmDuration: '8s',
+        wmOutputQuality: '480p',
+      },
+    }).body,
+    {
+      model: 'grok-imagine-video-1.5',
+      prompt: 'A cinematic product reveal',
+      aspect_ratio: '16:9',
+      duration: 8,
+      resolution: '480p',
+    }
+  );
+
+  const references = Array.from(
+    { length: 7 },
+    (_, index) => `https://example.com/grok-reference-${index + 1}.png`
+  );
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'grok-imagine-video-1.5',
+      input: {
+        prompt: 'Use all references for style and identity',
+        image_urls: references,
+        aspect_ratio: '9:16',
+        wmDuration: '15s',
+        wmOutputQuality: '720p',
+      },
+    }).body,
+    {
+      model: 'grok-imagine-video-1.5',
+      prompt: 'Use all references for style and identity',
+      reference_images: references,
+      aspect_ratio: '9:16',
+      duration: 15,
+      resolution: '720p',
+    }
+  );
+
+  assert.deepEqual(
+    buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'grok-imagine-video-1.5',
+      input: {
+        prompt: 'Use @Image1 as the first frame',
+        image_urls: ['https://example.com/first-frame.png'],
+        aspect_ratio: '16:9',
+        wmDuration: '6s',
+        wmOutputQuality: '720p',
+      },
+    }).body,
+    {
+      model: 'grok-imagine-video-1.5',
+      prompt: 'Use @Image1 as the first frame',
+      images: ['https://example.com/first-frame.png'],
+      duration: 6,
+      resolution: '720p',
+    }
+  );
+
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'grok-imagine-video-1.5',
+        input: {
+          prompt: 'Use @Image1 as the first frame and @Image2 as the last frame',
+          image_urls: [
+            'https://example.com/first.png',
+            'https://example.com/last.png',
+          ],
+        },
+      }),
+    /supports one first frame only/
+  );
+
+  assert.throws(
+    () =>
+      buildBeatApiTaskRequest({
+        effectType: 1,
+        model: 'grok-imagine-video-1.5',
+        input: {
+          prompt: 'Use multiple references at native resolution',
+          image_urls: [
+            'https://example.com/reference-one.png',
+            'https://example.com/reference-two.png',
+          ],
+          wmOutputQuality: '1080p',
+        },
+      }),
+    /1080p accepts at most one image/
   );
 });
 

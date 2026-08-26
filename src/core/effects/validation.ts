@@ -9,6 +9,7 @@ export const MAX_GENERATION_PROMPT_CHARS = 5000;
 export const MOTION_CONTROL_GENERATION_PROMPT_CHARS = 2500;
 export const VIDEO_ANALYSIS_GENERATION_PROMPT_CHARS = 12000;
 const VIDEO_ANALYSIS_MODEL_ID = 'video-analysis';
+const GROK_IMAGINE_VIDEO_MODEL_ID = 'grok-imagine-video-1.5';
 const MOTION_CONTROL_MODEL_IDS = new Set([
   'kling-2.6-motion-control',
   'kling-3-motion-control',
@@ -202,6 +203,12 @@ export const getGenerationPromptConstraints = ({
     return {
       required: false,
       maxChars: MOTION_CONTROL_GENERATION_PROMPT_CHARS,
+    } as const;
+  }
+  if (modelId === GROK_IMAGINE_VIDEO_MODEL_ID) {
+    return {
+      required: true,
+      maxChars: 4096,
     } as const;
   }
   return {

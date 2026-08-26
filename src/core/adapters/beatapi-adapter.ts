@@ -19,6 +19,7 @@ const IMAGE_MODELS = new Set([
   'nano-banana-pro',
   'gpt-image-2',
   'seedream-5-pro',
+  'grok-imagine-image-2.0',
 ]);
 
 const VIDEO_MODELS = new Set([
@@ -31,6 +32,7 @@ const VIDEO_MODELS = new Set([
   'kling-3',
   'kling-2.6-motion-control',
   'kling-3-motion-control',
+  'grok-imagine-video-1.5',
 ]);
 
 const BEATAPI_REQUEST_TIMEOUT_MS = 30_000;
@@ -249,6 +251,9 @@ const resolveVideoReferenceFields = ({
   }
 
   if (frameImages) {
+    if (model === 'grok-imagine-video-1.5' && frameImages.length !== 1) {
+      throw new Error('Grok Imagine Video 1.5 supports one first frame only');
+    }
     return {
       mode: frameImages.length === 2 ? 'frames' : 'image',
       fields: { images: frameImages },
@@ -331,6 +336,15 @@ export const buildBeatApiTaskRequest = ({
       throw new Error(`Unsupported BeatAPI image model: ${model}`);
     }
     assertAtMost(model, images.length, getBeatApiImageReferenceLimit(model));
+    if (
+      model === 'grok-imagine-image-2.0' &&
+      images.length === 0 &&
+      input.aspect_ratio === 'auto'
+    ) {
+      throw new Error(
+        'Grok Imagine Image 2.0 auto aspect ratio requires a reference image'
+      );
+    }
 
     return {
       path: '/v1/images/tasks',
@@ -411,12 +425,23 @@ export const buildBeatApiTaskRequest = ({
     videoUrls: input.video_urls ?? [],
     audioUrls: input.audio_urls ?? [],
   });
+  if (
+    model === 'grok-imagine-video-1.5' &&
+    input.wmOutputQuality === '1080p' &&
+    images.length > 1
+  ) {
+    throw new Error(
+      'Grok Imagine Video 1.5 1080p accepts at most one image'
+    );
+  }
   const aspectRatio =
     model === 'minimax-h3' &&
     references.mode === 'text' &&
     input.aspect_ratio === 'adaptive'
       ? '16:9'
-      : input.aspect_ratio;
+      : model === 'grok-imagine-video-1.5' && references.mode === 'image'
+        ? undefined
+        : input.aspect_ratio;
   if (
     model === 'seedance-2' &&
     references.mode === 'reference' &&
@@ -466,6 +491,8 @@ export const buildBeatApiTaskRequest = ({
   } else if (model === 'kling-3') {
     body.resolution = mapKlingResolution(input.wmOutputQuality);
     body.sound = input.wmSound ?? true;
+  } else if (model === 'grok-imagine-video-1.5') {
+    body.resolution = input.wmOutputQuality || '720p';
   }
 
   return { path: '/v1/videos/tasks', body };

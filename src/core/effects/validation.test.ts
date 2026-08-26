@@ -19,4 +19,8 @@ test('prompt constraints follow the public BeatAPI model contract', () => {
     getGenerationPromptMaxChars({ modelId: 'video-analysis' }),
     12000
   );
+  assert.equal(
+    getGenerationPromptMaxChars({ modelId: 'grok-imagine-video-1.5' }),
+    4096
+  );
 });

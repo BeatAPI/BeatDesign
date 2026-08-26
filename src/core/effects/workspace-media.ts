@@ -122,6 +122,14 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     video: emptySection,
     audio: emptySection,
   },
+  'grok-imagine-image-2.0': {
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('grok-imagine-image-2.0')
+    ),
+    video: emptySection,
+    audio: emptySection,
+  },
   'seedance-2': {
     image: createVideoContractSection('seedance-2', 'reference-image'),
     video: createVideoContractSection('seedance-2', 'reference-video'),
@@ -149,6 +157,14 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
   },
   'veo-3.1': {
     image: createVideoContractSection('veo-3.1', 'reference-image'),
+    video: emptySection,
+    audio: emptySection,
+  },
+  'grok-imagine-video-1.5': {
+    image: createVideoContractSection(
+      'grok-imagine-video-1.5',
+      'reference-image'
+    ),
     video: emptySection,
     audio: emptySection,
   },
