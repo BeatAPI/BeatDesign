@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type {
+  CanvasCard,
   CanvasDraftCard,
   CanvasOutputCard,
 } from './canvas-types';
@@ -30,6 +31,15 @@ const makeDraft = (): CanvasDraftCard => ({
 
 test('keeps the generation configuration and completes a separate output card', async () => {
   let draft = makeDraft();
+  const localAsset: CanvasCard = {
+    ...makeDraft(),
+    id: 'asset:1',
+    kind: 'asset',
+    name: 'Local reference',
+    url: '/api/app/projects/project-1/assets/asset-1',
+    prompt: '',
+    referenceCardIds: [],
+  };
   const outputPatches: Array<Partial<CanvasOutputCard>> = [];
   let completedOutputId: string | null = null;
   const callOrder: string[] = [];
@@ -38,13 +48,26 @@ test('keeps the generation configuration and completes a separate output card', 
   const completed = await runDraftGeneration({
     draftId: draft.id,
     projectId: 'project:1',
-    getCurrentCard: () => draft,
-    buildEffectInput: async () => {
+    getCurrentCard: (cardId) =>
+      cardId === localAsset.id ? localAsset : draft,
+    buildEffectInput: async (_currentDraft, referenceUrlOverrides) => {
       buildCount += 1;
       callOrder.push(`build:${buildCount}`);
+      if (buildCount === 1) {
+        assert.equal(referenceUrlOverrides, undefined);
+      } else {
+        assert.deepEqual(referenceUrlOverrides, {
+          'asset:1': 'https://media.beatapi.io/inputs/asset-1.png',
+        });
+      }
       return ({
         effectId: 1,
-        input: { prompt: draft.prompt },
+        input: {
+          prompt: draft.prompt,
+          ...(referenceUrlOverrides
+            ? { image_urls: [referenceUrlOverrides['asset:1']] }
+            : {}),
+        },
         model: { name: 'Test model' },
       }) as never;
     },
@@ -77,9 +100,16 @@ test('keeps the generation configuration and completes a separate output card', 
     prepareAfterPrecheck: async ({ uploadIntentToken }) => {
       assert.equal(uploadIntentToken, 'signed-upload-intent');
       callOrder.push('upload');
+      return {
+        'asset:1': 'https://media.beatapi.io/inputs/asset-1.png',
+      };
     },
     generateEffectImpl: async (payload) => {
       assert.equal(payload.generationIntentToken, 'signed-upload-intent');
+      assert.deepEqual(payload.input.image_urls, [
+        'https://media.beatapi.io/inputs/asset-1.png',
+      ]);
+      assert.equal(localAsset.url, '/api/app/projects/project-1/assets/asset-1');
       callOrder.push('generate');
       return ({
         ok: true,

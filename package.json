@@ -23,6 +23,7 @@
     "test": "sh -c 'rg --files src -g \"*.test.ts\" -g \"*.test.tsx\" | sort | xargs node --import tsx --test'",
     "typecheck": "tsc --noEmit",
     "i18n:check": "node scripts/check-i18n.mjs",
+    "media:localize": "tsx scripts/with-env.ts pnpm exec tsx scripts/localize-project-media.ts",
     "prebuild": "node scripts/db-setup.mjs",
     "build": "tsx scripts/prepare-paraglide.ts && vite build && node scripts/sanitize-output.mjs",
     "start": "tsx scripts/with-env.ts node .output/server/index.mjs",

@@ -190,6 +190,7 @@ const getVideoAnalysisModel = (
 type BuildGenerationEffectInputParams = {
   draftCard: CanvasDraftCard;
   canvasCards: Record<string, CanvasCard>;
+  referenceUrlOverrides?: Record<string, string>;
   imageModels: WorkspaceModelOption[];
   videoModels: WorkspaceModelOption[];
   metadataMap: Record<number, EffectMetadata>;
@@ -202,6 +203,7 @@ type BuildGenerationEffectInputParams = {
 export const buildGenerationEffectInput = async ({
   draftCard,
   canvasCards,
+  referenceUrlOverrides = {},
   imageModels,
   videoModels,
   metadataMap,
@@ -237,7 +239,10 @@ export const buildGenerationEffectInput = async ({
       throw new Error(translate('messages.analysisVideoRequired'));
     }
 
-    const videoUrl = videoReferences[0]?.url;
+    const videoReference = videoReferences[0];
+    const videoUrl = videoReference
+      ? referenceUrlOverrides[videoReference.id] ?? videoReference.url
+      : null;
     const input: Record<string, unknown> = {
       prompt: promptValidation.trimmedPrompt,
       analysis_depth: draftCard.analysisDepth ?? 'standard',
@@ -293,11 +298,17 @@ export const buildGenerationEffectInput = async ({
 
   const referenceCards = draftCard.referenceCardIds
     .map((cardId) => canvasCards[cardId])
-    .filter(
-      (card): card is CanvasCard =>
-        Boolean(card?.url) && !isLocalWorkspaceMediaUrl(card.url)
-    )
-    .map((card) => toWorkflowReferenceCard(card));
+    .flatMap((card) => {
+      if (!card?.url) return [];
+      const providerUrl = referenceUrlOverrides[card.id] ?? card.url;
+      if (isLocalWorkspaceMediaUrl(providerUrl)) return [];
+      return [
+        {
+          ...toWorkflowReferenceCard(card),
+          url: providerUrl,
+        },
+      ];
+    });
 
   const referencePayload = resolveReferencePayload({
     cards: referenceCards,
@@ -391,7 +402,10 @@ export const buildGenerationEffectInput = async ({
       hasInputSchemaField(metadata.inputSchema, 'sourceVideoDurationSeconds')
     ) {
       input.sourceVideoDurationSeconds = await loadVideoDurationSecondsImpl(
-        referencePayload.videoUrls[0],
+        draftCard.referenceCardIds
+          .map((cardId) => canvasCards[cardId])
+          .find((card) => card?.type === 'video' && card.url)?.url ??
+          referencePayload.videoUrls[0],
         runtimeMessages
       );
     }
@@ -489,7 +503,8 @@ type RunDraftGenerationParams = {
   projectId?: string;
   getCurrentCard: (draftId: string) => CanvasCard | null | undefined;
   buildEffectInput: (
-    draftCard: CanvasDraftCard
+    draftCard: CanvasDraftCard,
+    referenceUrlOverrides?: Record<string, string>
   ) => Promise<BuildGenerationEffectInputResult>;
   getExpectedUploadCount?: (draftCard: CanvasDraftCard) => number;
   updateDraftCard: (draftId: string, patch: Partial<CanvasDraftCard>) => void;
@@ -521,7 +536,7 @@ type RunDraftGenerationParams = {
   precheckEffectImpl?: typeof defaultPrecheckEffect;
   prepareAfterPrecheck?: (precheck: {
     uploadIntentToken?: string;
-  }) => Promise<void>;
+  }) => Promise<Record<string, string> | void>;
   generateEffectImpl?: typeof defaultGenerateEffect;
   pollEffectUntilCompleteImpl: (params: {
     wmTaskId: string;
@@ -611,9 +626,13 @@ export const runDraftGeneration = async ({
       );
     }
 
+    let referenceUrlOverrides: Record<string, string> = {};
     if (prepareAfterPrecheck) {
       try {
-        await prepareAfterPrecheck({ uploadIntentToken: generationIntentToken });
+        referenceUrlOverrides =
+          (await prepareAfterPrecheck({
+            uploadIntentToken: generationIntentToken,
+          })) ?? {};
       } catch (error) {
         throw new GenerationFailure(
           'storage',
@@ -629,7 +648,10 @@ export const runDraftGeneration = async ({
           translate('messages.generationFailed')
         );
       }
-      const preparedRequest = await buildEffectInput(preparedCard);
+      const preparedRequest = await buildEffectInput(
+        preparedCard,
+        referenceUrlOverrides
+      );
       if (preparedRequest.effectId !== effectId) {
         throw new GenerationFailure(
           'precheck',
@@ -641,7 +663,9 @@ export const runDraftGeneration = async ({
           const card = getCurrentCard(cardId);
           return (
             typeof card?.url === 'string' &&
-            isLocalWorkspaceMediaUrl(card.url)
+            isLocalWorkspaceMediaUrl(card.url) &&
+            (!referenceUrlOverrides[cardId] ||
+              isLocalWorkspaceMediaUrl(referenceUrlOverrides[cardId]))
           );
         }
       );

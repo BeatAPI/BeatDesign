@@ -569,7 +569,7 @@ export function useBeatCanvasUploadActions({
     async (draftId: string, generationIntentToken: string) => {
       const draftCard = canvasCardsRef.current[draftId];
       if (!isCanvasDraftCard(draftCard)) {
-        return;
+        return {};
       }
 
       const promotions = await promotePendingDraftReferenceUploads({
@@ -580,19 +580,17 @@ export function useBeatCanvasUploadActions({
         generationIntentToken,
       });
 
+      const providerUrlsByCardId: Record<string, string> = {};
       for (const promotion of promotions) {
-        updateCanvasCard(promotion.cardId, (current) => ({
-          ...current,
-          name: current.name || promotion.uploadResult.key,
-          url: promotion.uploadResult.url,
-        }));
+        providerUrlsByCardId[promotion.cardId] = promotion.uploadResult.url;
         delete pendingUploadsRef.current[promotion.cardId];
         if (promotion.objectUrl.startsWith('blob:')) {
           URL.revokeObjectURL(promotion.objectUrl);
         }
       }
+      return providerUrlsByCardId;
     },
-    [canvasCardsRef, projectId, updateCanvasCard]
+    [canvasCardsRef, projectId]
   );
 
   const getPendingUploadCountForDraft = useCallback(

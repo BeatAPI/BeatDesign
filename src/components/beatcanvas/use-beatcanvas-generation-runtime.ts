@@ -69,7 +69,7 @@ export function useBeatCanvasGenerationRuntime({
   promotePendingUploadsForDraft: (
     draftId: string,
     generationIntentToken: string
-  ) => Promise<void>;
+  ) => Promise<Record<string, string>>;
   createGenerationOutput: (params: {
     draftCard: CanvasDraftCard;
     name: string;
@@ -132,10 +132,14 @@ export function useBeatCanvasGenerationRuntime({
   );
 
   const buildEffectInput = useCallback(
-    (draftCard: CanvasDraftCard) =>
+    (
+      draftCard: CanvasDraftCard,
+      referenceUrlOverrides?: Record<string, string>
+    ) =>
       buildGenerationEffectInput({
         draftCard,
         canvasCards: canvasCardsRef.current,
+        referenceUrlOverrides,
         imageModels,
         videoModels,
         metadataMap,
@@ -218,7 +222,10 @@ export function useBeatCanvasGenerationRuntime({
           }
           setStatusMessage(studioT('messages.preparingAssets'));
           try {
-            await promotePendingUploadsForDraft(draftId, uploadIntentToken);
+            return await promotePendingUploadsForDraft(
+              draftId,
+              uploadIntentToken
+            );
           } catch (error) {
             throw new Error(
               getDraftUploadFailureMessage({
