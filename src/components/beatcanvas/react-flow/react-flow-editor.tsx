@@ -832,6 +832,7 @@ function BeatCanvasReactFlowCanvas({
           zoomOnPinch
           nodesDraggable={interactionMode === 'select'}
           nodesConnectable={false}
+          onlyRenderVisibleElements
           edgesFocusable
           snapToGrid={isSnapToGridEnabled}
           snapGrid={[24, 24]}

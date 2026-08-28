@@ -45,10 +45,11 @@ Studio / Canvas / Assets
   -> just-in-time provider upload of the durable local reference
   -> BeatAPI image or video task API
   -> provider status polling
+  -> generated media copied into the local project asset directory
   -> local generation history and asset index
 ```
 
-The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. In local SQLite mode, imported image and video files are copied immediately into the project-owned `data/project-assets/<project-id>/` directory and indexed in SQLite before a card is added to the Canvas. Video analysis uploads MP4/MOV input through BeatAPI's file endpoint and stores the resulting text in the same project generation history. Generated files remain at the public URLs returned by the provider and are indexed locally instead of being copied again.
+The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. In local SQLite mode, imported image and video files are copied immediately into the project-owned `data/project-assets/<project-id>/` directory and indexed in SQLite before a card is added to the Canvas. Video analysis uploads MP4/MOV input through BeatAPI's file endpoint and stores the resulting text in the same project generation history. Generated images, videos, and video covers are downloaded into the same project-owned directory before the Canvas receives their URLs; provider URLs remain metadata only.
 
 Canvas state is saved as a complete project snapshot after changes, checked again every five seconds while dirty, and flushed when the page is hidden, refreshed, or closed. A populated snapshot cannot be replaced by an unconfirmed empty snapshot.
 
@@ -72,6 +73,7 @@ The canonical catalog lives in `src/core/effects/effect-registry.ts`. The curren
 | `pnpm typecheck` | Check TypeScript contracts |
 | `pnpm test` | Run unit and contract tests |
 | `pnpm i18n:check` | Validate English and Chinese messages |
+| `pnpm media:localize` | Copy provider-hosted media in existing project snapshots into local project storage |
 | `pnpm build` | Build the production app |
 | `pnpm db:push` | Apply the schema during local development |
 | `pnpm db:generate` | Generate a reviewable D1/SQLite migration |
