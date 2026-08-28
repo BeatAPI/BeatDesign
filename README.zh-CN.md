@@ -43,10 +43,11 @@ Studio / Canvas / Assets
   -> 仅在确认生成后，把已持久化的本地引用上传到 Provider
   -> BeatAPI 图片、视频生成任务或视频分析接口
   -> 轮询 Provider 状态
+  -> 将生成媒体复制到本地项目素材目录
   -> 写入本地生成历史与素材索引
 ```
 
-API Key 与存储密钥只保留在服务端。项目和历史数据保存在本地 SQLite。在本地 SQLite 模式下，导入的图片和视频会先复制到项目自己的 `data/project-assets/<project-id>/` 目录，并写入 SQLite 素材索引，然后才加入 Canvas。视频分析会把 MP4/MOV 输入上传到 BeatAPI Files，并把返回的分析文本写入同一份项目生成历史。Provider 返回的公开结果地址会直接进入本地素材索引，不强制重复复制。
+API Key 与存储密钥只保留在服务端。项目和历史数据保存在本地 SQLite。在本地 SQLite 模式下，导入的图片和视频会先复制到项目自己的 `data/project-assets/<project-id>/` 目录，并写入 SQLite 素材索引，然后才加入 Canvas。视频分析会把 MP4/MOV 输入上传到 BeatAPI Files，并把返回的分析文本写入同一份项目生成历史。生成的图片、视频和视频封面都会先下载到同一个项目素材目录，Canvas 再使用对应的本地地址；Provider 地址只保留为元数据。
 
 Canvas 内容变化后会保存一份完整项目快照；存在未保存变化时，每 5 秒再检查一次，并在页面切到后台、刷新或关闭时强制落盘。已有内容的快照不会被未经确认的空快照覆盖。
 
@@ -66,6 +67,7 @@ Canvas 内容变化后会保存一份完整项目快照；存在未保存变化�
 | `pnpm typecheck` | 类型检查 |
 | `pnpm test` | 单元与契约测试 |
 | `pnpm i18n:check` | 检查中英文文案 |
+| `pnpm media:localize` | 将现有项目快照中的 Provider 媒体复制到本地项目存储 |
 | `pnpm build` | 生产构建 |
 | `pnpm cf:build` | 构建 Cloudflare Workers 产物 |
 | `pnpm db:push` | 本地同步数据库结构 |
