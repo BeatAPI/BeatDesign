@@ -12,7 +12,10 @@ export const envConfigs: Record<string, string> = {
     publicEnv('VITE_APP_DESCRIPTION') ??
     'The open-source, local-first AI canvas for image and video creation.',
   app_logo: publicEnv('VITE_APP_LOGO') ?? '/logo.png',
-  generation_provider: publicEnv('VITE_GENERATION_PROVIDER') ?? 'beatapi',
+  generation_provider:
+    procEnv.GENERATION_PROVIDER ??
+    publicEnv('VITE_GENERATION_PROVIDER') ??
+    'beatapi',
 
   database_provider: procEnv.DATABASE_PROVIDER ?? 'sqlite',
   database_url: procEnv.DATABASE_URL ?? 'file:data/workspace.db',

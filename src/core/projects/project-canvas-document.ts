@@ -18,7 +18,6 @@ import type {
 type SnapshotFramesById = Record<string, ProjectSnapshotShapeFrame>;
 type NonDraftCanvasCard = CanvasCard & {
   kind: 'asset';
-  url: string;
 };
 
 export const mergeCanvasRuntimeCardsIntoHistoryDocument = ({
@@ -157,8 +156,8 @@ export const createProjectSnapshotRestorePlan = (
     .filter(
       (card): card is NonDraftCanvasCard =>
         card.kind === 'asset' &&
-        typeof card.url === 'string' &&
-        card.url.length > 0
+        (card.type === 'timeline' ||
+          (typeof card.url === 'string' && card.url.length > 0))
     )
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((card) => ({

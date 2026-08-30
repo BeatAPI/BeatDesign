@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
+  AudioLines,
   ExternalLink,
   FolderOpen,
   Images,
@@ -11,6 +12,7 @@ import {
   Video,
 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   Dialog,
@@ -33,6 +35,13 @@ import {
   type ProjectAssetInsertDetail,
   type ProjectAssetTransfer,
 } from '@/core/beatcanvas/project-asset-transfer';
+import { addProjectAssetToTimeline } from '@/core/editor/timeline-client';
+
+const assetOperation = (asset: RecentAsset) => {
+  if (!asset.metadata || typeof asset.metadata !== 'object') return '';
+  const operation = (asset.metadata as { operation?: unknown }).operation;
+  return typeof operation === 'string' ? operation : '';
+};
 
 function AssetTile({
   asset,
@@ -41,16 +50,21 @@ function AssetTile({
   canAddToCanvas,
   onAdded,
   addLabel,
+  addTimelineLabel,
+  badgeLabel,
   openLabel,
 }: {
   asset: RecentAsset;
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'audio';
   projectId: string;
   canAddToCanvas: boolean;
   onAdded: () => void;
   addLabel: string;
+  addTimelineLabel: string;
+  badgeLabel: string | null;
   openLabel: string;
 }) {
+  const [isAddingToTimeline, setIsAddingToTimeline] = useState(false);
   const transfer: ProjectAssetTransfer = {
     ...asset,
     projectId,
@@ -84,12 +98,30 @@ function AssetTile({
       onDragEnd={(event) => {
         if (event.dataTransfer.dropEffect === 'copy') onAdded();
       }}
-      className={`group relative h-[200px] w-fit overflow-hidden rounded-[14px] bg-transparent transition hover:-translate-y-0.5 ${
+      className={`group relative overflow-hidden rounded-[14px] bg-white/[0.025] transition hover:-translate-y-0.5 ${
+        mediaType === 'audio' ? 'h-[112px] w-[360px]' : 'h-[200px] w-fit'
+      } ${
         canAddToCanvas ? 'cursor-grab active:cursor-grabbing' : ''
       }`}
       title={asset.filename || addLabel}
     >
-      {mediaType === 'video' ? (
+      {mediaType === 'audio' ? (
+        <div className="flex size-full flex-col justify-between border border-white/[0.08] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <AudioLines className="size-4 text-[var(--beat-graph)]" />
+            <p className="min-w-0 flex-1 truncate text-xs font-medium text-white/80">
+              {asset.filename || asset.id}
+            </p>
+          </div>
+          <audio
+            src={asset.publicUrl}
+            controls
+            preload="metadata"
+            className="h-8 w-full opacity-75"
+            onPointerDown={(event) => event.stopPropagation()}
+          />
+        </div>
+      ) : mediaType === 'video' ? (
         <video
           src={asset.publicUrl}
           muted
@@ -109,20 +141,52 @@ function AssetTile({
           <Video className="size-3.5" />
         </span>
       ) : null}
+      {badgeLabel ? (
+        <span className="pointer-events-none absolute left-2 top-2 rounded-md border border-[#ff7a33]/25 bg-black/65 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#ffad7e] backdrop-blur">
+          {badgeLabel}
+        </span>
+      ) : null}
 
-      {canAddToCanvas ? (
-        <button
-          type="button"
-          onClick={addToCanvas}
-          className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-black/80 via-black/5 to-transparent px-2 pb-2 opacity-0 transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100"
-          aria-label={`${addLabel}: ${asset.filename || asset.id}`}
-        >
-          <span className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 bg-white/12 px-2.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md">
-            <Plus className="size-3" />
-            {addLabel}
-          </span>
-        </button>
-      ) : (
+      {canAddToCanvas || mediaType === 'image' || mediaType === 'video' || mediaType === 'audio' ? (
+        <div className="absolute inset-0 flex items-end justify-center gap-1.5 bg-gradient-to-t from-black/85 via-black/10 to-transparent px-2 pb-2 opacity-0 transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+          {canAddToCanvas ? (
+            <button
+              type="button"
+              onClick={addToCanvas}
+              className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 bg-white/12 px-2.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md"
+              aria-label={`${addLabel}: ${asset.filename || asset.id}`}
+            >
+              <Plus className="size-3" />
+              {addLabel}
+            </button>
+          ) : null}
+          {mediaType === 'image' || mediaType === 'video' || mediaType === 'audio' ? (
+            <button
+              type="button"
+              disabled={isAddingToTimeline}
+              onClick={() => {
+                if (isAddingToTimeline) return;
+                setIsAddingToTimeline(true);
+                void addProjectAssetToTimeline({ projectId, asset, mediaType })
+                  .then(() => toast.success(addTimelineLabel))
+                  .catch((error: Error) => toast.error(error.message))
+                  .finally(() => setIsAddingToTimeline(false));
+              }}
+              className="inline-flex h-7 items-center gap-1 rounded-full border border-white/15 bg-white/12 px-2.5 text-[10px] font-semibold text-white shadow-lg backdrop-blur-md disabled:cursor-wait disabled:opacity-55"
+              aria-label={`${addTimelineLabel}: ${asset.filename || asset.id}`}
+            >
+              {isAddingToTimeline ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : mediaType === 'image' ? (
+                  <Images className="size-3" />
+                ) : (
+                  <Video className="size-3" />
+              )}
+              {addTimelineLabel}
+            </button>
+          ) : null}
+        </div>
+      ) : mediaType === 'image' ? (
         <a
           href={asset.publicUrl}
           target="_blank"
@@ -130,7 +194,7 @@ function AssetTile({
           className="absolute inset-0"
           aria-label={`${openLabel}: ${asset.filename || asset.id}`}
         />
-      )}
+      ) : null}
 
       {canAddToCanvas ? (
         <a
@@ -166,7 +230,16 @@ export function ProjectAssetsLibrary({
   });
   const images = assetsQuery.data?.images ?? [];
   const videos = assetsQuery.data?.videos ?? [];
-  const total = images.length + videos.length;
+  const audios = assetsQuery.data?.audios ?? [];
+  const total = images.length + videos.length + audios.length;
+  const badgeFor = (asset: RecentAsset) => {
+    const operation = assetOperation(asset);
+    if (operation === 'video_tail_frame') return t('tailFrame');
+    if (operation === 'timeline_render') return t('timelineRender');
+    if (operation === 'timeline_extract') return t('timelineExtract');
+    if (asset.assetClass === 'derived') return t('derivedClip');
+    return null;
+  };
 
   return (
     <>
@@ -211,6 +284,8 @@ export function ProjectAssetsLibrary({
                     canAddToCanvas={canAddToCanvas}
                     onAdded={() => onAdded?.()}
                     addLabel={t('addToCanvas')}
+                    addTimelineLabel={t('addToTimeline')}
+                    badgeLabel={badgeFor(asset)}
                     openLabel={t('openOriginal')}
                   />
                 ))}
@@ -233,6 +308,32 @@ export function ProjectAssetsLibrary({
                     canAddToCanvas={canAddToCanvas}
                     onAdded={() => onAdded?.()}
                     addLabel={t('addToCanvas')}
+                    addTimelineLabel={t('addToTimeline')}
+                    badgeLabel={badgeFor(asset)}
+                    openLabel={t('openOriginal')}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {audios.length > 0 ? (
+            <section>
+              <h3 className={`mb-3 ${beatPanelLabelClassName}`}>
+                {t('audios')}
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {audios.map((asset) => (
+                  <AssetTile
+                    key={asset.id}
+                    asset={asset}
+                    mediaType="audio"
+                    projectId={projectId}
+                    canAddToCanvas={canAddToCanvas}
+                    onAdded={() => onAdded?.()}
+                    addLabel={t('addToCanvas')}
+                    addTimelineLabel={t('addToTimeline')}
+                    badgeLabel={badgeFor(asset)}
                     openLabel={t('openOriginal')}
                   />
                 ))}

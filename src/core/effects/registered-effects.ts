@@ -1,4 +1,11 @@
 import type { EffectRecord } from '@/core/adapters/base-adapter';
+import {
+  getActiveGenerationProvider,
+  getActiveGenerationProviderId,
+  getGenerationProvider,
+  getGenerationModelBindingByEffectId,
+  type GenerationProviderModelBinding,
+} from '@/core/generation-providers';
 
 import {
   type WorkspaceEffectRegistryEntry,
@@ -7,34 +14,38 @@ import {
 } from './effect-registry';
 import { getWorkspaceMediaSchema } from './workspace-media';
 import {
-  isVideoAnalysisEffectId,
-  VIDEO_ANALYSIS_EFFECT_ID,
   VIDEO_ANALYSIS_MODEL_ID,
 } from './video-analysis';
 
 export type RegisteredEffect = EffectRecord;
 
-const VIDEO_ANALYSIS_EFFECT: RegisteredEffect = {
-  id: VIDEO_ANALYSIS_EFFECT_ID,
-  name: 'Video Analysis',
-  type: 3,
-  model: VIDEO_ANALYSIS_MODEL_ID,
-  version: null,
-  linkName: VIDEO_ANALYSIS_MODEL_ID,
-  description: 'BeatAPI asynchronous video analysis',
-  platform: 'beatapi',
-  api: 'https://api.beatapi.io/v1/video-analysis/tasks',
-  provider: 'beatapi',
-  inputSchema: {
-    prompt: { type: 'string', required: true },
-    video_url: { type: 'string', required: true },
-    analysis_depth: {
-      type: 'enum',
-      required: false,
-      values: ['standard', 'deep'],
+const buildVideoAnalysisEffect = (
+  binding: GenerationProviderModelBinding,
+  providerId = getActiveGenerationProviderId()
+): RegisteredEffect => {
+  const provider = getGenerationProvider(providerId);
+  return {
+    id: binding.effectId,
+    name: 'Video Analysis',
+    type: 3,
+    model: binding.upstreamModelId,
+    version: null,
+    linkName: VIDEO_ANALYSIS_MODEL_ID,
+    description: `${provider?.label ?? providerId} asynchronous video analysis`,
+    platform: binding.modelId,
+    api: null,
+    provider: providerId,
+    inputSchema: {
+      prompt: { type: 'string', required: true },
+      video_url: { type: 'string', required: true },
+      analysis_depth: {
+        type: 'enum',
+        required: false,
+        values: ['standard', 'deep'],
+      },
+      max_output_tokens: { type: 'number', required: false },
     },
-    max_output_tokens: { type: 'number', required: false },
-  },
+  };
 };
 
 const optionalAnyField = { type: 'any', required: false } as const;
@@ -118,36 +129,51 @@ const buildInputSchema = (entry: WorkspaceEffectRegistryEntry) => {
 };
 
 export const toRegisteredEffect = (
-  entry: WorkspaceEffectRegistryEntry
+  entry: WorkspaceEffectRegistryEntry,
+  binding: GenerationProviderModelBinding,
+  providerId = getActiveGenerationProviderId()
 ): RegisteredEffect => {
   const isImage = entry.workspaceType === 'ai-image';
+  const provider = getGenerationProvider(providerId);
+  if (!provider) throw new Error(`Generation provider ${providerId} is not registered.`);
 
   return {
-    id: entry.effectId,
+    id: binding.effectId,
     name: entry.name,
     type: isImage ? 2 : 1,
-    model: entry.id,
+    model: binding.upstreamModelId,
     version: null,
     linkName: entry.routeSlug ?? entry.id,
-    description: `BeatAPI ${entry.name}`,
-    platform: 'beatapi',
-    api: isImage
-      ? 'https://api.beatapi.io/v1/images/tasks'
-      : 'https://api.beatapi.io/v1/videos/tasks',
-    provider: 'beatapi',
+    description: `${provider.label} ${entry.name}`,
+    platform: provider.id,
+    api: null,
+    provider: provider.id,
     inputSchema: buildInputSchema(entry),
   };
 };
 
 export const listRegisteredEffects = (): RegisteredEffect[] =>
-  [...WORKSPACE_EFFECT_REGISTRY.map(toRegisteredEffect), VIDEO_ANALYSIS_EFFECT];
+  getActiveGenerationProvider().modelBindings.flatMap((binding) => {
+    if (binding.modelId === VIDEO_ANALYSIS_MODEL_ID) {
+      return [buildVideoAnalysisEffect(binding)];
+    }
+    const entry = WORKSPACE_EFFECT_REGISTRY.find(
+      (candidate) => candidate.id === binding.modelId
+    );
+    return entry ? [toRegisteredEffect(entry, binding)] : [];
+  });
 
 export const getRegisteredEffectById = (
-  id: number
+  id: number,
+  providerId = getActiveGenerationProviderId()
 ): RegisteredEffect | null => {
-  if (isVideoAnalysisEffectId(id)) return VIDEO_ANALYSIS_EFFECT;
-  const entry = getWorkspaceEffectRegistryEntryByEffectId(id);
-  return entry ? toRegisteredEffect(entry) : null;
+  const binding = getGenerationModelBindingByEffectId({ effectId: id, providerId });
+  if (!binding) return null;
+  if (binding.modelId === VIDEO_ANALYSIS_MODEL_ID) {
+    return buildVideoAnalysisEffect(binding, providerId);
+  }
+  const entry = getWorkspaceEffectRegistryEntryByEffectId(id, providerId);
+  return entry ? toRegisteredEffect(entry, binding, providerId) : null;
 };
 
 export const getRegisteredEffectsByIds = (ids: number[]): RegisteredEffect[] => {

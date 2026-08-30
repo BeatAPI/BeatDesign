@@ -15,6 +15,7 @@ type SnapshotSaveFailure = {
 
 export const PROJECT_SNAPSHOT_AUTOSAVE_DELAY_MS = 350;
 export const PROJECT_SNAPSHOT_CHECKPOINT_INTERVAL_MS = 5_000;
+export const PROJECT_SNAPSHOT_EXTERNAL_POLL_INTERVAL_MS = 2_000;
 
 const readSnapshotSaveFailure = async (
   response: Response
@@ -126,6 +127,7 @@ export function useProjectSnapshotLifecycle({
   );
   const saveQueueRef = useRef(Promise.resolve());
   const snapshotConflictRef = useRef(false);
+  const externalPollInFlightRef = useRef(false);
 
   const saveSerializedSnapshot = useCallback(
     async (serializedSnapshot: string, allowEmpty: boolean) => {
@@ -308,6 +310,60 @@ export function useProjectSnapshotLifecycle({
     isHydratedFromProject,
     saveSerializedSnapshot,
   ]);
+
+  useEffect(() => {
+    if (!isCanvasReady || !isHydratedFromProject) return;
+    const pollExternalSnapshot = async () => {
+      if (snapshotConflictRef.current || pendingProjectSnapshotRef.current) {
+        return;
+      }
+      if (externalPollInFlightRef.current) return;
+      externalPollInFlightRef.current = true;
+      try {
+        const response = await fetch(
+          `/api/app/projects/${encodeURIComponent(projectId)}/snapshot`
+        );
+        if (!response.ok) return;
+        const payload = (await response.json()) as {
+          version?: number;
+          document?: ProjectSnapshotDocument;
+        };
+        if (
+          typeof payload.version !== 'number' ||
+          !payload.document ||
+          payload.version <= (lastSavedProjectSnapshotVersionRef.current ?? 0)
+        ) {
+          return;
+        }
+        lastSavedProjectSnapshotVersionRef.current = payload.version;
+        lastSavedProjectSnapshotRef.current = JSON.stringify(payload.document);
+        restoreProjectSnapshot(payload.document);
+      } catch {
+        // External refresh is best-effort; the next poll retries automatically.
+      } finally {
+        externalPollInFlightRef.current = false;
+      }
+    };
+
+    const pollWhenVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void pollExternalSnapshot();
+      }
+    };
+
+    void pollExternalSnapshot();
+    const intervalId = window.setInterval(
+      () => void pollExternalSnapshot(),
+      PROJECT_SNAPSHOT_EXTERNAL_POLL_INTERVAL_MS
+    );
+    window.addEventListener('focus', pollWhenVisible);
+    document.addEventListener('visibilitychange', pollWhenVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', pollWhenVisible);
+      document.removeEventListener('visibilitychange', pollWhenVisible);
+    };
+  }, [isCanvasReady, isHydratedFromProject, projectId, restoreProjectSnapshot]);
 
   useEffect(() => {
     if (!isCanvasReady || !isHydratedFromProject) return;

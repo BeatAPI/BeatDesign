@@ -5,24 +5,42 @@ import {
 
 export type PersistedLocalProjectAsset = {
   id: string;
-  type: 'image' | 'video';
+  type: 'image' | 'video' | 'audio';
   publicUrl: string;
   filename: string;
   mimeType: string;
   sizeBytes: number;
+  width?: number;
+  height?: number;
+  durationMs?: number;
 };
 
 export const uploadLocalProjectAsset = async ({
   projectId,
   file,
+  assetClass = 'original',
+  metadata,
+  width,
+  height,
+  durationMs,
   fetchImpl = fetch,
 }: {
   projectId: string;
   file: File;
+  assetClass?: 'original' | 'derived';
+  metadata?: Record<string, unknown>;
+  width?: number;
+  height?: number;
+  durationMs?: number;
   fetchImpl?: typeof fetch;
 }): Promise<PersistedLocalProjectAsset> => {
   const formData = new FormData();
   formData.set('file', file, file.name);
+  formData.set('assetClass', assetClass);
+  if (metadata) formData.set('metadata', JSON.stringify(metadata));
+  if (Number.isFinite(width)) formData.set('width', String(width));
+  if (Number.isFinite(height)) formData.set('height', String(height));
+  if (Number.isFinite(durationMs)) formData.set('durationMs', String(durationMs));
   const response = await fetchImpl(
     `/api/app/projects/${encodeURIComponent(projectId)}/assets`,
     {

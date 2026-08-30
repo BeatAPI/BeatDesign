@@ -10,6 +10,9 @@ import {
 const asObject = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
 
+const readString = (value: unknown) =>
+  typeof value === 'string' && value.trim() ? value.trim() : null;
+
 export async function syncGeneration({
   wmTaskId,
   effectId,
@@ -22,7 +25,11 @@ export async function syncGeneration({
   if (generation.status === 'succeeded' || generation.status === 'failed') {
     return { ok: true as const, generation };
   }
-  const effect = await getEffectById(effectId);
+  const providerIdentity = asObject(asObject(generation.input)._provider);
+  const effect = await getEffectById(
+    effectId,
+    readString(providerIdentity.id) ?? undefined
+  );
   if (!effect) return { ok: false as const, status: 404, error: 'Model not found' };
   if (!generation.providerTaskId) {
     return { ok: true as const, generation };

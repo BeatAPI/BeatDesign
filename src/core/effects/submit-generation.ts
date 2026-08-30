@@ -1,7 +1,8 @@
 import { createAdapter } from '@/core/adapters/adapter-factory';
 import { getEffectById } from '@/core/effects/effects';
 import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
-import { isVideoAnalysisEffectId } from '@/core/effects/video-analysis';
+import { VIDEO_ANALYSIS_MODEL_ID } from '@/core/effects/video-analysis';
+import { getGenerationModelBindingByEffectId } from '@/core/generation-providers';
 import {
   getGenerationConcurrencyErrorMessage,
   resolveGenerationConcurrencyGate,
@@ -140,10 +141,17 @@ export async function submitEffectGeneration({
     return { status: 400, body: { error: 'effectId is required' } };
   }
   const effect = await getEffectById(effectId);
+  const binding = effect
+    ? getGenerationModelBindingByEffectId({
+        effectId,
+        providerId: effect.provider,
+      })
+    : null;
   if (
     !effect ||
-    (!getWorkspaceEffectRegistryEntryByEffectId(effectId) &&
-      !isVideoAnalysisEffectId(effectId))
+    !binding ||
+    (!getWorkspaceEffectRegistryEntryByEffectId(effectId, effect.provider) &&
+      binding.modelId !== VIDEO_ANALYSIS_MODEL_ID)
   ) {
     return { status: 404, body: { error: 'Model not found' } };
   }
@@ -189,9 +197,16 @@ export async function submitEffectGeneration({
       body: { error: 'A generation intent is required.' },
     };
   }
-  const recordedInput = metadata
-    ? { ...adapterInput, _source: metadata }
-    : adapterInput;
+  const recordedInput = {
+    ...adapterInput,
+    ...(metadata ? { _source: metadata } : {}),
+    _provider: {
+      id: effect.provider,
+      modelId: binding?.modelId ?? effect.model,
+      upstreamModelId: effect.model,
+      effectId,
+    },
+  };
   const admission = await withGenerationSubmissionLock<
     | { result: SubmitEffectGenerationResult }
     | { generationId: string; intentId: string }

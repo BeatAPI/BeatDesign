@@ -13,8 +13,11 @@ import type {
   ProjectSnapshotDocument,
   ProjectSnapshotShapeFrame,
 } from '@/core/projects/project-snapshot';
+import { parseLocalProjectAssetUrl } from '@/core/projects/local-project-asset-url';
 import type {
   CanvasCard,
+  CanvasAssetMediaType,
+  CanvasAssetCard,
   CanvasCardMediaType,
   CanvasDraftCard,
   CanvasOutputCard,
@@ -31,7 +34,10 @@ import {
   resolveReferenceDrivenDraftAspectRatio,
   resolveWorkspaceAspectRatioFromDimensions,
 } from '@/core/beatcanvas/composer';
-import { resolveCanvasBatchOffset } from '@/core/beatcanvas/upload-layout';
+import {
+  resolveCanvasBatchOffset,
+  resolveNonOverlappingPlacement,
+} from '@/core/beatcanvas/upload-layout';
 import {
   type MutableRefObject,
   useCallback,
@@ -119,10 +125,12 @@ const getDraftFrameSize = (
   };
 };
 
-const getAssetFrameSize = (taskType: CanvasCardMediaType): ShapeSize =>
-  taskType === 'video'
-    ? { w: 420, h: VIDEO_FRAME_HEIGHT }
-    : { w: CARD_RESULT_SIZE, h: CARD_RESULT_SIZE };
+const getAssetFrameSize = (taskType: CanvasAssetMediaType): ShapeSize => {
+  if (taskType === 'video') return { w: 420, h: VIDEO_FRAME_HEIGHT };
+  if (taskType === 'audio') return { w: 320, h: 104 };
+  if (taskType === 'timeline') return { w: 360, h: 220 };
+  return { w: CARD_RESULT_SIZE, h: CARD_RESULT_SIZE };
+};
 
 const getDraftShapeSignature = (
   card: CanvasDraftCard,
@@ -687,14 +695,35 @@ export function useBeatCanvasReactFlowAdapter({
       const editor = editorRef.current;
       if (!editor) {
         return {
-          x: 200 + offset.x,
-          y: 180 + offset.y,
+          x: 80 + offset.x,
+          y: 80 + offset.y,
         };
       }
 
       const existingBounds = sourceIds
         .map((id) => editor.getShapePageBounds(id as any))
         .filter(Boolean);
+      const width = size?.w ?? 360;
+      const height = size?.h ?? 260;
+      const occupied = Object.keys(canvasCardsRef.current).flatMap((cardId) => {
+        const bounds = editor.getShapePageBounds(cardId as any) as
+          | { minX: number; minY: number; maxX: number; maxY: number }
+          | undefined;
+        return bounds
+          ? [
+              {
+                x: bounds.minX,
+                y: bounds.minY,
+                w: bounds.maxX - bounds.minX,
+                h: bounds.maxY - bounds.minY,
+              },
+            ]
+          : [];
+      });
+      let next = {
+        x: 80 + offset.x,
+        y: 80 + offset.y,
+      };
 
       if (existingBounds.length > 0) {
         const right = Math.max(
@@ -709,32 +738,29 @@ export function useBeatCanvasReactFlowAdapter({
         const bottom = Math.max(
           ...existingBounds.map((bounds: any) => bounds.maxY)
         );
-        const width = size?.w ?? 360;
-        const height = size?.h ?? 260;
-
-        return {
+        next = {
           x:
             side === 'left'
               ? left - width - 96 - offset.x
               : right + 96 + offset.x,
           y: top + Math.max(0, (bottom - top - height) / 2) + offset.y,
         };
-      }
-
-      if (size && typeof editor.getViewportPageBounds === 'function') {
-        const viewportCenter = editor.getViewportPageBounds().center;
-        return {
-          x: viewportCenter.x - size.w / 2 + offset.x,
-          y: viewportCenter.y - size.h / 2 + offset.y,
+      } else if (occupied.length > 0) {
+        const maxX = Math.max(...occupied.map((frame) => frame.x + frame.w));
+        const minY = Math.min(...occupied.map((frame) => frame.y));
+        next = {
+          x: maxX + 48 + offset.x,
+          y: minY + offset.y,
         };
       }
-
-      return {
-        x: 200 + offset.x,
-        y: 160 + offset.y,
-      };
+      return resolveNonOverlappingPlacement({
+        ...next,
+        w: width,
+        h: height,
+        occupied,
+      });
     },
-    []
+    [canvasCardsRef]
   );
 
   const createConnectorBetweenCards = useCallback(
@@ -830,7 +856,7 @@ export function useBeatCanvasReactFlowAdapter({
 
   const syncAssetShape = useCallback((card: CanvasCard) => {
     const editor = editorRef.current;
-    if (!editor || !card.url) return;
+    if (!editor || card.kind !== 'asset') return;
 
     editor.updateShape({
       id: card.id,
@@ -851,7 +877,11 @@ export function useBeatCanvasReactFlowAdapter({
       },
       props: {
         title: card.name,
-        thumbnailUrl: card.url,
+        thumbnailUrl: card.url ?? '',
+        durationSec: card.durationSec,
+        audioRole: card.audioRole,
+        timelineId: card.timelineId,
+        clipCount: card.clipCount,
       },
     });
   }, []);
@@ -861,7 +891,6 @@ export function useBeatCanvasReactFlowAdapter({
       type,
       url,
       name,
-      kind,
       assetId,
       sourceGenerationId,
       sourceCardIds = [],
@@ -876,12 +905,17 @@ export function useBeatCanvasReactFlowAdapter({
       fitMode = 'cover',
       chromeMode = 'default',
       workflowTemplateId = null,
+      durationSec,
+      audioRole,
+      timelineId,
+      clipCount,
+      lastRenderAssetId,
       recordHistory = true,
     }: {
-      type: CanvasCardMediaType;
-      url: string;
+      type: CanvasAssetMediaType;
+      url?: string | null;
       name: string;
-      kind: CanvasCard['kind'];
+      kind?: 'asset';
       assetId?: string | null;
       sourceGenerationId?: string | null;
       sourceCardIds?: string[];
@@ -892,10 +926,15 @@ export function useBeatCanvasReactFlowAdapter({
       size?: ShapeSize;
       shapeId?: string;
       frame?: ProjectSnapshotShapeFrame;
-      existingCard?: CanvasCard;
+      existingCard?: CanvasAssetCard;
       fitMode?: 'cover' | 'contain';
       chromeMode?: 'default' | 'frameless';
       workflowTemplateId?: string | null;
+      durationSec?: number | null;
+      audioRole?: CanvasCard['audioRole'];
+      timelineId?: string | null;
+      clipCount?: number | null;
+      lastRenderAssetId?: string | null;
       recordHistory?: boolean;
     }) => {
       const editor = editorRef.current;
@@ -929,7 +968,7 @@ export function useBeatCanvasReactFlowAdapter({
         x,
         y,
         meta: {
-          [CARD_KIND_META_KEY]: kind,
+          [CARD_KIND_META_KEY]: 'asset',
           [CARD_TYPE_META_KEY]: type,
           ...(sourceGenerationId
             ? {
@@ -947,9 +986,13 @@ export function useBeatCanvasReactFlowAdapter({
           h: nextSize.h,
           cardMediaType: type,
           title: name,
-          thumbnailUrl: url,
+          thumbnailUrl: url ?? '',
           fitMode,
           chromeMode,
+          durationSec: durationSec ?? existingCard?.durationSec,
+          audioRole: audioRole ?? existingCard?.audioRole,
+          timelineId: timelineId ?? existingCard?.timelineId,
+          clipCount: clipCount ?? existingCard?.clipCount,
         },
       });
 
@@ -963,10 +1006,10 @@ export function useBeatCanvasReactFlowAdapter({
           : {
               id: nextShapeId,
               assetId: assetId ?? null,
-              kind,
+              kind: 'asset',
               type,
               name,
-              url,
+              url: url ?? null,
               prompt: '',
               referenceCardIds: sourceCardIds,
               workflowTemplateId,
@@ -980,6 +1023,11 @@ export function useBeatCanvasReactFlowAdapter({
               variant: 'standard',
               quality: 'standard',
               sourceGenerationId: sourceGenerationId ?? null,
+              durationSec: durationSec ?? null,
+              audioRole,
+              timelineId: timelineId ?? null,
+              clipCount: clipCount ?? null,
+              lastRenderAssetId: lastRenderAssetId ?? null,
             }
       );
 
@@ -1192,6 +1240,8 @@ export function useBeatCanvasReactFlowAdapter({
 
       const completedOutputCard: CanvasOutputCard = {
         ...current,
+        assetId:
+          parseLocalProjectAssetUrl(url)?.assetId ?? current.assetId ?? null,
         name,
         url: url ?? null,
         resultText,

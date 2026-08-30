@@ -27,6 +27,10 @@ import {
   type WorkspaceModelOption,
 } from '@/core/effects/workspace-models';
 import {
+  buildAssetFirstReferencesFromCanvasCards,
+  normalizeAssetFirstGenerationRequest,
+} from '@/core/commands/generation-contract';
+import {
   type CanvasCard,
   type CanvasCardMediaType,
   type CanvasCardStatus,
@@ -156,13 +160,18 @@ export const loadVideoDurationSeconds = (
 
 export const toWorkflowReferenceCard = (
   card: CanvasCard
-): WorkflowReferenceCard => ({
-  id: card.id,
-  name: card.name,
-  type: card.type,
-  url: card.url ?? '',
-  role: 'asset',
-});
+): WorkflowReferenceCard => {
+  if (card.type !== 'image' && card.type !== 'video') {
+    throw new Error('Only image and video cards can be generation references');
+  }
+  return {
+    id: card.id,
+    name: card.name,
+    type: card.type,
+    url: card.url ?? '',
+    role: 'asset',
+  };
+};
 
 export const getSelectableModel = (
   models: WorkspaceModelOption[],
@@ -299,7 +308,10 @@ export const buildGenerationEffectInput = async ({
   const referenceCards = draftCard.referenceCardIds
     .map((cardId) => canvasCards[cardId])
     .flatMap((card) => {
-      if (!card?.url) return [];
+      if (
+        !card?.url ||
+        (card.type !== 'image' && card.type !== 'video')
+      ) return [];
       const providerUrl = referenceUrlOverrides[card.id] ?? card.url;
       if (isLocalWorkspaceMediaUrl(providerUrl)) return [];
       return [
@@ -686,11 +698,55 @@ export const runDraftGeneration = async ({
     });
     setStatusMessage(translate('messages.submittingRequest'));
 
+    const submittedCard = getCurrentCard(draftId);
+    const generation =
+      projectId && isCanvasDraftCard(submittedCard)
+        ? normalizeAssetFirstGenerationRequest({
+            version: 1,
+            projectId,
+            mode: isCanvasAnalysisCard(submittedCard)
+              ? 'analysis'
+              : submittedCard.type,
+            modelId: submittedCard.modelId || model.id,
+            prompt: submittedCard.prompt,
+            references: buildAssetFirstReferencesFromCanvasCards({
+              cards: Object.fromEntries(
+                submittedCard.referenceCardIds.flatMap((cardId) => {
+                  const card = getCurrentCard(cardId);
+                  return card ? [[cardId, card]] : [];
+                })
+              ),
+              referenceCardIds: submittedCard.referenceCardIds,
+              mode: isCanvasAnalysisCard(submittedCard)
+                ? 'analysis'
+                : submittedCard.type,
+              deliveryUrlsByCardId: referenceUrlOverrides,
+            }),
+            parameters: Object.fromEntries(
+              Object.entries(input).filter(
+                ([key]) =>
+                  ![
+                    'prompt',
+                    'image_url',
+                    'image_urls',
+                    'video_url',
+                    'video_urls',
+                    'audio_url',
+                    'audio_urls',
+                    'first_frame',
+                    'last_frame',
+                  ].includes(key)
+              )
+            ),
+          })
+        : undefined;
+
     const response = await generateEffectImpl({
       effectId,
       input,
       projectId,
       generationIntentToken,
+      generation,
     });
     if (!response.ok) {
       throw new GenerationFailure(

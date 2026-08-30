@@ -177,3 +177,40 @@ test('persists Canvas video analysis mode, depth, and text output', () => {
     '00:00 The subject enters frame.'
   );
 });
+
+test('persists Audio Asset and Timeline nodes across Canvas reloads', () => {
+  const normalized = normalizeProjectSnapshotDocument({
+    version: 3,
+    cards: [
+      {
+        id: 'audio-1',
+        kind: 'asset',
+        type: 'audio',
+        name: 'Background music',
+        url: '/api/app/projects/project-1/assets/audio-1',
+        audioRole: 'music',
+        durationSec: 5,
+      },
+      {
+        id: 'timeline:one',
+        kind: 'asset',
+        type: 'timeline',
+        name: 'Timeline 1',
+        url: null,
+        timelineId: 'one',
+        durationSec: 4,
+        clipCount: 2,
+      },
+    ],
+    frames: {
+      'audio-1': { x: 0, y: 0, w: 320, h: 104 },
+      'timeline:one': { x: 380, y: 0, w: 360, h: 220 },
+    },
+  });
+
+  assert.equal(normalized.cards[0]?.type, 'audio');
+  assert.equal(normalized.cards[0]?.audioRole, 'music');
+  assert.equal(normalized.cards[1]?.type, 'timeline');
+  assert.equal(normalized.cards[1]?.clipCount, 2);
+  assert.ok(normalized.frames['timeline:one']);
+});

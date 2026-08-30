@@ -30,7 +30,7 @@ const makeCard = (overrides: Partial<CanvasCard>): CanvasCard => ({
   quality: 'standard',
   sourceGenerationId: null,
   ...overrides,
-});
+}) as CanvasCard;
 
 test('recognizes real asset and generated media cards as previewable and downloadable', () => {
   assert.equal(isPreviewableCanvasCard(makeCard({})), true);

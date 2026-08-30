@@ -296,7 +296,11 @@ export const canUseCanvasCardAsGenerationReference = ({
     return true;
   }
 
-  return targetType === 'video' && targetModel?.supportsSourceVideo === true;
+  return (
+    sourceCard.type === 'video' &&
+    targetType === 'video' &&
+    targetModel?.supportsSourceVideo === true
+  );
 };
 
 export const listCompatibleCanvasReferenceCards = ({
@@ -320,8 +324,13 @@ export const listCompatibleCanvasReferenceCards = ({
     0
   );
 
-  return Object.values(cards).filter((card): card is CanvasCard => {
-    if (!card || card.id === draftCard.id) {
+  return Object.values(cards).filter(
+    (card): card is CanvasCard & { type: CanvasCardMediaType } => {
+    if (
+      !card ||
+      (card.type !== 'image' && card.type !== 'video') ||
+      card.id === draftCard.id
+    ) {
       return false;
     }
 
@@ -357,7 +366,8 @@ export const listCompatibleCanvasReferenceCards = ({
       targetModel: model,
       targetGenerationMode: draftCard.generationMode,
     });
-  });
+    }
+  );
 };
 
 export const removeReferenceCardId = (

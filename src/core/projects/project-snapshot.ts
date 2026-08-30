@@ -88,7 +88,6 @@ const normalizeFrame = (value: unknown): ProjectSnapshotShapeFrame | null => {
   ) {
     return null;
   }
-
   return { x, y, w, h };
 };
 
@@ -170,7 +169,7 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
     !id ||
     id.length > MAX_ID_CHARS ||
     !['asset', 'generation', 'output'].includes(kind || '') ||
-    !['image', 'video'].includes(type || '') ||
+    !['image', 'video', 'audio', 'timeline'].includes(type || '') ||
     !name ||
     name.length > MAX_NAME_CHARS
   ) {
@@ -192,6 +191,9 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
     kind === 'output' &&
     (!sourceConfigCardId || !generationRunId || !generationSnapshot)
   ) {
+    return null;
+  }
+  if (kind !== 'asset' && (type === 'audio' || type === 'timeline')) {
     return null;
   }
 
@@ -275,8 +277,39 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
     generationSnapshot,
     pinnedOutputId:
       typeof value.pinnedOutputId === 'string' ? value.pinnedOutputId : null,
-  };
+    audioRole:
+      value.audioRole === 'music' ||
+      value.audioRole === 'voice' ||
+      value.audioRole === 'sound_effect' ||
+      value.audioRole === 'source_audio' ||
+      value.audioRole === 'reference'
+        ? value.audioRole
+        : undefined,
+    durationSec: isFiniteNumber(value.durationSec)
+      ? Math.max(0, value.durationSec)
+      : null,
+    waveformPeaks: Array.isArray(value.waveformPeaks)
+      ? value.waveformPeaks
+          .filter(isFiniteNumber)
+          .slice(0, 256)
+          .map((peak) => Math.max(0, Math.min(1, peak)))
+      : undefined,
+    timelineId:
+      typeof value.timelineId === 'string'
+        ? value.timelineId.slice(0, MAX_ID_CHARS)
+        : null,
+    clipCount: isFiniteNumber(value.clipCount)
+      ? Math.max(0, Math.floor(value.clipCount))
+      : null,
+    lastRenderAssetId:
+      typeof value.lastRenderAssetId === 'string'
+        ? value.lastRenderAssetId.slice(0, MAX_ID_CHARS)
+        : null,
+  } as CanvasCard;
 };
+
+export const normalizeProjectSnapshotCard = (value: unknown) =>
+  normalizeCard(value);
 
 export const createEmptyProjectSnapshot = (): ProjectSnapshotDocument => ({
   version: 3,

@@ -6,6 +6,8 @@ const mutationRoutes = [
   './app/projects/index.ts',
   './app/projects/$projectId.ts',
   './app/projects/$projectId/snapshot.ts',
+  './app/projects/$projectId/commands.ts',
+  './app/projects/$projectId/timeline.ts',
   './effects/precheck.ts',
   './effects/generate.ts',
 ];
@@ -31,6 +33,26 @@ test('workspace JSON mutation routes enforce the same-origin request contract', 
       `${route} must validate the workspace mutation request`
     );
   }
+});
+
+test('the UI command route assigns origin server-side', () => {
+  const route = readFileSync(
+    new URL('./app/projects/$projectId/commands.ts', import.meta.url),
+    'utf8'
+  );
+  const schema = readFileSync(
+    new URL('../../core/commands/schema.ts', import.meta.url),
+    'utf8'
+  );
+  const client = readFileSync(
+    new URL('../../core/commands/client.ts', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(route, /origin: 'ui'/);
+  assert.doesNotMatch(route, /payload\.origin/);
+  assert.doesNotMatch(schema, /origin: z\.enum/);
+  assert.doesNotMatch(client, /origin,/);
 });
 
 test('workspace multipart mutation routes enforce the same-origin request contract', () => {

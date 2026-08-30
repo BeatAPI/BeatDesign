@@ -3,6 +3,7 @@ import handler from '@tanstack/react-start/server-entry';
 import { runDueGenerationStatusPasses } from './core/effects/server-poller';
 import { cleanupStaleGenerations } from './core/effects/stale-generations';
 import { getWwwRedirectLocation } from './lib/canonical-url';
+import { normalizeProjectAssetMediaRequest } from './lib/project-asset-media-request';
 import { paraglideMiddleware } from './paraglide/server.js';
 
 // On Cloudflare Workers, stash the binding env (D1, ASSETS, …) on globalThis
@@ -41,7 +42,8 @@ export default {
     }
 
     await ensureCloudflareEnv();
-    return paraglideMiddleware(req, () => handler.fetch(req));
+    const routedRequest = normalizeProjectAssetMediaRequest(req);
+    return paraglideMiddleware(routedRequest, () => handler.fetch(routedRequest));
   },
   async scheduled(
     _controller: unknown,

@@ -1,0 +1,27 @@
+{
+  "name": "beatdesign",
+  "version": "0.2.0",
+  "description": "Control a local BeatDesign Canvas, generation workspace, and video Editor through MCP.",
+  "author": {
+    "name": "BeatAPI"
+  },
+  "homepage": "https://github.com/BeatAPI/BeatDesign",
+  "repository": "https://github.com/BeatAPI/BeatDesign",
+  "license": "Apache-2.0",
+  "keywords": ["beatdesign", "canvas", "video-editor", "generation", "mcp"],
+  "interface": {
+    "displayName": "BeatDesign",
+    "shortDescription": "Create and edit local media projects",
+    "longDescription": "BeatDesign connects Codex to a free local-first Canvas and video Editor. Read projects and Assets, generate media with logical model capabilities, and apply safe incremental Canvas or timeline edits.",
+    "developerName": "BeatAPI",
+    "category": "Design",
+    "capabilities": ["Read", "Write"],
+    "defaultPrompt": [
+      "Open my latest BeatDesign project and summarize the canvas",
+      "Turn these project assets into a rough video timeline",
+      "Diagnose the current timeline and fix safe editing issues"
+    ],
+    "brandColor": "#111111"
+  },
+  "mcpServers": "./.mcp.json"
+}

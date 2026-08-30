@@ -23,6 +23,9 @@ async function GET({ request }: { request: Request }) {
       width: userAsset.width,
       height: userAsset.height,
       createdAt: userAsset.createdAt,
+      mimeType: userAsset.mimeType,
+      assetClass: userAsset.assetClass,
+      metadata: userAsset.metadata,
     };
     const videoFields = {
       ...imageFields,
@@ -87,9 +90,42 @@ async function GET({ request }: { request: Request }) {
           .orderBy(desc(userAsset.createdAt))
           .limit(30);
 
-    const [images, videos] = await Promise.all([imageQuery, videoQuery]);
+    const audioQuery = projectId
+      ? db
+          .selectDistinct(videoFields)
+          .from(userAsset)
+          .innerJoin(
+            projectAssetMembership,
+            eq(projectAssetMembership.assetId, userAsset.id)
+          )
+          .where(
+            and(
+              eq(projectAssetMembership.projectId, projectId),
+              eq(userAsset.type, 'audio'),
+              isNotNull(userAsset.publicUrl)
+            )
+          )
+          .orderBy(desc(userAsset.createdAt))
+          .limit(30)
+      : db
+          .select(videoFields)
+          .from(userAsset)
+          .where(
+            and(
+              eq(userAsset.type, 'audio'),
+              isNotNull(userAsset.publicUrl)
+            )
+          )
+          .orderBy(desc(userAsset.createdAt))
+          .limit(30);
 
-    return Response.json({ images, videos });
+    const [images, videos, audios] = await Promise.all([
+      imageQuery,
+      videoQuery,
+      audioQuery,
+    ]);
+
+    return Response.json({ images, videos, audios });
 }
 
 export const Route = createFileRoute('/api/app/recent-assets')({

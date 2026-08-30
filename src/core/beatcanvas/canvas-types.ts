@@ -12,6 +12,7 @@ import type {
 import type { VideoAnalysisDepth } from '@/core/effects/video-analysis';
 
 export type CanvasCardMediaType = 'image' | 'video';
+export type CanvasAssetMediaType = CanvasCardMediaType | 'audio' | 'timeline';
 export type CanvasGenerationMode = CanvasCardMediaType | 'analysis';
 export type CanvasCardKind = 'asset' | 'generation' | 'output';
 export type CanvasCardStatus =
@@ -21,11 +22,11 @@ export type CanvasCardStatus =
   | 'succeeded'
   | 'failed';
 
-export type CanvasCard = {
+type CanvasCardBase = {
   id: string;
   assetId?: string | null;
   kind: CanvasCardKind;
-  type: CanvasCardMediaType;
+  type: CanvasAssetMediaType;
   generationMode?: CanvasGenerationMode;
   analysisDepth?: VideoAnalysisDepth;
   name: string;
@@ -52,10 +53,16 @@ export type CanvasCard = {
   generationSnapshot?: CanvasGenerationSnapshot | null;
   /** Generation card: output card id whose result is pinned on the node. */
   pinnedOutputId?: string | null;
+  audioRole?: 'music' | 'voice' | 'sound_effect' | 'source_audio' | 'reference';
+  durationSec?: number | null;
+  waveformPeaks?: number[];
+  timelineId?: string | null;
+  clipCount?: number | null;
+  lastRenderAssetId?: string | null;
 };
 
 export type CanvasGenerationSnapshot = Pick<
-  CanvasCard,
+  CanvasCardBase,
   | 'type'
   | 'generationMode'
   | 'analysisDepth'
@@ -74,19 +81,32 @@ export type CanvasGenerationSnapshot = Pick<
   | 'backgroundSource'
   | 'resultText'
 > & {
+  type: CanvasCardMediaType;
   capturedAt: string;
 };
 
-export type CanvasGenerationCard = CanvasCard & {
-  kind: 'generation';
+export type CanvasAssetCard = CanvasCardBase & {
+  kind: 'asset';
+  type: CanvasAssetMediaType;
 };
 
-export type CanvasOutputCard = CanvasCard & {
+export type CanvasGenerationCard = CanvasCardBase & {
+  kind: 'generation';
+  type: CanvasCardMediaType;
+};
+
+export type CanvasOutputCard = CanvasCardBase & {
   kind: 'output';
+  type: CanvasCardMediaType;
   sourceConfigCardId: string;
   generationRunId: string;
   generationSnapshot: CanvasGenerationSnapshot;
 };
+
+export type CanvasCard =
+  | CanvasAssetCard
+  | CanvasGenerationCard
+  | CanvasOutputCard;
 
 export const isCanvasGenerationCard = (
   card: CanvasCard | null | undefined
@@ -104,7 +124,9 @@ export type CanvasDraftCard = CanvasGenerationCard;
 
 export const getCanvasGenerationMode = (
   card: Pick<CanvasCard, 'type' | 'generationMode'>
-): CanvasGenerationMode => card.generationMode ?? card.type;
+): CanvasGenerationMode =>
+  card.generationMode ??
+  (card.type === 'image' || card.type === 'video' ? card.type : 'video');
 
 export const isCanvasAnalysisCard = (
   card: CanvasCard | null | undefined

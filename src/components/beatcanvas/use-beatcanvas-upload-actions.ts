@@ -46,6 +46,40 @@ type TranslateFn = (
 export type UploadIntent = CanvasCardMediaType;
 export type UploadActivityIntent = UploadIntent | 'media';
 
+export type UploadMediaMetadata = {
+  size?: AssetShapeSize;
+  width?: number;
+  height?: number;
+  durationMs?: number;
+};
+
+export function createUploadMediaMetadata({
+  width,
+  height,
+  durationSec,
+}: {
+  width: number;
+  height: number;
+  durationSec?: number;
+}): UploadMediaMetadata {
+  const validWidth = Number.isFinite(width) && width > 0 ? Math.round(width) : undefined;
+  const validHeight = Number.isFinite(height) && height > 0 ? Math.round(height) : undefined;
+  const validDurationMs =
+    Number.isFinite(durationSec) && (durationSec ?? 0) > 0
+      ? Math.round((durationSec ?? 0) * 1000)
+      : undefined;
+  return {
+    ...(validWidth && validHeight
+      ? {
+          width: validWidth,
+          height: validHeight,
+          size: computeAdaptiveAssetSize(validWidth, validHeight),
+        }
+      : {}),
+    ...(validDurationMs ? { durationMs: validDurationMs } : {}),
+  };
+}
+
 export type UploadRequest =
   | {
       intent: 'media';
@@ -105,6 +139,7 @@ export function materializePersistedImageUploadsToCanvas({
     fitMode?: 'cover' | 'contain';
     chromeMode?: 'default' | 'frameless';
     workflowTemplateId?: string | null;
+    durationSec?: number | null;
   }) => string | null;
 }) {
   const insertedAssetCardIds: string[] = [];
@@ -312,27 +347,32 @@ export function useBeatCanvasUploadActions({
     input.click();
   }, [setErrorMessage, setStatusMessage, studioT]);
 
-  function resolveUploadNaturalSize(
+  function resolveUploadMediaMetadata(
     objectUrl: string,
     intent: UploadIntent
-  ): Promise<AssetShapeSize | undefined> {
+  ): Promise<UploadMediaMetadata> {
     if (intent === 'image') {
       return new Promise((resolve) => {
         const img = new Image();
         img.onload = () =>
-          resolve(
-            computeAdaptiveAssetSize(img.naturalWidth, img.naturalHeight)
-          );
-        img.onerror = () => resolve(undefined);
+          resolve(createUploadMediaMetadata({
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+          }));
+        img.onerror = () => resolve({});
         img.src = objectUrl;
       });
     }
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.onloadedmetadata = () => {
-        resolve(computeAdaptiveAssetSize(video.videoWidth, video.videoHeight));
+        resolve(createUploadMediaMetadata({
+          width: video.videoWidth,
+          height: video.videoHeight,
+          durationSec: video.duration,
+        }));
       };
-      video.onerror = () => resolve(undefined);
+      video.onerror = () => resolve({});
       video.preload = 'metadata';
       video.src = objectUrl;
     });
@@ -349,13 +389,17 @@ export function useBeatCanvasUploadActions({
         return;
       }
       const files = request.mode === 'global' ? allFiles : allFiles.slice(0, 1);
-      const uploads = files.map((file) => ({
-        file,
-        intent:
+      const uploads = files.map((file) => {
+        const detectedType =
           request.intent === 'media'
             ? detectUploadedMediaType(file)
-            : request.intent,
-      }));
+            : request.intent;
+        return {
+          file,
+          // Audio enters through the dedicated editor track flow for now.
+          intent: detectedType === 'audio' ? null : detectedType,
+        };
+      });
 
       for (const upload of uploads) {
         if (!upload.intent) {
@@ -398,13 +442,19 @@ export function useBeatCanvasUploadActions({
             continue;
           }
           const localObjectUrl = URL.createObjectURL(file);
-          const naturalSize = await resolveUploadNaturalSize(localObjectUrl, intent);
+          const mediaMetadata = await resolveUploadMediaMetadata(localObjectUrl, intent);
           URL.revokeObjectURL(localObjectUrl);
           const persistedAsset = shouldPersistCanvasImportLocally({
             request,
-            hasResolvedFrame: Boolean(naturalSize),
+            hasResolvedFrame: Boolean(mediaMetadata.size),
           })
-            ? await uploadLocalProjectAsset({ projectId, file })
+            ? await uploadLocalProjectAsset({
+                projectId,
+                file,
+                width: mediaMetadata.width,
+                height: mediaMetadata.height,
+                durationMs: mediaMetadata.durationMs,
+              })
             : null;
           if (!persistedAsset) {
             throw new Error('Canvas imports must be saved locally before insertion');
@@ -418,9 +468,12 @@ export function useBeatCanvasUploadActions({
             anchorCardIds:
               request.mode === 'reference' ? [request.draftId] : undefined,
             placementSide: request.mode === 'reference' ? 'left' : 'right',
-            placementOffsetIndex: request.mode === 'global' ? index : 0,
+            placementOffsetIndex: index,
             activateOnInsert: request.mode !== 'reference',
-            ...(naturalSize ? { size: naturalSize } : {}),
+            ...(mediaMetadata.size ? { size: mediaMetadata.size } : {}),
+            ...(mediaMetadata.durationMs
+              ? { durationSec: mediaMetadata.durationMs / 1000 }
+              : {}),
           });
 
           if (!assetCardId) {

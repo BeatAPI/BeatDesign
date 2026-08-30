@@ -13,7 +13,7 @@ export const isDownloadableCanvasCard = (
 
 export const isPreviewableCanvasCard = (
   card: CanvasCard | null | undefined
-) =>
+): card is CanvasCard & { type: 'image' | 'video'; url: string } =>
   Boolean(
     isDownloadableCanvasCard(card) &&
       card &&

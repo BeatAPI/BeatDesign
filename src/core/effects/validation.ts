@@ -89,6 +89,10 @@ const ALLOWED_AUDIO_MIME_TYPES = [
   'audio/mpeg',
   'audio/wav',
   'audio/x-wav',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/aac',
+  'audio/ogg',
 ] as const;
 
 export {
@@ -107,7 +111,10 @@ const hasAllowedImageExtension = (fileName?: string) =>
 const hasAllowedVideoExtension = (fileName?: string) =>
   Boolean(fileName && /\.(mp4|webm|mov)$/i.test(fileName));
 
-export type UploadedMediaType = 'image' | 'video';
+const hasAllowedAudioExtension = (fileName?: string) =>
+  Boolean(fileName && /\.(mp3|wav|m4a|aac|ogg)$/i.test(fileName));
+
+export type UploadedMediaType = 'image' | 'video' | 'audio';
 
 const mediaTypeFromMime = (mimeType: string): UploadedMediaType | null => {
   if (
@@ -124,6 +131,13 @@ const mediaTypeFromMime = (mimeType: string): UploadedMediaType | null => {
   ) {
     return 'video';
   }
+  if (
+    ALLOWED_AUDIO_MIME_TYPES.includes(
+      mimeType as (typeof ALLOWED_AUDIO_MIME_TYPES)[number]
+    )
+  ) {
+    return 'audio';
+  }
   return null;
 };
 
@@ -132,7 +146,9 @@ const mediaTypeFromExtension = (fileName?: string): UploadedMediaType | null =>
     ? 'image'
     : hasAllowedVideoExtension(fileName)
       ? 'video'
-      : null;
+      : hasAllowedAudioExtension(fileName)
+        ? 'audio'
+        : null;
 
 const isGenericUploadMimeType = (mimeType: string) =>
   !mimeType || mimeType === 'application/octet-stream';
@@ -173,6 +189,13 @@ export const getCanonicalUploadedMediaMimeType = (file: {
   }
   if (name.endsWith('.webm')) return 'video/webm';
   if (name.endsWith('.mov')) return 'video/quicktime';
+  if (mediaType === 'audio') {
+    if (name.endsWith('.wav')) return 'audio/wav';
+    if (name.endsWith('.m4a')) return 'audio/mp4';
+    if (name.endsWith('.aac')) return 'audio/aac';
+    if (name.endsWith('.ogg')) return 'audio/ogg';
+    return 'audio/mpeg';
+  }
   return 'video/mp4';
 };
 

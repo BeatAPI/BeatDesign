@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { readFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { Readable } from 'node:stream';
 
 import {
   LOCAL_PROJECT_ASSET_BUCKET,
@@ -57,11 +59,10 @@ async function GET({
     return Response.json({ error: 'Project asset not found' }, { status: 404 });
   }
 
-  let bytes: Uint8Array;
+  const filePath = resolveLocalProjectAssetPath({ objectKey: asset.objectKey });
+  let fileStat: Awaited<ReturnType<typeof stat>>;
   try {
-    bytes = await readFile(
-      resolveLocalProjectAssetPath({ objectKey: asset.objectKey })
-    );
+    fileStat = await stat(filePath);
   } catch {
     return Response.json({ error: 'Project asset file is missing' }, { status: 404 });
   }
@@ -79,23 +80,24 @@ async function GET({
     headers.set('content-disposition', 'attachment');
   }
   const rangeHeader = request.headers.get('range');
-  const range = parseByteRange(rangeHeader, bytes.byteLength);
+  const range = parseByteRange(rangeHeader, fileStat.size);
   if (rangeHeader && !range) {
-    headers.set('content-range', `bytes */${bytes.byteLength}`);
+    headers.set('content-range', `bytes */${fileStat.size}`);
     return new Response(null, { status: 416, headers });
   }
+  const start = range?.start ?? 0;
+  const end = range?.end ?? fileStat.size - 1;
+  headers.set('content-length', String(end - start + 1));
   if (range) {
-    const body = Uint8Array.from(bytes.subarray(range.start, range.end + 1));
-    headers.set('content-length', String(body.byteLength));
-    headers.set(
-      'content-range',
-      `bytes ${range.start}-${range.end}/${bytes.byteLength}`
-    );
-    return new Response(body.buffer, { status: 206, headers });
+    headers.set('content-range', `bytes ${start}-${end}/${fileStat.size}`);
   }
-
-  headers.set('content-length', String(bytes.byteLength));
-  return new Response(Uint8Array.from(bytes).buffer, { status: 200, headers });
+  const stream = Readable.toWeb(
+    createReadStream(filePath, { start, end })
+  ) as ReadableStream<Uint8Array>;
+  return new Response(stream, {
+    status: range ? 206 : 200,
+    headers,
+  });
 }
 
 export const Route = createFileRoute(

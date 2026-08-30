@@ -5,6 +5,7 @@ import type { CanvasCard, CanvasOutputCard } from './canvas-types';
 import {
   buildGenerationTakes,
   listGenerationOutputsForDraft,
+  resolveConcreteCanvasMediaCard,
   resolvePinnedGenerationOutputId,
 } from './generation-history';
 
@@ -47,6 +48,41 @@ const makeOutput = (
     quality: 'standard',
     capturedAt,
   },
+});
+
+test('resolves a generation node to its pinned concrete output asset', () => {
+  const older = makeOutput('output-old', '2026-08-16T00:00:00.000Z');
+  const newer = makeOutput('output-new', '2026-08-16T00:02:00.000Z');
+  const draft: CanvasCard = {
+    id: 'draft-1',
+    kind: 'generation',
+    type: 'image',
+    name: 'Image generation',
+    url: newer.url,
+    prompt: 'A product shot',
+    referenceCardIds: [],
+    workflowTemplateId: null,
+    status: 'idle',
+    error: null,
+    modelId: 'model',
+    aspectRatio: '1:1',
+    outputQuality: '1k',
+    duration: '5s',
+    mode: 'quality',
+    variant: 'standard',
+    quality: 'standard',
+    sourceGenerationId: null,
+    pinnedOutputId: older.id,
+  };
+  const cards = {
+    [draft.id]: draft,
+    [older.id]: older,
+    [newer.id]: newer,
+  };
+  assert.equal(
+    resolveConcreteCanvasMediaCard({ cards, card: draft })?.id,
+    older.id
+  );
 });
 
 test('lists draft outputs newest first and ignores other drafts', () => {

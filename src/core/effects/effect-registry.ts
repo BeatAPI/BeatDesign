@@ -1,3 +1,8 @@
+import {
+  getGenerationModelBindingByEffectId,
+  resolveProviderUpstreamModel,
+} from '@/core/generation-providers/registry';
+
 export type WorkspaceRegistryType = 'ai-video' | 'ai-image';
 
 type WorkspaceRegistryModelMode = 'quality' | 'fast' | 'lite';
@@ -57,10 +62,7 @@ export type WorkspaceEffectRegistryAliasDefaults = {
 export type WorkspaceEffectRegistryEntry = {
   id: string;
   name: string;
-  effectId: number;
   workspaceType: WorkspaceRegistryType;
-  uploadPath: string;
-  imageBucketName: string;
   routeSlug: string | null;
   routeAliases?: string[];
   routeOrder?: number;
@@ -86,9 +88,6 @@ export type WorkspaceEffectRegistryEntry = {
   defaultBackgroundSource?: WorkspaceRegistryBackgroundSource;
   backgroundSourceOptions?: WorkspaceRegistryBackgroundSource[];
   requiresSourceVideoDuration?: boolean;
-  providerModelVariantByVariant?: Partial<
-    Record<WorkspaceRegistryModelVariant, string>
-  >;
   referenceInputDefaultsByType?: Partial<
     Record<
       WorkspaceRegistryReferenceType,
@@ -123,10 +122,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'nano-banana-pro',
       name: 'Nano Banana Pro',
-      effectId: 6,
       workspaceType: 'ai-image',
-      uploadPath: 'effects/nano-banana-pro',
-      imageBucketName: 'image',
       routeSlug: 'nano-banana-pro',
       routeOrder: 10,
       defaultAspectRatio: '1:1',
@@ -150,10 +146,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'nano-banana',
       name: 'Nano Banana',
-      effectId: 5,
       workspaceType: 'ai-image',
-      uploadPath: 'effects/nano-banana',
-      imageBucketName: 'image',
       routeSlug: 'nano-banana',
       routeOrder: 20,
       defaultAspectRatio: '1:1',
@@ -175,10 +168,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'gpt-image-2',
       name: 'GPT Image 2',
-      effectId: 12,
       workspaceType: 'ai-image',
-      uploadPath: 'effects/gpt-image-2',
-      imageBucketName: 'image',
       routeSlug: 'gpt-image-2',
       routeOrder: 30,
       defaultAspectRatio: 'auto',
@@ -206,10 +196,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'seedream-5-pro',
       name: 'Seedream 5 Pro',
-      effectId: 16,
       workspaceType: 'ai-image',
-      uploadPath: 'effects/seedream-5-pro',
-      imageBucketName: 'image',
       routeSlug: 'seedream-5-pro',
       routeOrder: 40,
       defaultAspectRatio: '1:1',
@@ -230,10 +217,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'grok-imagine-image-2.0',
       name: 'Grok Imagine Image 2.0',
-      effectId: 23,
       workspaceType: 'ai-image',
-      uploadPath: 'effects/grok-imagine-image-2-0',
-      imageBucketName: 'image',
       routeSlug: 'grok-imagine-image-2-0',
       routeAliases: ['grok-imagine-image-2.0'],
       routeOrder: 50,
@@ -244,10 +228,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'seedance-2',
       name: 'Seedance 2',
-      effectId: 9,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/seedance-2',
-      imageBucketName: 'image',
       routeSlug: 'seedance-2',
       routeAliases: ['seedance-2-0', 'seedance2-0'],
       routeOrder: 10,
@@ -262,10 +243,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'seedance-2-fast',
       name: 'Seedance 2 Fast',
-      effectId: 21,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/seedance-2-fast',
-      imageBucketName: 'image',
       routeSlug: 'seedance-2-fast',
       routeAliases: ['seedance-2.0-fast', 'seedance20-fast'],
       routeOrder: 12,
@@ -280,10 +258,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'seedance-2-mini',
       name: 'Seedance 2 Mini',
-      effectId: 22,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/seedance-2-mini',
-      imageBucketName: 'image',
       routeSlug: 'seedance-2-mini',
       routeAliases: ['seedance-2.0-mini', 'seedance20-mini'],
       routeOrder: 14,
@@ -298,10 +273,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'seedance-2.5',
       name: 'Seedance 2.5',
-      effectId: 18,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/seedance-2-5',
-      imageBucketName: 'image',
       routeSlug: 'seedance-2-5',
       routeOrder: 20,
       defaultDuration: '5s',
@@ -314,10 +286,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'minimax-h3',
       name: 'MiniMax H3',
-      effectId: 17,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/minimax-h3',
-      imageBucketName: 'image',
       routeSlug: 'minimax-h3',
       routeOrder: 30,
       defaultDuration: '5s',
@@ -330,10 +299,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'veo-3.1',
       name: 'Veo 3.1',
-      effectId: 1,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/veo-3-1',
-      imageBucketName: 'image',
       routeSlug: 'veo-3-1',
       routeAliases: ['veo3-1'],
       routeOrder: 40,
@@ -354,10 +320,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'kling-3',
       name: 'Kling 3',
-      effectId: 10,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/kling-3',
-      imageBucketName: 'image',
       routeSlug: 'kling-3',
       routeAliases: ['kling-3-0', 'kling3-0'],
       routeOrder: 50,
@@ -372,10 +335,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'grok-imagine-video-1.5',
       name: 'Grok Imagine Video 1.5',
-      effectId: 24,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/grok-imagine-video-1-5',
-      imageBucketName: 'image',
       routeSlug: 'grok-imagine-video-1-5',
       routeAliases: ['grok-imagine-video-1.5'],
       routeOrder: 55,
@@ -389,10 +349,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'kling-2.6-motion-control',
       name: 'Kling 2.6 Motion Control',
-      effectId: 19,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/kling-2-6-motion-control',
-      imageBucketName: 'image',
       routeSlug: 'kling-2-6-motion-control',
       routeAliases: ['kling-2.6-motion-control', 'kling26-motion-control'],
       routeOrder: 60,
@@ -409,10 +366,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
     {
       id: 'kling-3-motion-control',
       name: 'Kling 3.0 Motion Control',
-      effectId: 20,
       workspaceType: 'ai-video',
-      uploadPath: 'effects/kling-3-motion-control',
-      imageBucketName: 'image',
       routeSlug: 'kling-3-motion-control',
       routeAliases: ['kling-3.0-motion-control', 'kling30-motion-control'],
       routeOrder: 70,
@@ -443,10 +397,6 @@ const WORKSPACE_EFFECT_REGISTRY_BY_ALIAS = new Map(
   )
 );
 
-const WORKSPACE_EFFECT_REGISTRY_BY_EFFECT_ID = new Map(
-  WORKSPACE_EFFECT_REGISTRY.map((entry) => [entry.effectId, entry])
-);
-
 export const getWorkspaceEffectRegistryEntry = (
   modelId: string
 ): WorkspaceEffectRegistryEntry | null =>
@@ -455,9 +405,12 @@ export const getWorkspaceEffectRegistryEntry = (
   null;
 
 export const getWorkspaceEffectRegistryEntryByEffectId = (
-  effectId: number
-): WorkspaceEffectRegistryEntry | null =>
-  WORKSPACE_EFFECT_REGISTRY_BY_EFFECT_ID.get(effectId) ?? null;
+  effectId: number,
+  providerId?: string
+): WorkspaceEffectRegistryEntry | null => {
+  const binding = getGenerationModelBindingByEffectId({ effectId, providerId });
+  return binding ? getWorkspaceEffectRegistryEntry(binding.modelId) : null;
+};
 
 export const resolveWorkspaceEffectProviderModelVariant = ({
   modelId,
@@ -466,12 +419,7 @@ export const resolveWorkspaceEffectProviderModelVariant = ({
   modelId: string;
   variant?: WorkspaceRegistryModelVariant | null;
 }): string => {
-  const entry = getWorkspaceEffectRegistryEntry(modelId);
-  if (!entry || !variant) {
-    return modelId;
-  }
-
-  return entry.providerModelVariantByVariant?.[variant] ?? modelId;
+  return resolveProviderUpstreamModel({ modelId, variant });
 };
 
 export const getWorkspaceEffectReferenceInputDefaults = ({

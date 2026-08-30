@@ -5,7 +5,7 @@ export const PROJECT_ASSET_DRAG_MIME =
 export const PROJECT_ASSET_INSERT_EVENT = 'beatapi:project-asset-insert';
 
 export type ProjectAssetTransfer = RecentAsset & {
-  mediaType: 'image' | 'video';
+  mediaType: 'image' | 'video' | 'audio';
   projectId: string;
 };
 
@@ -26,7 +26,9 @@ export function parseProjectAssetTransfer(
       typeof parsed.id !== 'string' ||
       typeof parsed.projectId !== 'string' ||
       typeof parsed.publicUrl !== 'string' ||
-      (parsed.mediaType !== 'image' && parsed.mediaType !== 'video') ||
+      (parsed.mediaType !== 'image' &&
+        parsed.mediaType !== 'video' &&
+        parsed.mediaType !== 'audio') ||
       !isFiniteNullableNumber(parsed.width) ||
       !isFiniteNullableNumber(parsed.height)
     ) {
@@ -52,6 +54,15 @@ export function parseProjectAssetTransfer(
         typeof parsed.createdAt === 'string' || parsed.createdAt instanceof Date
           ? parsed.createdAt
           : new Date(0).toISOString(),
+      mimeType:
+        typeof parsed.mimeType === 'string' || parsed.mimeType === null
+          ? parsed.mimeType
+          : null,
+      assetClass:
+        typeof parsed.assetClass === 'string' || parsed.assetClass === null
+          ? parsed.assetClass
+          : null,
+      metadata: parsed.metadata,
     };
   } catch {
     return null;
@@ -66,6 +77,9 @@ export function getProjectAssetCardSize(asset: RecentAsset): {
   w: number;
   h: number;
 } {
+  if (asset.mimeType?.startsWith('audio/')) {
+    return { w: 320, h: 104 };
+  }
   if (
     asset.width &&
     asset.height &&

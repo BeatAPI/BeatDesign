@@ -1,4 +1,5 @@
 import type { GenerationTake } from '@/core/beatcanvas/generation-history';
+import type { CanvasAssetMediaType } from '@/core/beatcanvas/canvas-types';
 import type {
   Edge,
   Node,
@@ -20,11 +21,15 @@ export type BeatCanvasNodeMeta = Record<string, unknown>;
 export type AssetCardNodeProps = {
   w: number;
   h: number;
-  cardMediaType: 'image' | 'video';
+  cardMediaType: CanvasAssetMediaType;
   title: string;
   thumbnailUrl: string;
   fitMode: 'cover' | 'contain';
   chromeMode: 'default' | 'frameless';
+  durationSec?: number | null;
+  audioRole?: string;
+  timelineId?: string | null;
+  clipCount?: number | null;
 };
 
 export type GenerationCardNodeProps = {

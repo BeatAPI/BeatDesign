@@ -16,6 +16,11 @@ const extensionForMimeType = (mimeType: string) => {
   if (normalized.includes('quicktime')) return '.mov';
   if (normalized.includes('webm')) return '.webm';
   if (normalized.includes('mp4')) return '.mp4';
+  if (normalized.includes('mpeg')) return '.mp3';
+  if (normalized.includes('wav')) return '.wav';
+  if (normalized.includes('m4a')) return '.m4a';
+  if (normalized.includes('aac')) return '.aac';
+  if (normalized.includes('ogg')) return '.ogg';
   return '';
 };
 

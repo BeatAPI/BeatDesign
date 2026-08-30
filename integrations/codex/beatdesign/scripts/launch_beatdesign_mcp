@@ -1,0 +1,23 @@
+#!/bin/sh
+set -eu
+
+launcher_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+plugin_root=$(CDPATH= cd -- "$launcher_dir/.." && pwd)
+workspace_root=${BEATDESIGN_ROOT:-}
+
+if [ -z "$workspace_root" ]; then
+  workspace_root=$(CDPATH= cd -- "$plugin_root/../../.." && pwd)
+fi
+
+if [ ! -f "$workspace_root/package.json" ]; then
+  echo "BeatDesign root not found. Set BEATDESIGN_ROOT to the cloned repository path." >&2
+  exit 1
+fi
+
+tsx_bin="$workspace_root/node_modules/.bin/tsx"
+if [ ! -x "$tsx_bin" ]; then
+  echo "BeatDesign dependencies are missing. Run pnpm install in BEATDESIGN_ROOT." >&2
+  exit 1
+fi
+
+exec "$tsx_bin" "$workspace_root/scripts/mcp-server.ts"

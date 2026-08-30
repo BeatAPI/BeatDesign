@@ -28,10 +28,9 @@ test('parses a project image transfer and keeps its project scope', () => {
   assert.equal(parsed?.mediaType, 'image');
 });
 
-test('rejects malformed and unsupported project asset transfers', () => {
+test('accepts audio transfers and rejects malformed project asset transfers', () => {
   assert.equal(parseProjectAssetTransfer('not-json'), null);
-  assert.equal(
-    parseProjectAssetTransfer(
+  const audio = parseProjectAssetTransfer(
       JSON.stringify({
         id: 'asset-1',
         projectId: 'project-1',
@@ -39,10 +38,11 @@ test('rejects malformed and unsupported project asset transfers', () => {
         mediaType: 'audio',
         width: null,
         height: null,
+        mimeType: 'audio/mpeg',
       })
-    ),
-    null
   );
+  assert.equal(audio?.mediaType, 'audio');
+  assert.deepEqual(getProjectAssetCardSize(audio!), { w: 320, h: 104 });
 });
 
 test('recognizes the custom drag type and preserves media aspect ratio', () => {

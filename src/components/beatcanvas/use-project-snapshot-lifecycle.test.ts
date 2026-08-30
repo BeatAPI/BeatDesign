@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   PROJECT_SNAPSHOT_AUTOSAVE_DELAY_MS,
   PROJECT_SNAPSHOT_CHECKPOINT_INTERVAL_MS,
+  PROJECT_SNAPSHOT_EXTERNAL_POLL_INTERVAL_MS,
   buildProjectPathWithoutEntryIntentSearch,
   buildProjectSnapshotRequestHeaders,
 } from './use-project-snapshot-lifecycle';
@@ -35,6 +36,10 @@ test('snapshot persistence uses a fast debounce plus a five-second dirty checkpo
   );
   assert.match(source, /window\.setInterval/);
   assert.match(source, /serializedSnapshot === lastSavedProjectSnapshotRef\.current/);
+});
+
+test('canvas checks for Agent changes within two seconds', () => {
+  assert.equal(PROJECT_SNAPSHOT_EXTERNAL_POLL_INTERVAL_MS, 2_000);
 });
 
 test('snapshot persistence flushes the complete current document when the page exits or becomes hidden', () => {
