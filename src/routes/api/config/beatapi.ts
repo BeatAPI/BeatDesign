@@ -16,8 +16,7 @@ import {
  */
 async function GET({ request }: { request: Request }) {
   try {
-    const apiKey =
-      (await getConfig('BEATAPI_API_KEY')) || process.env.BEATAPI_API_KEY || '';
+    const apiKey = (await getConfig('BEATAPI_API_KEY')) || '';
 
     return respData({
       baseUrl: DEFAULT_BEATAPI_BASE_URL,
@@ -53,7 +52,6 @@ async function POST({ request }: { request: Request }) {
     const apiKey =
       next.BEATAPI_API_KEY ||
       (await getConfig('BEATAPI_API_KEY')) ||
-      process.env.BEATAPI_API_KEY ||
       '';
     if (!apiKey) return respErr('BeatAPI API key is required', 400);
 

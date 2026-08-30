@@ -1,20 +1,16 @@
 /**
  * AES-256-GCM encryption for provider secrets stored in the local database.
  *
- * Built on Web Crypto (crypto.subtle) — works natively on Node 18+, Cloudflare
- * Workers, and Edge runtimes with no nodejs_compat requirements.
+ * Built on Web Crypto (crypto.subtle), available in the supported local Node runtime.
  *
  * Encrypted values are self-describing: `enc:v1:<base64(iv | authTag | ciphertext)>`.
  * Plain values (no prefix) pass through decryptSecret unchanged so the config
  * service can migrate legacy rows after a verified encrypted write.
  *
- * Key source: CONFIG_ENCRYPTION_KEY when explicitly configured; otherwise a
- * per-install key is created at data/.workspace-key for local SQLite mode.
- * Secret writes fail closed when neither source is available.
+ * A per-install key is created at data/.workspace-key.
  *
- * This protects against database-only compromise (leaked backups, SQL
- * injection dumps). It does NOT protect against a compromised app server —
- * the key lives in env on the same machine.
+ * This protects against database-only compromise. It does not protect against
+ * a fully compromised local machine that can read both files.
  */
 
 const ENC_PREFIX = 'enc:v1:';
@@ -44,15 +40,7 @@ async function deriveKey(secret: string): Promise<CryptoKey> {
 }
 
 function getEncryptionSecret(): string | undefined {
-  const configured = process.env.CONFIG_ENCRYPTION_KEY?.trim();
-  if (configured) return configured;
   if (cachedEncryptionSecret) return cachedEncryptionSecret;
-  if (
-    process.env.DATABASE_PROVIDER &&
-    process.env.DATABASE_PROVIDER !== 'sqlite'
-  ) {
-    return undefined;
-  }
   if (typeof process.getBuiltinModule !== 'function') return undefined;
 
   const fs = process.getBuiltinModule('node:fs') as typeof import('node:fs');
@@ -99,9 +87,7 @@ export async function encryptSecret(plain: string): Promise<string> {
 
   const secret = getEncryptionSecret();
   if (!secret) {
-    throw new Error(
-      'Secret encryption is unavailable. Configure CONFIG_ENCRYPTION_KEY.'
-    );
+    throw new Error('Local secret encryption is unavailable.');
   }
 
   const key = await deriveKey(secret);

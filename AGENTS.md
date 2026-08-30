@@ -13,14 +13,14 @@ Do not add authentication, accounts, payments, subscriptions, credits, API-key i
 - TanStack Start, React 19, TypeScript
 - TanStack Query
 - Tailwind CSS 4 and Base UI/shadcn primitives
-- Drizzle ORM with SQLite locally and D1 optionally
+- Drizzle ORM with local SQLite
 - Paraglide for English and Chinese
 
 ## Rules
 
 - Browser components call typed local API helpers; they do not import the database.
 - Provider keys stay server-side.
-- Storage entitlement follows billing. BeatAPI managed R2/Files is allowed only with the official `https://api.beatapi.io` billing endpoint; any custom API host must use an operator-owned R2/S3-compatible bucket. File selection stays local and upload is allowed only after generation precheck. Never commit shared storage credentials.
+- BeatAPI Files is the default generation-input upload path. Users may configure their own public R2/S3-compatible bucket; credentials stay encrypted in local SQLite. File selection stays local and upload is allowed only after generation precheck. Never commit shared storage credentials.
 - The model catalog lives in `src/core/effects/effect-registry.ts`.
 - BeatAPI request mapping lives in `src/core/adapters/beatapi-adapter.ts`.
 - Studio, Canvas, and Assets share projects, tasks, and assets.

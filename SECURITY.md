@@ -8,6 +8,6 @@ Include the affected route or component, reproduction steps, impact, and any sug
 
 ## Deployment responsibility
 
-BeatDesign is a single-user, local-first application and does not include authentication. The development server binds to localhost. Operators who expose it to a network must add access control in front of the application and provide provider and storage credentials through deployment secrets.
+BeatDesign is a single-user, local-first application and does not include authentication. The development server binds to localhost and is not designed to be exposed as a hosted multi-user service. Provider and optional storage credentials are encrypted in the local SQLite workspace.
 
 The maintainers support the latest released `0.2.x` version. Security fixes are published in the next patch release when possible.

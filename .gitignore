@@ -16,11 +16,6 @@
 src/routeTree.gen.ts
 src/paraglide/
 
-# cloudflare — wrangler.jsonc is your working copy (real D1 id, URLs);
-# the committed template is wrangler.example.jsonc
-/.wrangler/
-wrangler.jsonc
-
 # local agent state
 /.claude/
 /.agents/
@@ -30,9 +25,6 @@ wrangler.jsonc
 
 # production
 /build
-
-# deploy
-.vercel
 
 # editors
 .idea
@@ -49,10 +41,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env — local files hold secrets, never commit (keep .env.example tracked)
+# local secret files
 .env
 .env.*
-!.env.example
 
 # typescript
 *.tsbuildinfo

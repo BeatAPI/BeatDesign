@@ -60,7 +60,6 @@ Editor ────────── 裁剪、切分、移动、混音、AI 重
 
 ```bash
 pnpm install
-cp .env.example .env.development
 pnpm db:push
 pnpm dev
 ```
@@ -117,7 +116,6 @@ MCP 不会模拟点击界面像素。Agent 读取 Project、提交稳定命令�
 - 项目媒体保存在 `data/project-assets/<project-id>/`。
 - Canvas 与 Editor 使用 revision-aware 保存。
 - 中英文界面。
-- 可选 Cloudflare D1 部署目标。
 
 ## 数据与 Provider 边界
 
@@ -133,9 +131,9 @@ Generation adapter（默认 BeatAPI）
 输出复制回本地 Asset 素材库
 ```
 
-API Key 和存储凭据只留在服务端。选择或拖入本地文件不会把它发送给 Provider；BeatDesign 会先把它持久化为本地 Project Asset，只有用户确认生成后，才上传该次生成真正需要的素材。
+API Key 和可选的 R2/S3 凭据会加密保存在本地 SQLite。选择或拖入本地文件不会把它发送给 Provider；BeatDesign 会先把它持久化为本地 Project Asset，只有用户确认生成后，才上传该次生成真正需要的素材。默认使用 BeatAPI Files，用户也可以在“连接配置”中选择自己的公网 R2/S3 兼容存储桶。
 
-BeatDesign 不重复实现 Provider 的余额、计费或限流逻辑，只把 Provider 的结果或错误返回给 UI / MCP。上游仓库内置官方 BeatAPI 适配器；fork 可以实现 `BaseAdapter`，并在 `src/config/generation-providers.ts` 中注册。
+BeatDesign 不重复实现 Provider 的余额、计费或限流逻辑，只把 Provider 的结果或错误返回给 UI / MCP。上游仓库内置官方 BeatAPI 适配器；fork 可以实现 `BaseAdapter`，并在 `src/config/generation-providers.ts` 中注册和选择。
 
 完整约定见 [Provider 架构](./PROVIDERS.md) 与 [系统架构](./ARCHITECTURE.md)。
 
@@ -173,7 +171,7 @@ BeatDesign v0.2 聚焦本地 AI 短视频工作流：
 - [WORKSPACE_MODES.md](./WORKSPACE_MODES.md)：产品视图。
 - [docs/MCP.md](./docs/MCP.md)：Agent 接入。
 - [DESIGN.md](./DESIGN.md)：BeatDesign 视觉语言。
-- [SECURITY.md](./SECURITY.md)：本地与部署安全。
+- [SECURITY.md](./SECURITY.md)：本地工作区安全。
 
 ## License
 

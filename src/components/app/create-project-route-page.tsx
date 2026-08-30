@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AlertCircleIcon, Loader2Icon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import type { WorkspaceMode } from '@/config/workspace-modes';
 import { buildPostCreateProjectDetailPath } from '@/core/projects/project-entry';
 import { apiJsonPost } from '@/lib/api-client';
@@ -108,8 +108,8 @@ export function CreateProjectRoutePage({
           </div>
         ) : (
           <img
-            src={envConfigs.app_logo}
-            alt={envConfigs.app_name}
+            src={appConfig.app_logo}
+            alt={appConfig.app_name}
             className="mx-auto size-12 rounded-[14px] object-contain"
           />
         )}

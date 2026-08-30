@@ -1,7 +1,7 @@
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const roots = ['.output', '.wrangler'];
+const roots = ['.output'];
 const textExtensions = new Set([
   '',
   '.cjs',

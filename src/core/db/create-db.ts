@@ -1,17 +1,15 @@
-import { createD1Db } from './d1';
 import { createSqliteDb } from './sqlite';
 import type { DbConfig } from './types';
 
 const sqliteCompatProxyCache = new WeakMap<object, any>();
 
 /**
- * SQLite/D1 compatibility shim used by the D1 runtime and local test fixture.
+ * SQLite compatibility shim used by the local workbench.
  * It keeps the service layer dialect-neutral without advertising another
  * production database.
  */
 function withSqliteCompat<T extends object>(
   dbInstance: T,
-  provider?: string
 ): T {
   if (dbInstance && typeof dbInstance === 'object') {
     const cached = sqliteCompatProxyCache.get(dbInstance);
@@ -38,15 +36,12 @@ function withSqliteCompat<T extends object>(
   const proxied = new Proxy(dbInstance, {
     get(target, prop, receiver) {
       if (prop === 'transaction') {
-        if (provider === 'd1') {
-          return (fn: any) => fn(proxied);
-        }
         const original = Reflect.get(target, prop, receiver);
         if (typeof original !== 'function') return original;
         return (fn: any, ...rest: any[]) =>
           original.call(
             target,
-            (tx: any) => fn(withSqliteCompat(tx, provider)),
+            (tx: any) => fn(withSqliteCompat(tx)),
             ...rest
           );
       }
@@ -67,19 +62,7 @@ function withSqliteCompat<T extends object>(
 }
 
 export function createDb(config: DbConfig): any {
-  if (config.database_provider === 'd1') {
-    return withSqliteCompat(createD1Db() as any, 'd1');
-  }
-
-  if (config.database_provider === 'sqlite') {
-    return withSqliteCompat(createSqliteDb(config) as any, 'sqlite');
-  }
-
-  throw new Error(
-    'Unsupported DATABASE_PROVIDER=' +
-      config.database_provider +
-      '. Use sqlite or d1.'
-  );
+  return withSqliteCompat(createSqliteDb(config) as any);
 }
 
 export async function closeDb(_config: DbConfig) {}

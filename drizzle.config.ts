@@ -1,19 +1,10 @@
 import { defineConfig } from 'drizzle-kit';
-import { loadEnvFiles } from './src/lib/env';
-
-loadEnvFiles();
-
-const provider = process.env.DATABASE_PROVIDER || 'sqlite';
-
-if (provider !== 'sqlite' && provider !== 'd1') {
-  throw new Error('BeatDesign supports DATABASE_PROVIDER=sqlite or d1');
-}
 
 export default defineConfig({
   schema: './src/config/db/schema.ts',
-  out: './drizzle/d1',
+  out: './drizzle/sqlite',
   dialect: 'sqlite',
   dbCredentials: {
-    url: process.env.DATABASE_URL || 'file:data/workspace.db',
+    url: 'file:data/local.db',
   },
 });

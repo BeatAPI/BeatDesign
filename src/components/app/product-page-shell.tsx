@@ -9,7 +9,8 @@ import { GitHubIcon } from '@/components/icons/github';
 import { Link } from '@/core/i18n/navigation';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { apiJsonPatch, apiJsonPost } from '@/lib/api-client';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
+import { ACTIVE_GENERATION_PROVIDER_ID } from '@/config/generation-providers';
 import type { WorkspaceMode } from '@/config/workspace-modes';
 
 export function ProductPageShell({
@@ -124,8 +125,8 @@ export function ProductPageShell({
                 className="inline-flex size-9 items-center justify-center rounded-xl text-[var(--beat-text-1)] transition hover:bg-white/[0.06]"
               >
                 <img
-                  src={envConfigs.app_logo}
-                  alt={envConfigs.app_name}
+                  src={appConfig.app_logo}
+                  alt={appConfig.app_name}
                   className="size-7 rounded-xl object-contain"
                 />
               </Link>
@@ -180,7 +181,7 @@ export function ProductPageShell({
                 </nav>
               ) : null}
               <WorkspaceApiConfigDialog
-                providerId={envConfigs.generation_provider}
+                providerId={ACTIVE_GENERATION_PROVIDER_ID}
               />
               <a
                 href="https://github.com/BeatAPI/BeatDesign"

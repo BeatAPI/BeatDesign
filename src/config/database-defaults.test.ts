@@ -12,7 +12,8 @@ test('Drizzle and the runtime use the same default local SQLite database', () =>
     'utf8'
   );
 
-  assert.match(runtimeConfig, /file:data\/workspace\.db/);
-  assert.match(drizzleConfig, /file:data\/workspace\.db/);
-  assert.doesNotMatch(drizzleConfig, /file:data\/local\.db/);
+  assert.match(runtimeConfig, /file:data\/local\.db/);
+  assert.match(drizzleConfig, /file:data\/local\.db/);
+  assert.doesNotMatch(runtimeConfig, /DATABASE_PROVIDER|process\.env/);
+  assert.doesNotMatch(drizzleConfig, /DATABASE_PROVIDER|process\.env/);
 });

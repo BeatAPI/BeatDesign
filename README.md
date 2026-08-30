@@ -60,7 +60,6 @@ Requirements: Node.js 22+, pnpm 10+, and current Chrome on macOS or Windows.
 
 ```bash
 pnpm install
-cp .env.example .env.development
 pnpm db:push
 pnpm dev
 ```
@@ -117,7 +116,6 @@ See [MCP setup and tool boundaries](./docs/MCP.md).
 - Project-owned media under `data/project-assets/<project-id>/`.
 - Revision-aware Canvas and Editor saving.
 - English and Chinese UI.
-- Optional Cloudflare D1 deployment target.
 
 ## Data and provider boundary
 
@@ -133,9 +131,9 @@ Generation adapter (BeatAPI by default)
 Output copied back into the local Asset library
 ```
 
-API keys and storage credentials remain server-side. Selecting or dragging a local file does not send it to a provider. BeatDesign persists the file locally first and uploads only the durable project Asset required by a confirmed generation request.
+API keys and optional R2/S3 credentials are encrypted in the local SQLite workspace. Selecting or dragging a local file does not send it to a provider. BeatDesign persists the file locally first and uploads only the durable project Asset required by a confirmed generation request. BeatAPI Files is the default upload path; users can select their own public R2/S3-compatible bucket in Connections.
 
-BeatDesign does not reproduce provider billing, balance, or rate-limit logic. It returns the provider's result or error to the UI/MCP caller. The upstream repository ships the official BeatAPI adapter; a fork can implement `BaseAdapter` and register it in `src/config/generation-providers.ts`.
+BeatDesign does not reproduce provider billing, balance, or rate-limit logic. It returns the provider's result or error to the UI/MCP caller. The upstream repository ships the official BeatAPI adapter; a fork can implement `BaseAdapter`, register it, and select it in `src/config/generation-providers.ts`.
 
 Read [provider architecture](./PROVIDERS.md) and [system architecture](./ARCHITECTURE.md) for the full contract.
 
@@ -173,7 +171,7 @@ Start with [CONTRIBUTING.md](./CONTRIBUTING.md), then use:
 - [WORKSPACE_MODES.md](./WORKSPACE_MODES.md) for product surfaces.
 - [docs/MCP.md](./docs/MCP.md) for Agent integration.
 - [DESIGN.md](./DESIGN.md) for the BeatDesign visual language.
-- [SECURITY.md](./SECURITY.md) for local and deployment safety.
+- [SECURITY.md](./SECURITY.md) for local-workspace safety.
 
 ## License
 

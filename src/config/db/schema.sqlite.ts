@@ -1,5 +1,5 @@
 /**
- * Single-user BeatDesign schema for local SQLite and Cloudflare D1.
+ * Single-user BeatDesign schema for local SQLite.
  * The workspace deliberately has no auth, billing, credits, or RBAC tables.
  */
 

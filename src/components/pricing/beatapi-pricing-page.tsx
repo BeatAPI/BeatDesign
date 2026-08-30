@@ -14,7 +14,7 @@ import {
   type PricingComparisonLabels,
 } from '@/components/pricing/pricing-comparison-table';
 import { Input } from '@/components/ui/input';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import { Link } from '@/core/i18n/navigation';
 import { cn } from '@/lib/utils';
 import { m } from '@/paraglide/messages.js';
@@ -74,7 +74,7 @@ export function BeatApiPricingPage({ locale }: { locale: string }) {
 
   const labels: PricingComparisonLabels = {
     spec: copy.colSpec,
-    beatapi: envConfigs.app_name,
+    beatapi: appConfig.app_name,
     competitor: copy.colCompetitor,
     higgsfield: copy.colHiggsfield,
     discount: copy.colDiscount,

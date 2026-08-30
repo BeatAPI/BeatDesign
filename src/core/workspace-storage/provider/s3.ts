@@ -6,7 +6,6 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { S3mini as s3mini } from 's3mini';
-import { storageConfig } from '../config/storage-config';
 import {
   ConfigurationError,
   type PresignedUploadParams,
@@ -26,7 +25,7 @@ import {
  * VisuGen internal docs
  *
  * This provider works with Amazon S3 and compatible services like Cloudflare R2
- * using s3mini for better Cloudflare Workers compatibility
+ * using s3mini for S3-compatible object storage
  * https://github.com/good-lly/s3mini
  * https://developers.cloudflare.com/r2/
  */
@@ -35,7 +34,7 @@ export class S3Provider implements StorageProvider {
   private s3Client: s3mini | null = null;
   private awsS3Client: S3Client | null = null;
 
-  constructor(config: StorageConfig = storageConfig) {
+  constructor(config: StorageConfig) {
     this.config = config;
   }
 

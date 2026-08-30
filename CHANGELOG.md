@@ -2,6 +2,18 @@
 
 All notable changes to BeatDesign are documented in this file.
 
+## [0.2.1] - 2026-08-30
+
+### Changed
+
+- Fixed the open-source runtime to one local SQLite database and removed environment-file configuration from application startup.
+- Made BeatAPI Files the default confirmed-generation upload path while retaining optional, locally encrypted public R2/S3-compatible storage.
+- Kept provider selection as a source-level extension point with BeatAPI as the upstream default.
+
+### Removed
+
+- Cloudflare D1, Wrangler, Vercel, hosted deployment scripts, and obsolete SaaS-era assets that were not part of the local workbench.
+
 ## [0.2.0] - 2026-08-30
 
 ### Added
@@ -29,4 +41,5 @@ All notable changes to BeatDesign are documented in this file.
 - MP4 export remains browser-driven and is not yet available as a headless MCP tool.
 - Captions, transitions, speed controls, multiple named timelines, and native desktop packaging remain follow-up work.
 
+[0.2.1]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.1
 [0.2.0]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.0

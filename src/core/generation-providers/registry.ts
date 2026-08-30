@@ -1,5 +1,7 @@
-import { envConfigs } from '@/config';
-import { registerProjectGenerationProviders } from '@/config/generation-providers';
+import {
+  ACTIVE_GENERATION_PROVIDER_ID,
+  registerProjectGenerationProviders,
+} from '@/config/generation-providers';
 import { MockAdapter } from '@/core/adapters/mock-adapter';
 
 import { beatApiGenerationProvider, BEATAPI_PROVIDER_ID } from './beatapi-provider';
@@ -60,10 +62,10 @@ export function getGenerationProvider(providerId: string) {
 
 export function getActiveGenerationProviderId() {
   ensureProvidersRegistered();
-  const requested = envConfigs.generation_provider?.trim() || BEATAPI_PROVIDER_ID;
+  const requested = ACTIVE_GENERATION_PROVIDER_ID.trim() || BEATAPI_PROVIDER_ID;
   if (!providers.has(requested)) {
     throw new Error(
-      `Generation provider ${requested} is not registered. Register it in src/config/generation-providers.ts or set GENERATION_PROVIDER=${BEATAPI_PROVIDER_ID}.`
+      `Generation provider ${requested} is not registered. Register it and select it in src/config/generation-providers.ts.`
     );
   }
   return requested;

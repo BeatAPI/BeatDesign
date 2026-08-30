@@ -1,5 +1,5 @@
 import { createDb } from './create-db';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 
 let dbInstance: any = null;
 
@@ -7,12 +7,7 @@ export function db() {
   if (dbInstance) return dbInstance;
 
   const instance = createDb({
-    database_provider: envConfigs.database_provider,
-    database_url: envConfigs.database_url || 'file:data/local.db',
-    database_auth_token: envConfigs.database_auth_token || undefined,
-    db_schema: envConfigs.db_schema,
-    db_singleton_enabled: envConfigs.db_singleton_enabled,
-    db_max_connections: envConfigs.db_max_connections,
+    database_url: appConfig.database_url,
   });
 
   dbInstance = instance;
