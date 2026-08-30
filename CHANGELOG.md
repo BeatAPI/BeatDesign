@@ -17,8 +17,11 @@ All notable changes to BeatDesign are documented in this file.
 ### Changed
 
 - Canvas and Editor now check for Agent/MCP revisions every two seconds and whenever the page regains focus.
+- Canvas rebases pending local layout edits onto newer Agent revisions instead of blocking visible MCP updates; snapshot restoration also removes stale shapes before rebuilding the current document.
 - Editor autosave adopts the canonical saved document and ignores timestamp-only differences, preventing repeated save echoes from blocking MCP updates.
 - Generated and imported media are persisted in project-owned local storage and indexed in SQLite.
+- External Canvas media writes require project-owned Asset IDs, and local image/video/audio imports validate type and size before reading file contents.
+- GitHub documentation now includes a product-first English/Chinese README and a BeatDesign release cover.
 
 ### Current boundaries
 

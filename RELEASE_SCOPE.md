@@ -15,7 +15,7 @@ Release verification requires a clean install, schema creation, production build
 - [x] MCP exposes Project, Asset, Canvas, Generation, and Editor groups without full-document replacement tools.
 - [x] Local media import and image clips are documented as shipped capabilities.
 - [x] Verify a clean checkout with `pnpm install --frozen-lockfile`, schema creation, `pnpm build`, typecheck, tests, i18n, and MCP handshake—in that order.
-- [ ] Run a visible Canvas/Editor + MCP smoke test in a browser environment that permits localhost automation.
-- [ ] Create the local release commit and tag; pushing and publishing remain explicit external actions.
+- [x] Run a visible Canvas/Editor + MCP smoke test: Canvas prompt changes and Editor duration changes appeared without a page refresh, then the QA fixture was restored through MCP.
+- [x] Prepare the local release branch and release documentation; GitHub push, merge, tag, and Release remain explicit external actions performed only with user authorization.
 
 Release notes are maintained in [`CHANGELOG.md`](./CHANGELOG.md).

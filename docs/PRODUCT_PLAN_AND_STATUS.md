@@ -161,7 +161,9 @@ Codex / Claude Code / Other Agent
 
 2026-08-30 浏览器实操证据：保留了本地项目 `v0.2 QA – Canvas-to-Editor`。一段 10.01 秒本地 MP4 已完成“尾帧提取 -> 派生图片 Asset -> 下一段视频 Generation Node -> Timeline Node -> 打开 Editor -> 裁取 3.00–7.00 秒 -> 得到 4.00 秒 Clip -> 导出 H.264/AAC MP4 -> Render 写回 Assets”的闭环。实操同时发现并修复了开发服务器把 `Sec-Fetch-Dest: video/image/audio` 错当成静态文件、导致本地媒体 404 的问题。
 
-2026-08-30 本轮内核验收：未知 command 返回 `INVALID_COMMAND`；伪造 Asset 返回 `NOT_FOUND`；相同幂等键连续提交两次只产生一条回执且返回同一 revision；`origin=mcp` 的整份 Timeline 替换被拒绝。工程门禁为 typecheck 通过、324 tests pass；本地 MCP 工具目录为 20 个；Canvas / Editor 操作的完整 JSON Schema、未知 command、伪造 Asset、幂等回执、MCP 本地素材导入和 `origin=mcp` 禁止整份 Timeline 替换均有自动测试覆盖。
+2026-08-30 本轮内核验收：未知 command 返回 `INVALID_COMMAND`；伪造 Asset 返回 `NOT_FOUND`；相同幂等键连续提交两次只产生一条回执且返回同一 revision；`origin=mcp` 的整份 Timeline 替换被拒绝。本地 MCP 工具目录为 20 个；Canvas / Editor 操作的完整 JSON Schema、未知 command、伪造 Asset、幂等回执、MCP 本地素材导入和 `origin=mcp` 禁止整份 Timeline 替换均有自动测试覆盖。发布门禁的最新测试数量以仓库当前 `pnpm test` 结果为准。
+
+2026-08-30 MCP 可见联调证据：在已打开的本地 Canvas 中，通过 stdio MCP 修改生成节点提示词，页面在轮询周期内自动显示新内容；在已打开的 Editor 中，通过 `bdesign_editor_edit` 把图片 Clip 从 4.00 秒改为 3.50 秒，时间线和素材信息同步更新，无需刷新。联调完成后，Canvas 提示词与 Editor 时长均通过 MCP 恢复原值。该联调同时修复了 Canvas 在存在待保存本地布局时跳过 Agent revision 的问题。
 
 ## 7. 尚未完成
 
