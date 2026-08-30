@@ -23,6 +23,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The MCP stdio probe exercises real Project queries, so CI needs the
+      # same local SQLite schema created by the documented quick-start flow.
+      - run: pnpm db:push
       # The Vite build generates the gitignored Paraglide and TanStack Router
       # artifacts that TypeScript needs in a clean checkout.
       - run: pnpm build
