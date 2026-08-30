@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { envConfigs } from '@/config';
 import {
   detectUploadedMediaType,
   getCanonicalUploadedMediaMimeType,
@@ -49,16 +48,6 @@ async function POST({
       { status: 415 }
     );
   }
-  if (envConfigs.database_provider !== 'sqlite') {
-    return Response.json(
-      {
-        error:
-          'Local project assets are only available in local SQLite mode. Configure R2/S3 on hosted deployments.',
-      },
-      { status: 501 }
-    );
-  }
-
   const { projectId } = params;
   const currentProject = await getProject({ projectId });
   if (!currentProject || currentProject.status !== 'active') {

@@ -26,7 +26,7 @@ button[aria-disabled="true"] {
 
 /*
  * Shared design tokens for BeatAPI dark product surfaces (public shell, home,
- * pricing, projects, auth). One accent, three text levels, two radii —
+ * pricing, and projects). One accent, three text levels, two radii —
  * components should reference these instead of inventing near-identical
  * greys/oranges.
  */
@@ -608,35 +608,10 @@ body {
   @apply overscroll-none bg-background text-foreground;
 }
 
-.text-gradient_indigo-purple {
-  background: linear-gradient(90deg, #6366f1 0%, rgb(168 85 247 / 0.8) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* https://github.com/shadcn-ui/ui/issues/4227#issuecomment-2438290165 */
 html body[data-scroll-locked] {
   overflow: visible !important;
   margin-right: 0 !important;
-}
-
-/* Fix for Fumadocs empty banner appearing in Cloudflare Worker */
-/* This targets the specific banner issue where empty:hidden doesn't work properly */
-div[class*="border-t"][class*="bg-fd-secondary"]:not(:has(*)):not(
-    [data-content]
-  ) {
-  display: none !important;
-}
-
-/* Fallback for banners with the exact classes found in the issue */
-.border-t.bg-fd-secondary\/50.p-3:empty {
-  display: none !important;
-}
-
-/* Additional safety for any empty Fumadocs banner */
-[class*="fd-secondary"]:empty:not([data-banner-content]) {
-  display: none !important;
 }
 
 body.modal-open {

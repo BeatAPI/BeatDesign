@@ -2,7 +2,7 @@ import { notFound, useLoaderData } from '@tanstack/react-router';
 import { m } from "@/paraglide/messages.js";
 import type { ComponentType } from 'react';
 
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import { baseLocale, getLocale, localizeUrl } from '@/paraglide/runtime.js';
 
 type PageMeta = {
@@ -47,7 +47,7 @@ export function staticPageRouteOptions(slug: string) {
     head: ({ loaderData }: { loaderData?: LoaderData }) => {
       if (!loaderData) return {};
       const { meta, locale } = loaderData;
-      const canonical = localizeUrl(`${envConfigs.app_url}/${slug}`, {
+      const canonical = localizeUrl(`${appConfig.app_url}/${slug}`, {
         locale: locale as ReturnType<typeof getLocale>,
       }).href;
       return {

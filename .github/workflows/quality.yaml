@@ -32,5 +32,4 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm i18n:check
-      - run: pnpm cf:build
       - run: pnpm audit --prod --audit-level high

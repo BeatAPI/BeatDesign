@@ -11,7 +11,7 @@ import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import { getQueryClient } from '@/lib/query-client';
 import { m } from '@/paraglide/messages.js';
 import { getLocale, locales, localizeUrl } from '@/paraglide/runtime.js';
@@ -23,13 +23,13 @@ import '@/styles/globals.css';
 
 export const Route = createRootRoute({
   head: () => {
-    const appUrl = envConfigs.app_url || '';
+    const appUrl = appConfig.app_url || '';
     return {
       meta: [
         { charSet: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { title: envConfigs.app_name },
-        { name: 'description', content: envConfigs.app_description },
+        { title: appConfig.app_name },
+        { name: 'description', content: appConfig.app_description },
       ],
       links: [
         ...locales.map((loc) => ({

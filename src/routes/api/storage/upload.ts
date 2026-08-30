@@ -135,8 +135,7 @@ async function loadCustomStorageConfig(): Promise<StorageConfig | null> {
     return null;
   }
   const endpointPolicy = validateStorageEndpoint(endpoint, {
-    allowPrivate:
-      process.env.WORKSPACE_ALLOW_PRIVATE_STORAGE_ENDPOINTS === 'true',
+    allowPrivate: false,
   });
   if (!endpointPolicy.ok) throw new Error(endpointPolicy.message);
   return {
@@ -150,44 +149,15 @@ async function loadCustomStorageConfig(): Promise<StorageConfig | null> {
   };
 }
 
-async function loadManagedStorageConfig(): Promise<StorageConfig | null> {
-  const config = {
-    region: process.env.BEATAPI_MANAGED_R2_REGION || 'auto',
-    endpoint: process.env.BEATAPI_MANAGED_R2_ENDPOINT || '',
-    accessKeyId: process.env.BEATAPI_MANAGED_R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.BEATAPI_MANAGED_R2_SECRET_ACCESS_KEY || '',
-    bucketName: process.env.BEATAPI_MANAGED_R2_BUCKET_NAME || '',
-    publicUrl: process.env.BEATAPI_MANAGED_R2_PUBLIC_URL || '',
-    forcePathStyle:
-      process.env.BEATAPI_MANAGED_R2_FORCE_PATH_STYLE !== 'false',
-  };
-  if (
-    !config.endpoint ||
-    !config.accessKeyId ||
-    !config.secretAccessKey ||
-    !config.bucketName ||
-    !config.publicUrl
-  ) {
-    return null;
-  }
-  return config;
-}
-
 async function uploadToS3Storage({
   file,
   config,
-  provider,
 }: {
   file: File;
   config: StorageConfig | null;
-  provider: 'beatapi' | 's3';
 }) {
   if (!config) {
-    throw new Error(
-      provider === 'beatapi'
-        ? 'Managed video input storage is not configured on this deployment. Use your own R2/S3 or configure BeatAPI managed R2.'
-        : 'Configure your own Cloudflare R2/S3 connection before generating with local references.'
-    );
+    throw new Error('Configure your own R2/S3 connection before using custom upload storage.');
   }
   const folder = file.type.startsWith('video/')
     ? 'workspace/videos'
@@ -200,7 +170,7 @@ async function uploadToS3Storage({
     contentType: file.type,
     folder,
   });
-  return { ...result, provider } as const;
+  return { ...result, provider: 's3' as const };
 }
 
 async function POST({ request }: { request: Request }) {
@@ -332,18 +302,11 @@ async function POST({ request }: { request: Request }) {
             ? await uploadToS3Storage({
                 file,
                 config: await loadCustomStorageConfig(),
-                provider: 's3',
               })
             : null
           : canUseBeatApi
             ? await uploadToBeatApi(file)
-            : file.type.startsWith('video/')
-              ? await uploadToS3Storage({
-                  file,
-                  config: await loadManagedStorageConfig(),
-                  provider: 'beatapi',
-                })
-              : null;
+            : null;
       if (!result) {
         await releaseGenerationUploadSlot({
           intentId: authorizedIntent,

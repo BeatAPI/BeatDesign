@@ -1,7 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { basename, isAbsolute, resolve } from 'node:path';
 
-import { envConfigs } from '@/config';
 import {
   detectUploadedMediaType,
   getCanonicalUploadedMediaMimeType,
@@ -57,9 +56,6 @@ export async function importLocalProjectAsset({
   projectId: string;
   filePath: string;
 }) {
-  if (envConfigs.database_provider !== 'sqlite') {
-    throw new Error('Local asset import is only available in SQLite mode.');
-  }
   const trimmedPath = filePath.trim();
   if (!isAbsolute(trimmedPath)) {
     throw new Error('Asset import requires an absolute file path.');

@@ -406,7 +406,7 @@ editor.projectChanged
 
 ### 8.4 替换
 
-- OpenReel IndexedDB 项目保存 -> BeatDesign Timeline service + SQLite/D1。
+- OpenReel IndexedDB 项目保存 -> BeatDesign Timeline service + local SQLite。
 - OpenReel 最近项目 -> BeatDesign Project/Timeline 列表。
 - OpenReel 媒体导入 -> BeatDesign Asset Adapter。
 - OpenReel 下载导出 -> BeatDesign Render service；仍保留“下载文件”选项。
@@ -788,7 +788,6 @@ pnpm build
 
 ```bash
 pnpm install
-cp .env.example .env.development
 pnpm db:push
 pnpm dev
 ```

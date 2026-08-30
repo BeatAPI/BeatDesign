@@ -11,7 +11,7 @@ test('visiting Studio or Canvas does not create a project automatically', () => 
   assert.doesNotMatch(source, /useEffect/);
   assert.match(source, /createProject\('studio'\)/);
   assert.match(source, /createProject\('canvas'\)/);
-  assert.match(source, /envConfigs\.app_logo/);
+  assert.match(source, /appConfig\.app_logo/);
   assert.match(source, /'\/api\/app\/projects'/);
 });
 

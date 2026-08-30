@@ -14,7 +14,6 @@ Use Node.js 22+ and pnpm 10+.
 
 ```bash
 pnpm install
-cp .env.example .env.development
 pnpm db:push
 pnpm typecheck
 pnpm test
@@ -22,7 +21,7 @@ pnpm i18n:check
 pnpm build
 ```
 
-Add or update tests for behavior changes. Add user-facing copy to both `messages/en.json` and `messages/zh.json`. Never include API keys, local databases, generated uploads, or deployment credentials.
+Add or update tests for behavior changes. Add user-facing copy to both `messages/en.json` and `messages/zh.json`. Never include API keys, local databases, generated uploads, or storage credentials.
 
 ## Pull requests
 

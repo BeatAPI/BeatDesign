@@ -8,7 +8,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { Link } from '@/core/i18n/navigation';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { setLocale } from '@/paraglide/runtime.js';
 
@@ -67,15 +67,15 @@ export function Brand({ href = '/' }: { href?: string }) {
   return (
     <Link
       href={href}
-      aria-label={`${envConfigs.app_name} home`}
+      aria-label={`${appConfig.app_name} home`}
       className="beat-product-display inline-flex min-w-0 items-center gap-2.5 text-[15px] font-semibold tracking-[-0.02em] text-[#f6f6f4] sm:text-base"
     >
       <img
-        src={envConfigs.app_logo}
+        src={appConfig.app_logo}
         alt=""
         className="size-7 shrink-0 rounded-[9px] object-contain"
       />
-      <span className="truncate">{envConfigs.app_name}</span>
+      <span className="truncate">{appConfig.app_name}</span>
     </Link>
   );
 }

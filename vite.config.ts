@@ -7,14 +7,7 @@ import { nitro } from 'nitro/vite';
 import { defineConfig } from 'vite';
 
 import { paraglideCompilerOptions } from './src/config/paraglide';
-import { loadEnvFiles } from './src/lib/env';
 import { shouldNormalizeProjectAssetMediaRequest } from './src/lib/project-asset-media-request';
-
-// Populate process.env from .env.local / .env.{NODE_ENV} / .env for the
-// dev server and build process (Vite only exposes VITE_* via import.meta.env;
-// server code reads secrets from process.env). In production, env comes
-// from the actual host/container environment.
-loadEnvFiles();
 
 export default defineConfig({
   server: {

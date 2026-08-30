@@ -30,9 +30,9 @@ The shared product model is asset-first:
 
 The browser calls local `/api` routes. Server routes validate input and resolve a logical model through the active Generation Provider contract. BeatAPI is the built-in/default provider; forks can register another source-level provider without changing Canvas, Editor, MCP, or the asset-first request contract.
 
-Provider credentials are read from environment variables or the local `config` table. Browser components never receive the raw API key.
+Provider and optional R2/S3 credentials are encrypted in the local `config` table. Browser components never receive raw credentials.
 
-Upload storage is a separate adapter boundary. File selection remains browser-local. A successful generation precheck creates a short-lived, one-time SQLite intent that binds the project, model, exact upload count, uploaded URLs, and final generation submission. Required references are promoted only after that point and immediately before task submission; they become project assets only after BeatAPI accepts the task. The built-in provider is fixed to the official `https://api.beatapi.io` endpoint. Official `BEATAPI_MANAGED_R2_*` secrets and self-hosted `R2_*` credentials are deliberately separate and never fall through to each other.
+Upload storage is a separate adapter boundary. File selection remains browser-local. A successful generation precheck creates a short-lived, one-time SQLite intent that binds the project, model, exact upload count, uploaded URLs, and final generation submission. Required references are promoted only after that point and immediately before task submission; they become project assets only after the provider accepts the task. The default path uploads supported references to BeatAPI Files. Users may instead configure a public R2/S3-compatible bucket; those credentials remain local and are used only for confirmed generation inputs.
 
 ## Command boundary
 
@@ -56,7 +56,7 @@ Canvas layout persistence is the deliberate exception on the UI side: drag, resi
 
 ## Persistence
 
-The SQLite/D1 schema contains twelve tables:
+The local SQLite schema contains twelve tables:
 
 - `project`
 - `project_canvas_state`
@@ -79,6 +79,6 @@ No user, session, role, order, subscription, payment, credit, API-key, ticket, o
 
 `src/core/effects/effect-registry.ts` is the canonical user-facing logical catalog. `src/core/generation-providers/` maps those logical IDs to provider bindings and adapters. `src/core/adapters/beatapi-adapter.ts` contains BeatAPI request mapping. Do not leak upstream effect IDs or field names into MCP tools, and do not add a second database-backed model registry.
 
-## Deployment boundary
+## Runtime boundary
 
-Local SQLite is the default. Cloudflare D1 is supported for hosted deployments. A hosted deployment is still logically single-user; put access control at the network/platform layer if the workspace must be private.
+BeatDesign is a localhost application backed by one SQLite database and project-owned files under `data/`. Cloud database and hosted deployment adapters are intentionally outside this repository.

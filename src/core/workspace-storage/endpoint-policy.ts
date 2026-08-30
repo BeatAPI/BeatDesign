@@ -66,7 +66,7 @@ export function validateStorageEndpoint(
     return {
       ok: false,
       message:
-        'Private storage endpoints require WORKSPACE_ALLOW_PRIVATE_STORAGE_ENDPOINTS=true',
+        'Private storage endpoints are not supported by the local workspace',
     };
   }
 

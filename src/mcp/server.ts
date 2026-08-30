@@ -2,7 +2,7 @@ import { McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import {
   beatDesignCommandSchema,
   canvasCardSchema,
@@ -34,7 +34,7 @@ import {
   listProjectAssets,
 } from '@/core/workspace-lib/assets/user-assets';
 
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 const idSchema = z.string().trim().min(1).max(200);
 
 const toCommandCanvasCards = (cards: unknown[]) =>
@@ -492,7 +492,7 @@ export function createBeatDesignMcpServer() {
       annotations: { readOnlyHint: true },
     },
     withToolErrors(async ({ projectId, time }) => ({
-      editorUrl: `${envConfigs.app_url.replace(/\/$/, '')}/editor/${encodeURIComponent(projectId)}?t=${time}`,
+      editorUrl: `${appConfig.app_url.replace(/\/$/, '')}/editor/${encodeURIComponent(projectId)}?t=${time}`,
       snapshot: semanticTimelineSnapshot(await loadProjectTimeline(projectId), time),
     }))
   );

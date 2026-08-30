@@ -28,7 +28,7 @@ export async function getDbConfigs(): Promise<ConfigMap> {
       if (isEncryptedSecret(row.value)) {
         const plain = await decryptSecret(row.value);
         if (plain === null) {
-          // Wrong/rotated encryption key — skip so env value (if any) applies.
+          // Wrong, rotated, or missing installation key: skip the unusable value.
           console.warn(`[config] failed to decrypt "${row.name}", skipping`);
           continue;
         }
@@ -53,14 +53,12 @@ export async function getDbConfigs(): Promise<ConfigMap> {
   }
 }
 
-/**
- * Get all workspace configs. Environment fallbacks are resolved per key.
- */
+/** Get all workspace configs stored in local SQLite. */
 export async function getAllConfigs(): Promise<ConfigMap> {
   return getDbConfigs();
 }
 
-/** Provider settings writable from the local workspace dialog. */
+/** Provider and upload settings writable from the local workspace dialog. */
 const WRITABLE_CONFIG_KEYS: ReadonlySet<string> = new Set([
   'BEATAPI_API_BASE_URL',
   'BEATAPI_API_KEY',
@@ -75,8 +73,7 @@ const WRITABLE_CONFIG_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Provider secrets are always encrypted at rest. Local SQLite mode generates
- * a per-install key; hosted modes require CONFIG_ENCRYPTION_KEY.
+ * Provider secrets are always encrypted at rest with a per-install local key.
  */
 const SECRET_KEY_PATTERN =
   /(_secret|_secret_key|_token|_password|_private_key|_api_key|_access_key|_access_key_id|_api_v3_key)$/;
@@ -142,5 +139,5 @@ export async function saveConfigs(configs: ConfigMap) {
  */
 export async function getConfig(name: string): Promise<string | undefined> {
   const configs = await getDbConfigs();
-  return configs[name] || process.env[name] || undefined;
+  return configs[name] || undefined;
 }

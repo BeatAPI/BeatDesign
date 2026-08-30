@@ -149,8 +149,7 @@ async function POST({ request }: { request: Request }) {
 
       const endpoint = next.R2_ENDPOINT || currentEndpoint || '';
       const endpointPolicy = validateStorageEndpoint(endpoint, {
-        allowPrivate:
-          process.env.WORKSPACE_ALLOW_PRIVATE_STORAGE_ENDPOINTS === 'true',
+        allowPrivate: false,
       });
       if (!endpointPolicy.ok) {
         return respErr(endpointPolicy.message, 400);

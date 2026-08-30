@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { BeatApiProductHome } from '@/components/marketing/beatapi-product-home';
-import { envConfigs } from '@/config';
+import { appConfig } from '@/config';
 import { getLocale } from '@/core/workspace-lib/shims/next-intl-server';
 import { m } from '@/paraglide/messages.js';
 
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/')({
           name: 'description',
           content: m['product.home.metaDescription']({}, { locale }),
         },
-        { property: 'og:url', content: envConfigs.app_url },
+        { property: 'og:url', content: appConfig.app_url },
       ],
     };
   },
