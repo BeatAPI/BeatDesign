@@ -1449,6 +1449,19 @@ export function useBeatCanvasReactFlowAdapter({
 
   const restoreProjectSnapshot = useCallback(
     (document: ProjectSnapshotDocument) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+
+      const currentShapeIds = editor
+        .getCurrentPageShapes()
+        .map((shape) => shape.id);
+      if (currentShapeIds.length > 0) {
+        editor.deleteShapes(currentShapeIds);
+      }
+      replaceCanvasCards({});
+      syncedDraftShapeSignaturesRef.current = {};
+      syncedAssetShapeSignaturesRef.current = {};
+
       const restorePlan = createProjectSnapshotRestorePlan(document);
       const restoredCardIds: string[] = [];
       const restoredDraftIds: string[] = [];
@@ -1555,6 +1568,7 @@ export function useBeatCanvasReactFlowAdapter({
       editorRef,
       focusShapes,
       insertAssetCard,
+      replaceCanvasCards,
       setActiveComposerCardId,
     ]
   );

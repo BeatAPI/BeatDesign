@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import type { CanvasAssetCard } from '@/core/beatcanvas/canvas-types';
 import { createTimelineDocument } from '@/core/editor/timeline-document';
+import { validateLocalAssetImportCandidate } from '@/core/projects/import-local-asset';
 import { createEmptyProjectSnapshot } from '@/core/projects/project-snapshot';
 import {
   applyCanvasOperations,
@@ -13,6 +14,7 @@ import {
   executeBeatDesignCommand,
   normalizeAssetFirstGenerationRequest,
 } from './index';
+import { validateExternalCommandAssetReferences } from './persist';
 
 test('revision conflict failures return the current revision for one-step retries', () => {
   assert.deepEqual(
@@ -100,6 +102,68 @@ const assetCard: CanvasAssetCard = {
   quality: 'standard',
   sourceGenerationId: null,
 };
+
+test('external Canvas commands require project assets instead of arbitrary URLs', () => {
+  const urlOnlyAssetCommand = {
+    type: 'canvas.apply' as const,
+    operations: [
+      {
+        type: 'upsert_card' as const,
+        card: { ...assetCard, assetId: null, url: 'https://example.com/a.mp4' },
+      },
+    ],
+  };
+
+  assert.throws(
+    () =>
+      validateExternalCommandAssetReferences({
+        origin: 'mcp',
+        command: urlOnlyAssetCommand,
+      }),
+    /assetId/i
+  );
+  assert.doesNotThrow(() =>
+    validateExternalCommandAssetReferences({
+      origin: 'ui',
+      command: urlOnlyAssetCommand,
+    })
+  );
+  assert.throws(
+    () =>
+      validateExternalCommandAssetReferences({
+        origin: 'mcp',
+        command: {
+          type: 'canvas.apply',
+          operations: [
+            {
+              type: 'upsert_timeline_node',
+              timelineId: 'timeline-1',
+              name: 'Timeline 1',
+              durationSec: 4,
+              clipCount: 1,
+              lastRenderUrl: 'https://example.com/render.mp4',
+            },
+          ],
+        },
+      }),
+    /lastRenderAssetId/i
+  );
+});
+
+test('local import validates file size before reading and accepts audio extensions', () => {
+  assert.deepEqual(
+    validateLocalAssetImportCandidate({ filename: 'music.mp3', size: 1024 }),
+    { mediaType: 'audio', mimeType: 'audio/mpeg' }
+  );
+  assert.throws(
+    () =>
+      validateLocalAssetImportCandidate({
+        filename: 'oversized.mp4',
+        size: Number.MAX_SAFE_INTEGER,
+      }),
+    /size is not supported/i
+  );
+});
 
 test('generation requests are asset-first and do not accept placement', () => {
   assert.throws(() =>

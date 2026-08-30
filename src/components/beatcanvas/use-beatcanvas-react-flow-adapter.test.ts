@@ -13,6 +13,21 @@ import {
   resolveDraftShapeSize,
 } from './use-beatcanvas-react-flow-adapter';
 
+test('snapshot restore replaces stale Canvas shapes before rebuilding the document', () => {
+  const source = readFileSync(
+    new URL('./use-beatcanvas-react-flow-adapter.ts', import.meta.url),
+    'utf8'
+  );
+  const restoreStart = source.indexOf('const restoreProjectSnapshot = useCallback');
+  const restoreEnd = source.indexOf('const applyHistoryDocument', restoreStart);
+  const restoreSource = source.slice(restoreStart, restoreEnd);
+
+  assert.match(restoreSource, /editor\.deleteShapes\(currentShapeIds\)/);
+  assert.match(restoreSource, /replaceCanvasCards\(\{\}\)/);
+  assert.match(restoreSource, /syncedDraftShapeSignaturesRef\.current = \{\}/);
+  assert.match(restoreSource, /syncedAssetShapeSignaturesRef\.current = \{\}/);
+});
+
 const makeDraft = (
   type: CanvasDraftCard['type'],
   aspectRatio: CanvasDraftCard['aspectRatio']

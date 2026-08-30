@@ -23,6 +23,33 @@ import {
   recordUserAsset,
 } from '@/core/workspace-lib/assets/user-assets';
 
+export function validateLocalAssetImportCandidate({
+  filename,
+  size,
+}: {
+  filename: string;
+  size: number;
+}) {
+  const detectedFile = { name: filename, type: '', size };
+  const mediaType = detectUploadedMediaType(detectedFile);
+  if (!mediaType) throw new Error('Unsupported project asset type.');
+
+  const mimeType = getCanonicalUploadedMediaMimeType(detectedFile);
+  if (!mimeType) throw new Error('Unsupported project asset type.');
+  const file = { ...detectedFile, type: mimeType };
+  const validation =
+    mediaType === 'image'
+      ? validateUploadedImageFile(file)
+      : mediaType === 'video'
+        ? validateUploadedVideoFile(file)
+        : validateUploadedAudioFile(file);
+  if (!validation.ok) {
+    throw new Error('Project asset type or size is not supported.');
+  }
+
+  return { mediaType, mimeType };
+}
+
 export async function importLocalProjectAsset({
   projectId,
   filePath,
@@ -42,27 +69,24 @@ export async function importLocalProjectAsset({
   if (!fileStat?.isFile()) {
     throw new Error('Asset file was not found.');
   }
+  const filename = basename(absolutePath);
+  let candidate = validateLocalAssetImportCandidate({
+    filename,
+    size: fileStat.size,
+  });
   const currentProject = await getProject({ projectId });
   if (!currentProject || currentProject.status !== 'active') {
     throw new Error('Project not found.');
   }
 
-  const filename = basename(absolutePath);
   const bytes = new Uint8Array(await readFile(absolutePath));
-  const file = { name: filename, type: '', size: bytes.byteLength };
-  const mediaType = detectUploadedMediaType(file);
-  if (!mediaType) throw new Error('Unsupported project asset type.');
-  const validation =
-    mediaType === 'image'
-      ? validateUploadedImageFile(file)
-      : mediaType === 'video'
-        ? validateUploadedVideoFile(file)
-        : validateUploadedAudioFile(file);
-  if (!validation.ok) {
-    throw new Error('Project asset type or size is not supported.');
+  if (bytes.byteLength !== fileStat.size) {
+    candidate = validateLocalAssetImportCandidate({
+      filename,
+      size: bytes.byteLength,
+    });
   }
-  const mimeType = getCanonicalUploadedMediaMimeType(file);
-  if (!mimeType) throw new Error('Unsupported project asset type.');
+  const { mediaType, mimeType } = candidate;
   if (mediaType === 'image' && !isSupportedRasterImage(mimeType, bytes)) {
     throw new Error('Image contents do not match a supported raster format.');
   }

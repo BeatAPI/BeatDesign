@@ -58,6 +58,50 @@ type PersistCommandInput = {
   command: BeatDesignCommand;
 };
 
+export function validateExternalCommandAssetReferences({
+  origin,
+  command,
+}: {
+  origin: BeatDesignCommandOrigin;
+  command: BeatDesignCommand;
+}) {
+  if (origin !== 'mcp' && origin !== 'cli') return;
+  if (command.type !== 'canvas.apply') return;
+
+  for (const operation of command.operations) {
+    if (operation.type === 'upsert_card') {
+      const { card } = operation;
+      if (
+        card.kind === 'asset' &&
+        card.type !== 'timeline' &&
+        !card.assetId
+      ) {
+        throw new BeatDesignCommandError(
+          'INVALID_COMMAND',
+          'External Canvas asset cards require a project assetId. Import or generate the asset first.'
+        );
+      }
+      if (card.url && !card.assetId) {
+        throw new BeatDesignCommandError(
+          'INVALID_COMMAND',
+          'External Canvas media URLs must be derived from a project assetId.'
+        );
+      }
+    }
+
+    if (
+      operation.type === 'upsert_timeline_node' &&
+      operation.lastRenderUrl &&
+      !operation.lastRenderAssetId
+    ) {
+      throw new BeatDesignCommandError(
+        'INVALID_COMMAND',
+        'External timeline renders require lastRenderAssetId; the server derives lastRenderUrl.'
+      );
+    }
+  }
+}
+
 async function persistBeatDesignCommandOnce({
   projectId,
   origin,
@@ -101,6 +145,7 @@ async function persistBeatDesignCommandOnce({
   }
 
   try {
+    validateExternalCommandAssetReferences({ origin, command });
     const normalizedCommand = await normalizeCommandAssetReferences({
       projectId,
       command,
@@ -253,6 +298,22 @@ export function persistBeatDesignCommand({
           'External agents must use editor.apply operations instead of replacing the timeline document.',
       })
     );
+  }
+  try {
+    validateExternalCommandAssetReferences({ origin, command });
+  } catch (error) {
+    if (error instanceof BeatDesignCommandError) {
+      return Promise.resolve(
+        createCommandFailure({
+          commandId,
+          projectId,
+          origin,
+          code: error.code,
+          message: error.message,
+        })
+      );
+    }
+    throw error;
   }
   const stableIdempotencyKey = idempotencyKey?.trim() || commandId;
   const lockKey = `${projectId}:${stableIdempotencyKey}`;
