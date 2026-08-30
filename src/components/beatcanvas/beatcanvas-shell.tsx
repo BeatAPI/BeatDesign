@@ -31,6 +31,7 @@ import {
   rewriteCanvasReferenceAliases,
 } from '@/core/beatcanvas/reference-mentions';
 import { getSelectableModel } from '@/core/beatcanvas/generation-controller';
+import { resolveConcreteCanvasMediaCard } from '@/core/beatcanvas/generation-history';
 import {
   PROJECT_ASSET_DRAG_MIME,
   PROJECT_ASSET_INSERT_EVENT,
@@ -44,6 +45,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  addProjectAssetsToTimeline,
+} from '@/core/editor/timeline-client';
+import { extractVideoFrame } from '@/core/media/video-frame';
+import { uploadLocalProjectAsset } from '@/core/workspace-lib/app/local-project-asset-client';
 import { useCanvasComposerLabels } from './use-canvas-composer-labels';
 import { useProjectSnapshotLifecycle } from './use-project-snapshot-lifecycle';
 import { useBeatCanvasGraph } from './use-beatcanvas-graph';
@@ -264,6 +270,9 @@ export function BeatCanvasShell({
   const [previewMedia, setPreviewMedia] = useState<BeatCanvasPreviewMedia | null>(
     null
   );
+  const [isContinuingVideo, setIsContinuingVideo] = useState(false);
+  const [isAddingSelectionToTimeline, setIsAddingSelectionToTimeline] =
+    useState(false);
 
   const insertProjectAsset = useCallback(
     (
@@ -283,11 +292,18 @@ export function BeatCanvasShell({
         name:
           asset.filename?.trim() ||
           projectAssetsT(
-            asset.mediaType === 'image' ? 'imageName' : 'videoName'
+            asset.mediaType === 'image'
+              ? 'imageName'
+              : asset.mediaType === 'audio'
+                ? 'audioName'
+                : 'videoName'
           ),
         kind: 'asset',
         activateOnInsert: true,
         size,
+        durationSec:
+          typeof asset.durationMs === 'number' ? asset.durationMs / 1000 : null,
+        audioRole: asset.mediaType === 'audio' ? 'music' : undefined,
         ...(pagePoint
           ? {
               frame: {
@@ -877,6 +893,226 @@ export function BeatCanvasShell({
   const isGroupSelected = effectiveSelectedGroupCards.length > 0;
   const canDownloadSelection =
     isSingleDownloadable || downloadableGroupCards.length > 0;
+  const selectedCardsForActions = useMemo(
+    () =>
+      isGroupSelected
+        ? effectiveSelectedGroupCards
+        : selectedSingleCard
+          ? [selectedSingleCard]
+          : [],
+    [effectiveSelectedGroupCards, isGroupSelected, selectedSingleCard]
+  );
+  const selectedTimelineMedia = useMemo(
+    () =>
+      selectedCardsForActions.flatMap((sourceCard) => {
+        const mediaCard = resolveConcreteCanvasMediaCard({
+          cards: canvasCards,
+          card: sourceCard,
+        });
+        return mediaCard?.url &&
+          mediaCard.assetId &&
+          (mediaCard.type === 'video' || mediaCard.type === 'audio')
+          ? [{ sourceCard, mediaCard }]
+          : [];
+      }),
+    [canvasCards, selectedCardsForActions]
+  );
+  const canAddSelectionToTimeline = selectedTimelineMedia.length > 0;
+  const continuationSelection =
+    selectedTimelineMedia.length === 1 &&
+    selectedTimelineMedia[0]?.mediaCard.type === 'video'
+      ? selectedTimelineMedia[0]
+      : null;
+  const handleAddSelectionToTimeline = useCallback(() => {
+    if (selectedTimelineMedia.length === 0 || isAddingSelectionToTimeline) return;
+    setIsAddingSelectionToTimeline(true);
+    void addProjectAssetsToTimeline({
+      projectId,
+      assets: selectedTimelineMedia.map(({ mediaCard }) => ({
+        asset: {
+          id: mediaCard.assetId as string,
+          publicUrl: mediaCard.url!,
+          filename: mediaCard.name,
+          width: null,
+          height: null,
+          durationMs:
+            typeof mediaCard.durationSec === 'number'
+              ? mediaCard.durationSec * 1000
+              : null,
+          createdAt: new Date().toISOString(),
+        },
+        mediaType: mediaCard.type as 'video' | 'audio',
+      })),
+    })
+      .then((saved) => {
+        const document = saved.timeline?.document;
+        if (!document) return;
+        const cardId = `timeline:${document.id}`;
+        const sourceCardIds = selectedTimelineMedia.map(
+          ({ sourceCard }) => sourceCard.id
+        );
+        const clipCount = document.tracks.reduce(
+          (count, track) => count + track.clips.length,
+          0
+        );
+        const existing = canvasCardsRef.current[cardId];
+        if (existing?.kind === 'asset' && existing.type === 'timeline') {
+          recordCanvasHistory();
+          updateCanvasCard(cardId, {
+            durationSec: document.duration,
+            clipCount,
+            lastRenderAssetId: document.lastRenderAssetId,
+            url: document.lastRenderUrl,
+            referenceCardIds: Array.from(
+              new Set([...existing.referenceCardIds, ...sourceCardIds])
+            ),
+          });
+          const timelineShape = editorRef.current?.getShape?.(cardId as any) as
+            | { type: string; props?: Record<string, unknown> }
+            | undefined;
+          if (timelineShape) {
+            editorRef.current?.updateShape?.({
+              id: cardId,
+              type: timelineShape.type,
+              props: {
+                ...timelineShape.props,
+                title: document.name,
+                thumbnailUrl: document.lastRenderUrl ?? '',
+                durationSec: document.duration,
+                timelineId: document.id,
+                clipCount,
+              },
+            } as any);
+          }
+          for (const sourceCardId of sourceCardIds) {
+            createConnectorBetweenCards(sourceCardId, cardId);
+          }
+          focusShape(cardId);
+        } else {
+          insertAssetCard({
+            type: 'timeline',
+            url: document.lastRenderUrl,
+            name: document.name,
+            assetId: document.lastRenderAssetId,
+            sourceCardIds,
+            anchorCardIds: sourceCardIds,
+            shapeId: cardId,
+            size: { w: 360, h: 220 },
+            durationSec: document.duration,
+            timelineId: document.id,
+            clipCount,
+            lastRenderAssetId: document.lastRenderAssetId,
+          });
+        }
+        toast.success(
+          projectAssetsT(
+            selectedTimelineMedia.length > 1
+              ? 'timelineCreated'
+              : 'addedToTimeline'
+          )
+        );
+      })
+      .catch((error: Error) => toast.error(error.message))
+      .finally(() => setIsAddingSelectionToTimeline(false));
+  }, [
+    canvasCardsRef,
+    createConnectorBetweenCards,
+    editorRef,
+    focusShape,
+    insertAssetCard,
+    isAddingSelectionToTimeline,
+    projectAssetsT,
+    projectId,
+    recordCanvasHistory,
+    selectedTimelineMedia,
+    updateCanvasCard,
+  ]);
+
+  const handleContinueFromTailFrame = useCallback(() => {
+    if (
+      !continuationSelection?.mediaCard.url ||
+      !continuationSelection.mediaCard.assetId ||
+      isContinuingVideo
+    )
+      return;
+    const { mediaCard, sourceCard } = continuationSelection;
+    void (async () => {
+      setIsContinuingVideo(true);
+      setErrorMessage(null);
+      setStatusMessage(projectAssetsT('extractingTailFrame'));
+      try {
+        const frame = await extractVideoFrame({
+          url: mediaCard.url!,
+          position: 'last',
+          filename: `${sanitizeDownloadName(mediaCard.name) || 'video'}-tail-frame.png`,
+        });
+        const asset = await uploadLocalProjectAsset({
+          projectId,
+          file: frame.file,
+          assetClass: 'derived',
+          metadata: {
+            operation: 'video_tail_frame',
+            parentAssetId: mediaCard.assetId,
+            sourceCardId: sourceCard.id,
+            sourceTimeSec: frame.timeSeconds,
+            sourceDurationSec: frame.durationSeconds,
+            relation: 'continuation_first_frame',
+          },
+        });
+        await invalidateWorkspaceAfterAssetMutation(queryClient);
+        const maxEdge = 320;
+        const ratio = frame.width / frame.height;
+        const size =
+          ratio >= 1
+            ? { w: maxEdge, h: Math.round(maxEdge / ratio) }
+            : { w: Math.round(maxEdge * ratio), h: maxEdge };
+        const tailFrameCardId = insertAssetCard({
+          type: 'image',
+          url: asset.publicUrl,
+          name: projectAssetsT('tailFrameName', { name: mediaCard.name }),
+          assetId: asset.id,
+          sourceCardIds: [sourceCard.id],
+          anchorCardIds: [sourceCard.id],
+          size,
+          fitMode: 'contain',
+        });
+        if (!tailFrameCardId) {
+          throw new Error(projectAssetsT('tailFrameInsertFailed'));
+        }
+        const nextDraftId = createDraftCard({
+          taskType: 'video',
+          prompt: '',
+          referenceCardIds: [tailFrameCardId],
+          anchorCardIds: [tailFrameCardId],
+          placementSide: 'right',
+        });
+        if (!nextDraftId) {
+          throw new Error(projectAssetsT('continuationInsertFailed'));
+        }
+        setStatusMessage('');
+        toast.success(projectAssetsT('continuationReady'), {
+          id: `continuation-${sourceCard.id}`,
+        });
+      } catch (error) {
+        setStatusMessage('');
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : projectAssetsT('tailFrameFailed')
+        );
+      } finally {
+        setIsContinuingVideo(false);
+      }
+    })();
+  }, [
+    continuationSelection,
+    createDraftCard,
+    insertAssetCard,
+    isContinuingVideo,
+    projectAssetsT,
+    projectId,
+    queryClient,
+  ]);
 
   const resolveDownloadUrl = useCallback((card: CanvasCard) => {
     if (!card.url) {
@@ -906,7 +1142,13 @@ export function BeatCanvasShell({
         }
       } catch {}
 
-      return `${baseName}.${card.type === 'video' ? 'mp4' : 'png'}`;
+      const fallbackExtension =
+        card.type === 'video' || card.type === 'timeline'
+          ? 'mp4'
+          : card.type === 'audio'
+            ? 'mp3'
+            : 'png';
+      return `${baseName}.${fallbackExtension}`;
     },
     [resolveDownloadUrl]
   );
@@ -1070,7 +1312,10 @@ export function BeatCanvasShell({
       ? studioT('multiSelect.download')
       : null;
   const showContextToolbar = Boolean(
-    canPreviewSelection || isSingleDownloadable || isGroupSelected
+    canPreviewSelection ||
+      isSingleDownloadable ||
+      isGroupSelected ||
+      canAddSelectionToTimeline
   );
   const snapshotChangeSignal = useMemo(
     () => ({
@@ -1415,6 +1660,28 @@ export function BeatCanvasShell({
                   void handleDownloadSelection();
                 }}
                 onPreview={handlePreviewSelection}
+                continueVideoLabel={
+                  continuationSelection
+                    ? projectAssetsT('continueFromTailFrame')
+                    : null
+                }
+                canContinueVideo={Boolean(
+                  continuationSelection && !isContinuingVideo
+                )}
+                onContinueVideo={handleContinueFromTailFrame}
+                addToTimelineLabel={
+                  canAddSelectionToTimeline
+                    ? projectAssetsT(
+                        selectedTimelineMedia.length > 1
+                          ? 'createTimeline'
+                          : 'addToTimeline'
+                      )
+                    : null
+                }
+                canAddToTimeline={
+                  canAddSelectionToTimeline && !isAddingSelectionToTimeline
+                }
+                onAddToTimeline={handleAddSelectionToTimeline}
               />
             </Suspense>
           ) : null}

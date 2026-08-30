@@ -88,3 +88,20 @@ export const buildGenerationTakes = ({
     isPinned: output.id === resolvedPinnedId,
   }));
 };
+
+export const resolveConcreteCanvasMediaCard = ({
+  cards,
+  card,
+}: {
+  cards: Record<string, CanvasCard | undefined>;
+  card: CanvasCard | null | undefined;
+}): CanvasCard | null => {
+  if (!card) return null;
+  if (card.kind !== 'generation') return card;
+  const outputs = listGenerationOutputsForDraft(cards, card.id);
+  const outputId = resolvePinnedGenerationOutputId({
+    outputs,
+    pinnedOutputId: card.pinnedOutputId,
+  });
+  return (outputId ? cards[outputId] : null) ?? (card.url ? card : null);
+};

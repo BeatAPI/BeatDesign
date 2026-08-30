@@ -7,6 +7,7 @@ import {
 } from '@/core/projects/project-snapshot';
 import {
   getProject,
+  loadProjectWithLatestSnapshot,
   saveProjectSnapshot,
 } from '@/core/projects/projects';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
@@ -20,6 +21,18 @@ type SaveProjectSnapshotRequest = {
   baseVersion?: number | null;
   allowEmpty?: boolean;
 };
+
+async function GET({ params }: { params: { projectId: string } }) {
+  const state = await loadProjectWithLatestSnapshot({ projectId: params.projectId });
+  if (!state) {
+    return Response.json({ error: 'Project not found' }, { status: 404 });
+  }
+  return Response.json({
+    projectId: params.projectId,
+    version: state.snapshotVersion,
+    document: state.snapshot,
+  });
+}
 
 async function PUT({
   request,
@@ -136,6 +149,6 @@ async function PUT({
 
 export const Route = createFileRoute('/api/app/projects/$projectId/snapshot')({
   server: {
-    handlers: { PUT },
+    handlers: { GET, PUT },
   },
 });

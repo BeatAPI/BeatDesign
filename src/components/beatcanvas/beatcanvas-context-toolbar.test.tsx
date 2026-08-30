@@ -36,3 +36,24 @@ test('context toolbar can render localized batch download actions', () => {
 
   assert.match(html, /Batch download/);
 });
+
+test('context toolbar exposes add-to-timeline for selected video or audio assets', () => {
+  const html = renderToStaticMarkup(
+    <BeatCanvasContextToolbar
+      canDownload={true}
+      canPreview={false}
+      downloadLabel="Download"
+      previewLabel={null}
+      addToTimelineLabel="Add to timeline"
+      canAddToTimeline={true}
+      onAddToTimeline={() => {}}
+      continueVideoLabel="Continue from tail frame"
+      canContinueVideo={true}
+      onContinueVideo={() => {}}
+      onDownload={() => {}}
+      onPreview={() => {}}
+    />
+  );
+  assert.match(html, /Add to timeline/);
+  assert.match(html, /Continue from tail frame/);
+});

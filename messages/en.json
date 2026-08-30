@@ -137,8 +137,10 @@
         "recentAssetsTitle": "Recent assets",
         "recentImages": "Recent images",
         "recentVideos": "Recent videos",
+        "recentAudios": "Recent audio",
         "recentImageAlt": "Recent image",
         "recentVideoAlt": "Recent video",
+        "recentAudioAlt": "Recent audio",
         "loading": "Loading...",
         "loadFailed": "Failed to load assets",
         "emptyAssets": "No assets yet"
@@ -557,6 +559,129 @@
       "emptyDescription": "Create your first project to start building a canvas-driven pipeline for product images and videos.",
       "updatedAt": "Updated {value}"
     },
+    "editor": {
+      "media": {
+        "eyebrow": "Local media",
+        "title": "Project source",
+        "drop": "Drop an image or video here",
+        "localOnly": "The original stays on this device",
+        "stillDuration": "Still image · {duration}s"
+      },
+      "empty": {
+        "title": "Import an image or video to start editing",
+        "description": "Drop a local image or MP4. Arrange, trim, preview, and export without installing system FFmpeg."
+      },
+      "status": {
+        "ready": "Ready",
+        "reading": "Reading media…",
+        "saving": "Saving…",
+        "saved": "Saved locally",
+        "canvasAdded": "Timeline added to Canvas"
+      },
+      "actions": {
+        "import": "Import image or video",
+        "importAudio": "Import audio",
+        "play": "Play selection",
+        "pause": "Pause",
+        "split": "Split",
+        "undo": "Undo edit",
+        "redoEdit": "Redo edit",
+        "redo": "AI redo",
+        "redoHint": "Redo the selected range with BeatAPI",
+        "extract": "Extract asset",
+        "addTimelineToCanvas": "Add timeline to Canvas",
+        "export": "Export MP4",
+        "exporting": "Export {progress}%",
+        "cancelExport": "Cancel {progress}%"
+      },
+      "redo": {
+        "title": "AI redo selection",
+        "description": "The selected range is extracted non-destructively and sent to one verified BeatAPI video-to-video path.",
+        "close": "Close AI redo",
+        "billingNotice": "Uses your configured BeatAPI key and may consume API credits.",
+        "placeholder": "Describe how this selected clip should be remade…",
+        "confirm": "Confirm and generate",
+        "running": "Generating…",
+        "takes": "Takes",
+        "original": "Original clip",
+        "rollback": "Restore original",
+        "preparing": "Preparing the selected range…",
+        "ready": "New Take is ready. Preview it before replacing the clip.",
+        "status": {
+          "validating": "Validating BeatAPI request…",
+          "uploading": "Uploading the derived clip…",
+          "submitting": "Submitting generation…",
+          "processing": "BeatAPI is generating a new Take…",
+          "succeeded": "Generation completed."
+        }
+      },
+      "trim": {
+        "in": "In",
+        "out": "Out"
+      },
+      "timeline": {
+        "tracks": "Tracks",
+        "title": "Timeline",
+        "visualTrack": "Visual 1",
+        "audioTrack": "Audio 1",
+        "start": "Start",
+        "dragHint": "Drag the clip to move · drag either edge to trim",
+        "trimStart": "Drag to trim the clip start",
+        "trimEnd": "Drag to trim the clip end",
+        "seek": "Move timeline playhead",
+        "seekHint": "Click to move the playhead",
+        "delete": "Delete",
+        "rippleDelete": "Ripple delete"
+      },
+      "clipInspector": {
+        "sourceRange": "Source range",
+        "sourceFrom": "Source start",
+        "sourceTo": "Source end",
+        "stillDuration": "Still duration",
+        "clipDuration": "Clip duration",
+        "timelinePosition": "Timeline position",
+        "exactControls": "Exact",
+        "type": {
+          "image": "Still image",
+          "video": "Video clip",
+          "audio": "Audio clip"
+        }
+      },
+      "audio": {
+        "volume": "Volume",
+        "fadeIn": "Fade in",
+        "fadeOut": "Fade out",
+        "mute": "Mute",
+        "unmute": "Unmute"
+      },
+      "diagnostics": {
+        "timeline_gap": "Export is blocked because the visible video track contains a gap.",
+        "clip_overlap": "Export is blocked because clips overlap on the same track.",
+        "media_missing": "Export is blocked because a source file is missing.",
+        "take_duration_mismatch": "Export is blocked because the active AI Take is shorter than its timeline clip.",
+        "caption_overlap": "Export is blocked because captions overlap.",
+        "caption_out_of_video": "Export is blocked because a caption sits outside the video range.",
+        "tiny_clip": "A clip is too short to export reliably.",
+        "empty_track": "An empty track will be ignored."
+      },
+      "errors": {
+        "videoOnly": "Choose a video file.",
+        "visualOnly": "Choose an image or video file.",
+        "audioOnly": "Choose an MP3, WAV, M4A, AAC, or OGG audio file.",
+        "noVideoTrack": "This file does not contain a readable video track.",
+        "noAudioTrack": "This file does not contain a readable audio track.",
+        "inspectFailed": "The browser could not read this media file.",
+        "exportFailed": "MP4 export failed.",
+        "exportCancelled": "MP4 export was cancelled.",
+        "loadFailed": "The saved timeline could not be loaded.",
+        "saveFailed": "The timeline could not be saved.",
+        "sourceUnavailable": "The source video is no longer available.",
+        "canvasNodeFailed": "The timeline could not be added to Canvas.",
+        "redoAssetMissing": "The generated Take was not saved into project assets.",
+        "redoFailed": "BeatAPI could not redo this selection.",
+        "clipOverlap": "This position overlaps another clip on the same track."
+      }
+    },
     "header": {
       "backHome": "Back home",
       "untitledCanvas": "Untitled project",
@@ -570,22 +695,40 @@
       "studioDescription": "Focused generation and analysis",
       "canvas": "Canvas",
       "canvasDescription": "Visual multi-step workflow",
+      "editor": "Edit",
       "assets": "Assets",
       "projectAssets": {
         "triggerLabel": "Project assets",
         "title": "Project assets",
-        "description": "Studio and Canvas share this same collection. Every completed generation and project upload appears here.",
+        "description": "Studio, Canvas, and Edit share this collection. Uploads, generated media, tail frames, and timeline renders all appear here.",
         "canvasHint": "Click an asset to add it, or drag it anywhere onto the canvas.",
         "addToCanvas": "Add to canvas",
+        "addToTimeline": "Add to timeline",
+        "createTimeline": "Create timeline",
+        "continueFromTailFrame": "Continue from tail frame",
+        "extractingTailFrame": "Extracting the tail frame locally...",
+        "tailFrameName": "{name} tail frame",
+        "tailFrameInsertFailed": "The extracted tail frame could not be added to Canvas.",
+        "continuationInsertFailed": "The continuation generation node could not be created.",
+        "tailFrameFailed": "The tail frame could not be extracted.",
+        "continuationReady": "Tail frame saved. Describe the next shot to continue.",
+        "timelineCreated": "Timeline created from the selected clips",
+        "derivedClip": "Derived clip",
+        "tailFrame": "Tail frame",
+        "timelineRender": "Timeline render",
+        "timelineExtract": "Extracted clip",
         "openOriginal": "Open original",
         "addedToCanvas": "Added to canvas",
+        "addedToTimeline": "Added to timeline",
         "imageName": "Project image",
         "videoName": "Project video",
+        "audioName": "Project audio",
         "loading": "Loading project assets...",
         "loadFailed": "Project assets could not be loaded.",
         "empty": "Generate or upload an asset to start this project collection.",
         "images": "Images",
-        "videos": "Videos"
+        "videos": "Videos",
+        "audios": "Audio"
       },
       "apiConfig": {
         "triggerLabel": "API configuration",

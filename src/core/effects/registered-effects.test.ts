@@ -24,7 +24,8 @@ test('video analysis is a separate registered workflow with two depths', () => {
 
   assert.equal(analysis?.model, 'video-analysis');
   assert.equal(analysis?.type, 3);
-  assert.equal(analysis?.api, 'https://api.beatapi.io/v1/video-analysis/tasks');
+  assert.equal(analysis?.provider, 'beatapi');
+  assert.equal(analysis?.api, null);
   assert.deepEqual(
     (schema.analysis_depth as { values?: string[] }).values,
     ['standard', 'deep']

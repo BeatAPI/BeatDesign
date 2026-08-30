@@ -5,7 +5,9 @@ import {
   detectUploadedMediaType,
   getCanonicalUploadedMediaMimeType,
   validateUploadedImageFile,
+  validateUploadedAudioFile,
   validateUploadedVideoFile,
+  REFERENCE_AUDIO_MAX_FILE_SIZE,
   REFERENCE_VIDEO_MAX_FILE_SIZE,
 } from '@/core/effects/validation';
 import {
@@ -66,9 +68,37 @@ async function POST({
   try {
     const formData = await readRequestFormDataWithLimit(
       request,
-      REFERENCE_VIDEO_MAX_FILE_SIZE + MAX_MULTIPART_OVERHEAD_BYTES
+      Math.max(REFERENCE_VIDEO_MAX_FILE_SIZE, REFERENCE_AUDIO_MAX_FILE_SIZE) +
+        MAX_MULTIPART_OVERHEAD_BYTES
     );
     const file = formData.get('file');
+    const requestedAssetClass = formData.get('assetClass');
+    const assetClass = requestedAssetClass === 'derived' ? 'derived' : 'original';
+    const parseDimension = (value: FormDataEntryValue | null) => {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) && parsed > 0
+        ? Math.min(Math.round(parsed), 32_768)
+        : undefined;
+    };
+    const width = parseDimension(formData.get('width'));
+    const height = parseDimension(formData.get('height'));
+    const rawDurationMs = Number(formData.get('durationMs'));
+    const durationMs =
+      Number.isFinite(rawDurationMs) && rawDurationMs > 0
+        ? Math.min(Math.round(rawDurationMs), 86_400_000)
+        : undefined;
+    let assetMetadata: Record<string, unknown> | undefined;
+    const rawMetadata = formData.get('metadata');
+    if (typeof rawMetadata === 'string' && rawMetadata.length <= 16_384) {
+      try {
+        const parsed = JSON.parse(rawMetadata) as unknown;
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          assetMetadata = parsed as Record<string, unknown>;
+        }
+      } catch {
+        return Response.json({ error: 'Invalid project asset metadata' }, { status: 400 });
+      }
+    }
     if (!(file instanceof File) || file.size <= 0) {
       return Response.json({ error: 'A non-empty file is required' }, { status: 400 });
     }
@@ -80,7 +110,9 @@ async function POST({
     const validation =
       mediaType === 'image'
         ? validateUploadedImageFile(file)
-        : validateUploadedVideoFile(file);
+        : mediaType === 'video'
+          ? validateUploadedVideoFile(file)
+          : validateUploadedAudioFile(file);
     if (!validation.ok) {
       return Response.json(
         { error: 'Project asset type or size is not supported' },
@@ -114,7 +146,7 @@ async function POST({
       const assetId = await recordUserAsset({
         id: persisted.assetId,
         type: mediaType,
-        source: 'upload',
+        source: assetClass === 'derived' ? 'derived' : 'upload',
         bucket: LOCAL_PROJECT_ASSET_BUCKET,
         objectKey: persisted.objectKey,
         publicUrl: persisted.publicUrl,
@@ -123,13 +155,27 @@ async function POST({
         sha256: persisted.sha256,
         filename: persisted.filename,
         storageProvider: LOCAL_PROJECT_ASSET_PROVIDER,
-        assetClass: 'original',
+        assetClass,
         originProjectId: projectId,
+        width,
+        height,
+        durationMs,
+        metadata: assetMetadata,
       });
       await linkProjectAsset({
         projectId,
         assetId,
-        role: 'upload',
+        role: assetClass === 'derived' ? 'generated' : 'upload',
+        assetRole:
+          assetMetadata &&
+          typeof assetMetadata === 'object' &&
+          typeof (assetMetadata as { operation?: unknown }).operation ===
+            'string'
+            ? (assetMetadata as { operation: string }).operation
+            : assetClass === 'derived'
+              ? 'derived'
+              : null,
+        metadata: assetMetadata,
       });
 
       return Response.json({
@@ -140,6 +186,9 @@ async function POST({
           filename: persisted.filename,
           mimeType: persistedMimeType,
           sizeBytes: persisted.sizeBytes,
+          ...(width ? { width } : {}),
+          ...(height ? { height } : {}),
+          ...(durationMs ? { durationMs } : {}),
         },
       });
     } catch (error) {

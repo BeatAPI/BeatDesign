@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Images, LayoutPanelTop, Workflow } from 'lucide-react';
+import { Images, LayoutPanelTop, Scissors, Workflow } from 'lucide-react';
 
 import { WorkspaceApiConfigDialog } from '@/components/app/workspace-api-config-dialog';
 import { GitHubIcon } from '@/components/icons/github';
@@ -158,6 +158,15 @@ export function ProductPageShell({
                   >
                     <Workflow className="size-3.5" aria-hidden="true" />
                     <span className="hidden sm:inline">{t('header.canvas')}</span>
+                  </Link>
+                  <Link
+                    href={`/editor/${projectId}`}
+                    aria-current={workspaceMode === 'editor' ? 'page' : undefined}
+                    aria-label={t('header.editor')}
+                    className={workspaceTabClassName(workspaceMode === 'editor')}
+                  >
+                    <Scissors className="size-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">{t('header.editor')}</span>
                   </Link>
                   <Link
                     href={`/assets/${projectId}`}

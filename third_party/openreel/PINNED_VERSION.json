@@ -1,0 +1,7 @@
+{
+  "name": "OpenReel",
+  "repository": "https://github.com/Augani/openreel-video",
+  "commit": "5f3c85e5fc223c86060bf4b12e1b4dec58e9b8a9",
+  "license": "MIT",
+  "integration": "BeatDesign timeline contract and editing behavior derived from OpenReel core; OpenReel application shell and cloud features are not bundled."
+}

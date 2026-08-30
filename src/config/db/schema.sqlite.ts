@@ -233,6 +233,47 @@ export const projectCanvasState = sqliteTable(
   (table) => [index('project_canvas_state_updated_at_idx').on(table.updatedAt)]
 );
 
+export const projectTimelineState = sqliteTable(
+  'project_timeline_state',
+  {
+    projectId: text('project_id')
+      .primaryKey()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    documentJson: jsonText('document_json').notNull(),
+    version: integer('version').notNull().default(1),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+  },
+  (table) => [index('project_timeline_state_updated_at_idx').on(table.updatedAt)]
+);
+
+export const projectCommandReceipt = sqliteTable(
+  'project_command_receipt',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    idempotencyKey: text('idempotency_key').notNull(),
+    commandId: text('command_id').notNull(),
+    origin: text('origin').notNull(),
+    commandType: text('command_type').notNull(),
+    resultJson: jsonText('result_json').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+  },
+  (table) => [
+    index('project_command_receipt_project_idx').on(table.projectId),
+    index('project_command_receipt_command_idx').on(table.commandId),
+    uniqueIndex('project_command_receipt_idempotency_unique').on(
+      table.projectId,
+      table.idempotencyKey
+    ),
+  ]
+);
+
 export const projectWorkflowState = sqliteTable(
   'project_workflow_state',
   {
@@ -302,6 +343,8 @@ export const projectAssetMembership = sqliteTable(
 export type Config = typeof config.$inferSelect;
 export type Project = typeof project.$inferSelect;
 export type NewProject = typeof project.$inferInsert;
+export type ProjectTimelineState = typeof projectTimelineState.$inferSelect;
+export type ProjectCommandReceipt = typeof projectCommandReceipt.$inferSelect;
 export type Asset = typeof userAsset.$inferSelect;
 export type NewAsset = typeof userAsset.$inferInsert;
 export type Generation = typeof generationHistory.$inferSelect;

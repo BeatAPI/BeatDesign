@@ -30,7 +30,7 @@ const makeCard = (overrides: Partial<CanvasCard>): CanvasCard => ({
   quality: 'standard',
   sourceGenerationId: null,
   ...overrides,
-});
+}) as CanvasCard;
 
 test('Canvas Motion Control controls reach the BeatAPI provider request', async () => {
   const model = findWorkspaceModelOption(

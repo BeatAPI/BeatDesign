@@ -15,6 +15,11 @@ test('uploads imported media immediately with trusted multipart request headers'
   const asset = await uploadLocalProjectAsset({
     projectId: 'project 1',
     file,
+    assetClass: 'derived',
+    width: 1920,
+    height: 1080,
+    durationMs: 3600,
+    metadata: { operation: 'timeline_extract', sourceInSec: 3.2 },
     fetchImpl: (async (url, init) => {
       capturedUrl = String(url);
       capturedInit = init;
@@ -39,5 +44,14 @@ test('uploads imported media immediately with trusted multipart request headers'
   );
   assert.equal(new Headers(capturedInit?.headers).has('content-type'), false);
   assert.ok(capturedInit?.body instanceof FormData);
+  const body = capturedInit?.body as FormData;
+  assert.equal(body.get('assetClass'), 'derived');
+  assert.equal(body.get('width'), '1920');
+  assert.equal(body.get('height'), '1080');
+  assert.equal(body.get('durationMs'), '3600');
+  assert.equal(
+    body.get('metadata'),
+    JSON.stringify({ operation: 'timeline_extract', sourceInSec: 3.2 })
+  );
   assert.equal(asset.id, 'asset-1');
 });

@@ -2,10 +2,27 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  createUploadMediaMetadata,
   materializePersistedImageUploadsToCanvas,
   shouldPersistCanvasImportLocally,
   type UploadRequest,
 } from './use-beatcanvas-upload-actions';
+
+test('normalizes imported video metadata for both Asset and Canvas', () => {
+  assert.deepEqual(
+    createUploadMediaMetadata({
+      width: 640,
+      height: 360,
+      durationSec: 6.004,
+    }),
+    {
+      width: 640,
+      height: 360,
+      size: { w: 360, h: 200 },
+      durationMs: 6004,
+    }
+  );
+});
 
 test('persists image selections immediately after canvas insertion', () => {
   const imageRequests: UploadRequest[] = [

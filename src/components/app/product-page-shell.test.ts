@@ -21,11 +21,14 @@ test('workspace header keeps mode switching, shared assets, and API configuratio
   assert.match(shellSource, /\/assets\//);
   assert.match(shellSource, /header\.studio/);
   assert.match(shellSource, /header\.canvas/);
+  assert.match(shellSource, /header\.editor/);
   assert.match(shellSource, /header\.assets/);
   assert.match(shellSource, /href=\{`\/studio\/\$\{projectId\}`\}/);
   assert.match(shellSource, /href=\{`\/canvas\/\$\{projectId\}`\}/);
+  assert.match(shellSource, /href=\{`\/editor\/\$\{projectId\}`\}/);
   assert.match(shellSource, /aria-current=\{workspaceMode === 'studio'/);
   assert.match(shellSource, /aria-current=\{workspaceMode === 'canvas'/);
+  assert.match(shellSource, /aria-current=\{workspaceMode === 'editor'/);
   assert.match(shellSource, /aria-current=\{workspaceMode === 'assets'/);
   assert.doesNotMatch(shellSource, /DropdownMenu/);
   assert.doesNotMatch(shellSource, /ChevronDown/);

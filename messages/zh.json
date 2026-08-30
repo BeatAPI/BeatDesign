@@ -138,8 +138,10 @@
         "recentAssetsTitle": "最近素材",
         "recentImages": "最近图片",
         "recentVideos": "最近视频",
+        "recentAudios": "最近音频",
         "recentImageAlt": "最近图片",
         "recentVideoAlt": "最近视频",
+        "recentAudioAlt": "最近音频",
         "loading": "加载中...",
         "loadFailed": "加载素材失败",
         "emptyAssets": "还没有素材"
@@ -558,6 +560,129 @@
       "emptyDescription": "先创建第一个项目，再开始搭建基于画布的电商图片和视频工作流。",
       "updatedAt": "最近更新：{value}"
     },
+    "editor": {
+      "media": {
+        "eyebrow": "本地素材",
+        "title": "项目源文件",
+        "drop": "拖入图片或视频",
+        "localOnly": "原文件只保留在当前设备",
+        "stillDuration": "静态画面 {duration} 秒"
+      },
+      "empty": {
+        "title": "导入图片或视频，开始剪辑",
+        "description": "拖入本地图片、MP4 或选择文件，无需安装系统 FFmpeg，即可编排、裁剪、预览并导出。"
+      },
+      "status": {
+        "ready": "就绪",
+        "reading": "正在读取素材…",
+        "saving": "保存中…",
+        "saved": "已保存到本地",
+        "canvasAdded": "时间线已加入 Canvas"
+      },
+      "actions": {
+        "import": "导入图片或视频",
+        "importAudio": "导入音频",
+        "play": "播放选区",
+        "pause": "暂停",
+        "split": "分割",
+        "undo": "撤销剪辑",
+        "redoEdit": "重做剪辑",
+        "redo": "AI 重做",
+        "redoHint": "使用 BeatAPI 重做当前选区",
+        "extract": "截取为素材",
+        "addTimelineToCanvas": "时间线加入 Canvas",
+        "export": "导出 MP4",
+        "exporting": "导出 {progress}%",
+        "cancelExport": "取消 {progress}%"
+      },
+      "redo": {
+        "title": "AI 重做选区",
+        "description": "系统会非破坏式截取当前选区，并通过一条已验证的 BeatAPI 视频转视频路径重做。",
+        "close": "关闭 AI 重做",
+        "billingNotice": "将使用你配置的 BeatAPI Key，可能消耗 API 点数。",
+        "placeholder": "描述你希望怎样重做这一段视频…",
+        "confirm": "确认并生成",
+        "running": "生成中…",
+        "takes": "版本 Takes",
+        "original": "原始片段",
+        "rollback": "恢复原片段",
+        "preparing": "正在准备选区…",
+        "ready": "新 Take 已完成，请预览后再替换当前片段。",
+        "status": {
+          "validating": "正在校验 BeatAPI 请求…",
+          "uploading": "正在上传派生片段…",
+          "submitting": "正在提交生成任务…",
+          "processing": "BeatAPI 正在生成新 Take…",
+          "succeeded": "生成完成。"
+        }
+      },
+      "trim": {
+        "in": "入点",
+        "out": "出点"
+      },
+      "timeline": {
+        "tracks": "轨道",
+        "title": "时间线",
+        "visualTrack": "画面 1",
+        "audioTrack": "声音 1",
+        "start": "起始位置",
+        "dragHint": "拖动片段调整位置 · 拖动两侧边缘裁剪",
+        "trimStart": "拖动以裁剪片段开头",
+        "trimEnd": "拖动以裁剪片段结尾",
+        "seek": "移动时间线播放头",
+        "seekHint": "点击以移动播放头",
+        "delete": "删除",
+        "rippleDelete": "波纹删除"
+      },
+      "clipInspector": {
+        "sourceRange": "素材截取范围",
+        "sourceFrom": "素材起点",
+        "sourceTo": "素材终点",
+        "stillDuration": "画面持续时间",
+        "clipDuration": "片段时长",
+        "timelinePosition": "成片位置",
+        "exactControls": "精确参数",
+        "type": {
+          "image": "静态图片",
+          "video": "视频片段",
+          "audio": "音频片段"
+        }
+      },
+      "audio": {
+        "volume": "音量",
+        "fadeIn": "淡入",
+        "fadeOut": "淡出",
+        "mute": "静音",
+        "unmute": "取消静音"
+      },
+      "diagnostics": {
+        "timeline_gap": "可见视频轨存在空隙，已阻止导出，避免产生未解释的黑帧。",
+        "clip_overlap": "同一轨道存在片段重叠，已阻止导出。",
+        "media_missing": "有源素材文件缺失，已阻止导出。",
+        "take_duration_mismatch": "当前 AI Take 短于时间线片段，已阻止导出，避免尾帧冻结。",
+        "caption_overlap": "字幕存在重叠，已阻止导出。",
+        "caption_out_of_video": "有字幕超出视频范围，已阻止导出。",
+        "tiny_clip": "有片段过短，可能无法稳定导出。",
+        "empty_track": "空轨道将在导出时忽略。"
+      },
+      "errors": {
+        "videoOnly": "请选择视频文件。",
+        "visualOnly": "请选择图片或视频文件。",
+        "audioOnly": "请选择 MP3、WAV、M4A、AAC 或 OGG 音频文件。",
+        "noVideoTrack": "这个文件里没有可读取的视频轨道。",
+        "noAudioTrack": "这个文件里没有可读取的音频轨道。",
+        "inspectFailed": "浏览器无法读取这个媒体文件。",
+        "exportFailed": "MP4 导出失败。",
+        "exportCancelled": "已取消 MP4 导出。",
+        "loadFailed": "无法加载已保存的时间线。",
+        "saveFailed": "时间线保存失败。",
+        "sourceUnavailable": "源视频已无法访问。",
+        "canvasNodeFailed": "无法将时间线加入 Canvas。",
+        "redoAssetMissing": "生成结果没有保存到项目素材。",
+        "redoFailed": "BeatAPI 无法重做这个选区。",
+        "clipOverlap": "这个位置会与同一轨道上的其他片段重叠。"
+      }
+    },
     "header": {
       "backHome": "返回首页",
       "untitledCanvas": "未命名项目",
@@ -571,22 +696,40 @@
       "studioDescription": "专注生成与分析",
       "canvas": "Canvas",
       "canvasDescription": "可视化多步骤工作流",
+      "editor": "剪辑",
       "assets": "素材",
       "projectAssets": {
         "triggerLabel": "项目素材",
         "title": "项目素材",
-        "description": "Studio 与 Canvas 共用这组素材，项目内完成的生成结果和上传文件都会出现在这里。",
+        "description": "Studio、Canvas 和 Edit 共用这组素材。上传、生成结果、尾帧和时间线成片都会出现在这里。",
         "canvasHint": "点击素材即可加入，或直接拖到画布上的任意位置。",
         "addToCanvas": "加入画布",
+        "addToTimeline": "加入时间线",
+        "createTimeline": "创建时间线",
+        "continueFromTailFrame": "从尾帧续写",
+        "extractingTailFrame": "正在本地提取尾帧……",
+        "tailFrameName": "{name} 尾帧",
+        "tailFrameInsertFailed": "尾帧已提取，但无法加入画布。",
+        "continuationInsertFailed": "无法创建续写视频节点。",
+        "tailFrameFailed": "无法提取视频尾帧。",
+        "continuationReady": "尾帧已保存，请描述下一镜头后继续生成。",
+        "timelineCreated": "已用所选片段创建时间线",
+        "derivedClip": "派生片段",
+        "tailFrame": "尾帧",
+        "timelineRender": "时间线成片",
+        "timelineExtract": "截取片段",
         "openOriginal": "查看原文件",
         "addedToCanvas": "已加入画布",
+        "addedToTimeline": "已加入时间线",
         "imageName": "项目图片",
         "videoName": "项目视频",
+        "audioName": "项目音频",
         "loading": "正在加载项目素材...",
         "loadFailed": "暂时无法加载项目素材。",
         "empty": "生成或上传第一个素材，开始建立这个项目的素材集合。",
         "images": "图片",
-        "videos": "视频"
+        "videos": "视频",
+        "audios": "音频"
       },
       "apiConfig": {
         "triggerLabel": "API 配置",

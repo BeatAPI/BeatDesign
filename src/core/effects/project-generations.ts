@@ -1,7 +1,10 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { generationHistory } from '@/config/db/schema';
-import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
+import {
+  getWorkspaceEffectRegistryEntry,
+  getWorkspaceEffectRegistryEntryByEffectId,
+} from '@/core/effects/effect-registry';
 import { resolveOutputMedia } from '@/core/effects/output-media';
 import {
   isVideoAnalysisEffectId,
@@ -93,9 +96,14 @@ type ProjectGenerationRow = {
 export const toProjectGenerationItem = (
   row: ProjectGenerationRow
 ): ProjectGenerationItem => {
-  const entry = getWorkspaceEffectRegistryEntryByEffectId(row.effectId);
-  const isAnalysis = isVideoAnalysisEffectId(row.effectId);
   const input = asRecord(row.input);
+  const providerIdentity = asRecord(input?._provider);
+  const recordedModelId = readString(providerIdentity?.modelId);
+  const entry = recordedModelId
+    ? getWorkspaceEffectRegistryEntry(recordedModelId)
+    : getWorkspaceEffectRegistryEntryByEffectId(row.effectId);
+  const isAnalysis =
+    recordedModelId === 'video-analysis' || isVideoAnalysisEffectId(row.effectId);
   const media = resolveOutputMedia(row.output);
   const analysisModelName =
     input?.analysis_depth === 'deep'
@@ -111,7 +119,10 @@ export const toProjectGenerationItem = (
     status: row.status as GenerationStatus,
     prompt: row.submittedPrompt,
     modelId:
-      readString(input?.model) ?? entry?.id ?? (isAnalysis ? 'video-analysis' : null),
+      recordedModelId ??
+      readString(input?.model) ??
+      entry?.id ??
+      (isAnalysis ? 'video-analysis' : null),
     modelName: entry?.name ?? (isAnalysis ? analysisModelName : null),
     mediaType: isAnalysis
       ? 'analysis'

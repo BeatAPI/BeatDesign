@@ -1,30 +1,62 @@
-# BeatDesign
+<p align="center">
+  <img src="./docs/assets/beatdesign-readme-cover-v3.jpg" alt="BeatDesign — one local creative workspace, controlled by any MCP-capable agent" width="100%" />
+</p>
 
-**Beat complexity. Design freely.**
+<h1 align="center">BeatDesign</h1>
 
-The open-source, local-first AI canvas for image and video creation and analysis. BeatDesign brings Projects, a guided Studio, a node-based Canvas, shared assets, generation history, configurable storage, and an official BeatAPI connection into one focused workspace.
+<p align="center">
+  <strong>One local creative workspace. Any agent.</strong><br />
+  Generate on a Canvas, edit on a timeline, and let an MCP-capable Agent operate the same project beside you.
+</p>
 
-There is no login, account system, payment flow, subscription, local credit ledger, admin panel, or API-key issuing service in this repository.
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#agent-control-through-mcp">MCP</a> ·
+  <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">Product status</a> ·
+  <a href="./README.zh-CN.md">中文</a>
+</p>
 
-[中文说明](./README.zh-CN.md)
+BeatDesign is a free, open-source, local-first AI media workbench. It combines a guided Studio, an infinite Canvas, a short-form video Editor, and one shared Asset library inside a single local Project.
 
-## What is included
+The browser is your visual workspace. An Agent such as Codex, Claude Code, Cursor, or another MCP stdio host can read and modify the same Project through BeatDesign's 20 local tools. There is no account system, subscription, local credit ledger, or admin panel in this repository.
 
-- Studio for prompt-first image and video generation, plus Standard and Deep video analysis.
-- React Flow Canvas for connected, multi-step creative workflows.
-- A project-scoped Assets view shared by Studio and Canvas.
-- Local projects, snapshots, generation history, and asset indexing.
-- One code-defined catalog of supported BeatAPI image and video models.
-- BeatAPI task submission and status polling.
-- BeatAPI as the fixed built-in provider; users supply their own BeatAPI API key.
-- BeatAPI managed R2 by default, with optional bring-your-own R2/S3 storage.
-- Local connection configuration, with optional encryption at rest.
-- English and Chinese UI.
-- Local SQLite by default and Cloudflare D1 as an optional deployment target.
+## The creative loop
+
+```text
+Prompt or local media
+        ↓
+Studio / Canvas ── generate, branch, connect, reuse
+        ↓
+Shared Assets ─── image, video, audio, extracted clip, render
+        ↓
+Editor ────────── trim, split, move, mix, AI redo, export MP4
+        ↑
+Any MCP Agent ─── inspect and apply project-level commands
+```
+
+The result is one continuous workflow instead of separate AI generators, download folders, and editing tools.
+
+## One Project, four views
+
+| View | What it is for |
+| --- | --- |
+| **Studio** | Prompt-first image/video generation and Standard or Deep video analysis. |
+| **Canvas** | Connected media nodes, generation history, references, branching, and reusable outputs. |
+| **Editor** | A local short-form timeline for video, still images, and audio, with non-destructive editing and MP4 export. |
+| **Assets** | The project-scoped source of truth shared by Studio, Canvas, Editor, and MCP. |
+
+## Why it feels different
+
+- **Local by default.** Projects, Canvas snapshots, timelines, generation history, and imported media stay in the local workspace.
+- **Agent-native, not Agent-locked.** BeatDesign exposes a standard stdio MCP server instead of embedding one proprietary chatbot.
+- **Asset-first.** Generated and imported media become stable project Assets before they are placed on Canvas or Editor.
+- **One command path.** UI and MCP writes pass through the same Command Kernel, revision checks, and persisted receipts.
+- **No system FFmpeg setup.** Preview and MP4 export use browser-native WebCodecs and Mediabunny.
+- **Provider boundary is explicit.** BeatAPI is the built-in generation adapter; forks can register their own adapter without rewriting Canvas or Editor.
 
 ## Quick start
 
-Requirements: Node.js 22+ and pnpm 10+.
+Requirements: Node.js 22+, pnpm 10+, and current Chrome on macOS or Windows.
 
 ```bash
 pnpm install
@@ -33,73 +65,116 @@ pnpm db:push
 pnpm dev
 ```
 
-Open `http://localhost:3020`. Home is the default route. Opening Studio or Canvas does not create a database record until you confirm that you want to start a project. Use the connection button in a workspace header to add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) and choose storage, or configure both through `.env.development`.
+Open [http://127.0.0.1:3020](http://127.0.0.1:3020).
 
-## How data flows
+Local import, Canvas work, timeline editing, preview, and MP4 export do not require an API key. Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when you want to generate, analyze media, or use AI redo.
+
+## Agent control through MCP
+
+BeatDesign runs as two local processes over the same SQLite database:
+
+| Process | Command | Role |
+| --- | --- | --- |
+| Visual workspace | `pnpm dev` | Opens Studio, Canvas, Editor, and Assets in the browser. |
+| Agent control plane | `pnpm --silent mcp` | Exposes project-level tools over stdio. |
+
+The repository includes a root `.mcp.json` for compatible hosts and a thin Codex launcher under `integrations/codex/beatdesign`.
+
+The 20 tools are grouped by durable product concepts:
+
+- **Project (3):** list, read, create.
+- **Asset (3):** list, read, import a local image/video/audio file.
+- **Canvas (3):** read, search, apply incremental operations.
+- **Generation (5):** discover models and parameters, submit, refresh status, read history.
+- **Editor (6):** read, edit, inspect a semantic snapshot, diagnose, deep-link a view, read command history.
+
+MCP does not automate UI pixels. The Agent reads the Project, applies stable commands, and BeatDesign refreshes the visible Canvas or Editor from the same local state.
+
+See [MCP setup and tool boundaries](./docs/MCP.md).
+
+## What works today
+
+### Canvas and generation
+
+- Image, video, audio, timeline, and text-oriented Canvas nodes.
+- Prompt/model/parameter configuration from one code-defined BeatAPI catalog.
+- Asset references, connected workflows, generation history, and locally persisted outputs.
+- Image/video generation plus Standard and Deep video analysis.
+- Canvas-to-Editor handoff through shared Assets and timeline nodes.
+
+### Local Editor
+
+- Video, still-image, and audio clips on a shared timeline.
+- Drag-to-trim, split, move, delete, ripple delete, and still-image duration editing.
+- Undo/redo, playback, source range selection, audio volume and fades.
+- Selected-range AI redo as non-destructive Takes.
+- Timeline diagnostics for gaps, overlaps, missing media, duration mismatches, and tiny clips.
+- Browser-side H.264/AAC MP4 export; completed renders return to project Assets.
+
+### Local persistence
+
+- SQLite project data under `data/`.
+- Project-owned media under `data/project-assets/<project-id>/`.
+- Revision-aware Canvas and Editor saving.
+- English and Chinese UI.
+- Optional Cloudflare D1 deployment target.
+
+## Data and provider boundary
 
 ```text
-Studio / Canvas / Assets
-  -> local server routes
-  -> imported files saved under data/project-assets and indexed in SQLite
-  -> generation precheck and a one-time SQLite generation intent
-  -> just-in-time provider upload of the durable local reference
-  -> BeatAPI image or video task API
-  -> provider status polling
-  -> generated media copied into the local project asset directory
-  -> local generation history and asset index
+Browser UI / MCP
+      ↓
+Command Kernel + Project services
+      ↓
+SQLite + data/project-assets
+      ↓ only after a confirmed generation request
+Generation adapter (BeatAPI by default)
+      ↓
+Output copied back into the local Asset library
 ```
 
-The API key and storage credentials remain server-side. Project state and history live in the local SQLite database. In local SQLite mode, imported image and video files are copied immediately into the project-owned `data/project-assets/<project-id>/` directory and indexed in SQLite before a card is added to the Canvas. Video analysis uploads MP4/MOV input through BeatAPI's file endpoint and stores the resulting text in the same project generation history. Generated images, videos, and video covers are downloaded into the same project-owned directory before the Canvas receives their URLs; provider URLs remain metadata only.
+API keys and storage credentials remain server-side. Selecting or dragging a local file does not send it to a provider. BeatDesign persists the file locally first and uploads only the durable project Asset required by a confirmed generation request.
 
-Canvas state is saved as a complete project snapshot after changes, checked again every five seconds while dirty, and flushed when the page is hidden, refreshed, or closed. A populated snapshot cannot be replaced by an unconfirmed empty snapshot.
+BeatDesign does not reproduce provider billing, balance, or rate-limit logic. It returns the provider's result or error to the UI/MCP caller. The upstream repository ships the official BeatAPI adapter; a fork can implement `BaseAdapter` and register it in `src/config/generation-providers.ts`.
 
-Selecting or dragging in a local file does not send it to a provider, but it is persisted immediately on the user's own machine so a refresh, restart, or development hot reload cannot lose it. When the user confirms Generate, the server validates the project, model, prompt, concurrency, and BeatAPI connection, then creates a short-lived, one-time generation intent in SQLite. The durable local reference is uploaded to the configured provider storage only for that confirmed generation. The intent fixes the project, model, and exact upload count, and is consumed when the billable task is submitted.
+Read [provider architecture](./PROVIDERS.md) and [system architecture](./ARCHITECTURE.md) for the full contract.
 
-The `data/` directory is gitignored and contains both the SQLite database and local project assets. Back up or move the directory as one unit when migrating a workspace to another machine.
+## Current v0.2 boundaries
 
-Storage entitlement follows BeatAPI billing. The built-in provider is fixed to the official `https://api.beatapi.io` endpoint and uses the user's BeatAPI API key. Supported image, audio, and subtitle inputs go through BeatAPI Files; an official hosted deployment can preconfigure managed R2 for video inputs that Files does not accept through the separate `BEATAPI_MANAGED_R2_*` secrets. Self-hosters may instead provide their own Cloudflare R2 or other S3-compatible endpoint, bucket, credentials, and public URL through `R2_*`. The two credential sets never fall through to each other.
+BeatDesign v0.2 is focused on local, short-form AI video workflows:
 
-No shared R2 secret is committed to this repository. “Preconfigured” means the official deployment supplies its storage credentials as deployment secrets, while a source checkout uses BeatAPI managed Files for supported inputs or the operator's own bucket.
+- Current Chrome on macOS and Windows.
+- Common browser-decodable images, MP4/MOV video, and MP3/WAV/M4A/AAC/OGG audio.
+- One active timeline per Project and browser-memory-constrained export.
+- Canvas and Editor poll for Agent revisions every two seconds; a realtime event bus is not implemented yet.
+- Editor MCP snapshot is semantic inspection, not a rendered pixel frame.
+- Captions, transitions, speed controls, waveforms, multiple named timelines, and native desktop packaging remain follow-up work.
 
-## Supported model catalog
+The complete completed/planned boundary lives in [Product plan and status](./docs/PRODUCT_PLAN_AND_STATUS.md).
 
-The canonical catalog lives in `src/core/effects/effect-registry.ts`. The current workspace exposes four image models and seven video models through one BeatAPI adapter, including Kling 2.6 and Kling 3.0 Motion Control. Update the registry and adapter together when BeatAPI's public contract changes.
-
-## Commands
+## Developer commands
 
 | Command | Purpose |
 | --- | --- |
-| `pnpm dev` | Start the local app on `127.0.0.1:3020` |
-| `pnpm typecheck` | Check TypeScript contracts |
-| `pnpm test` | Run unit and contract tests |
-| `pnpm i18n:check` | Validate English and Chinese messages |
-| `pnpm media:localize` | Copy provider-hosted media in existing project snapshots into local project storage |
-| `pnpm build` | Build the production app |
-| `pnpm db:push` | Apply the schema during local development |
-| `pnpm db:generate` | Generate a reviewable D1/SQLite migration |
-| `pnpm cf:build` | Build the Cloudflare Workers artifact |
+| `pnpm dev` | Start the local app on `127.0.0.1:3020`. |
+| `pnpm --silent mcp` | Start the local MCP server over stdio. |
+| `pnpm typecheck` | Check TypeScript contracts. |
+| `pnpm test` | Run unit and contract tests. |
+| `pnpm i18n:check` | Validate English and Chinese messages. |
+| `pnpm build` | Build the production app. |
+| `pnpm db:push` | Apply the local SQLite schema during development. |
+| `pnpm media:localize` | Copy provider-hosted media in existing snapshots into local project storage. |
 
-## Project structure
+## Contributing
 
-```text
-src/components/beatcanvas   Canvas UI and interactions
-src/components/studio       Guided Studio UI
-src/core/adapters           BeatAPI generation adapter
-src/core/effects            Model registry and generation lifecycle
-src/core/projects           Projects and snapshots
-src/core/workspace-lib      Shared asset and workspace utilities
-src/routes/api              Local server API
-src/config/db               SQLite/D1 schema
-```
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md), then use:
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md), [PROVIDERS.md](./PROVIDERS.md), and [WORKSPACE_MODES.md](./WORKSPACE_MODES.md) for contributor details.
-
-## Security and deployment
-
-The default development server binds to `127.0.0.1`. Connection settings are writable from the trusted local workspace only. If you expose this application to the internet, configure provider and storage credentials through deployment secrets and add your own network access control in front of the app.
-
-Never commit `.env.development`, local databases, or provider credentials.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) for system boundaries.
+- [WORKSPACE_MODES.md](./WORKSPACE_MODES.md) for product surfaces.
+- [docs/MCP.md](./docs/MCP.md) for Agent integration.
+- [DESIGN.md](./DESIGN.md) for the BeatDesign visual language.
+- [SECURITY.md](./SECURITY.md) for local and deployment safety.
 
 ## License
 
-Licensed under the [Apache License 2.0](./LICENSE). The license covers the code, not BeatAPI trademarks, logos, service access, model-provider rights, or third-party assets. See [TRADEMARKS.md](./TRADEMARKS.md).
+BeatDesign is licensed under [Apache License 2.0](./LICENSE). The license covers the code, not BeatAPI trademarks, service access, model-provider rights, or third-party assets. The timeline contract is derived from MIT-licensed OpenReel and the browser media pipeline uses MPL-2.0 Mediabunny; see [`third_party/`](./third_party) and [TRADEMARKS.md](./TRADEMARKS.md).

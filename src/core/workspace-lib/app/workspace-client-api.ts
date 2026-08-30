@@ -9,12 +9,16 @@ export type RecentAsset = {
   width: number | null;
   height: number | null;
   durationMs?: number | null;
+  mimeType?: string | null;
+  assetClass?: string | null;
+  metadata?: unknown;
   createdAt: string | Date;
 };
 
 export type RecentAssetsResponse = {
   images: RecentAsset[];
   videos: RecentAsset[];
+  audios: RecentAsset[];
 };
 
 export async function fetchRecentAssets(

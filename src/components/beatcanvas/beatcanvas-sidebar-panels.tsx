@@ -8,6 +8,7 @@ import { recentAssetsKeys } from '@/core/workspace-lib/app/workspace-query-keys'
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { useQuery } from '@tanstack/react-query';
 import {
+  AudioLines,
   Loader2,
   Video,
 } from 'lucide-react';
@@ -21,7 +22,7 @@ export function HistoryPanel({
   projectId,
 }: {
   onSelectAsset: (
-    asset: RecentAsset & { mediaType: 'image' | 'video' }
+    asset: RecentAsset & { mediaType: 'image' | 'video' | 'audio' }
   ) => void;
   projectId?: string | null;
 }) {
@@ -34,10 +35,11 @@ export function HistoryPanel({
 
   const images = data?.images ?? [];
   const videos = data?.videos ?? [];
+  const audios = data?.audios ?? [];
   const loading = isLoading;
   const error = isError ? t('sidebar.loadFailed') : null;
 
-  const hasContent = images.length > 0 || videos.length > 0;
+  const hasContent = images.length > 0 || videos.length > 0 || audios.length > 0;
 
   return (
     <div className="flex flex-col p-2">
@@ -85,6 +87,25 @@ export function HistoryPanel({
               isVideo
               onClick={() => onSelectAsset({ ...vid, mediaType: 'video' })}
             />
+          ))}
+        </AssetSection>
+      ) : null}
+
+      {!loading && audios.length > 0 ? (
+        <AssetSection label={t('sidebar.recentAudios')}>
+          {audios.map((audio) => (
+            <button
+              key={audio.id}
+              type="button"
+              onClick={() => onSelectAsset({ ...audio, mediaType: 'audio' })}
+              className="group flex aspect-square flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.04] text-white/50 transition hover:border-[var(--beat-graph)] hover:text-white"
+              title={audio.filename || t('sidebar.recentAudioAlt')}
+            >
+              <AudioLines className="size-5 text-[var(--beat-graph)]" />
+              <span className="max-w-full truncate px-1 text-[9px]">
+                {audio.filename || t('sidebar.recentAudioAlt')}
+              </span>
+            </button>
           ))}
         </AssetSection>
       ) : null}

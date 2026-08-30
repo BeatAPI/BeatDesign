@@ -38,7 +38,9 @@ const localizeProject = async (projectId: string) => {
   if (!state) return { cards: 0, files: 0 };
 
   const cardsWithRemoteMedia = state.snapshot.cards.filter(
-    (card) => Boolean(card.url && isOfficialBeatApiMediaUrl(card.url))
+    (card): card is typeof card & { type: 'image' | 'video'; url: string } =>
+      (card.type === 'image' || card.type === 'video') &&
+      Boolean(card.url && isOfficialBeatApiMediaUrl(card.url))
   );
   if (cardsWithRemoteMedia.length === 0) return { cards: 0, files: 0 };
 

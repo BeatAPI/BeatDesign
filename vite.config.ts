@@ -8,6 +8,7 @@ import { defineConfig } from 'vite';
 
 import { paraglideCompilerOptions } from './src/config/paraglide';
 import { loadEnvFiles } from './src/lib/env';
+import { shouldNormalizeProjectAssetMediaRequest } from './src/lib/project-asset-media-request';
 
 // Populate process.env from .env.local / .env.{NODE_ENV} / .env for the
 // dev server and build process (Vite only exposes VITE_* via import.meta.env;
@@ -24,6 +25,26 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [
+    {
+      name: 'beatdesign-project-asset-media-routes',
+      enforce: 'pre',
+      configureServer(server) {
+        server.middlewares.use((request, _response, next) => {
+          const destination = request.headers['sec-fetch-dest'];
+          if (
+            shouldNormalizeProjectAssetMediaRequest({
+              method: request.method,
+              url: request.url,
+              destination:
+                typeof destination === 'string' ? destination : undefined,
+            })
+          ) {
+            delete request.headers['sec-fetch-dest'];
+          }
+          next();
+        });
+      },
+    },
     // MDX must run before the react plugin so JSX in compiled MDX gets transformed.
     { enforce: 'pre', ...mdx({ providerImportSource: '@mdx-js/react' }) },
     tailwindcss(),

@@ -26,6 +26,7 @@ type BaseEffectPayload = {
   projectId?: string;
   expectedUploadCount?: number;
   generationIntentToken?: string;
+  generation?: unknown;
 };
 
 export type PrecheckResponse = {

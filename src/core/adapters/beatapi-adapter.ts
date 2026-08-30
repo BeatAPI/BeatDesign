@@ -57,6 +57,25 @@ const inputSchema = z.object({
   backgroundSource: z.enum(['input_image', 'input_video']).optional(),
 });
 
+export const validateBeatApiTaskInput = ({
+  effectType,
+  model,
+  input,
+}: {
+  effectType: number;
+  model: string;
+  input: Record<string, unknown>;
+}) => {
+  const unknownKeys = Object.keys(input).filter(
+    (key) => !(key in inputSchema.shape)
+  );
+  if (unknownKeys.length > 0) {
+    throw new Error(`Unsupported model parameters: ${unknownKeys.join(', ')}`);
+  }
+  const parsed = inputSchema.parse(input);
+  return buildBeatApiTaskRequest({ effectType, model, input: parsed });
+};
+
 type BeatApiMedia = {
   type?: unknown;
   url?: unknown;

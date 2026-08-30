@@ -1,5 +1,9 @@
 import { buildCreateProjectPath } from '@/core/projects/project-entry';
 import {
+  getActiveGenerationProviderId,
+  getGenerationModelBinding,
+} from '@/core/generation-providers/registry';
+import {
   WORKSPACE_EFFECT_REGISTRY,
   type WorkspaceAspectRatio,
   type WorkspaceAudioSetting,
@@ -89,16 +93,19 @@ const withMediaSchema = (
 const toWorkspaceModelOption = (
   workspaceType: WorkspaceType,
   entry: (typeof WORKSPACE_EFFECT_REGISTRY)[number]
-): WorkspaceModelOption => {
+): WorkspaceModelOption | null => {
   const mediaSchema = withMediaSchema(workspaceType, entry.id);
+  const providerId = getActiveGenerationProviderId();
+  const binding = getGenerationModelBinding({ modelId: entry.id, providerId });
+  if (!binding) return null;
 
   return {
     id: entry.id,
     name: entry.name,
-    effectId: entry.effectId,
+    effectId: binding.effectId,
     mediaSchema,
-    uploadPath: entry.uploadPath,
-    imageBucketName: entry.imageBucketName,
+    uploadPath: binding.uploadPath,
+    imageBucketName: binding.imageBucketName,
     defaultMode: entry.defaultMode,
     modeOptions: entry.modeOptions ? [...entry.modeOptions] : undefined,
     defaultVariant: entry.defaultVariant,
@@ -152,14 +159,16 @@ const toWorkspaceModelOption = (
 };
 
 const VIDEO_MODELS: WorkspaceModelOption[] =
-  getWorkspaceEffectRegistryEntriesByType('ai-video').map((entry) =>
-    toWorkspaceModelOption('ai-video', entry)
-  );
+  getWorkspaceEffectRegistryEntriesByType('ai-video').flatMap((entry) => {
+    const model = toWorkspaceModelOption('ai-video', entry);
+    return model ? [model] : [];
+  });
 
 const IMAGE_MODELS: WorkspaceModelOption[] =
-  getWorkspaceEffectRegistryEntriesByType('ai-image').map((entry) =>
-    toWorkspaceModelOption('ai-image', entry)
-  );
+  getWorkspaceEffectRegistryEntriesByType('ai-image').flatMap((entry) => {
+    const model = toWorkspaceModelOption('ai-image', entry);
+    return model ? [model] : [];
+  });
 
 const WORKSPACE_LAUNCH_TARGET: Record<WorkspaceType, string> = {
   'ai-video': 'video',

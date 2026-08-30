@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "beatdesign": {
+      "command": "./scripts/launch_beatdesign_mcp",
+      "cwd": ".",
+      "env_vars": [
+        "BEATDESIGN_ROOT",
+        "NODE_ENV",
+        "DATABASE_PROVIDER",
+        "DATABASE_URL",
+        "DATABASE_AUTH_TOKEN",
+        "GENERATION_PROVIDER"
+      ],
+      "tool_timeout_sec": 3600
+    }
+  }
+}

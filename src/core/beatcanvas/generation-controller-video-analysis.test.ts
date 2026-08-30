@@ -28,7 +28,7 @@ const makeCard = (overrides: Partial<CanvasCard>): CanvasCard => ({
   quality: 'standard',
   sourceGenerationId: null,
   ...overrides,
-});
+}) as CanvasCard;
 
 test('Canvas video analysis uses the same BeatAPI contract as Studio', async () => {
   const video = makeCard({ id: 'video-1' });

@@ -15,6 +15,20 @@
       "when": 1787227875042,
       "tag": "0001_tiresome_xavin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788020112960,
+      "tag": "0002_lethal_micromacro",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1788060451792,
+      "tag": "0003_slow_the_phantom",
+      "breakpoints": true
     }
   ]
 }

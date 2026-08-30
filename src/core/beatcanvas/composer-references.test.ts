@@ -49,7 +49,7 @@ const makeCard = (
   quality: 'standard',
   sourceGenerationId: null,
   ...overrides,
-});
+}) as CanvasCard;
 
 const makeDraft = (): CanvasGenerationCard => ({
   ...makeCard({
@@ -60,7 +60,7 @@ const makeDraft = (): CanvasGenerationCard => ({
     modelId: 'model-1',
   }),
   kind: 'generation',
-});
+}) as CanvasGenerationCard;
 
 test('Composer stops offering @Image references at the model limit', () => {
   const first = makeCard({ id: 'image-1' });

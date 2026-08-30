@@ -2,6 +2,7 @@ import { ProductPageShell } from '@/components/app/product-page-shell';
 import { ProjectAssetsWorkspace } from '@/components/app/project-assets-workspace';
 import { BeatStudioWorkspace } from '@/components/studio/beat-studio-workspace';
 import { BeatCanvasShell } from '@/components/beatcanvas/beatcanvas-shell';
+import { VideoEditorWorkspace } from '@/components/editor/video-editor-workspace';
 import type { loadWorkspaceProjectRoute } from '@/core/projects/workspace-project-route-loader';
 
 type WorkspaceProjectRouteData = Awaited<
@@ -28,6 +29,11 @@ export function WorkspaceProjectRoutePage({
         />
       ) : data.workspaceMode === 'assets' ? (
         <ProjectAssetsWorkspace projectId={data.project.id} />
+      ) : data.workspaceMode === 'editor' ? (
+        <VideoEditorWorkspace
+          projectId={data.project.id}
+          projectName={data.project.name}
+        />
       ) : (
         <BeatCanvasShell
           projectId={data.project.id}

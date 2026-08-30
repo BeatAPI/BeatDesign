@@ -5,6 +5,7 @@ import test from 'node:test';
 for (const routeFile of [
   './studio/$projectId.tsx',
   './canvas/$projectId.tsx',
+  './editor/$projectId.tsx',
   './assets/$projectId.tsx',
 ]) {
   test(`keeps ${routeFile} data-loaded but client rendered`, () => {

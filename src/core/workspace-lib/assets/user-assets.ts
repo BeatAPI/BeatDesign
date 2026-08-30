@@ -164,6 +164,37 @@ export const getProjectAssetById = async ({
   return rows[0] ?? null;
 };
 
+export const listProjectAssets = async ({
+  projectId,
+  limit = 100,
+}: {
+  projectId: string;
+  limit?: number;
+}) => {
+  const db = await getDb();
+  return db
+    .select({
+      id: userAsset.id,
+      type: userAsset.type,
+      source: userAsset.source,
+      assetClass: userAsset.assetClass,
+      publicUrl: userAsset.publicUrl,
+      filename: userAsset.filename,
+      mimeType: userAsset.mimeType,
+      sizeBytes: userAsset.sizeBytes,
+      width: userAsset.width,
+      height: userAsset.height,
+      durationMs: userAsset.durationMs,
+      category: projectAssetMembership.category,
+      createdAt: projectAssetMembership.createdAt,
+    })
+    .from(projectAssetMembership)
+    .innerJoin(userAsset, eq(userAsset.id, projectAssetMembership.assetId))
+    .where(eq(projectAssetMembership.projectId, projectId))
+    .orderBy(projectAssetMembership.createdAt)
+    .limit(Math.max(1, Math.min(500, Math.floor(limit))));
+};
+
 export const deleteUserAssetById = async (assetId: string) => {
   const db = await getDb();
   await db.delete(userAsset).where(eq(userAsset.id, assetId));

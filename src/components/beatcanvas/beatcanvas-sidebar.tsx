@@ -27,7 +27,7 @@ export type BeatCanvasSidebarProps = {
   onUploadMedia: () => void;
   onCreateImageDraft: () => void;
   onInsertHistoryAsset: (
-    asset: RecentAsset & { mediaType: 'image' | 'video' }
+    asset: RecentAsset & { mediaType: 'image' | 'video' | 'audio' }
   ) => void;
   uploadIntent: SidebarUploadIntent | null;
 };

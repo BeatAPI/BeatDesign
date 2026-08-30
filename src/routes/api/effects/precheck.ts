@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { buildBeatApiTaskRequest } from '@/core/adapters/beatapi-adapter';
 import { getEffectById } from '@/core/effects/effects';
 import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
 import { isVideoAnalysisEffectId } from '@/core/effects/video-analysis';
@@ -13,13 +12,13 @@ import {
 } from '@/core/effects/record-generation';
 import { getGenerationPromptConstraints, validateGenerationPrompt } from '@/core/effects/validation';
 import { getProject } from '@/core/projects/projects';
+import { getGenerationProvider } from '@/core/generation-providers';
 import {
   expireGenerationUploadIntents,
   GenerationIntentQuotaError,
   issueGenerationUploadIntent,
   normalizeExpectedUploadCount,
 } from '@/core/effects/generation-upload-intent';
-import { getConfig } from '@/modules/config/service';
 import { enforceMinIntervalRateLimit } from '@/lib/rate-limit';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 import {
@@ -105,10 +104,18 @@ async function POST({ request }: { request: Request }) {
       ? `Prompt must be ${prompt.maxChars} characters or fewer.`
       : 'Prompt is required.' }, { status: 400 });
   }
-  const apiKey = await getConfig('BEATAPI_API_KEY');
-  if (!apiKey) {
+  const provider = getGenerationProvider(effect.provider);
+  if (!provider) {
     return Response.json(
-      { error: 'Connect a BeatAPI API key before generating.' },
+      { error: `Generation provider ${effect.provider} is not registered.` },
+      { status: 400 }
+    );
+  }
+  try {
+    await provider.assertConfigured?.();
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Generation provider is not configured.' },
       { status: 400 }
     );
   }
@@ -121,15 +128,11 @@ async function POST({ request }: { request: Request }) {
       { status: 400 }
     );
   }
-  if (expectedUploadCount === 0 && effect.provider === 'beatapi') {
+  if (expectedUploadCount === 0) {
     try {
-      buildBeatApiTaskRequest({
-        effectType: effect.type,
-        model: effect.model,
-        input: {
-          ...input,
-          prompt: prompt.trimmedPrompt,
-        } as Parameters<typeof buildBeatApiTaskRequest>[0]['input'],
+      provider.validateInput?.(effect, {
+        ...input,
+        prompt: prompt.trimmedPrompt,
       });
     } catch (error) {
       return Response.json(
@@ -137,7 +140,7 @@ async function POST({ request }: { request: Request }) {
           error:
             error instanceof Error
               ? error.message
-              : 'Invalid BeatAPI model parameters.',
+              : 'Invalid generation model parameters.',
         },
         { status: 400 }
       );
