@@ -21,16 +21,8 @@ import {
 import { Link } from '@/core/i18n/navigation';
 import { buildLocalizedProjectDetailPath } from '@/core/projects/project-entry';
 import { useWorkspaceProjects } from '@/core/workspace-hooks/use-workspace-projects';
+import type { WorkspaceProjectCardItem } from '@/core/workspace-lib/app/workspace-client-api';
 import { m } from '@/paraglide/messages.js';
-
-type WorkspaceProject = {
-  id: string;
-  name: string;
-  lastWorkspaceMode?: 'studio' | 'canvas' | 'assets';
-  activityAt: string;
-  activityLabel: string;
-  coverImageUrl?: string | null;
-};
 
 function getHistoryCopy(locale: string) {
   const messageLocale = locale === 'zh' ? 'zh' : 'en';
@@ -164,20 +156,19 @@ export function WorkspacePage({
   projects,
 }: {
   locale: string;
-  projects: WorkspaceProject[];
+  projects: WorkspaceProjectCardItem[];
 }) {
   const copy = getHistoryCopy(locale);
   const [createOpen, setCreateOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<WorkspaceProject | null>(
-    null
-  );
+  const [deleteTarget, setDeleteTarget] =
+    useState<WorkspaceProjectCardItem | null>(null);
   const { projects: liveProjects, deleteProjects } = useWorkspaceProjects({
     locale,
     initialProjects: projects,
     enabled: true,
   });
 
-  async function removeProject(project: WorkspaceProject) {
+  async function removeProject(project: WorkspaceProjectCardItem) {
     setDeleteTarget(project);
   }
 

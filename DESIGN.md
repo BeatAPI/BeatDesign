@@ -122,7 +122,7 @@ Homepage emphasis is approximately 70% what can be built with BeatAPI, 20% what 
 | 2026-08-12 | Figtree + Geist Mono | Keeps creative brand expression and developer readability in one family of interfaces. |
 | 2026-08-15 | Unified black Studio, Canvas, and Pricing | Pricing retains the preferred PromptWise structure while matching the cinematic product environment. |
 | 2026-08-15 | Studio has no sidebar | The media wall and composer are the product; permanent navigation would dilute focus and reduce working width. |
-| 2026-08-15 | Independent PromptWise-style pricing route | Pricing is linkable, uses the source card geometry directly, and preserves BeatAPI checkout behavior. |
+| 2026-08-15 | Independent PromptWise-style pricing route | Pricing is linkable, uses the source card geometry directly, and preserves BeatAPI price-comparison behavior. |
 | 2026-08-18 | Studio/Canvas composers unified on the beat token system | Both composers share one vocabulary (`@/components/app/composer-styles.ts`): the homepage hero card recipe, `--beat-*` tokens, and one orange Generate action. `--beat-studio-*` became aliases; `--beatcanvas-*` surface/ink tokens map onto the beat neutral scale. |
 | 2026-08-18 | Canvas graph semantics moved from purple to cold blue (`--beat-graph` #7fb0f2) | The old VisuGen purple is retired. Cold blue selection/edges/minimap echoes the Start Here thumbnails the product opens with, and keeps "selected" visually distinct from the orange action color. |
 | 2026-08-18 | Start Here empty state is the protected quality bar | The four cold-blue thumbnails + "Create Here" stay untouched; dark product surfaces are tuned around them. |

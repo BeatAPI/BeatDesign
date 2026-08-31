@@ -1,7 +1,7 @@
-import type { WorkspaceProjectCardItem } from '@/components/app/workspace-project-hub';
 import {
   deleteWorkspaceProjects,
   fetchWorkspaceProjects,
+  type WorkspaceProjectCardItem,
 } from '@/core/workspace-lib/app/workspace-client-api';
 import { invalidateWorkspaceAfterProjectMutation } from '@/core/workspace-lib/app/workspace-query-invalidation';
 import { workspaceProjectsKeys } from '@/core/workspace-lib/app/workspace-query-keys';

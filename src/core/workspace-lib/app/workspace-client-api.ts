@@ -1,6 +1,15 @@
-import type { WorkspaceProjectCardItem } from '@/components/app/workspace-project-hub';
+import type { WorkspaceMode } from '@/config/workspace-modes';
 import type { ProjectGenerationItem } from '@/core/effects/project-generations';
 import { apiJsonDelete, apiJsonGet } from '@/lib/api-client';
+
+export type WorkspaceProjectCardItem = {
+  id: string;
+  name: string;
+  lastWorkspaceMode?: WorkspaceMode;
+  activityAt: string;
+  activityLabel: string;
+  coverImageUrl?: string | null;
+};
 
 export type RecentAsset = {
   id: string;
