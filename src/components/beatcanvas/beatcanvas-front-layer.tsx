@@ -1,5 +1,3 @@
-'use client';
-
 import {
   countPromptCharacters,
   getGenerationPromptConstraints,
@@ -68,7 +66,7 @@ import { beatcanvasPanelClassName } from './beatcanvas-theme';
 
 export type { BeatCanvasFrontLayerValue } from './beatcanvas-front-layer-context';
 
-const VISUGEN_ZOOM_STEPS = [
+const BEATDESIGN_ZOOM_STEPS = [
   0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.4, 2.8, 3.2, 3.6, 4,
 ];
 
@@ -210,13 +208,13 @@ export function BeatCanvasFrontLayer() {
 
     const cameraOptions = editor.getCameraOptions();
 
-    if (areZoomStepsEqual(cameraOptions.zoomSteps, VISUGEN_ZOOM_STEPS)) {
+    if (areZoomStepsEqual(cameraOptions.zoomSteps, BEATDESIGN_ZOOM_STEPS)) {
       return;
     }
 
     editor.setCameraOptions({
       ...cameraOptions,
-      zoomSteps: VISUGEN_ZOOM_STEPS,
+      zoomSteps: BEATDESIGN_ZOOM_STEPS,
     });
   }, [editor]);
 
@@ -308,7 +306,7 @@ export function BeatCanvasFrontLayer() {
           viewportHeight: frontLayer.clientHeight,
           composerHeight: composer.offsetHeight,
           currentZoom,
-          zoomSteps: VISUGEN_ZOOM_STEPS,
+          zoomSteps: BEATDESIGN_ZOOM_STEPS,
         });
 
         editor.centerOnPoint(

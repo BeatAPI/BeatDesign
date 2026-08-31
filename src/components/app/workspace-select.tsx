@@ -1,5 +1,3 @@
-'use client';
-
 import { Check, ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';

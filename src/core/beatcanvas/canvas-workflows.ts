@@ -29,7 +29,7 @@ export const buildBlendGenerationDraft = ({
 }): WorkflowDraft => ({
   taskType: 'image',
   prompt: [
-    'Create Card C by combining Card A and Card B into a single ecommerce-ready hero visual.',
+    'Create Card C by combining Card A and Card B into one polished creative visual.',
     `Card A: ${left.name}.`,
     `Card B: ${right.name}.`,
     'Card C should preserve the main product identity from Card A while borrowing styling, composition, or atmosphere cues from Card B.',

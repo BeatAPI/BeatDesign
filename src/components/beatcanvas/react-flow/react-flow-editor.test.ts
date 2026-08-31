@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
-test('uses a controlled React Flow canvas with custom VisuGen nodes', () => {
+test('uses a controlled React Flow canvas with custom BeatDesign nodes', () => {
   const source = readFileSync(
     new URL('./react-flow-editor.tsx', import.meta.url),
     'utf8'
@@ -11,7 +11,7 @@ test('uses a controlled React Flow canvas with custom VisuGen nodes', () => {
   assert.match(source, /<ReactFlow<BeatCanvasFlowNode,\s*BeatCanvasFlowEdge>/);
   assert.match(source, /nodes=\{lineagePresentation\.nodes\}/);
   assert.match(source, /edges=\{lineagePresentation\.edges\}/);
-  assert.match(source, /visugenLineageRole/);
+  assert.match(source, /beatdesignLineageRole/);
   assert.match(source, /onNodesChange=\{onNodesChange\}/);
   assert.match(source, /nodeTypes=\{nodeTypes\}/);
   assert.match(source, /edgeTypes=\{edgeTypes\}/);

@@ -66,5 +66,5 @@ export function useRouter() {
   };
 }
 
-// Alias for VisuGen code that imports useLocaleRouter (same behavior).
+// Alias for BeatDesign code that imports useLocaleRouter (same behavior).
 export const useLocaleRouter = useRouter;

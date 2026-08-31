@@ -6,11 +6,11 @@ import type { WorkspaceModelOption } from '@/core/effects/workspace-models';
 import type { CanvasCard, CanvasDraftCard } from './canvas-types';
 import { buildGenerationEffectInput } from './generation-controller';
 
-const ecommerceVideoModel: WorkspaceModelOption = {
-  id: 'visugen-ecommerce-video',
-  name: 'AI Ecommerce Video',
+const languageVideoModel: WorkspaceModelOption = {
+  id: 'beatdesign-language-video',
+  name: 'AI Language Video',
   effectId: 15,
-  uploadPath: 'effects/visugen-ecommerce-video',
+  uploadPath: 'effects/beatdesign-language-video',
   imageBucketName: 'image',
   defaultDuration: '15s',
   supportedDurations: ['10s', '15s'],
@@ -20,9 +20,9 @@ const ecommerceVideoModel: WorkspaceModelOption = {
   supportedLanguages: ['zh', 'en'],
 };
 
-const ecommerceVideoMetadata: EffectMetadata = {
+const languageVideoMetadata: EffectMetadata = {
   id: 15,
-  name: 'AI Ecommerce Video',
+  name: 'AI Language Video',
   inputSchema: {
     prompt: { type: 'string' },
     wmDuration: { type: 'string' },
@@ -43,7 +43,7 @@ const makeDraft = (overrides: Partial<CanvasDraftCard> = {}) =>
     workflowTemplateId: null,
     status: 'idle',
     error: null,
-    modelId: 'visugen-ecommerce-video',
+    modelId: 'beatdesign-language-video',
     aspectRatio: '16:9',
     outputQuality: '1080p',
     duration: '10s',
@@ -55,13 +55,13 @@ const makeDraft = (overrides: Partial<CanvasDraftCard> = {}) =>
     ...overrides,
   }) as CanvasDraftCard;
 
-test('passes ecommerce video language to provider input when supported', async () => {
+test('passes video language to provider input when supported', async () => {
   const result = await buildGenerationEffectInput({
     draftCard: makeDraft(),
     canvasCards: {},
     imageModels: [],
-    videoModels: [ecommerceVideoModel],
-    metadataMap: { 15: ecommerceVideoMetadata },
+    videoModels: [languageVideoModel],
+    metadataMap: { 15: languageVideoMetadata },
     runtimeMessages: {
       missingVideoUrl: 'Missing video URL',
       readVideoDurationFailed: 'Unable to read video duration',
@@ -133,12 +133,12 @@ test('passes every connected upstream image even before model limits are configu
 
 test('passes every connected reference video in @Video order', async () => {
   const videoModel: WorkspaceModelOption = {
-    ...ecommerceVideoModel,
+    ...languageVideoModel,
     supportsSourceVideo: true,
     maxSourceVideos: 3,
   };
   const videoMetadata: EffectMetadata = {
-    ...ecommerceVideoMetadata,
+    ...languageVideoMetadata,
     inputSchema: {
       prompt: { type: 'string' },
       wmDuration: { type: 'string' },
@@ -195,8 +195,8 @@ test('blocks downstream generation until a connected upstream image is ready', a
         }),
       },
       imageModels: [],
-      videoModels: [ecommerceVideoModel],
-      metadataMap: { 15: ecommerceVideoMetadata },
+      videoModels: [languageVideoModel],
+      metadataMap: { 15: languageVideoMetadata },
       runtimeMessages: {
         missingVideoUrl: 'Missing video URL',
         readVideoDurationFailed: 'Unable to read video duration',

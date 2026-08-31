@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '@/lib/utils';
 import type { CanvasGenerationCard } from '@/core/beatcanvas/canvas-types';
 import { ChevronDown, GripVertical, ImagePlus, Video, X } from 'lucide-react';

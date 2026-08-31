@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Download,
   FileVideo2,

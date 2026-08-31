@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '@/lib/utils';
 import type { CanvasOutputCard } from '@/core/beatcanvas/canvas-types';
 import { History } from 'lucide-react';

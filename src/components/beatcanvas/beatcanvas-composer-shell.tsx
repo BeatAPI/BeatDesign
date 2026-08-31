@@ -1,5 +1,3 @@
-'use client';
-
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { CanvasGenerationCard } from '@/core/beatcanvas/canvas-types';

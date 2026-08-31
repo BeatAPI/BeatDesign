@@ -1,5 +1,3 @@
-'use client';
-
 import { m } from '@/paraglide/messages.js';
 
 type BeatCanvasNodeLocale = 'en' | 'zh';

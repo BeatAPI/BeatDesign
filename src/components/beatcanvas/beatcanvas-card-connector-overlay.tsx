@@ -1,5 +1,3 @@
-'use client';
-
 import type { CanvasCardMediaType } from '@/core/beatcanvas/canvas-types';
 import { ImageIcon, Plus, Upload, Video } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';

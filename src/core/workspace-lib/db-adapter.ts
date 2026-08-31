@@ -1,8 +1,8 @@
 /**
- * Compatibility shim: VisuGen code uses `await getDb()` (async),
- * TanStack uses `db()` (sync). This adapter lets VisuGen code work unchanged.
+ * Compatibility shim: BeatDesign code uses `await getDb()` (async),
+ * TanStack uses `db()` (sync). This adapter lets BeatDesign code work unchanged.
  *
- * Usage in migrated VisuGen files:
+ * Usage in migrated BeatDesign files:
  *   import { getDb } from '@/core/workspace-lib/db-adapter';
  *   const db = await getDb();
  *   await db.select(...)

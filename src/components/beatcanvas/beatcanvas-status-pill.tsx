@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '@/lib/utils';
 import { AlertCircle, Sparkles } from 'lucide-react';
 import { beatcanvasPanelClassName } from './beatcanvas-theme';

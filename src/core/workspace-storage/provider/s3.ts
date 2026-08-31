@@ -22,7 +22,7 @@ import {
  * Amazon S3 storage provider implementation using s3mini
  *
  * docs:
- * VisuGen internal docs
+ * BeatDesign internal docs
  *
  * This provider works with Amazon S3 and compatible services like Cloudflare R2
  * using s3mini for S3-compatible object storage

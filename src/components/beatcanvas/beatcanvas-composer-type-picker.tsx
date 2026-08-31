@@ -1,5 +1,3 @@
-'use client';
-
 import type { CanvasGenerationMode } from '@/core/beatcanvas/canvas-types';
 import { cn } from '@/lib/utils';
 import { Check, ChevronDown, ImageIcon, ScanSearch, Video } from 'lucide-react';

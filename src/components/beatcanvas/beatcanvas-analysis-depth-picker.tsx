@@ -1,5 +1,3 @@
-'use client';
-
 import { getModelIconPathByModelId } from '@/core/workspace-lib/model-icons';
 import type { VideoAnalysisDepth } from '@/core/effects/video-analysis';
 import { cn } from '@/lib/utils';

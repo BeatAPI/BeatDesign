@@ -1,5 +1,3 @@
-'use client';
-
 import type { CanvasCard, CanvasDraftCard } from '@/core/beatcanvas/canvas-types';
 import {
   isCanvasDraftCard,

@@ -67,40 +67,9 @@
   "product.pricing.colHiggsfield": "竞品 H",
   "product.pricing.colDiscount": "优惠",
   "product.pricing.ctaPrimary": "开始创作",
-  "common.metadata.title": "BeatDesign",
-  "common.metadata.description": "面向电商团队的 AI 设计工作台",
-  "common.search.placeholder": "搜索...",
-  "common.table.no_data": "暂无数据",
-  "common.table.total": "共 {count} 条记录",
-  "common.table.page_info": "第 {current} 页，共 {total} 页",
-  "common.table.previous": "上一页",
-  "common.table.next": "下一页",
-  "common.table.refresh": "刷新",
   "common.pages.back_to_home": "返回首页",
   "common.pages.last_updated": "最近更新",
   "common.pages.not_found": "页面不存在",
-  "common.ui.loading": "加载中...",
-  "common.ui.toggle_theme": "切换主题",
-  "common.ui.switch_language": "切换语言",
-  "common.ui.open_menu": "打开菜单",
-  "common.ui.close_menu": "关闭菜单",
-  "common.actions.failed": "失败",
-  "common.editor.toolbar.bold": "加粗",
-  "common.editor.toolbar.italic": "斜体",
-  "common.editor.toolbar.strikethrough": "删除线",
-  "common.editor.toolbar.inline_code": "行内代码",
-  "common.editor.toolbar.heading_2": "二级标题",
-  "common.editor.toolbar.heading_3": "三级标题",
-  "common.editor.toolbar.bullet_list": "项目符号列表",
-  "common.editor.toolbar.ordered_list": "编号列表",
-  "common.editor.toolbar.blockquote": "引用",
-  "common.editor.toolbar.code_block": "代码块",
-  "common.editor.toolbar.link": "链接",
-  "common.editor.toolbar.remove_link": "移除链接",
-  "common.editor.toolbar.insert_image": "插入图片",
-  "common.editor.toolbar.horizontal_rule": "分割线",
-  "common.editor.toolbar.undo": "撤销",
-  "common.editor.toolbar.redo": "重做",
   "AppShell": {
     "studio": {
       "intro": {
@@ -149,8 +118,7 @@
       },
       "tabs": {
         "single": "单次生成",
-        "batch": "批量图片",
-        "templateSwap": "模板替换"
+        "batch": "批量图片"
       },
       "single": {
         "title": "单次创作",
@@ -168,12 +136,12 @@
           "quality": "质量"
         },
         "defaults": {
-          "image": "生成一张新的商品图，场景要求：",
-          "video": "生成一段新的商品视频，镜头要求：",
-          "imageFromImage": "基于此图生成一张新的商品图，保持主体一致，场景要求：",
-          "imageFromVideo": "生成一张与当前视频主体一致的新商品图，场景要求：",
-          "videoFromImage": "基于此图生成一段新的商品展示视频，镜头要求：",
-          "videoFromVideo": "基于此视频继续生成一段新的商品展示视频，镜头要求："
+          "image": "生成一张新的图片，创作要求：",
+          "video": "生成一段新的视频，镜头要求：",
+          "imageFromImage": "基于此图生成一张新图片，保持主要主体一致，创作要求：",
+          "imageFromVideo": "基于此视频的主要主体生成一张新图片，创作要求：",
+          "videoFromImage": "基于此图生成一段新视频，镜头要求：",
+          "videoFromVideo": "基于此视频继续生成下一个镜头，镜头要求："
         },
         "promptPlaceholder": "描述你想生成的图片或视频。选中画布节点后，它会成为当前参考素材或分支锚点。"
       },
@@ -422,7 +390,7 @@
       },
       "emptyState": {
         "title": "BeatAPI",
-        "description": "AI 电商图片与视频生成",
+        "description": "AI 图片、视频创作与分析",
         "guideTitle": "开始创作",
         "guideDescription": "用提示词自由生成，或上传图片开始创作。",
         "freeGenerate": "自由生成",
@@ -461,89 +429,7 @@
       },
       "textNote": {
         "template": "文本备注\n\n在这里记录构图想法、镜头说明或制作备注。"
-      },
-      "templateSwap": {
-        "title": "模板替换 MVP",
-        "description": "上传产品白底图，把筛选后的模板拖到画布里，然后一次最多执行 5 个替换任务。",
-        "actions": {
-          "uploadProducts": "上传产品图",
-          "uploadTemplate": "上传模板",
-          "run": "批量替换"
-        },
-        "selection": {
-          "eyebrow": "当前绑定目标",
-          "product": "已选产品：{name}",
-          "template": "已选模板：{name}",
-          "empty": "请先在画布中选中一个产品卡或一个模板卡。",
-          "hint": "选中产品卡后，把模板拖到画布；选中模板卡后，可一次上传最多 5 张产品白底图。"
-        },
-        "tasks": {
-          "title": "替换任务",
-          "empty": "还没有模板替换任务。",
-          "results": "已生成 {count} 个结果"
-        },
-        "templateLibrary": {
-          "eyebrow": "官方模板 + 临时模板",
-          "title": "模板库",
-          "search": "搜索模板",
-          "upload": "临时上传",
-          "filters": {
-            "all": "全部",
-            "hero": "主视觉",
-            "outdoor": "户外",
-            "studio": "棚拍",
-            "detail": "细节",
-            "promo": "促销"
-          },
-          "badges": {
-            "official": "官方",
-            "session": "临时"
-          },
-          "drawSlot": "框选商品位"
-        },
-        "slotEditor": {
-          "title": "临时模板商品位",
-          "close": "关闭",
-          "description": "在预览图上拖出一个矩形框，标记这张模板里的商品替换区域。"
-        },
-        "messages": {
-          "batchLimitExceeded": "单次最多只能创建或执行 {limit} 个模板替换任务。",
-          "selectProductFirst": "请先选中一个产品卡，再把模板拖到画布上。",
-          "selectTemplateFirst": "请先选中一个模板卡，再批量上传产品图。",
-          "creatingTasks": "正在创建模板替换任务...",
-          "tasksReady": "模板替换任务已加入画布。",
-          "taskCreationFailed": "创建模板替换任务失败。",
-          "uploadingProducts": "正在上传产品白底图...",
-          "productsReady": "产品图已加入画布。",
-          "productUploadFailed": "上传产品图失败。",
-          "uploadingTemplate": "正在上传临时模板...",
-          "templateReadyForSlot": "模板已上传，请先框选商品位。",
-          "templateUploadFailed": "上传临时模板失败。",
-          "templateSlotRequired": "这个模板还没有商品位，暂时不能创建任务。",
-          "templateNodeFailed": "在画布上创建模板卡失败。",
-          "productNodeFailed": "在画布上创建产品卡失败。",
-          "noTasksToRun": "当前没有可执行的模板替换任务。",
-          "runningTasks": "正在执行模板替换任务...",
-          "runCompleted": "模板替换批次执行完成。",
-          "slotSaved": "商品位已保存。"
-        }
       }
-    },
-    "projectHub": {
-      "title": "项目",
-      "eyebrow": "项目化画布",
-      "headline": "让每一张画布都成为可追溯、可持续扩展的生成项目。",
-      "description": "每个项目都保留自己的白板、参考素材和生成历史，把电商素材工作流真正沉淀下来，而不是停留在一次性的临时会话里。",
-      "cardLabel": "启动入口",
-      "cardDescription": "当你要开启新的商品、素材批次或新的创作方向时，就新建一个项目。",
-      "createProject": "新建项目",
-      "recentTitle": "最近项目",
-      "recentDescription": "打开已有项目，继续生成、整理参考图和复盘历史产物。",
-      "projectBadge": "画布项目",
-      "openProject": "打开项目",
-      "emptyTitle": "还没有项目",
-      "emptyDescription": "先创建第一个项目，再开始搭建基于画布的电商图片和视频工作流。",
-      "updatedAt": "最近更新：{value}"
     },
     "editor": {
       "media": {

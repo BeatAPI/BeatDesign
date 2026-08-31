@@ -1,5 +1,3 @@
-'use client';
-
 import { Cloud, Database } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';

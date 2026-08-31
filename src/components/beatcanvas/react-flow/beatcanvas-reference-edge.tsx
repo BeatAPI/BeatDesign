@@ -1,5 +1,3 @@
-'use client';
-
 import {
   BaseEdge,
   getBezierPath,
@@ -9,7 +7,7 @@ import {
 import type { BeatCanvasFlowEdge } from './beatcanvas-react-flow-types';
 
 export function BeatCanvasReferenceEdge(props: EdgeProps<BeatCanvasFlowEdge>) {
-  const lineageRole = props.data?.visugenLineageRole;
+  const lineageRole = props.data?.beatdesignLineageRole;
   const isLineageEdge =
     lineageRole === 'upstream' || lineageRole === 'downstream';
   const [path] = getBezierPath({

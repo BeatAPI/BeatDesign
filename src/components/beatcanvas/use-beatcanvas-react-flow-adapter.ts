@@ -1,5 +1,3 @@
-'use client';
-
 import type {
   WorkspaceAspectRatio,
   WorkspaceModelOption,
@@ -69,10 +67,10 @@ type CanvasFocusOptions = {
   zoom?: number;
 };
 
-const CARD_KIND_META_KEY = 'visugenCardKind';
-const CARD_TYPE_META_KEY = 'visugenCardType';
-const CARD_SOURCE_META_KEY = 'visugenCardSource';
-const CARD_WORKFLOW_TEMPLATE_META_KEY = 'visugenWorkflowTemplateId';
+const CARD_KIND_META_KEY = 'beatdesignCardKind';
+const CARD_TYPE_META_KEY = 'beatdesignCardType';
+const CARD_SOURCE_META_KEY = 'beatdesignCardSource';
+const CARD_WORKFLOW_TEMPLATE_META_KEY = 'beatdesignWorkflowTemplateId';
 const CARD_RESULT_SIZE = 360;
 const VIDEO_FRAME_HEIGHT = 236;
 const ANALYSIS_REPORT_FRAME_SIZE = { w: 480, h: 340 } as const;

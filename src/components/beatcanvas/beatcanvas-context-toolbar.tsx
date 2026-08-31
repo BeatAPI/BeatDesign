@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '@/lib/utils';
 import { Download, DownloadIcon, Eye, Film, Sparkles } from 'lucide-react';
 

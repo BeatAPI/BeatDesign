@@ -51,7 +51,7 @@ button[aria-disabled="true"] {
 /*
  * BeatAPI product surfaces use a dedicated type system inspired by refined
  * creative tools. It is intentionally scoped so Studio, Canvas, Pricing and
- * the reusable SaaS dashboard keep their existing typography.
+ * the shared utility surfaces keep their existing typography.
  */
 .beat-product-shell {
   --beat-font-ui: "Figtree Variable", "Figtree", "PingFang SC",
@@ -200,7 +200,7 @@ button[aria-disabled="true"] {
 
 /*
  * 1. Themes Documentation
- * VisuGen internal docs
+ * BeatDesign internal docs
 
  * 2. Theme Generator
  * https://ui.shadcn.com/themes
@@ -477,7 +477,7 @@ button[aria-disabled="true"] {
   --beat-studio-accent-hover: var(--beat-accent-hover);
 
   /*
-   * VisuGen canvas tokens — re-aliased onto the shared dark product language.
+   * BeatDesign canvas tokens — re-aliased onto the shared dark product language.
    * The old purple accent became --beat-graph (cold blue); surfaces/ink map
    * to the beat neutral scale so panels and pickers match Studio/Pricing.
    */
@@ -822,100 +822,6 @@ hr {
   }
   100% {
     transform: translateX(-50%);
-  }
-}
-
-.commerce-logo-marquee {
-  width: min(1120px, 100%);
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 9%,
-    #000 91%,
-    transparent
-  );
-  mask-image: linear-gradient(
-    90deg,
-    transparent,
-    #000 9%,
-    #000 91%,
-    transparent
-  );
-}
-
-.commerce-logo-track {
-  display: flex;
-  width: max-content;
-  align-items: center;
-  gap: 44px;
-  animation: commerce-logo-scroll 18s linear infinite;
-  will-change: transform;
-}
-
-.commerce-logo-marquee:hover .commerce-logo-track {
-  animation-play-state: paused;
-}
-
-.commerce-logo-item {
-  display: flex;
-  flex: 0 0 190px;
-  height: 64px;
-  align-items: center;
-  justify-content: center;
-}
-
-.commerce-logo-img {
-  display: block;
-  width: 100%;
-  max-width: 172px;
-  max-height: 56px;
-  object-fit: contain;
-  opacity: 0.88;
-  transition: transform 220ms ease, opacity 220ms ease;
-}
-
-.commerce-logo-item:hover .commerce-logo-img {
-  transform: translateY(-2px) scale(1.04);
-  opacity: 1;
-}
-
-@keyframes commerce-logo-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(calc(-50% - 22px));
-  }
-}
-
-@media (max-width: 767px) {
-  .commerce-logo-marquee {
-    width: 100%;
-  }
-
-  .commerce-logo-track {
-    gap: 28px;
-    animation-duration: 16s;
-  }
-
-  .commerce-logo-item {
-    flex-basis: 156px;
-    height: 58px;
-  }
-
-  .commerce-logo-img {
-    max-width: 142px;
-    max-height: 48px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .commerce-logo-track {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-    animation: none;
   }
 }
 

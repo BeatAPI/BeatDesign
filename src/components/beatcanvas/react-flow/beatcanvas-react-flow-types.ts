@@ -7,9 +7,9 @@ import type {
   Viewport,
 } from '@xyflow/react';
 
-export const ASSET_CARD_NODE_TYPE = 'visugen-asset-card' as const;
-export const GENERATION_CARD_NODE_TYPE = 'visugen-generation-card' as const;
-export const WORKFLOW_GROUP_NODE_TYPE = 'visugen-workflow-group' as const;
+export const ASSET_CARD_NODE_TYPE = 'beatdesign-asset-card' as const;
+export const GENERATION_CARD_NODE_TYPE = 'beatdesign-generation-card' as const;
+export const WORKFLOW_GROUP_NODE_TYPE = 'beatdesign-workflow-group' as const;
 
 export type BeatCanvasNodeType =
   | typeof ASSET_CARD_NODE_TYPE
@@ -59,7 +59,7 @@ export type BeatCanvasNodeData = Record<string, unknown> & {
 };
 
 export type BeatCanvasFlowNode = Node<BeatCanvasNodeData, BeatCanvasNodeType>;
-export type BeatCanvasFlowEdge = Edge<Record<string, unknown>, 'visugen-reference'>;
+export type BeatCanvasFlowEdge = Edge<Record<string, unknown>, 'beatdesign-reference'>;
 
 export type CanvasPoint = { x: number; y: number };
 export type CanvasBounds = {

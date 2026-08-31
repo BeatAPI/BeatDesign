@@ -1,5 +1,3 @@
-'use client';
-
 import type { WorkspaceModelOption } from '@/core/effects/workspace-models';
 
 import { useBeatCanvasState } from './use-beatcanvas-state';

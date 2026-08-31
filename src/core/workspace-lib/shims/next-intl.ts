@@ -1,7 +1,7 @@
 /**
  * Shim for next-intl's useTranslations / useLocale hooks.
  *
- * VisuGen code calls `useTranslations('Namespace')` then `t('key')`. Under
+ * BeatDesign code calls `useTranslations('Namespace')` then `t('key')`. Under
  * TanStack we resolve these against the Paraglide message tree so real
  * translations are returned (the project baseLocale is `en`). Nested keys
  * use dot notation: t('sidebar.addNode').
@@ -85,7 +85,7 @@ export const LOCALES = ['en', 'zh'];
 export type Messages = typeof enMessages;
 
 /**
- * Default (en) message tree. VisuGen code accesses nested keys such as
+ * Default (en) message tree. BeatDesign code accesses nested keys such as
  * `defaultMessages.Metadata.title`, so the shim mirrors that structure.
  */
 type MessagesType = {

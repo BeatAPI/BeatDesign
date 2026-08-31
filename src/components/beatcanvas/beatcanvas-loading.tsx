@@ -1,5 +1,3 @@
-'use client';
-
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 
 export function BeatCanvasLoading() {

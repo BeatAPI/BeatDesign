@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffectMetadata } from '@/core/workspace-hooks/use-workspace-metadata';
 import type { WorkspaceModelOption } from '@/core/effects/workspace-models';
 import type {

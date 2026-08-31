@@ -11,14 +11,9 @@ test('keeps sidebar panel-only data and template code out of the toolbar module'
   assert.doesNotMatch(source, /fetchRecentAssets/);
   assert.doesNotMatch(source, /recentAssetsKeys/);
   assert.doesNotMatch(source, /useQuery/);
-  assert.doesNotMatch(source, /ECOMMERCE_COLLAGE_TEMPLATE_PREVIEW_PATH/);
-  assert.doesNotMatch(source, /VIRTUAL_MODEL_TRYON_TEMPLATE_PREVIEW_PATH/);
-  assert.doesNotMatch(source, /ECOMMERCE_VIDEO_AD_TEMPLATE_PREVIEW_PATH/);
   // the template library entry point was removed with the template system
   assert.doesNotMatch(source, /TemplatesPanel/);
   assert.doesNotMatch(source, /'templates'/);
-  assert.doesNotMatch(source, /workflows\.ecommerceVideo\.title/);
-  assert.doesNotMatch(source, /onOpenEcommerceVideoAd/);
 
   assert.match(
     source,

@@ -1,5 +1,3 @@
-'use client';
-
 import type { RecentAsset } from '@/core/workspace-lib/app/workspace-client-api';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { Clock3, ImagePlus, Plus } from 'lucide-react';

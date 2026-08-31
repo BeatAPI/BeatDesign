@@ -1,5 +1,3 @@
-'use client';
-
 import { ProjectAssetsLibrary } from '@/components/app/project-assets-dialog';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 

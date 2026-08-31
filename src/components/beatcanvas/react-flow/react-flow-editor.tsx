@@ -1,5 +1,3 @@
-'use client';
-
 import {
   Background,
   BackgroundVariant,
@@ -72,7 +70,7 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  'visugen-reference': BeatCanvasReferenceEdge,
+  'beatdesign-reference': BeatCanvasReferenceEdge,
 };
 
 const DEFAULT_VIEWPORT = { x: 0, y: 0, zoom: 1 };
@@ -525,7 +523,7 @@ function BeatCanvasReactFlowCanvas({
             id,
             source: sourceId,
             target: targetId,
-            type: 'visugen-reference',
+            type: 'beatdesign-reference',
             selectable: true,
             deletable: true,
           },
@@ -774,7 +772,7 @@ function BeatCanvasReactFlowCanvas({
             ...node.data,
             meta: {
               ...node.data.meta,
-              visugenLineageRole: role,
+              beatdesignLineageRole: role,
             },
           },
         };
@@ -791,7 +789,7 @@ function BeatCanvasReactFlowCanvas({
               ...edge,
               data: {
                 ...edge.data,
-                visugenLineageRole: isUpstream
+                beatdesignLineageRole: isUpstream
                   ? 'upstream'
                   : isDownstream
                     ? 'downstream'
@@ -842,14 +840,14 @@ function BeatCanvasReactFlowCanvas({
           colorMode="dark"
         >
           <Background
-            id="visugen-minor-dots"
+            id="beatdesign-minor-dots"
             variant={BackgroundVariant.Dots}
             gap={24}
             size={1.3}
             color="rgba(224, 226, 232, 0.24)"
           />
           <Background
-            id="visugen-major-dots"
+            id="beatdesign-major-dots"
             variant={BackgroundVariant.Dots}
             gap={96}
             size={1.8}

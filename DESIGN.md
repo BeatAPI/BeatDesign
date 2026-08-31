@@ -4,16 +4,16 @@
 
 - **What this is:** An open-source, local-first AI creative workbench and a working demonstration of building on BeatAPI.
 - **Who it is for:** Independent developers and small product teams shipping AI media products for an international audience.
-- **Space:** Developer tools, AI creative software, and SaaS infrastructure.
+- **Space:** Developer tools, AI creative software, and local creative infrastructure.
 - **Project type:** Marketing site, local project workspace, guided Studio, node Canvas, and shared Assets view.
 
 ## Aesthetic Direction
 
-- **Direction:** Warm technical editorial in marketing; cinematic black creative operating system across Studio, Canvas, and PromptWise-structured Pricing.
+- **Direction:** Warm technical editorial in marketing; cinematic black creative operating system across Studio, Canvas, and comparison-led Pricing.
 - **Decoration:** Intentional. Typography, product media, fine grid lines, dark glass controls, and restrained highlights create character without ornamental UI noise.
 - **Layout:** Hybrid. Marketing uses editorial scale and asymmetry; local project surfaces use a strict, predictable grid.
 - **Mood:** Capable, cinematic, and crafted. Creation surfaces should feel like focused production tools, while the marketing site stays warmer and more editorial.
-- **Reference language:** PromptWise is the visual reference, not a copied page or a separately selectable theme.
+- **Reference language:** A focused editorial pricing language, not a separately selectable theme.
 
 ## Typography
 
@@ -31,7 +31,7 @@
 - **Brand soft:** `#FFF0E5` — selected surfaces and subtle callouts.
 - **Marketing canvas:** `#F6F0E7` — warm cream.
 - **Studio / Canvas / Assets canvas:** `#08090A` — near-black production workspace.
-- **Pricing canvas:** `#08090A` with graphite `#141517` plan cards, warm-white type, and PromptWise's original plan geometry.
+- **Pricing canvas:** `#08090A` with graphite `#141517` plan cards, warm-white type, and clear comparison geometry.
 - **Dark surface:** `#111214`; raised surface `#17181B`; control surface `#202126`.
 - **Dark ink:** `#F6F6F4`; secondary `rgba(246,246,244,.58)`; faint `rgba(246,246,244,.34)`.
 - **Surface:** `#FFFFFF`; raised surface `#FCFCFA`.
@@ -39,7 +39,7 @@
 - **Borders:** `#DDDED8`; strong `#C7C9C0`.
 - **Highlight:** `#C7F36B` — sparse proof or status accent, never a primary CTA.
 - **Success:** `#208A55`; warning `#B66A09`; error `#C23B32`; info `#2563A9`.
-- **Dark product surfaces:** Near-black canvas with charcoal cards. Orange stays saturated because it is the only brand action color; cold blue is limited to Canvas graph semantics. Pricing keeps PromptWise's commercial hierarchy while using the same dark product vocabulary as Studio, Canvas, and Assets.
+- **Dark product surfaces:** Near-black canvas with charcoal cards. Orange stays saturated because it is the only brand action color; cold blue is limited to Canvas graph semantics. Pricing keeps a clear commercial hierarchy while using the same dark product vocabulary as Studio, Canvas, and Assets.
 
 ## Spacing and Shape
 
@@ -80,7 +80,7 @@ Do not create a universal `Section` component controlled by many presentation pr
 
 ## Canvas Rules
 
-React Flow remains the interaction engine. PromptWise changes its visual expression, not its graph behavior.
+React Flow remains the interaction engine. BeatDesign's visual language changes its expression, not its graph behavior.
 
 - Canvas background uses the same near-black canvas with a restrained two-scale dot grid.
 - Nodes are dark, thin-bordered cards with a narrow semantic header and clear input/output ports.
@@ -116,13 +116,13 @@ Homepage emphasis is approximately 70% what can be built with BeatAPI, 20% what 
 
 | Date | Decision | Rationale |
 | --- | --- | --- |
-| 2026-08-12 | One PromptWise-derived design language | A single recognizable system is more valuable than several shallow themes. |
+| 2026-08-12 | One unified BeatDesign language | A single recognizable system is more valuable than several shallow themes. |
 | 2026-08-12 | Shared AppShell with Studio, Canvas, and Assets modes | Preserves every project view without duplicating workspace chrome. |
 | 2026-08-12 | Orange primary, cream marketing, neutral app | Connects the brand across marketing and product while preserving workspace clarity. |
 | 2026-08-12 | Figtree + Geist Mono | Keeps creative brand expression and developer readability in one family of interfaces. |
-| 2026-08-15 | Unified black Studio, Canvas, and Pricing | Pricing retains the preferred PromptWise structure while matching the cinematic product environment. |
+| 2026-08-15 | Unified black Studio, Canvas, and Pricing | Pricing retains a clear comparison structure while matching the cinematic product environment. |
 | 2026-08-15 | Studio has no sidebar | The media wall and composer are the product; permanent navigation would dilute focus and reduce working width. |
-| 2026-08-15 | Independent PromptWise-style pricing route | Pricing is linkable, uses the source card geometry directly, and preserves BeatAPI price-comparison behavior. |
+| 2026-08-15 | Independent BeatDesign pricing route | Pricing is linkable, uses consistent card geometry, and preserves BeatAPI price-comparison behavior. |
 | 2026-08-18 | Studio/Canvas composers unified on the beat token system | Both composers share one vocabulary (`@/components/app/composer-styles.ts`): the homepage hero card recipe, `--beat-*` tokens, and one orange Generate action. `--beat-studio-*` became aliases; `--beatcanvas-*` surface/ink tokens map onto the beat neutral scale. |
-| 2026-08-18 | Canvas graph semantics moved from purple to cold blue (`--beat-graph` #7fb0f2) | The old VisuGen purple is retired. Cold blue selection/edges/minimap echoes the Start Here thumbnails the product opens with, and keeps "selected" visually distinct from the orange action color. |
+| 2026-08-18 | Canvas graph semantics moved from purple to cold blue (`--beat-graph` #7fb0f2) | The previous purple graph accent is retired. Cold blue selection/edges/minimap echoes the Start Here thumbnails the product opens with, and keeps "selected" visually distinct from the orange action color. |
 | 2026-08-18 | Start Here empty state is the protected quality bar | The four cold-blue thumbnails + "Create Here" stay untouched; dark product surfaces are tuned around them. |

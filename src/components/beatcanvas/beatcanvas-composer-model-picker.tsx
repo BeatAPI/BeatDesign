@@ -1,5 +1,3 @@
-'use client';
-
 import type { WorkspaceModelOption } from '@/core/effects/workspace-models';
 import { getModelIconPathByModelId } from '@/core/workspace-lib/model-icons';
 import { cn } from '@/lib/utils';

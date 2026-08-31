@@ -67,40 +67,9 @@
   "product.pricing.colHiggsfield": "Competitor H",
   "product.pricing.colDiscount": "Discount",
   "product.pricing.ctaPrimary": "Start creating",
-  "common.metadata.title": "BeatDesign",
-  "common.metadata.description": "AI design workspace for ecommerce teams",
-  "common.search.placeholder": "Search...",
-  "common.table.no_data": "No data",
-  "common.table.total": "{count} records",
-  "common.table.page_info": "Page {current} of {total}",
-  "common.table.previous": "Previous",
-  "common.table.next": "Next",
-  "common.table.refresh": "Refresh",
   "common.pages.back_to_home": "Back to home",
   "common.pages.last_updated": "Last updated",
   "common.pages.not_found": "Page not found",
-  "common.ui.loading": "Loading...",
-  "common.ui.toggle_theme": "Toggle theme",
-  "common.ui.switch_language": "Switch language",
-  "common.ui.open_menu": "Open menu",
-  "common.ui.close_menu": "Close menu",
-  "common.actions.failed": "Failed",
-  "common.editor.toolbar.bold": "Bold",
-  "common.editor.toolbar.italic": "Italic",
-  "common.editor.toolbar.strikethrough": "Strikethrough",
-  "common.editor.toolbar.inline_code": "Inline code",
-  "common.editor.toolbar.heading_2": "Heading 2",
-  "common.editor.toolbar.heading_3": "Heading 3",
-  "common.editor.toolbar.bullet_list": "Bullet list",
-  "common.editor.toolbar.ordered_list": "Ordered list",
-  "common.editor.toolbar.blockquote": "Blockquote",
-  "common.editor.toolbar.code_block": "Code block",
-  "common.editor.toolbar.link": "Link",
-  "common.editor.toolbar.remove_link": "Remove link",
-  "common.editor.toolbar.insert_image": "Insert image",
-  "common.editor.toolbar.horizontal_rule": "Horizontal rule",
-  "common.editor.toolbar.undo": "Undo",
-  "common.editor.toolbar.redo": "Redo",
   "AppShell": {
     "studio": {
       "intro": {
@@ -149,8 +118,7 @@
       },
       "tabs": {
         "single": "Single run",
-        "batch": "Batch images",
-        "templateSwap": "Template swap"
+        "batch": "Batch images"
       },
       "single": {
         "title": "Single creation",
@@ -168,12 +136,12 @@
           "quality": "Quality"
         },
         "defaults": {
-          "image": "Create a new product image. Scene requirements:",
-          "video": "Create a new product video. Camera requirements:",
-          "imageFromImage": "Create a fresh product image from this reference while keeping the subject consistent. Scene requirements:",
-          "imageFromVideo": "Create a fresh product image based on the subject in this video. Scene requirements:",
-          "videoFromImage": "Create a new product showcase video from this image. Camera requirements:",
-          "videoFromVideo": "Continue this product showcase video with the next shot. Camera requirements:"
+          "image": "Create a new image. Creative direction:",
+          "video": "Create a new video. Camera direction:",
+          "imageFromImage": "Create a fresh image from this reference while preserving the main subject. Creative direction:",
+          "imageFromVideo": "Create a fresh image based on the main subject in this video. Creative direction:",
+          "videoFromImage": "Create a new video from this image. Camera direction:",
+          "videoFromVideo": "Continue this video with the next shot. Camera direction:"
         },
         "promptPlaceholder": "Describe the image or video you want to generate. When you select a canvas node, it becomes the current reference or branch anchor."
       },
@@ -422,7 +390,7 @@
       },
       "emptyState": {
         "title": "BeatAPI",
-        "description": "AI ecommerce image and video generation",
+        "description": "AI image and video creation and analysis",
         "guideTitle": "Start creating",
         "guideDescription": "Generate freely from a prompt, or upload an image to start.",
         "freeGenerate": "Free generation",
@@ -461,89 +429,7 @@
       },
       "textNote": {
         "template": "Text note\n\nCapture composition ideas, shot notes, or production reminders here."
-      },
-      "templateSwap": {
-        "title": "Template swap MVP",
-        "description": "Upload product packshots, drag filtered templates onto the canvas, and run up to 5 replacement tasks at a time.",
-        "actions": {
-          "uploadProducts": "Upload products",
-          "uploadTemplate": "Upload template",
-          "run": "Batch replace"
-        },
-        "selection": {
-          "eyebrow": "Current binding target",
-          "product": "Selected product: {name}",
-          "template": "Selected template: {name}",
-          "empty": "Select one product card or one template card on the canvas.",
-          "hint": "Drop templates onto a selected product, or upload up to 5 product packshots while a template card is selected."
-        },
-        "tasks": {
-          "title": "Replacement tasks",
-          "empty": "No template swap tasks yet.",
-          "results": "{count} results generated"
-        },
-        "templateLibrary": {
-          "eyebrow": "Official + session templates",
-          "title": "Template library",
-          "search": "Search templates",
-          "upload": "Temp upload",
-          "filters": {
-            "all": "All",
-            "hero": "Hero",
-            "outdoor": "Outdoor",
-            "studio": "Studio",
-            "detail": "Detail",
-            "promo": "Promo"
-          },
-          "badges": {
-            "official": "Official",
-            "session": "Session"
-          },
-          "drawSlot": "Draw product slot"
-        },
-        "slotEditor": {
-          "title": "Session template slot",
-          "close": "Close",
-          "description": "Drag over the preview to mark the product replacement box used during generation."
-        },
-        "messages": {
-          "batchLimitExceeded": "You can only create or run up to {limit} template swap tasks at once.",
-          "selectProductFirst": "Select one product card before dropping templates onto the canvas.",
-          "selectTemplateFirst": "Select one template card before uploading multiple products.",
-          "creatingTasks": "Creating template swap tasks...",
-          "tasksReady": "Template swap tasks are ready on the canvas.",
-          "taskCreationFailed": "Unable to create template swap tasks.",
-          "uploadingProducts": "Uploading product packshots...",
-          "productsReady": "Products were added to the canvas.",
-          "productUploadFailed": "Unable to upload product packshots.",
-          "uploadingTemplate": "Uploading temporary template...",
-          "templateReadyForSlot": "Template uploaded. Draw the product slot before using it.",
-          "templateUploadFailed": "Unable to upload the temporary template.",
-          "templateSlotRequired": "This template needs a product slot before it can create tasks.",
-          "templateNodeFailed": "Unable to create a template card on the canvas.",
-          "productNodeFailed": "Unable to create a product card on the canvas.",
-          "noTasksToRun": "There are no template swap tasks ready to run.",
-          "runningTasks": "Running template swap tasks...",
-          "runCompleted": "Template swap batch completed.",
-          "slotSaved": "Template slot saved."
-        }
       }
-    },
-    "projectHub": {
-      "title": "Projects",
-      "eyebrow": "Project canvas",
-      "headline": "Turn every canvas into a traceable generation project.",
-      "description": "Each project holds its own whiteboard, referenced assets, and generation history so your ecommerce workflows stay durable instead of living in a temporary session.",
-      "cardLabel": "Launch point",
-      "cardDescription": "Start a new project when you want a fresh canvas, a different product line, or a new asset batch.",
-      "createProject": "Create project",
-      "recentTitle": "Recent projects",
-      "recentDescription": "Open an existing project to continue generating, refining references, or reviewing outputs.",
-      "projectBadge": "Canvas project",
-      "openProject": "Open project",
-      "emptyTitle": "No projects yet",
-      "emptyDescription": "Create your first project to start building a canvas-driven pipeline for product images and videos.",
-      "updatedAt": "Updated {value}"
     },
     "editor": {
       "media": {
