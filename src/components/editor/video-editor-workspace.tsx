@@ -1,12 +1,17 @@
 import {
   Download,
   FileVideo2,
+  Grid2X2,
   ImageIcon,
+  List,
   Music2,
   Pause,
   Play,
   RotateCcw,
   Scissors,
+  Search,
+  SkipBack,
+  SkipForward,
   SlidersHorizontal,
   Sparkles,
   Trash2,
@@ -99,6 +104,32 @@ export function timelineDocumentsEqualForPersistence(
   const { updatedAt: _leftUpdatedAt, ...leftContent } = left;
   const { updatedAt: _rightUpdatedAt, ...rightContent } = right;
   return JSON.stringify(leftContent) === JSON.stringify(rightContent);
+}
+
+export function findVisualClipAtTimelineTime(
+  document: TimelineDocument,
+  timelineTime: number
+) {
+  const visualClips = document.tracks
+    .flatMap((track) => track.clips)
+    .filter((clip) => clip.sourceType !== 'audio')
+    .sort((left, right) => left.startTime - right.startTime);
+  const safeTime = Math.max(0, Math.min(timelineTime, document.duration));
+
+  return (
+    visualClips.find(
+      (clip) =>
+        safeTime >= clip.startTime &&
+        safeTime < clip.startTime + clip.duration
+    ) ??
+    [...visualClips]
+      .reverse()
+      .find(
+        (clip) =>
+          safeTime === document.duration &&
+          Math.abs(clip.startTime + clip.duration - safeTime) < 0.001
+      )
+  );
 }
 
 const formatTime = (seconds: number) => {
@@ -316,6 +347,8 @@ export function VideoEditorWorkspace({
   const [redoPrompt, setRedoPrompt] = useState('');
   const [redoStatus, setRedoStatus] = useState('');
   const [isRedoing, setIsRedoing] = useState(false);
+  const [mediaSearch, setMediaSearch] = useState('');
+  const [mediaView, setMediaView] = useState<'grid' | 'list'>('grid');
   const [historyRevision, setHistoryRevision] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
@@ -345,6 +378,42 @@ export function VideoEditorWorkspace({
     0.001
   );
   const primaryVisualClip = clips.find((clip) => clip.sourceType !== 'audio');
+  const activeVisualClip = findVisualClipAtTimelineTime(
+    document,
+    timelineCurrentTime
+  );
+  const previewClip = activeVisualClip ?? primaryVisualClip;
+  const previewSource = previewClip ? getTimelineClipSource(previewClip) : null;
+  const previewOffset = previewClip
+    ? Math.max(
+        0,
+        Math.min(
+          previewClip.duration,
+          timelineCurrentTime - previewClip.startTime
+        )
+      )
+    : 0;
+  const canSplitAtPlayhead = Boolean(
+    activeVisualClip &&
+      activeVisualClip.sourceType === 'video' &&
+      !activeVisualClip.activeTakeId &&
+      timelineCurrentTime >
+        activeVisualClip.startTime + MIN_CLIP_DURATION &&
+      timelineCurrentTime <
+        activeVisualClip.startTime +
+          activeVisualClip.duration -
+          MIN_CLIP_DURATION
+  );
+  const projectMedia = useMemo(() => {
+    const seenAssetIds = new Set<string>();
+    return clips
+      .filter((clip) => {
+        if (seenAssetIds.has(clip.assetId)) return false;
+        seenAssetIds.add(clip.assetId);
+        return clip.name.toLowerCase().includes(mediaSearch.trim().toLowerCase());
+      })
+      .sort((left, right) => left.startTime - right.startTime);
+  }, [clips, mediaSearch]);
   const canUndo = historyRevision >= 0 && pastDocumentsRef.current.length > 0;
   const canRedo = historyRevision >= 0 && futureDocumentsRef.current.length > 0;
   documentRef.current = document;
@@ -725,17 +794,28 @@ export function VideoEditorWorkspace({
   );
 
   useEffect(() => {
-    if (!selectedClip || selectedClip.sourceType === 'audio') return;
-    const nextSource = getTimelineClipSource(selectedClip);
+    if (!previewClip || !previewSource) {
+      setSourceUrl(null);
+      return;
+    }
+    const nextSource = previewSource;
     if (sourceUrl !== nextSource.sourceUrl) {
       sourceFileRef.current = null;
       setSourceUrl(nextSource.sourceUrl);
       setCurrentTime(
-        selectedClip.sourceType === 'video' ? nextSource.inPoint : 0
+        previewClip.sourceType === 'video'
+          ? nextSource.inPoint + previewOffset
+          : previewOffset
       );
-      setTimelineCursorTime(selectedClip.startTime);
     }
-  }, [selectedClip?.activeTakeId, selectedClip?.id, selectedClip?.sourceUrl, sourceUrl]);
+  }, [
+    previewClip?.activeTakeId,
+    previewClip?.id,
+    previewClip?.sourceUrl,
+    previewOffset,
+    previewSource,
+    sourceUrl,
+  ]);
 
   const stopImagePlayback = () => {
     if (imagePlaybackFrameRef.current !== null) {
@@ -751,16 +831,13 @@ export function VideoEditorWorkspace({
     setCurrentTime(time);
     setTimelineCursorTime(
       timelineTime ??
-        (selectedClip && selectedSource
-          ? selectedClip.startTime + (time - selectedSource.inPoint)
+        (previewClip && previewSource
+          ? previewClip.startTime + (time - previewSource.inPoint)
           : time)
     );
   };
 
-  const syncAudioTracks = (sourceTime: number, shouldPlay: boolean) => {
-    if (!selectedClip || !selectedSource) return;
-    const timelineTime =
-      selectedClip.startTime + (sourceTime - selectedSource.inPoint);
+  const syncAudioTracks = (timelineTime: number, shouldPlay: boolean) => {
     for (const clip of clips.filter((item) => item.sourceType === 'audio')) {
       const audio = audioElementsRef.current.get(clip.id);
       if (!audio) continue;
@@ -788,15 +865,15 @@ export function VideoEditorWorkspace({
   const selectClip = (clip: TimelineClip, timelineTime = clip.startTime) => {
     stopImagePlayback();
     setSelectedClipId(clip.id);
+    const offset = Math.max(
+      0,
+      Math.min(clip.duration, timelineTime - clip.startTime)
+    );
+    setTimelineCursorTime(clip.startTime + offset);
     if (clip.sourceType !== 'audio') {
       const source = getTimelineClipSource(clip);
-      const offset = Math.max(
-        0,
-        Math.min(clip.duration, timelineTime - clip.startTime)
-      );
       setSourceUrl(source.sourceUrl);
       sourceFileRef.current = null;
-      setTimelineCursorTime(clip.startTime + offset);
       if (clip.sourceType === 'video') {
         const sourceTime = source.inPoint + offset;
         if (videoRef.current) videoRef.current.currentTime = sourceTime;
@@ -808,7 +885,28 @@ export function VideoEditorWorkspace({
       }
     } else {
       videoRef.current?.pause();
-      setTimelineCursorTime(clip.startTime);
+      const visualAtSelection = findVisualClipAtTimelineTime(
+        document,
+        clip.startTime + offset
+      );
+      if (visualAtSelection) {
+        const visualSource = getTimelineClipSource(visualAtSelection);
+        const visualOffset = Math.max(
+          0,
+          Math.min(
+            visualAtSelection.duration,
+            clip.startTime + offset - visualAtSelection.startTime
+          )
+        );
+        setSourceUrl(visualSource.sourceUrl);
+        if (visualAtSelection.sourceType === 'video') {
+          const visualSourceTime = visualSource.inPoint + visualOffset;
+          if (videoRef.current) videoRef.current.currentTime = visualSourceTime;
+          setCurrentTime(visualSourceTime);
+        } else {
+          setCurrentTime(visualOffset);
+        }
+      }
     }
   };
 
@@ -817,31 +915,12 @@ export function VideoEditorWorkspace({
       0,
       Math.min(document.duration, requestedTime)
     );
-    const visualClips = clips
-      .filter((clip) => clip.sourceType !== 'audio')
-      .sort((a, b) => a.startTime - b.startTime);
-    const activeClip =
-      visualClips.find(
-        (clip) =>
-          timelineTime >= clip.startTime &&
-          timelineTime < clip.startTime + clip.duration
-      ) ??
-      [...visualClips]
-        .reverse()
-        .find(
-          (clip) =>
-            timelineTime === document.duration &&
-            Math.abs(clip.startTime + clip.duration - timelineTime) < 0.001
-        );
+    const activeClip = findVisualClipAtTimelineTime(document, timelineTime);
 
     if (!activeClip) {
       videoRef.current?.pause();
       stopImagePlayback();
       setTimelineCursorTime(timelineTime);
-      return;
-    }
-    if (activeClip.id !== selectedClipId) {
-      selectClip(activeClip, timelineTime);
       return;
     }
     const offset = Math.max(
@@ -983,33 +1062,34 @@ export function VideoEditorWorkspace({
   };
 
   const togglePlayback = async () => {
-    if (!selectedClip || !selectedSource || selectedClip.sourceType === 'audio') {
+    if (!previewClip || !previewSource) {
       return;
     }
-    if (selectedClip.sourceType === 'image') {
+    if (previewClip.sourceType === 'image') {
       if (isPlaying) {
         stopImagePlayback();
-        syncAudioTracks(currentTime, false);
+        syncAudioTracks(timelineCurrentTime, false);
         return;
       }
       const initialOffset =
-        currentTime >= selectedClip.duration - MIN_CLIP_DURATION
+        previewOffset >= previewClip.duration - MIN_CLIP_DURATION
           ? 0
-          : Math.max(0, currentTime);
+          : Math.max(0, previewOffset);
       const startedAt = performance.now() - initialOffset * 1000;
       setIsPlaying(true);
       const tick = (now: number) => {
         const offset = Math.min(
-          selectedClip.duration,
+          previewClip.duration,
           Math.max(0, (now - startedAt) / 1000)
         );
         setCurrentTime(offset);
-        setTimelineCursorTime(selectedClip.startTime + offset);
-        syncAudioTracks(offset, true);
-        if (offset >= selectedClip.duration) {
+        const nextTimelineTime = previewClip.startTime + offset;
+        setTimelineCursorTime(nextTimelineTime);
+        syncAudioTracks(nextTimelineTime, true);
+        if (offset >= previewClip.duration) {
           imagePlaybackFrameRef.current = null;
           setIsPlaying(false);
-          syncAudioTracks(offset, false);
+          syncAudioTracks(nextTimelineTime, false);
           return;
         }
         imagePlaybackFrameRef.current = requestAnimationFrame(tick);
@@ -1025,10 +1105,10 @@ export function VideoEditorWorkspace({
       return;
     }
     if (
-      video.currentTime < selectedSource.inPoint ||
-      video.currentTime >= selectedSource.outPoint
+      video.currentTime < previewSource.inPoint ||
+      video.currentTime >= previewSource.outPoint
     ) {
-      seek(selectedSource.inPoint);
+      seek(previewSource.inPoint, previewClip.startTime);
     }
     await video.play();
   };
@@ -1072,12 +1152,18 @@ export function VideoEditorWorkspace({
   };
 
   const splitAtPlayhead = () => {
-    if (!selectedClip || selectedClip.activeTakeId) return;
+    const splitClip = findVisualClipAtTimelineTime(document, timelineCurrentTime);
+    if (!splitClip || splitClip.sourceType !== 'video' || splitClip.activeTakeId) {
+      return;
+    }
+    const splitSource = getTimelineClipSource(splitClip);
+    const splitSourceTime =
+      splitSource.inPoint + (timelineCurrentTime - splitClip.startTime);
     const nextDocument = applyEditorOperations(document, [
       {
         type: 'split_clip',
-        clipId: selectedClip.id,
-        sourceTime: currentTime,
+        clipId: splitClip.id,
+        sourceTime: splitSourceTime,
       },
     ]).document;
     if (nextDocument === document) return;
@@ -1086,10 +1172,10 @@ export function VideoEditorWorkspace({
       .flatMap((track) => track.clips)
       .find(
         (clip) =>
-          clip.assetId === selectedClip.assetId &&
-          Math.abs(clip.inPoint - currentTime) < 0.001
+          clip.assetId === splitClip.assetId &&
+          Math.abs(clip.inPoint - splitSourceTime) < 0.001
       );
-    setSelectedClipId(rightClip?.id ?? selectedClip.id);
+    setSelectedClipId(rightClip?.id ?? splitClip.id);
   };
 
   const moveSelectedClip = (startTime: number) => {
@@ -1540,99 +1626,162 @@ export function VideoEditorWorkspace({
         ))}
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-64 shrink-0 border-r border-white/[0.07] bg-[var(--beat-surface)] p-4 lg:block">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-[540] tracking-[-0.01em] text-white/42">
-                {t('media.eyebrow')}
-              </p>
-              <h2 className="mt-1 text-sm font-semibold text-white">
-                {t('media.title')}
-              </h2>
+        <aside className="hidden w-[292px] shrink-0 flex-col border-r border-white/[0.07] bg-[#17181a] lg:flex">
+          <div className="flex h-[74px] items-end gap-5 border-b border-white/[0.07] px-5 pb-3">
+            <button
+              type="button"
+              aria-current="page"
+              className="relative flex h-9 items-center gap-2 text-xs font-[560] text-white"
+            >
+              <FileVideo2 className="size-4" />
+              {t('media.tab')}
+              <span className="absolute inset-x-0 -bottom-3 h-0.5 rounded-full bg-white" />
+            </button>
+            <span className="text-xs font-[520] text-white/28">
+              {t('media.localOnly')}
+            </span>
+          </div>
+
+          <div className="border-b border-white/[0.07] p-4">
+            <div className="flex gap-2">
+              <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-lg bg-white/[0.065] px-3 text-white/38 ring-1 ring-inset ring-white/[0.04] focus-within:ring-white/14">
+                <Search className="size-3.5 shrink-0" />
+                <input
+                  value={mediaSearch}
+                  onChange={(event) => setMediaSearch(event.target.value)}
+                  placeholder={t('media.search')}
+                  className="min-w-0 flex-1 bg-transparent text-xs text-white/85 outline-none placeholder:text-white/30"
+                />
+              </label>
+              <div className="flex rounded-lg bg-white/[0.045] p-0.5 ring-1 ring-inset ring-white/[0.05]">
+                <button
+                  type="button"
+                  onClick={() => setMediaView('grid')}
+                  aria-label={t('media.gridView')}
+                  aria-pressed={mediaView === 'grid'}
+                  className={`grid size-8 place-items-center rounded-md transition ${
+                    mediaView === 'grid'
+                      ? 'bg-white/[0.1] text-white'
+                      : 'text-white/35 hover:text-white/70'
+                  }`}
+                >
+                  <Grid2X2 className="size-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMediaView('list')}
+                  aria-label={t('media.listView')}
+                  aria-pressed={mediaView === 'list'}
+                  className={`grid size-8 place-items-center rounded-md transition ${
+                    mediaView === 'list'
+                      ? 'bg-white/[0.1] text-white'
+                      : 'text-white/35 hover:text-white/70'
+                  }`}
+                >
+                  <List className="size-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => audioInputRef.current?.click()}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition hover:bg-white/[0.08] hover:text-white"
-                aria-label={t('actions.importAudio')}
-                title={t('actions.importAudio')}
-              >
-                <Music2 className="size-4" />
-              </button>
+            <div className="mt-3 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex size-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/60 transition hover:bg-white/[0.08] hover:text-white"
-                aria-label={t('actions.import')}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.035] text-xs font-[540] text-white/68 transition hover:bg-white/[0.075] hover:text-white"
               >
-                <Upload className="size-4" />
+                <Upload className="size-3.5" />
+                {t('media.importVisual')}
+              </button>
+              <button
+                type="button"
+                onClick={() => audioInputRef.current?.click()}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.035] text-xs font-[540] text-white/68 transition hover:bg-white/[0.075] hover:text-white"
+              >
+                <Music2 className="size-3.5" />
+                {t('media.importAudio')}
               </button>
             </div>
           </div>
-          {primaryVisualClip ? (
-            <button
-              type="button"
-              onClick={() => selectClip(primaryVisualClip)}
-              className="w-full rounded-xl border border-white/10 bg-white/[0.04] p-3 text-left transition hover:border-white/20"
-            >
-              <div className="relative mb-3 flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-black/55">
-                {primaryVisualClip.sourceType === 'image' ? (
-                  <img
-                    src={primaryVisualClip.sourceUrl}
-                    alt=""
-                    className="size-full object-cover"
-                  />
-                ) : (
-                  <video
-                    src={primaryVisualClip.sourceUrl}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    className="size-full object-cover opacity-75"
-                  />
-                )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {projectMedia.length > 0 ? (
+              <div
+                className={
+                  mediaView === 'grid'
+                    ? 'grid grid-cols-2 gap-2.5'
+                    : 'flex flex-col gap-2'
+                }
+              >
+                {projectMedia.map((clip) => (
+                  <button
+                    key={clip.assetId}
+                    type="button"
+                    onClick={() => selectClip(clip, Math.max(clip.startTime, timelineCurrentTime))}
+                    className={`group min-w-0 overflow-hidden rounded-[10px] border text-left transition ${
+                      selectedClip?.assetId === clip.assetId
+                        ? 'border-[var(--beat-accent)]/70 bg-[var(--beat-accent)]/[0.08]'
+                        : 'border-white/[0.08] bg-white/[0.025] hover:border-white/18 hover:bg-white/[0.05]'
+                    } ${mediaView === 'list' ? 'flex items-center gap-2.5 p-2' : 'p-1.5'}`}
+                  >
+                    <span
+                      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-[7px] bg-black/55 ${
+                        mediaView === 'list' ? 'size-12' : 'aspect-video w-full'
+                      }`}
+                    >
+                      {clip.sourceType === 'image' ? (
+                        <img src={clip.sourceUrl} alt="" className="size-full object-cover" />
+                      ) : clip.sourceType === 'video' ? (
+                        <video
+                          src={clip.sourceUrl}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="size-full object-cover opacity-80"
+                        />
+                      ) : (
+                        <Music2 className="size-4 text-[var(--beat-graph)]" />
+                      )}
+                      <span className="absolute bottom-1 right-1 rounded bg-black/72 px-1 py-0.5 text-[8px] font-[560] tabular-nums text-white/75">
+                        {formatTime(clip.duration)}
+                      </span>
+                    </span>
+                    <span className={`block min-w-0 ${mediaView === 'grid' ? 'px-1 pb-1 pt-2' : 'flex-1'}`}>
+                      <span className="block truncate text-[11px] font-[550] text-white/86">
+                        {clip.name}
+                      </span>
+                      <span className="mt-0.5 block text-[9px] capitalize text-white/34">
+                        {t(`clipInspector.type.${clip.sourceType}`)}
+                      </span>
+                    </span>
+                  </button>
+                ))}
               </div>
-              <p className="truncate text-xs font-medium text-white">
-                {primaryVisualClip.name}
-              </p>
-              <p className="mt-1 text-[11px] text-white/40">
-                {metadata?.width && metadata.height
-                  ? `${metadata.width}×${metadata.height} · `
-                  : ''}
-                {primaryVisualClip.sourceType === 'image'
-                  ? t('media.stillDuration', {
-                      duration: primaryVisualClip.duration.toFixed(1),
-                    })
-                  : formatTime(
-                      metadata?.duration ?? primaryVisualClip.sourceDuration
-                    )}
-              </p>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex w-full flex-col items-center rounded-xl border border-dashed border-white/12 px-4 py-8 text-center text-white/40 transition hover:border-[var(--beat-accent)]/50 hover:bg-white/[0.025] hover:text-white/70"
-            >
-              <Upload className="mb-3 size-5" />
-              <span className="text-xs font-medium">{t('media.drop')}</span>
-              <span className="mt-1 text-[11px]">{t('media.localOnly')}</span>
-            </button>
-          )}
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex h-full min-h-56 w-full flex-col items-center justify-center rounded-xl border border-dashed border-white/10 px-5 text-center text-white/38 transition hover:border-white/20 hover:bg-white/[0.02] hover:text-white/65"
+              >
+                <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-white/[0.055]">
+                  <Upload className="size-5" />
+                </span>
+                <span className="text-xs font-[560] text-white/72">
+                  {mediaSearch ? t('media.noResults') : t('media.empty')}
+                </span>
+                <span className="mt-2 max-w-44 text-[11px] leading-5">
+                  {t('media.drop')}
+                </span>
+              </button>
+            )}
+          </div>
         </aside>
 
         <section className="flex min-w-0 flex-1 flex-col">
           <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/[0.07] px-3 sm:px-4">
             <div className="flex items-center gap-2 text-xs text-white/55">
-              <span className="rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-[520] tabular-nums tracking-[-0.01em]">
-                {metadata?.width && metadata.height
-                  ? `${metadata.width}×${metadata.height}`
-                  : '—'}
+              <span className="inline-flex size-7 items-center justify-center rounded-md border border-white/10 bg-white/[0.035] text-white/45">
+                <FileVideo2 className="size-3.5" />
               </span>
-              <span className="hidden sm:inline">
-                {metadata?.videoCodec?.toUpperCase() ?? t('status.ready')}
-              </span>
+              <span>{t('status.ready')}</span>
               {saveStatus !== 'idle' ? (
                 <span className="text-white/35">
                   {saveStatus === 'saving' ? t('status.saving') : t('status.saved')}
@@ -1664,33 +1813,6 @@ export function VideoEditorWorkspace({
               </div>
               <button
                 type="button"
-                onClick={() => void addTimelineToCanvas()}
-                disabled={clips.length === 0}
-                className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-medium text-white/65 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-35 md:inline-flex"
-              >
-                {t('actions.addTimelineToCanvas')}
-              </button>
-              <button
-                type="button"
-                onClick={() => void createDerivedSelection()}
-                disabled={!selectedClip || selectedClip.sourceType !== 'video' || isExporting}
-                className="hidden h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-medium text-white/65 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-35 sm:inline-flex"
-              >
-                <Scissors className="size-3.5" />
-                {t('actions.extract')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRedoOpen((current) => !current)}
-                disabled={!selectedClip || selectedClip.sourceType !== 'video' || isRedoing}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-xs font-medium text-white/65 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
-                title={t('actions.redoHint')}
-              >
-                <Sparkles className="size-3.5" />
-                <span className="hidden sm:inline">{t('actions.redo')}</span>
-              </button>
-              <button
-                type="button"
                 onClick={() =>
                   isExporting
                     ? exportControllerRef.current?.abort()
@@ -1715,53 +1837,70 @@ export function VideoEditorWorkspace({
             </div>
           </div>
 
+          <div className="flex h-9 shrink-0 items-center border-b border-white/[0.07] bg-[#151618] px-4 text-xs font-[570] text-white/72">
+            {t('player.title')}
+          </div>
+
           <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black/35 p-4 sm:p-8">
-            {sourceUrl && selectedClip?.sourceType === 'image' ? (
+            {sourceUrl && previewClip?.sourceType === 'image' ? (
               <img
                 src={sourceUrl}
-                alt={selectedClip.name}
+                alt={previewClip.name}
                 className="h-full w-full max-w-5xl rounded-xl bg-black object-contain shadow-2xl"
               />
-            ) : sourceUrl && selectedClip?.sourceType === 'video' ? (
+            ) : sourceUrl && previewClip?.sourceType === 'video' ? (
               <video
                 ref={videoRef}
                 src={sourceUrl}
                 playsInline
                 className="h-full w-full max-w-5xl rounded-xl bg-black object-contain shadow-2xl"
                 onLoadedMetadata={(event) => {
-                  if (!selectedClip || !selectedSource) return;
+                  if (!previewClip || !previewSource) return;
                   const target = Math.max(
-                    selectedSource.inPoint,
-                    Math.min(selectedSource.outPoint, currentTime)
+                    previewSource.inPoint,
+                    Math.min(previewSource.outPoint, currentTime)
                   );
                   event.currentTarget.currentTime = target;
                 }}
                 onPlay={(event) => {
                   setIsPlaying(true);
-                  syncAudioTracks(event.currentTarget.currentTime, true);
+                  if (!previewClip || !previewSource) return;
+                  syncAudioTracks(
+                    previewClip.startTime +
+                      (event.currentTarget.currentTime - previewSource.inPoint),
+                    true
+                  );
                 }}
                 onPause={(event) => {
                   setIsPlaying(false);
-                  syncAudioTracks(event.currentTarget.currentTime, false);
+                  if (!previewClip || !previewSource) return;
+                  syncAudioTracks(
+                    previewClip.startTime +
+                      (event.currentTarget.currentTime - previewSource.inPoint),
+                    false
+                  );
                 }}
                 onTimeUpdate={(event) => {
                   const time = event.currentTarget.currentTime;
-                  if (selectedClip && selectedSource && time >= selectedSource.outPoint) {
+                  if (previewClip && previewSource && time >= previewSource.outPoint) {
                     event.currentTarget.pause();
-                    event.currentTarget.currentTime = selectedSource.outPoint;
-                    setCurrentTime(selectedSource.outPoint);
+                    event.currentTarget.currentTime = previewSource.outPoint;
+                    setCurrentTime(previewSource.outPoint);
                     setTimelineCursorTime(
-                      selectedClip.startTime + selectedClip.duration
+                      previewClip.startTime + previewClip.duration
                     );
                     return;
                   }
                   setCurrentTime(time);
-                  if (selectedClip && selectedSource) {
-                    setTimelineCursorTime(
-                      selectedClip.startTime + (time - selectedSource.inPoint)
+                  if (previewClip && previewSource) {
+                    const nextTimelineTime =
+                      previewClip.startTime + (time - previewSource.inPoint);
+                    setTimelineCursorTime(nextTimelineTime);
+                    syncAudioTracks(
+                      nextTimelineTime,
+                      !event.currentTarget.paused
                     );
                   }
-                  syncAudioTracks(time, !event.currentTarget.paused);
                 }}
               />
             ) : (
@@ -1879,8 +2018,18 @@ export function VideoEditorWorkspace({
               </span>
               <button
                 type="button"
+                onClick={() => seekTimeline(timelineCurrentTime - 5)}
+                disabled={!previewClip}
+                className="grid size-8 place-items-center rounded-lg text-white/48 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                aria-label={t('actions.skipBack')}
+                title={t('actions.skipBack')}
+              >
+                <SkipBack className="size-3.5" />
+              </button>
+              <button
+                type="button"
                 onClick={() => void togglePlayback()}
-                disabled={!selectedClip || selectedClip.sourceType === 'audio'}
+                disabled={!previewClip}
                 className="inline-flex size-8 items-center justify-center rounded-full bg-white text-black shadow-[0_5px_18px_rgba(0,0,0,0.28)] transition hover:scale-105 disabled:cursor-not-allowed disabled:opacity-30"
                 aria-label={isPlaying ? t('actions.pause') : t('actions.play')}
                 title={`${isPlaying ? t('actions.pause') : t('actions.play')} · Space`}
@@ -1893,274 +2042,67 @@ export function VideoEditorWorkspace({
               </button>
               <button
                 type="button"
-                onClick={splitAtPlayhead}
-                disabled={
-                  !selectedClip ||
-                  selectedClip.sourceType !== 'video' ||
-                  Boolean(selectedClip.activeTakeId) ||
-                  currentTime <= selectedClip.inPoint + MIN_CLIP_DURATION ||
-                  currentTime >= selectedClip.outPoint - MIN_CLIP_DURATION
-                }
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-[520] text-white/62 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
-                title={`${t('actions.split')} · ⌘/Ctrl+B`}
+                onClick={() => seekTimeline(timelineCurrentTime + 5)}
+                disabled={!previewClip}
+                className="grid size-8 place-items-center rounded-lg text-white/48 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                aria-label={t('actions.skipForward')}
+                title={t('actions.skipForward')}
               >
-                <Scissors className="size-3.5" />
-                {t('actions.split')}
-                <kbd className="hidden rounded bg-white/[0.055] px-1 py-0.5 text-[9px] font-[520] text-white/35 sm:inline">
-                  ⌘B
-                </kbd>
+                <SkipForward className="size-3.5" />
               </button>
               <span className="w-16 text-[11px] font-[520] tabular-nums tracking-[-0.01em] text-white/48">
                 {formatTime(document.duration)}
               </span>
             </div>
 
-            {selectedClip && displayedSelectedClip ? (
-              <div className="border-b border-white/[0.07] px-3 py-2 lg:px-4">
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/[0.055] text-white/62">
-                    {selectedClip.sourceType === 'image' ? (
-                      <ImageIcon className="size-4" />
-                    ) : selectedClip.sourceType === 'video' ? (
-                      <FileVideo2 className="size-4" />
-                    ) : (
-                      <Volume2 className="size-4" />
-                    )}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-[12px] font-[560] tracking-[-0.01em] text-white/88">
-                      {selectedClip.name}
-                    </span>
-                    <span className="mt-0.5 block text-[10px] font-[500] text-white/38">
-                      {t(`clipInspector.type.${selectedClip.sourceType}`)} ·{' '}
-                      {displayedSelectedClip.duration.toFixed(2)}s
-                    </span>
-                  </span>
-                  <span className="ml-2 hidden min-w-0 flex-1 text-[10px] font-[500] text-white/30 md:block">
-                    {t('timeline.dragHint')}
-                  </span>
-                  <div className="ml-auto flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setExactControlsOpen((value) => !value)}
-                      aria-expanded={exactControlsOpen}
-                      className={`inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-[520] transition ${
-                        exactControlsOpen
-                          ? 'border-white/18 bg-white/[0.08] text-white/80'
-                          : 'border-white/10 text-white/42 hover:bg-white/[0.05] hover:text-white/75'
-                      }`}
-                    >
-                      <SlidersHorizontal className="size-3" />
-                      {t('clipInspector.exactControls')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteSelectedClip(false)}
-                      title={`${t('timeline.delete')} · Delete`}
-                      className="inline-flex size-8 items-center justify-center rounded-lg border border-white/10 text-white/42 transition hover:border-red-400/25 hover:bg-red-400/10 hover:text-red-100"
-                      aria-label={t('timeline.delete')}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteSelectedClip(true)}
-                      className="inline-flex h-8 items-center rounded-lg border border-white/10 px-2.5 text-[10px] font-[520] text-white/42 transition hover:bg-white/[0.06] hover:text-white"
-                    >
-                      {t('timeline.rippleDelete')}
-                    </button>
-                  </div>
-                </div>
-
-                {exactControlsOpen ? (
-                  <div className="mt-2 flex flex-wrap items-end gap-3 rounded-xl border border-white/[0.07] bg-black/15 px-3 py-2">
-                    <div>
-                      <p className="mb-1 text-[9px] font-[520] text-white/32">
-                        {selectedClip.sourceType === 'video'
-                          ? t('clipInspector.sourceRange')
-                          : selectedClip.sourceType === 'image'
-                            ? t('clipInspector.stillDuration')
-                            : t('clipInspector.clipDuration')}
-                      </p>
-                      {selectedClip.sourceType === 'video' && !selectedClip.activeTakeId ? (
-                        <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={selectedClip.outPoint - MIN_CLIP_DURATION}
-                        step={0.01}
-                        value={Number(selectedClip.inPoint.toFixed(2))}
-                        onChange={(event) =>
-                          updateTrim('in', Number(event.target.value))
-                        }
-                        className="h-7 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-2 text-[11px] font-[520] tabular-nums text-white/82 outline-none transition focus:border-[var(--beat-accent)]/55"
-                        aria-label={t('clipInspector.sourceFrom')}
-                      />
-                      <span className="text-[10px] text-white/28">→</span>
-                      <input
-                        type="number"
-                        min={selectedClip.inPoint + MIN_CLIP_DURATION}
-                        max={selectedClip.sourceDuration}
-                        step={0.01}
-                        value={Number(selectedClip.outPoint.toFixed(2))}
-                        onChange={(event) =>
-                          updateTrim('out', Number(event.target.value))
-                        }
-                        className="h-7 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/20 px-2 text-[11px] font-[520] tabular-nums text-white/82 outline-none transition focus:border-[var(--beat-accent)]/55"
-                        aria-label={t('clipInspector.sourceTo')}
-                      />
-                        </div>
-                      ) : selectedClip.sourceType === 'image' ? (
-                        <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={MIN_CLIP_DURATION}
-                        step={0.1}
-                        value={Number(selectedClip.duration.toFixed(2))}
-                        onChange={(event) =>
-                          resizeSelectedImage(Number(event.target.value))
-                        }
-                        className="h-7 w-24 rounded-lg border border-white/10 bg-black/20 px-2 text-[11px] font-[520] tabular-nums text-white/82 outline-none transition focus:border-[var(--beat-accent)]/55"
-                        aria-label={t('clipInspector.stillDuration')}
-                      />
-                      <span className="text-[10px] text-white/35">s</span>
-                        </div>
-                      ) : (
-                        <p className="text-[11px] font-[520] tabular-nums text-white/72">
-                          {selectedClip.duration.toFixed(2)}s
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="mb-1 text-[9px] font-[520] text-white/32">
-                        {t('clipInspector.timelinePosition')}
-                      </p>
-                      <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      step={0.01}
-                      value={Number(selectedClip.startTime.toFixed(2))}
-                      onChange={(event) =>
-                        moveSelectedClip(Number(event.target.value))
-                      }
-                      className="h-7 w-24 rounded-lg border border-white/10 bg-black/20 px-2 text-[11px] font-[520] tabular-nums text-white/82 outline-none transition focus:border-[var(--beat-accent)]/55"
-                      aria-label={t('clipInspector.timelinePosition')}
-                    />
-                    <span className="text-[10px] text-white/35">s</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-
-            {selectedClip?.sourceType === 'audio' ? (
-              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-3 gap-y-2 border-b border-white/[0.07] px-4 py-2.5">
-                <label className="text-[10px] font-[520] text-white/40">
-                  {t('audio.volume')}
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={Math.min(1, selectedClip.volume)}
-                  onChange={(event) =>
-                    commitDocument((current) =>
-                      applyEditorOperations(current, [
-                        {
-                          type: 'update_audio',
-                          clipId: selectedClip.id,
-                          patch: { volume: Number(event.target.value) },
-                        },
-                      ]).document
-                    )
-                  }
-                  className="h-1 w-full accent-[var(--beat-graph)]"
-                  aria-label={t('audio.volume')}
-                />
-                <span className="w-12 text-right text-[11px] font-[520] tabular-nums text-white/58">
-                  {Math.round(Math.min(1, selectedClip.volume) * 100)}%
-                </span>
-
-                <label className="text-[10px] font-[520] text-white/40">
-                  {t('audio.fadeIn')}
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={selectedClip.duration}
-                  step={0.01}
-                  value={selectedClip.fadeIn}
-                  onChange={(event) =>
-                    commitDocument((current) =>
-                      applyEditorOperations(current, [
-                        {
-                          type: 'update_audio',
-                          clipId: selectedClip.id,
-                          patch: { fadeIn: Number(event.target.value) },
-                        },
-                      ]).document
-                    )
-                  }
-                  className="h-1 w-full accent-[var(--beat-graph)]"
-                  aria-label={t('audio.fadeIn')}
-                />
-                <span className="w-12 text-right text-[11px] font-[520] tabular-nums text-white/58">
-                  {selectedClip.fadeIn.toFixed(2)}s
-                </span>
-
-                <label className="text-[10px] font-[520] text-white/40">
-                  {t('audio.fadeOut')}
-                </label>
-                <input
-                  type="range"
-                  min={0}
-                  max={selectedClip.duration}
-                  step={0.01}
-                  value={selectedClip.fadeOut}
-                  onChange={(event) =>
-                    commitDocument((current) =>
-                      applyEditorOperations(current, [
-                        {
-                          type: 'update_audio',
-                          clipId: selectedClip.id,
-                          patch: { fadeOut: Number(event.target.value) },
-                        },
-                      ]).document
-                    )
-                  }
-                  className="h-1 w-full accent-[var(--beat-graph)]"
-                  aria-label={t('audio.fadeOut')}
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    commitDocument((current) =>
-                      applyEditorOperations(current, [
-                        {
-                          type: 'update_audio',
-                          clipId: selectedClip.id,
-                          patch: { muted: !selectedClip.muted },
-                        },
-                      ]).document
-                    )
-                  }
-                  className={`h-7 rounded-md border px-2 text-[10px] transition ${
-                    selectedClip.muted
-                      ? 'border-red-400/25 bg-red-400/10 text-red-100'
-                      : 'border-white/10 text-white/50 hover:bg-white/[0.06] hover:text-white'
-                  }`}
-                >
-                  {selectedClip.muted ? t('audio.unmute') : t('audio.mute')}
-                </button>
-              </div>
-            ) : null}
+            <div className="flex h-10 items-center gap-1 border-b border-white/[0.07] px-3">
+              <button
+                type="button"
+                onClick={undoTimeline}
+                disabled={!canUndo}
+                className="grid size-8 place-items-center rounded-lg text-white/42 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                aria-label={t('actions.undo')}
+                title={t('actions.undo')}
+              >
+                <Undo2 className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={redoTimeline}
+                disabled={!canRedo}
+                className="grid size-8 place-items-center rounded-lg text-white/42 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                aria-label={t('actions.redoEdit')}
+                title={t('actions.redoEdit')}
+              >
+                <Redo2 className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={splitAtPlayhead}
+                disabled={!canSplitAtPlayhead}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-[11px] font-[520] text-white/48 transition hover:bg-white/[0.06] hover:text-white disabled:opacity-25"
+                title={`${t('actions.split')} · ⌘/Ctrl+B`}
+              >
+                <Scissors className="size-3.5" />
+                {t('actions.split')}
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteSelectedClip(false)}
+                disabled={!selectedClip}
+                className="grid size-8 place-items-center rounded-lg text-white/42 transition hover:bg-red-400/10 hover:text-red-100 disabled:opacity-25"
+                aria-label={t('timeline.delete')}
+                title={t('timeline.delete')}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+              <span className="ml-auto rounded-md border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[9px] font-[520] text-white/30">
+                {t('timeline.dragHint')}
+              </span>
+            </div>
 
             <div className="max-h-56 min-h-44 overflow-auto">
-              <div className="grid min-w-[760px] grid-cols-[128px_1fr]">
+              <div className="grid min-w-[720px] grid-cols-[104px_1fr]">
                 <div className="flex h-8 items-center border-b border-r border-white/[0.07] px-3 text-[10px] font-[540] tracking-[-0.01em] text-white/36">
                   {t('timeline.title')}
                 </div>
@@ -2246,10 +2188,7 @@ export function VideoEditorWorkspace({
                           />
                         );
                       })}
-                      {selectedClip &&
-                      (track.kind === selectedClip.sourceType ||
-                        (track.kind === 'video' &&
-                          selectedClip.sourceType === 'image')) ? (
+                      {track.kind !== 'caption' ? (
                         <span
                           className="pointer-events-none absolute inset-y-0 z-20 w-px bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.35)]"
                           style={{
@@ -2267,6 +2206,287 @@ export function VideoEditorWorkspace({
             </div>
           </div>
         </section>
+
+        <aside className="hidden w-[336px] shrink-0 flex-col border-l border-white/[0.07] bg-[#171719] min-[1120px]:flex">
+          <div className="flex h-12 items-center justify-between border-b border-white/[0.07] px-4">
+            <div className="flex items-center gap-2 text-sm font-[600] text-white/88">
+              <Sparkles className="size-4 text-[#8d83ff]" />
+              {t('panel.title')}
+            </div>
+            <span className="rounded-md bg-white/[0.055] px-2 py-1 text-[9px] font-[560] uppercase tracking-[0.08em] text-white/35">
+              {t('panel.local')}
+            </span>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {selectedClip && displayedSelectedClip ? (
+              <>
+                <div className="flex items-center gap-3 border-b border-white/[0.07] pb-4">
+                  <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/[0.055] text-white/62">
+                    {selectedClip.sourceType === 'image' ? (
+                      <ImageIcon className="size-4" />
+                    ) : selectedClip.sourceType === 'video' ? (
+                      <FileVideo2 className="size-4" />
+                    ) : (
+                      <Volume2 className="size-4" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-xs font-[580] text-white/90">
+                      {selectedClip.name}
+                    </span>
+                    <span className="mt-1 block text-[10px] text-white/38">
+                      {t(`clipInspector.type.${selectedClip.sourceType}`)} ·{' '}
+                      {displayedSelectedClip.duration.toFixed(2)}s
+                    </span>
+                  </span>
+                </div>
+
+                <div className="py-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-[10px] font-[600] uppercase tracking-[0.08em] text-white/34">
+                      {t('panel.properties')}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setExactControlsOpen((value) => !value)}
+                      aria-expanded={exactControlsOpen}
+                      className={`inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-[10px] transition ${
+                        exactControlsOpen
+                          ? 'border-white/18 bg-white/[0.08] text-white/78'
+                          : 'border-white/10 text-white/42 hover:text-white/72'
+                      }`}
+                    >
+                      <SlidersHorizontal className="size-3" />
+                      {t('clipInspector.exactControls')}
+                    </button>
+                  </div>
+
+                  {selectedClip.sourceType === 'audio' ? (
+                    <div className="space-y-4 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
+                      {([
+                        ['volume', 0, 1, 0.01, selectedClip.volume],
+                        ['fadeIn', 0, selectedClip.duration, 0.01, selectedClip.fadeIn],
+                        ['fadeOut', 0, selectedClip.duration, 0.01, selectedClip.fadeOut],
+                      ] as const).map(([field, min, max, step, value]) => (
+                        <label key={field} className="block">
+                          <span className="mb-2 flex items-center justify-between text-[10px] font-[520] text-white/45">
+                            <span>{t(`audio.${field}`)}</span>
+                            <span className="tabular-nums text-white/62">
+                              {field === 'volume'
+                                ? `${Math.round(Math.min(1, value) * 100)}%`
+                                : `${value.toFixed(2)}s`}
+                            </span>
+                          </span>
+                          <input
+                            type="range"
+                            min={min}
+                            max={max}
+                            step={step}
+                            value={value}
+                            onChange={(event) =>
+                              commitDocument((current) =>
+                                applyEditorOperations(current, [
+                                  {
+                                    type: 'update_audio',
+                                    clipId: selectedClip.id,
+                                    patch: {
+                                      [field]: Number(event.target.value),
+                                    },
+                                  },
+                                ]).document
+                              )
+                            }
+                            className="h-1 w-full accent-[var(--beat-graph)]"
+                          />
+                        </label>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          commitDocument((current) =>
+                            applyEditorOperations(current, [
+                              {
+                                type: 'update_audio',
+                                clipId: selectedClip.id,
+                                patch: { muted: !selectedClip.muted },
+                              },
+                            ]).document
+                          )
+                        }
+                        className={`inline-flex h-8 w-full items-center justify-center gap-2 rounded-lg border text-[11px] font-[550] transition ${
+                          selectedClip.muted
+                            ? 'border-red-400/25 bg-red-400/10 text-red-100'
+                            : 'border-white/10 bg-white/[0.035] text-white/62 hover:bg-white/[0.07] hover:text-white'
+                        }`}
+                      >
+                        <Volume2 className="size-3.5" />
+                        {selectedClip.muted ? t('audio.unmute') : t('audio.mute')}
+                      </button>
+                      <p className="text-[10px] leading-4 text-white/30">
+                        {selectedClip.muted
+                          ? t('audio.mutedHint')
+                          : t('audio.activeHint')}
+                      </p>
+                    </div>
+                  ) : exactControlsOpen ? (
+                    <div className="space-y-3 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
+                      {selectedClip.sourceType === 'video' && !selectedClip.activeTakeId ? (
+                        <label className="block">
+                          <span className="mb-2 block text-[10px] text-white/38">
+                            {t('clipInspector.sourceRange')}
+                          </span>
+                          <span className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={selectedClip.outPoint - MIN_CLIP_DURATION}
+                              step={0.01}
+                              value={Number(selectedClip.inPoint.toFixed(2))}
+                              onChange={(event) => updateTrim('in', Number(event.target.value))}
+                              className="h-8 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-2 text-[11px] tabular-nums text-white/80 outline-none focus:border-[var(--beat-accent)]/55"
+                            />
+                            <span className="text-white/25">→</span>
+                            <input
+                              type="number"
+                              min={selectedClip.inPoint + MIN_CLIP_DURATION}
+                              max={selectedClip.sourceDuration}
+                              step={0.01}
+                              value={Number(selectedClip.outPoint.toFixed(2))}
+                              onChange={(event) => updateTrim('out', Number(event.target.value))}
+                              className="h-8 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-2 text-[11px] tabular-nums text-white/80 outline-none focus:border-[var(--beat-accent)]/55"
+                            />
+                          </span>
+                        </label>
+                      ) : selectedClip.sourceType === 'image' ? (
+                        <label className="block">
+                          <span className="mb-2 block text-[10px] text-white/38">
+                            {t('clipInspector.stillDuration')}
+                          </span>
+                          <input
+                            type="number"
+                            min={MIN_CLIP_DURATION}
+                            step={0.1}
+                            value={Number(selectedClip.duration.toFixed(2))}
+                            onChange={(event) => resizeSelectedImage(Number(event.target.value))}
+                            className="h-8 w-full rounded-lg border border-white/10 bg-black/25 px-2 text-[11px] tabular-nums text-white/80 outline-none focus:border-[var(--beat-accent)]/55"
+                          />
+                        </label>
+                      ) : null}
+                      <label className="block">
+                        <span className="mb-2 block text-[10px] text-white/38">
+                          {t('clipInspector.timelinePosition')}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.01}
+                          value={Number(selectedClip.startTime.toFixed(2))}
+                          onChange={(event) => moveSelectedClip(Number(event.target.value))}
+                          className="h-8 w-full rounded-lg border border-white/10 bg-black/25 px-2 text-[11px] tabular-nums text-white/80 outline-none focus:border-[var(--beat-accent)]/55"
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <p className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-3 text-[10px] leading-4 text-white/38">
+                      {t('panel.exactHint')}
+                    </p>
+                  )}
+                </div>
+
+                <div className="border-t border-white/[0.07] pt-4">
+                  <p className="mb-3 text-[10px] font-[600] uppercase tracking-[0.08em] text-white/34">
+                    {t('panel.quickActions')}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void createDerivedSelection()}
+                      disabled={selectedClip.sourceType !== 'video' || isExporting}
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.035] text-[11px] font-[540] text-white/62 transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30"
+                    >
+                      <Scissors className="size-3.5" />
+                      {t('actions.extract')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRedoOpen((current) => !current)}
+                      disabled={selectedClip.sourceType !== 'video' || isRedoing}
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.035] text-[11px] font-[540] text-white/62 transition hover:bg-white/[0.07] hover:text-white disabled:opacity-30"
+                    >
+                      <Sparkles className="size-3.5" />
+                      {t('actions.redo')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSelectedClip(false)}
+                      className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 text-[11px] font-[540] text-white/48 transition hover:border-red-400/25 hover:bg-red-400/10 hover:text-red-100"
+                    >
+                      <Trash2 className="size-3.5" />
+                      {t('timeline.delete')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteSelectedClip(true)}
+                      className="inline-flex h-9 items-center justify-center rounded-lg border border-white/10 text-[11px] font-[540] text-white/48 transition hover:bg-white/[0.06] hover:text-white"
+                    >
+                      {t('timeline.rippleDelete')}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex h-full flex-col">
+                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-10 place-items-center rounded-xl bg-[#8d83ff]/15 text-[#a79fff]">
+                      <Sparkles className="size-4" />
+                    </span>
+                    <div>
+                      <p className="text-sm font-[600] text-white/88">
+                        {t('panel.welcomeTitle')}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-white/38">
+                        {t('panel.subtitle')}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-[11px] leading-5 text-white/52">
+                    {t('panel.welcomeDescription')}
+                  </p>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {(['studio', 'canvas', 'edit', 'assets'] as const).map((step, index) => (
+                    <div key={step} className="flex gap-3">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-[10px] font-[600] text-white/55">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="text-[11px] font-[570] text-white/76">
+                          {t(`panel.workflow.${step}.title`)}
+                        </p>
+                        <p className="mt-1 text-[10px] leading-4 text-white/34">
+                          {t(`panel.workflow.${step}.description`)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-white/[0.07] p-4">
+            <button
+              type="button"
+              onClick={() => void addTimelineToCanvas()}
+              disabled={clips.length === 0}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] text-xs font-[560] text-white/68 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-30"
+            >
+              {t('actions.addTimelineToCanvas')}
+            </button>
+          </div>
+        </aside>
       </div>
 
       {error ? (

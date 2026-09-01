@@ -435,6 +435,14 @@
       "media": {
         "eyebrow": "本地素材",
         "title": "项目源文件",
+        "tab": "素材",
+        "search": "搜索素材",
+        "gridView": "网格视图",
+        "listView": "列表视图",
+        "importVisual": "画面",
+        "importAudio": "音频",
+        "empty": "尚未导入素材",
+        "noResults": "没有匹配的素材",
         "drop": "拖入图片或视频",
         "localOnly": "原文件只保留在当前设备",
         "stillDuration": "静态画面 {duration} 秒"
@@ -442,6 +450,9 @@
       "empty": {
         "title": "导入图片或视频，开始剪辑",
         "description": "拖入本地图片、MP4 或选择文件，无需安装系统 FFmpeg，即可编排、裁剪、预览并导出。"
+      },
+      "player": {
+        "title": "播放器"
       },
       "status": {
         "ready": "就绪",
@@ -455,6 +466,8 @@
         "importAudio": "导入音频",
         "play": "播放选区",
         "pause": "暂停",
+        "skipBack": "后退 5 秒",
+        "skipForward": "前进 5 秒",
         "split": "分割",
         "undo": "撤销剪辑",
         "redoEdit": "重做剪辑",
@@ -524,7 +537,37 @@
         "fadeIn": "淡入",
         "fadeOut": "淡出",
         "mute": "静音",
-        "unmute": "取消静音"
+        "unmute": "取消静音",
+        "mutedHint": "当前片段已静音，音量参数会继续保留。",
+        "activeHint": "音频跟随时间线播放头，淡入淡出会同时应用于预览和导出。"
+      },
+      "panel": {
+        "title": "片段助手",
+        "local": "本地",
+        "subtitle": "你的剪辑工作区",
+        "properties": "片段属性",
+        "quickActions": "片段操作",
+        "exactHint": "展开精确参数，可以修改素材范围、持续时间和时间线位置。",
+        "welcomeTitle": "按清晰流程完成剪辑",
+        "welcomeDescription": "选择时间线片段后，可在这里编辑参数。除非某个操作明确需要 BeatAPI，否则源素材始终保留在本地。",
+        "workflow": {
+          "studio": {
+            "title": "从 Studio 开始",
+            "description": "生成或导入剪辑需要的图片、视频和音频。"
+          },
+          "canvas": {
+            "title": "在 Canvas 编排",
+            "description": "先探索创意、连接生成结果，再进入精剪。"
+          },
+          "edit": {
+            "title": "在 Edit 完成",
+            "description": "裁剪、排序、混音、预览并导出最终成片。"
+          },
+          "assets": {
+            "title": "从 Assets 复用",
+            "description": "让保存过的项目素材在整个工作台持续可用。"
+          }
+        }
       },
       "diagnostics": {
         "timeline_gap": "可见视频轨存在空隙，已阻止导出，避免产生未解释的黑帧。",

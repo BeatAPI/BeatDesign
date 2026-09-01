@@ -435,6 +435,14 @@
       "media": {
         "eyebrow": "Local media",
         "title": "Project source",
+        "tab": "Media",
+        "search": "Search media",
+        "gridView": "Grid view",
+        "listView": "List view",
+        "importVisual": "Visual",
+        "importAudio": "Audio",
+        "empty": "No media imported",
+        "noResults": "No matching media",
         "drop": "Drop an image or video here",
         "localOnly": "The original stays on this device",
         "stillDuration": "Still image · {duration}s"
@@ -442,6 +450,9 @@
       "empty": {
         "title": "Import an image or video to start editing",
         "description": "Drop a local image or MP4. Arrange, trim, preview, and export without installing system FFmpeg."
+      },
+      "player": {
+        "title": "Player"
       },
       "status": {
         "ready": "Ready",
@@ -455,6 +466,8 @@
         "importAudio": "Import audio",
         "play": "Play selection",
         "pause": "Pause",
+        "skipBack": "Skip back 5 seconds",
+        "skipForward": "Skip forward 5 seconds",
         "split": "Split",
         "undo": "Undo edit",
         "redoEdit": "Redo edit",
@@ -524,7 +537,37 @@
         "fadeIn": "Fade in",
         "fadeOut": "Fade out",
         "mute": "Mute",
-        "unmute": "Unmute"
+        "unmute": "Unmute",
+        "mutedHint": "This clip is muted. Its volume setting is preserved.",
+        "activeHint": "Audio follows the timeline playhead and fades are applied during preview and export."
+      },
+      "panel": {
+        "title": "Clip Agent",
+        "local": "Local",
+        "subtitle": "Your editing workspace",
+        "properties": "Properties",
+        "quickActions": "Clip actions",
+        "exactHint": "Open Exact to edit source range, duration, and timeline position.",
+        "welcomeTitle": "Edit with a clear workflow",
+        "welcomeDescription": "Select a timeline clip to edit its properties here. Your source media stays local until an action explicitly needs BeatAPI.",
+        "workflow": {
+          "studio": {
+            "title": "Start in Studio",
+            "description": "Create or import the image, video, and audio you want to use."
+          },
+          "canvas": {
+            "title": "Arrange in Canvas",
+            "description": "Explore ideas and connect generation results before cutting."
+          },
+          "edit": {
+            "title": "Finish in Edit",
+            "description": "Trim, reorder, mix audio, preview, and export the final sequence."
+          },
+          "assets": {
+            "title": "Reuse from Assets",
+            "description": "Keep saved project media available across the workspace."
+          }
+        }
       },
       "diagnostics": {
         "timeline_gap": "Export is blocked because the visible video track contains a gap.",

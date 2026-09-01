@@ -69,6 +69,7 @@ package-lock.json
 /public/demo-assets/
 /*-before.png
 /design-qa-*.png
+/design-qa.md
 /canvas-rollback-empty.png
 /.gstack/
 .gstack/
