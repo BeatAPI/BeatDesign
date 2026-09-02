@@ -1,0 +1,10 @@
+{
+  "$comment": "Windsurf — copy to ~/.codeium/windsurf/mcp_config.json (global) or .codeium/windsurf/mcp_config.json in the project. Same mcpServers shape as Cursor.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "env": {}
+    }
+  }
+}

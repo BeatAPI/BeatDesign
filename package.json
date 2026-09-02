@@ -25,6 +25,7 @@
     "i18n:check": "node scripts/check-i18n.mjs",
     "media:localize": "tsx scripts/localize-project-media.ts",
     "mcp": "tsx scripts/mcp-server.ts",
+    "mcp:http": "tsx scripts/mcp-server.ts --http",
     "prebuild": "node scripts/db-setup.mjs",
     "build": "tsx scripts/prepare-paraglide.ts && vite build && node scripts/sanitize-output.mjs",
     "start": "node .output/server/index.mjs",

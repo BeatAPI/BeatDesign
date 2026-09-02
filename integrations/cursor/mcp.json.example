@@ -1,0 +1,11 @@
+{
+  "$comment": "Cursor — copy to .cursor/mcp.json in the project (team/project scope) or ~/.cursor/mcp.json (global). The stdio type is explicit for current Cursor schemas; there is no cwd field, so the BeatDesign entry script repairs the working directory itself.",
+  "mcpServers": {
+    "beatdesign": {
+      "type": "stdio",
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "env": {}
+    }
+  }
+}

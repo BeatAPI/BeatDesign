@@ -1,0 +1,11 @@
+{
+  "$comment": "Gemini CLI — copy the mcpServers block into ~/.gemini/settings.json (global) or .gemini/settings.json in the project. Gemini supports command, args, cwd, env, and timeout for stdio servers.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "cwd": "/absolute/path/to/Beat Design",
+      "timeout": 3600000
+    }
+  }
+}

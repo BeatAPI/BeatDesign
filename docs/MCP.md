@@ -1,6 +1,6 @@
 # BeatDesign MCP
 
-BeatDesign exposes one local stdio MCP server. It uses the same project,
+BeatDesign exposes local stdio and Streamable HTTP MCP servers. They use the same project,
 Asset, Command Kernel, provider, and SQLite services as the browser UI; it is
 not a second backend.
 
@@ -9,7 +9,12 @@ not a second backend.
 ```bash
 pnpm install
 pnpm db:push
+
+# For generic stdio MCP hosts:
 pnpm --silent mcp
+
+# For QwenWork / Doubao Work connectors:
+pnpm --silent mcp:http
 ```
 
 For a generic MCP host, register:
@@ -24,6 +29,24 @@ For a generic MCP host, register:
   }
 }
 ```
+
+The entry script is working-directory independent: when a host spawns it from
+another directory it restarts itself from the repository root first, so the
+`@/*` aliases, the SQLite database, and `data/project-assets` always resolve
+against this clone. Hosts that cannot set a cwd and prefer pnpm can use
+`pnpm --silent -C "/absolute/path/to/Beat Design" mcp` instead. On Windows the
+binary is `node_modules/.bin/tsx.cmd`.
+
+Per-agent config templates (Claude Code, ZCode, OpenCode, Cursor, Windsurf, VS
+Code, Cline, Roo Code, Qwen Code, QwenWork, Gemini CLI, Hermes, Kiro, Trae,
+WorkBuddy, Doubao Work) live in
+[`integrations/`](../integrations/README.md).
+
+QwenWork and Doubao Work use the HTTP endpoint at
+`http://127.0.0.1:3031/mcp`. Start `pnpm --silent mcp:http` before creating the
+connector. The HTTP server stays on loopback by default; set
+`BEATDESIGN_MCP_TOKEN` and send an `Authorization: Bearer ...` header when the
+connector configuration supports headers.
 
 The Codex plugin source is under `integrations/codex/beatdesign`. When a host
 copies that plugin outside this repository, pass `BEATDESIGN_ROOT` with the

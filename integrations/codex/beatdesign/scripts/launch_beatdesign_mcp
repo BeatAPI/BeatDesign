@@ -14,10 +14,27 @@ if [ ! -f "$workspace_root/package.json" ]; then
   exit 1
 fi
 
-tsx_bin="$workspace_root/node_modules/.bin/tsx"
-if [ ! -x "$tsx_bin" ]; then
+tsx_cli="$workspace_root/node_modules/tsx/dist/cli.mjs"
+if [ ! -f "$tsx_cli" ]; then
   echo "BeatDesign dependencies are missing. Run pnpm install in BEATDESIGN_ROOT." >&2
   exit 1
 fi
 
-exec "$tsx_bin" "$workspace_root/scripts/mcp-server.ts"
+# Codex may start a plugin without the user's interactive shell PATH. Prefer
+# an explicit absolute Node path when provided, then fall back to the host
+# PATH. Invoking tsx's CLI through Node avoids the .bin/tsx shell wrapper.
+node_bin=${BEATDESIGN_NODE:-}
+if [ -z "$node_bin" ]; then
+  node_bin=$(command -v node 2>/dev/null || true)
+fi
+if [ -z "$node_bin" ]; then
+  echo "Node.js was not found. Set BEATDESIGN_NODE to the absolute Node executable path." >&2
+  exit 1
+fi
+
+# tsx resolves tsconfig.json (for the @/* path aliases) and the app resolves
+# data/ paths relative to the working directory, so the server must always
+# run from the repository root regardless of the host's working directory.
+cd -- "$workspace_root"
+
+exec "$node_bin" "$tsx_cli" "$workspace_root/scripts/mcp-server.ts"

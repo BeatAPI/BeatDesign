@@ -1,0 +1,10 @@
+{
+  "$comment": "Qwen Code (阿里通义千问 CLI) — copy the mcpServers block into ~/.qwen/settings.json (global) or .qwen/settings.json in the project. Standard command/args/env shape.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "env": {}
+    }
+  }
+}

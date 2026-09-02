@@ -5,6 +5,7 @@
       "cwd": ".",
       "env_vars": [
         "BEATDESIGN_ROOT",
+        "BEATDESIGN_NODE",
         "NODE_ENV",
         "DATABASE_PROVIDER",
         "DATABASE_URL",

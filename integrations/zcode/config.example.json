@@ -1,0 +1,14 @@
+{
+  "$comment": "ZCode — copy the mcp.servers entry into ~/.zcode/cli/config.json (user scope, all sessions) or <repo>/.zcode/config.json (workspace scope). ZCode's schema is strict: unknown top-level keys make the server get dropped silently. 'cwd' is supported and recommended.",
+  "mcp": {
+    "servers": {
+      "beatdesign": {
+        "type": "stdio",
+        "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+        "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+        "cwd": "/absolute/path/to/Beat Design",
+        "enabled": true
+      }
+    }
+  }
+}

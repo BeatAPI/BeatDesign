@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "$comment": "OpenCode — merge the mcp block into ~/.config/opencode/opencode.json (global) or opencode.json in the project root. 'command' is a single array of executable + arguments, env vars go under 'environment', and 'timeout' is milliseconds (the 5s default is too short for BeatDesign tool calls).",
+  "mcp": {
+    "beatdesign": {
+      "type": "local",
+      "command": [
+        "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+        "/absolute/path/to/Beat Design/scripts/mcp-server.ts"
+      ],
+      "cwd": "/absolute/path/to/Beat Design",
+      "enabled": true,
+      "timeout": 3600000
+    }
+  }
+}

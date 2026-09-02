@@ -1,0 +1,9 @@
+{
+  "$comment": "Claude Code — merge the mcpServers entry into .mcp.json in the project or ~/.claude.json for user scope. Claude Code supports local stdio servers; the entry script repairs a foreign working directory.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"]
+    }
+  }
+}

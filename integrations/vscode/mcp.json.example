@@ -1,0 +1,11 @@
+{
+  "$comment": "VS Code (native Copilot Agent MCP) — copy to .vscode/mcp.json in the project. VS Code uses a 'servers' key instead of 'mcpServers'. Users must approve the workspace MCP server the first time.",
+  "servers": {
+    "beatdesign": {
+      "type": "stdio",
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "env": {}
+    }
+  }
+}

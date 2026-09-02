@@ -1,0 +1,10 @@
+# Hermes Agent (Nous Research) — merge the mcp_servers block into ~/.hermes/config.yaml.
+# timeout/connect_timeout are seconds. Hermes is YAML, not JSON.
+mcp_servers:
+  beatdesign:
+    command: "/absolute/path/to/Beat Design/node_modules/.bin/tsx"
+    args:
+      - "/absolute/path/to/Beat Design/scripts/mcp-server.ts"
+    enabled: true
+    timeout: 3600
+    connect_timeout: 60

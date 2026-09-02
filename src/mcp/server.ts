@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/server';
+import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 
@@ -513,5 +513,13 @@ export function createBeatDesignMcpServer() {
 export function startBeatDesignMcpServer() {
   return serveStdio(createBeatDesignMcpServer, {
     onerror: (error) => console.error('[BeatDesign MCP]', error),
+  });
+}
+
+export function createBeatDesignMcpHttpHandler() {
+  return createMcpHandler(createBeatDesignMcpServer, {
+    legacy: 'stateless',
+    responseMode: 'auto',
+    onerror: (error) => console.error('[BeatDesign MCP HTTP]', error),
   });
 }

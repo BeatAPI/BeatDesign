@@ -1,0 +1,12 @@
+{
+  "$comment": "Cline / Roo Code (VS Code extensions) — copy to ~/.cline/mcp_settings.json (global) or .cline/mcp_settings.json in the project. Roo Code uses .roo/mcp_settings.json with the same shape.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "env": {},
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}

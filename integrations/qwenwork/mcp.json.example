@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "beatdesign": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3031/mcp",
+      "headers": {}
+    }
+  }
+}

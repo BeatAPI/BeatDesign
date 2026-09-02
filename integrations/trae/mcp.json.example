@@ -1,0 +1,10 @@
+{
+  "$comment": "Trae (字节跳动) — copy to .trae/mcp.json in the project. Global servers are managed from the Trae MCP panel in the UI. Standard mcpServers shape.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "env": {}
+    }
+  }
+}

@@ -25,6 +25,8 @@ install shape for Codex.
    `integrations/codex/beatdesign`
 3. If Codex copies the plugin elsewhere, set
    `BEATDESIGN_ROOT=/absolute/path/to/Beat Design`
+   If Codex's GUI environment does not expose Node.js, also set
+   `BEATDESIGN_NODE=/absolute/path/to/node`.
 4. Start a new Codex thread and check that `bdesign_project_list` exists.
 
 Marketplace submission is later. Local folder install is enough to test.

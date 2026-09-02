@@ -1,0 +1,11 @@
+{
+  "$comment": "Kiro — copy to ~/.kiro/settings/mcp.json (global) or .kiro/settings/mcp.json in the project. Kiro uses the standard mcpServers object for local stdio servers.",
+  "mcpServers": {
+    "beatdesign": {
+      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
+      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
