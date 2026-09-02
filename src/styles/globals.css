@@ -26,7 +26,7 @@ button[aria-disabled="true"] {
 
 /*
  * Shared design tokens for BeatAPI dark product surfaces (public shell, home,
- * pricing, and projects). One accent, three text levels, two radii —
+ * and projects). One accent, three text levels, two radii —
  * components should reference these instead of inventing near-identical
  * greys/oranges.
  */
@@ -50,7 +50,7 @@ button[aria-disabled="true"] {
 
 /*
  * BeatAPI product surfaces use a dedicated type system inspired by refined
- * creative tools. It is intentionally scoped so Studio, Canvas, Pricing and
+ * creative tools. It is intentionally scoped so Studio, Canvas and
  * the shared utility surfaces keep their existing typography.
  */
 .beat-product-shell {
@@ -479,7 +479,7 @@ button[aria-disabled="true"] {
   /*
    * BeatDesign canvas tokens — re-aliased onto the shared dark product language.
    * The old purple accent became --beat-graph (cold blue); surfaces/ink map
-   * to the beat neutral scale so panels and pickers match Studio/Pricing.
+   * to the beat neutral scale so panels and pickers match Studio.
    */
   --beatcanvas-canvas-bg: var(--beat-bg);
   --beatcanvas-panel: rgba(19, 20, 22, 0.94);

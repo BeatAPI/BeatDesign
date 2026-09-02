@@ -19,6 +19,8 @@ const MODEL_ICON_PATH_BY_MODEL_ID: Record<string, string> = {
   'kling-3-motion-control': MODEL_ICON_PATHS.kling,
   'minimax-h3': MODEL_ICON_PATHS.minimax,
   'nano-banana': MODEL_ICON_PATHS.nanobanana,
+  'nano-banana-2': MODEL_ICON_PATHS.nanobanana,
+  'nano-banana-2-lite': MODEL_ICON_PATHS.nanobanana,
   'nano-banana-pro': MODEL_ICON_PATHS.nanobanana,
   'seedance-2': MODEL_ICON_PATHS.bytedance,
   'seedance-2-fast': MODEL_ICON_PATHS.bytedance,

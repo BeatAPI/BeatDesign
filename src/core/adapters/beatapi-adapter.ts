@@ -16,6 +16,8 @@ import { BaseAdapter, type GenerationResult } from './base-adapter';
 
 const IMAGE_MODELS = new Set([
   'nano-banana',
+  'nano-banana-2',
+  'nano-banana-2-lite',
   'nano-banana-pro',
   'gpt-image-2',
   'seedream-5-pro',
@@ -372,7 +374,8 @@ export const buildBeatApiTaskRequest = ({
         prompt,
         ...(images.length > 0 ? { images } : {}),
         ...(input.aspect_ratio ? { aspect_ratio: input.aspect_ratio } : {}),
-        ...(model === 'nano-banana-pro' ||
+        ...(model === 'nano-banana-2' ||
+        model === 'nano-banana-pro' ||
         model === 'gpt-image-2' ||
         model === 'seedream-5-pro'
           ? { resolution: mapImageResolution(input.wmOutputQuality) }

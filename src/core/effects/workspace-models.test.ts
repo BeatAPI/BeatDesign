@@ -15,6 +15,8 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
 
   assert.deepEqual(imageIds, [
     'nano-banana-pro',
+    'nano-banana-2',
+    'nano-banana-2-lite',
     'nano-banana',
     'gpt-image-2',
     'seedream-5-pro',
@@ -33,7 +35,8 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
     'kling-3-motion-control',
   ]);
   assert.equal(videoIds.includes('wan27'), false);
-  assert.equal(imageIds.includes('nanobanana2'), false);
+  assert.equal(imageIds.includes('nano-banana-2'), true);
+  assert.equal(imageIds.includes('nano-banana-2-lite'), true);
 });
 
 test('legacy canvas model ids resolve to official BeatAPI slugs', () => {
@@ -41,6 +44,11 @@ test('legacy canvas model ids resolve to official BeatAPI slugs', () => {
   const videoModels = getWorkspaceModelsByType('ai-video');
 
   assert.equal(getCanonicalWorkspaceModelId('nanobananapro'), 'nano-banana-pro');
+  assert.equal(getCanonicalWorkspaceModelId('nanobanana2'), 'nano-banana-2');
+  assert.equal(
+    getCanonicalWorkspaceModelId('nanobanana2lite'),
+    'nano-banana-2-lite'
+  );
   assert.equal(getCanonicalWorkspaceModelId('seedance20'), 'seedance-2');
   assert.equal(getCanonicalWorkspaceModelId('seedance20fast'), 'seedance-2-fast');
   assert.equal(getCanonicalWorkspaceModelId('seedance20mini'), 'seedance-2-mini');

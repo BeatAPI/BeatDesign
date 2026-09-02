@@ -36,3 +36,38 @@ test('Nano Banana accepts up to ten reference images from Canvas through BeatAPI
 
   assert.deepEqual(request.body.images, images);
 });
+
+test('Nano Banana 2 variants expose the upstream image contract', () => {
+  for (const [model, effectId] of [
+    ['nano-banana-2', 25],
+    ['nano-banana-2-lite', 26],
+  ] as const) {
+    const mediaSchema = getWorkspaceMediaSchema(model);
+    const effect = getRegisteredEffectById(effectId);
+    const inputSchema = effect?.inputSchema as Record<string, unknown>;
+
+    assert.equal(mediaSchema?.image.max, 10);
+    assert.equal(mediaSchema?.image.slots.length, 10);
+    assert.ok(inputSchema.image_urls);
+    assert.equal(effect?.model, model);
+  }
+
+  const nanoBanana2 = buildBeatApiTaskRequest({
+    effectType: 2,
+    model: 'nano-banana-2',
+    input: {
+      prompt: 'Create a product image',
+      wmOutputQuality: '4k',
+    },
+  });
+  assert.equal(nanoBanana2.body.resolution, '4K');
+
+  const nanoBanana2Lite = buildBeatApiTaskRequest({
+    effectType: 2,
+    model: 'nano-banana-2-lite',
+    input: {
+      prompt: 'Create a product image',
+    },
+  });
+  assert.equal('resolution' in nanoBanana2Lite.body, false);
+});

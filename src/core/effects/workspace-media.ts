@@ -98,6 +98,22 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     video: emptySection,
     audio: emptySection,
   },
+  'nano-banana-2': {
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('nano-banana-2')
+    ),
+    video: emptySection,
+    audio: emptySection,
+  },
+  'nano-banana-2-lite': {
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('nano-banana-2-lite')
+    ),
+    video: emptySection,
+    audio: emptySection,
+  },
   'nano-banana-pro': {
     image: createGenericSection(
       'reference-image',
