@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://design.beatapi.io/zh/">官方网站</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#通过-mcp-让-agent-操控">MCP</a> ·
   <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">产品状态</a> ·

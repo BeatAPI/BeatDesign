@@ -4,7 +4,7 @@
   "private": true,
   "description": "The open-source, local-first AI canvas for image and video creation and analysis",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/BeatAPI/BeatDesign#readme",
+  "homepage": "https://design.beatapi.io",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BeatAPI/BeatDesign.git"

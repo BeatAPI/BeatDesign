@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  <a href="https://design.beatapi.io">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#agent-control-through-mcp">MCP</a> ·
   <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">Product status</a> ·
