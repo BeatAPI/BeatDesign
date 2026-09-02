@@ -12,7 +12,7 @@ import { appConfig } from '@/config';
 import { m } from '@/paraglide/messages.js';
 import { setLocale } from '@/paraglide/runtime.js';
 
-type ProductSurface = 'home' | 'projects' | 'pricing';
+type ProductSurface = 'home' | 'projects';
 
 type ProductLocale = 'en' | 'zh';
 
@@ -25,7 +25,6 @@ function getShellCopy(locale: string) {
   return {
     home: m['product.shell.home']({}, { locale: messageLocale }),
     create: m['product.shell.create']({}, { locale: messageLocale }),
-    pricing: m['product.shell.pricing']({}, { locale: messageLocale }),
     projects: m['product.shell.projects']({}, { locale: messageLocale }),
     openNavigation: m['product.shell.openNavigation'](
       {},
@@ -52,7 +51,6 @@ function getNavItems(copy: ShellCopy) {
   return [
     { label: copy.home, href: '/' },
     { label: copy.create, href: '/studio' },
-    { label: copy.pricing, href: '/pricing' },
     { label: copy.projects, href: '/projects' },
   ] as const;
 }
@@ -60,7 +58,6 @@ function getNavItems(copy: ShellCopy) {
 const activeNavHref: Record<ProductSurface, string> = {
   home: '/',
   projects: '/projects',
-  pricing: '/pricing',
 };
 
 export function Brand({ href = '/' }: { href?: string }) {
@@ -89,7 +86,7 @@ function CapsuleNav({
 }) {
   const activeHref = activeNavHref[active];
   return (
-    <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 text-sm font-medium lg:flex">
+    <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-5 text-sm font-medium md:flex lg:gap-8">
       {items.map((item) => {
         const isActive = item.href === activeHref;
         return (
@@ -201,7 +198,7 @@ export function BeatApiProductShell({
           <CapsuleNav active={active} items={navItems} />
 
           <div className="ml-auto flex items-center gap-2">
-            <div className="hidden lg:block">
+            <div className="hidden md:block">
               <LocaleMenu locale={currentLocale} copy={copy} />
             </div>
 
@@ -212,7 +209,7 @@ export function BeatApiProductShell({
               }
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
-              className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-white transition hover:border-white/20 lg:hidden"
+              className="grid size-10 place-items-center rounded-full border border-white/10 bg-white/[0.035] text-white transition hover:border-white/20 md:hidden"
             >
               {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
             </button>
@@ -220,7 +217,7 @@ export function BeatApiProductShell({
         </div>
 
         {menuOpen ? (
-          <div className="absolute inset-x-4 top-[calc(100%+8px)] rounded-[18px] border border-white/10 bg-[#111113]/95 p-2 shadow-2xl backdrop-blur-xl lg:hidden">
+          <div className="absolute inset-x-4 top-[calc(100%+8px)] rounded-[18px] border border-white/10 bg-[#111113]/95 p-2 shadow-2xl backdrop-blur-xl md:hidden">
             {navItems.map((item) => (
               <Link
                 key={item.href}

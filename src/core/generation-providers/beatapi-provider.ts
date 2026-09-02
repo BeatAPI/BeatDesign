@@ -10,6 +10,8 @@ export const BEATAPI_PROVIDER_ID = 'beatapi';
 
 export const BEATAPI_MODEL_BINDINGS = [
   ['nano-banana-pro', 6, 'effects/nano-banana-pro', 'image'],
+  ['nano-banana-2', 25, 'effects/nano-banana-2', 'image'],
+  ['nano-banana-2-lite', 26, 'effects/nano-banana-2-lite', 'image'],
   ['nano-banana', 5, 'effects/nano-banana', 'image'],
   ['gpt-image-2', 12, 'effects/gpt-image-2', 'image'],
   ['seedream-5-pro', 16, 'effects/seedream-5-pro', 'image'],

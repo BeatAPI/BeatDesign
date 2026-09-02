@@ -7,6 +7,8 @@ export type BeatApiVideoReferenceContract = {
 
 export const BEATAPI_IMAGE_REFERENCE_LIMITS = {
   'nano-banana': 10,
+  'nano-banana-2': 10,
+  'nano-banana-2-lite': 10,
   'nano-banana-pro': 8,
   'gpt-image-2': 16,
   'seedream-5-pro': 10,
