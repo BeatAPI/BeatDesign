@@ -1,0 +1,7 @@
+{
+  "identifier": "beatapi-beatdesign",
+  "name": "BeatDesign",
+  "version": "0.2.1",
+  "description": "The open-source, local-first AI canvas for image and video creation and analysis.",
+  "homepage": "https://github.com/BeatAPI/BeatDesign"
+}
