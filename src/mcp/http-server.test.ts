@@ -92,3 +92,29 @@ test('MCP HTTP refuses non-loopback binding without authentication', async () =>
     /BEATDESIGN_MCP_TOKEN is required/
   );
 });
+
+test('MCP HTTP accepts the configured authenticated non-loopback hostname', async () => {
+  const server = await startBeatDesignMcpHttpServer({
+    host: '0.0.0.0',
+    port: 0,
+    token: 'test-token',
+  });
+  const address = server.address();
+  if (!address || typeof address === 'string') {
+    throw new Error('HTTP test server did not expose a TCP address.');
+  }
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${address.port}/mcp`, {
+      method: 'POST',
+      headers: {
+        ...requestHeaders,
+        host: `0.0.0.0:${address.port}`,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' }),
+    });
+    assert.equal(response.status, 200);
+  } finally {
+    await closeServer(server);
+  }
+});

@@ -18,7 +18,7 @@
 
 BeatDesign 是一个免费、开源、本地优先的 AI 媒体工作台。它把引导式 Studio、无限 Canvas、短视频 Editor 和共享 Asset 素材库放进同一个本地 Project。
 
-浏览器是用户可见的创作空间。Codex、Claude Code、Cursor 或其他支持 MCP stdio 的 Agent，可以通过 BeatDesign 的 20 个本地工具读取和修改同一个 Project。本仓库不包含账号、订阅、本地积分账本、支付或管理后台。
+浏览器是用户可见的创作空间。Codex、Claude Code、Cursor 或其他支持 MCP 的 Agent，可以通过 BeatDesign 的 20 个本地工具读取和修改同一个 Project。通用编程 Agent 使用本地 stdio；千问办公和豆包办公可以使用本地 Streamable HTTP 连接器。本仓库不包含账号、订阅、本地积分账本、支付或管理后台。
 
 ## 连续创作闭环
 
@@ -48,7 +48,7 @@ Editor ────────── 裁剪、切分、移动、混音、AI 重
 ## BeatDesign 的核心区别
 
 - **本地优先。** Project、Canvas 快照、时间线、生成历史和导入媒体都保存在本地工作区。
-- **Agent 原生，但不绑定某个 Agent。** BeatDesign 暴露标准 stdio MCP Server，而不是内置一个封闭聊天机器人。
+- **Agent 原生，但不绑定某个 Agent。** BeatDesign 暴露标准 stdio 和 Streamable HTTP MCP Server，而不是内置一个封闭聊天机器人。
 - **Asset-first。** 生成和导入的媒体先成为稳定的 Project Asset，再进入 Canvas 或 Editor。
 - **统一命令路径。** UI 与 MCP 写操作共用 Command Kernel、revision 检查和持久化 receipt。
 - **不要求安装系统 FFmpeg。** 预览和 MP4 导出使用浏览器 WebCodecs 与 Mediabunny。
@@ -70,12 +70,15 @@ pnpm dev
 
 ## 通过 MCP 让 Agent 操控
 
-BeatDesign 本地运行两个进程，它们读取同一个 SQLite 数据库：
+BeatDesign 本地运行可视工作台，再选择一种 Agent 控制传输读取同一个 SQLite 数据库：
 
 | 进程 | 命令 | 作用 |
 | --- | --- | --- |
 | 可视工作台 | `pnpm dev` | 在浏览器中打开 Studio、Canvas、Editor 和 Assets。 |
 | Agent 控制面 | `pnpm --silent mcp` | 通过 stdio 暴露项目级工具。 |
+| HTTP 连接器 | `pnpm --silent mcp:http` | 在 `127.0.0.1:3031` 暴露 `/mcp`，供千问办公和豆包办公使用。 |
+
+编程 Agent 使用 stdio 控制面，办公连接器使用 HTTP 控制面；通常不需要同时运行两者。
 
 仓库根目录已经包含兼容宿主可读取的 `.mcp.json`；Codex 的轻量启动封装位于 `integrations/codex/beatdesign`。
 

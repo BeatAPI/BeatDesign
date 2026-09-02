@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -57,4 +57,23 @@ test('rejects traversal and unsafe project path segments', () => {
     buildLocalProjectAssetUrl({ projectId: '项目 1', assetId: 'asset/1' }),
     '/api/app/projects/%E9%A1%B9%E7%9B%AE%201/assets/asset%2F1'
   );
+});
+
+test('rejects symlinked project asset directories', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'beatapi-project-assets-root-'));
+  const outside = await mkdtemp(join(tmpdir(), 'beatapi-project-assets-outside-'));
+  try {
+    await symlink(outside, join(root, 'project-1'));
+    assert.throws(
+      () =>
+        resolveLocalProjectAssetPath({
+          objectKey: 'project-1/asset-1/image.png',
+          assetRoot: root,
+        }),
+      /Symbolic links are not allowed/
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
 });

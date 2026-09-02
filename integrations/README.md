@@ -23,7 +23,7 @@ Replace `/absolute/path/to/Beat Design` in each template with your clone path.
 | Claude Code | [`claude-code/mcp.json.example`](./claude-code/mcp.json.example) | project `.mcp.json` or `~/.claude.json` | repo root `.mcp.json` is already included; entry also repairs foreign cwd |
 | Codex | [`codex/beatdesign/`](./codex/beatdesign/) | Codex plugin folder or `~/.codex/config.toml` `[mcp_servers.beatdesign]` | launcher handles `cd` + `BEATDESIGN_ROOT`; set `BEATDESIGN_NODE` if GUI PATH lacks Node |
 | ZCode (智谱) | [`zcode/config.example.json`](./zcode/config.example.json) | `~/.zcode/cli/config.json` or `<repo>/.zcode/config.json` | strict schema; supports `cwd`; also reads `.agents/mcp.json` as fallback |
-| OpenCode | [`opencode/opencode.example.json`](./opencode/opencode.example.json) | `~/.config/opencode/opencode.json` or project `opencode.json` | `command` is one array; `timeout` is ms (default 5s is too short) |
+| OpenCode | [`opencode/opencode.example.json`](./opencode/opencode.example.json) · [`opencode/opencode.v2.example.json`](./opencode/opencode.v2.example.json) | `~/.config/opencode/opencode.json` or project `opencode.json` | 1.x uses flat `mcp`; V2 uses nested `mcp.servers`; both use one command array |
 | Cursor | [`cursor/mcp.json.example`](./cursor/mcp.json.example) | `.cursor/mcp.json` or `~/.cursor/mcp.json` | no `cwd` field — rely on the cwd-proof entry |
 | Windsurf | [`windsurf/mcp_config.json.example`](./windsurf/mcp_config.json.example) | `.codeium/windsurf/mcp_config.json` | same shape as Cursor |
 | VS Code (Copilot) | [`vscode/mcp.json.example`](./vscode/mcp.json.example) | `.vscode/mcp.json` | uses `servers` instead of `mcpServers`; approve on first use |

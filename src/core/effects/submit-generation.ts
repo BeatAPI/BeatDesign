@@ -26,7 +26,7 @@ import {
   validateGenerationPrompt,
 } from '@/core/effects/validation';
 import {
-  getProject,
+  getActiveProject,
   loadProjectWithLatestSnapshot,
 } from '@/core/projects/projects';
 import {
@@ -163,7 +163,7 @@ export async function submitEffectGeneration({
   if (requireProject && !normalizedProjectId) {
     return { status: 400, body: { error: 'projectId is required' } };
   }
-  if (normalizedProjectId && !(await getProject({ projectId: normalizedProjectId }))) {
+  if (normalizedProjectId && !(await getActiveProject({ projectId: normalizedProjectId }))) {
     return { status: 404, body: { error: 'Project not found' } };
   }
 

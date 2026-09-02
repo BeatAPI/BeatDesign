@@ -25,7 +25,7 @@ import {
 } from '@/core/generation-providers';
 import {
   createProject,
-  getProject,
+  getActiveProject,
   loadProjects,
   loadProjectWithLatestSnapshot,
 } from '@/core/projects/projects';
@@ -117,6 +117,12 @@ const withToolErrors = <TArgs, TResult>(
   }
 };
 
+const assertActiveProject = async (projectId: string) => {
+  const project = await getActiveProject({ projectId });
+  if (!project) throw new Error('Project not found.');
+  return project;
+};
+
 async function executeExternalCommand({
   projectId,
   command,
@@ -130,6 +136,9 @@ async function executeExternalCommand({
   commandId?: string;
   idempotencyKey?: string;
 }) {
+  if (!(await getActiveProject({ projectId }))) {
+    throw new Error('Project not found.');
+  }
   const parsed = beatDesignCommandSchema.parse(command);
   return persistBeatDesignCommand({
     projectId,
@@ -241,7 +250,10 @@ export function createBeatDesignMcpServer() {
       inputSchema: z.object({ projectId: idSchema, limit: z.number().int().min(1).max(500).default(100) }),
       annotations: { readOnlyHint: true },
     },
-    withToolErrors(async ({ projectId, limit }) => listProjectAssets({ projectId, limit }))
+    withToolErrors(async ({ projectId, limit }) => {
+      await assertActiveProject(projectId);
+      return listProjectAssets({ projectId, limit });
+    })
   );
 
   server.registerTool(
@@ -252,6 +264,7 @@ export function createBeatDesignMcpServer() {
       annotations: { readOnlyHint: true },
     },
     withToolErrors(async ({ projectId, assetId }) => {
+      await assertActiveProject(projectId);
       const asset = await getProjectAssetById({ projectId, assetId });
       if (!asset) throw new Error('Asset not found in this project.');
       return asset;
@@ -396,12 +409,24 @@ export function createBeatDesignMcpServer() {
     'bdesign_generation_status',
     {
       description: 'Read and, when possible, refresh one generation task.',
-      inputSchema: z.object({ generationId: idSchema, refresh: z.boolean().default(true) }),
+      inputSchema: z.object({
+        generationId: idSchema,
+        projectId: idSchema.optional(),
+        refresh: z.boolean().default(true),
+      }),
       annotations: { readOnlyHint: true },
     },
-    withToolErrors(async ({ generationId, refresh }) => {
+    withToolErrors(async ({ generationId, projectId, refresh }) => {
       const generation = await getGenerationById({ id: generationId });
       if (!generation) throw new Error('Generation not found.');
+      if (projectId) {
+        await assertActiveProject(projectId);
+        if (generation.projectId !== projectId) {
+          throw new Error('Generation not found in this project.');
+        }
+      } else if (generation.projectId) {
+        await assertActiveProject(generation.projectId);
+      }
       if (
         refresh &&
         (generation.status === 'pending' || generation.status === 'processing')
@@ -419,7 +444,10 @@ export function createBeatDesignMcpServer() {
       inputSchema: z.object({ projectId: idSchema, limit: z.number().int().min(1).max(200).default(80) }),
       annotations: { readOnlyHint: true },
     },
-    withToolErrors(async ({ projectId, limit }) => listProjectGenerations(projectId, limit))
+    withToolErrors(async ({ projectId, limit }) => {
+      await assertActiveProject(projectId);
+      return listProjectGenerations(projectId, limit);
+    })
   );
 
   server.registerTool(
@@ -430,7 +458,7 @@ export function createBeatDesignMcpServer() {
       annotations: { readOnlyHint: true },
     },
     withToolErrors(async ({ projectId }) => {
-      const project = await getProject({ projectId });
+      const project = await getActiveProject({ projectId });
       if (!project) throw new Error('Project not found.');
       return loadProjectTimeline(projectId);
     })
@@ -462,9 +490,12 @@ export function createBeatDesignMcpServer() {
       inputSchema: z.object({ projectId: idSchema, time: z.number().finite().min(0) }),
       annotations: { readOnlyHint: true },
     },
-    withToolErrors(async ({ projectId, time }) =>
-      semanticTimelineSnapshot(await loadProjectTimeline(projectId), time)
-    )
+    withToolErrors(async ({ projectId, time }) => {
+      if (!(await getActiveProject({ projectId }))) {
+        throw new Error('Project not found.');
+      }
+      return semanticTimelineSnapshot(await loadProjectTimeline(projectId), time);
+    })
   );
 
   server.registerTool(
@@ -475,6 +506,9 @@ export function createBeatDesignMcpServer() {
       annotations: { readOnlyHint: true },
     },
     withToolErrors(async ({ projectId }) => {
+      if (!(await getActiveProject({ projectId }))) {
+        throw new Error('Project not found.');
+      }
       const timeline = await loadProjectTimeline(projectId);
       if (!timeline) return { diagnostics: [], revision: null };
       return {
@@ -491,10 +525,15 @@ export function createBeatDesignMcpServer() {
       inputSchema: z.object({ projectId: idSchema, time: z.number().finite().min(0).default(0) }),
       annotations: { readOnlyHint: true },
     },
-    withToolErrors(async ({ projectId, time }) => ({
-      editorUrl: `${appConfig.app_url.replace(/\/$/, '')}/editor/${encodeURIComponent(projectId)}?t=${time}`,
-      snapshot: semanticTimelineSnapshot(await loadProjectTimeline(projectId), time),
-    }))
+    withToolErrors(async ({ projectId, time }) => {
+      if (!(await getActiveProject({ projectId }))) {
+        throw new Error('Project not found.');
+      }
+      return {
+        editorUrl: `${appConfig.app_url.replace(/\/$/, '')}/editor/${encodeURIComponent(projectId)}?t=${time}`,
+        snapshot: semanticTimelineSnapshot(await loadProjectTimeline(projectId), time),
+      };
+    })
   );
 
   server.registerTool(

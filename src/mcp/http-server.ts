@@ -103,6 +103,11 @@ const resolvePort = (value: string | undefined) => {
 const isLoopbackHost = (host: string) =>
   host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
 
+const hostnameForAllowlist = (host: string) => {
+  const authority = host.includes(':') && !host.startsWith('[') ? `[${host}]` : host;
+  return new URL(`http://${authority}`).hostname;
+};
+
 const closeHandler = async (handler: McpHttpHandler) => {
   try {
     await handler.close();
@@ -133,10 +138,10 @@ export async function startBeatDesignMcpHttpServer(
         return;
       }
 
-      const hostError = hostHeaderValidationResponse(
-        webRequest,
-        localhostAllowedHostnames()
-      );
+      const allowedHostnames = isLoopbackHost(host)
+        ? localhostAllowedHostnames()
+        : [...localhostAllowedHostnames(), hostnameForAllowlist(host)];
+      const hostError = hostHeaderValidationResponse(webRequest, allowedHostnames);
       if (hostError) {
         await writeWebResponse(hostError, reply);
         return;

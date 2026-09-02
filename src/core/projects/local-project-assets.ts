@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { lstatSync } from 'node:fs';
 import { mkdir, rename, unlink, writeFile } from 'node:fs/promises';
-import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
 export const LOCAL_PROJECT_ASSET_BUCKET = 'local-project-assets';
 export const LOCAL_PROJECT_ASSET_PROVIDER = 'local';
@@ -80,6 +81,18 @@ export const resolveLocalProjectAssetPath = ({
   if (!relativePath || relativePath.startsWith('..') || isAbsolute(relativePath)) {
     throw new Error('Invalid local project asset path');
   }
+  let currentPath = normalizedRoot;
+  for (const segment of relativePath.split(sep)) {
+    currentPath = resolve(currentPath, segment);
+    try {
+      if (lstatSync(currentPath).isSymbolicLink()) {
+        throw new Error('Symbolic links are not allowed in local project asset paths');
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') break;
+      throw error;
+    }
+  }
   return filePath;
 };
 
@@ -117,6 +130,9 @@ export const persistLocalProjectAsset = async ({
   const tempPath = `${filePath}.tmp-${randomUUID()}`;
 
   await mkdir(dirname(filePath), { recursive: true });
+  // Re-check after creating the directory tree so a pre-existing symlink cannot
+  // redirect writes outside the project-owned asset root.
+  resolveLocalProjectAssetPath({ objectKey, assetRoot });
   try {
     await writeFile(tempPath, bytes, { flag: 'wx' });
     await rename(tempPath, filePath);

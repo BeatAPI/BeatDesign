@@ -18,7 +18,7 @@
 
 BeatDesign is a free, open-source, local-first AI media workbench. It combines a guided Studio, an infinite Canvas, a short-form video Editor, and one shared Asset library inside a single local Project.
 
-The browser is your visual workspace. An Agent such as Codex, Claude Code, Cursor, or another MCP stdio host can read and modify the same Project through BeatDesign's 20 local tools. There is no account system, subscription, local credit ledger, or admin panel in this repository.
+The browser is your visual workspace. An Agent such as Codex, Claude Code, Cursor, or another MCP-capable host can read and modify the same Project through BeatDesign's 20 local tools. Generic coding Agents use local stdio; QwenWork and Doubao Work can use the local Streamable HTTP endpoint. There is no account system, subscription, local credit ledger, or admin panel in this repository.
 
 ## The creative loop
 
@@ -48,7 +48,7 @@ The result is one continuous workflow instead of separate AI generators, downloa
 ## Why it feels different
 
 - **Local by default.** Projects, Canvas snapshots, timelines, generation history, and imported media stay in the local workspace.
-- **Agent-native, not Agent-locked.** BeatDesign exposes a standard stdio MCP server instead of embedding one proprietary chatbot.
+- **Agent-native, not Agent-locked.** BeatDesign exposes standard stdio and Streamable HTTP MCP transports instead of embedding one proprietary chatbot.
 - **Asset-first.** Generated and imported media become stable project Assets before they are placed on Canvas or Editor.
 - **One command path.** UI and MCP writes pass through the same Command Kernel, revision checks, and persisted receipts.
 - **No system FFmpeg setup.** Preview and MP4 export use browser-native WebCodecs and Mediabunny.
@@ -70,12 +70,16 @@ Local import, Canvas work, timeline editing, preview, and MP4 export do not requ
 
 ## Agent control through MCP
 
-BeatDesign runs as two local processes over the same SQLite database:
+BeatDesign runs the visual workspace plus one Agent control transport over the same SQLite database:
 
 | Process | Command | Role |
 | --- | --- | --- |
 | Visual workspace | `pnpm dev` | Opens Studio, Canvas, Editor, and Assets in the browser. |
 | Agent control plane | `pnpm --silent mcp` | Exposes project-level tools over stdio. |
+| HTTP connector | `pnpm --silent mcp:http` | Exposes `/mcp` on `127.0.0.1:3031` for QwenWork and Doubao Work. |
+
+Run the stdio control plane for coding Agents, or the HTTP connector for office
+connectors; normally you do not need to run both.
 
 The repository includes a root `.mcp.json` for compatible hosts and a thin Codex launcher under `integrations/codex/beatdesign`.
 

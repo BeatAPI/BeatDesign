@@ -105,6 +105,15 @@ export const getProject = async ({
   return rows[0] ?? null;
 };
 
+export const getActiveProject = async ({
+  projectId,
+}: {
+  projectId: string;
+}) => {
+  const currentProject = await getProject({ projectId });
+  return currentProject?.status === 'active' ? currentProject : null;
+};
+
 export const renameProject = async ({
   projectId,
   name,
@@ -151,7 +160,7 @@ export const loadProjectWithLatestSnapshot = async ({
   projectId: string;
 }) => {
   const db = await getDb();
-  const currentProject = await getProject({ projectId });
+  const currentProject = await getActiveProject({ projectId });
   if (!currentProject) {
     return null;
   }
@@ -205,7 +214,7 @@ export const saveProjectSnapshot = async ({
   allowEmpty?: boolean;
 }) => {
   const db = await getDb();
-  const currentProject = await getProject({ projectId });
+  const currentProject = await getActiveProject({ projectId });
   if (!currentProject) {
     throw new Error('Project not found');
   }

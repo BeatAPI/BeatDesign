@@ -13,7 +13,7 @@ pnpm db:push
 # For generic stdio MCP hosts:
 pnpm --silent mcp
 
-# For QwenWork / Doubao Work connectors:
+# For QwenWork / Doubao Work connectors (use this instead of stdio):
 pnpm --silent mcp:http
 ```
 
@@ -42,6 +42,13 @@ Code, Cline, Roo Code, Qwen Code, QwenWork, Gemini CLI, Hermes, Kiro, Trae,
 WorkBuddy, Doubao Work) live in
 [`integrations/`](../integrations/README.md).
 
+OpenCode has two configuration generations. The installed 1.x desktop builds use
+the flat `mcp.beatdesign` shape in
+[`opencode.example.json`](../integrations/opencode/opencode.example.json); OpenCode
+V2 uses `mcp.servers.beatdesign` and `disabled: false` from
+[`opencode.v2.example.json`](../integrations/opencode/opencode.v2.example.json).
+Use the template matching the OpenCode version instead of merging both entries.
+
 QwenWork and Doubao Work use the HTTP endpoint at
 `http://127.0.0.1:3031/mcp`. Start `pnpm --silent mcp:http` before creating the
 connector. The HTTP server stays on loopback by default; set
@@ -54,17 +61,19 @@ absolute repository path.
 
 ## Mental model
 
-BeatDesign is two processes sharing one local database:
+BeatDesign is a visual workspace plus one selected Agent control transport sharing one local database:
 
 1. `pnpm dev` is the visual workbench in the browser.
-2. `pnpm mcp` is the Agent control plane over stdio.
+2. `pnpm mcp` is the Agent control plane over stdio for coding Agents.
+3. `pnpm mcp:http` is the optional Streamable HTTP control plane for QwenWork and Doubao Work.
 
 An Agent never "opens the Canvas as a sidebar" inside Codex or Claude Code.
 It calls tools. You watch the same project at `http://127.0.0.1:3020`.
 
 The Codex plugin is optional packaging. Claude Code, OpenCode, Cursor, and any
-other MCP stdio host can skip it and start `pnpm --silent mcp` directly. A
-marketplace application is not required for local use.
+other MCP stdio host can skip it and start `pnpm --silent mcp` directly. QwenWork
+and Doubao Work use the HTTP command instead. A marketplace application is not
+required for local use.
 
 Repo-root `.mcp.json` is the Claude Code / generic host config. See
 `integrations/codex/beatdesign/README.md` for Codex folder install and
