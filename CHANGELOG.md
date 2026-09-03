@@ -14,7 +14,7 @@ All notable changes to BeatDesign are documented in this file.
 - Made tail-frame extraction decode the actual final frames instead of assuming a 30fps source.
 - Made continue-from-tail-frame retries stable, conflict-aware, and rollback-safe.
 - Made SRT replacement validate the complete input before changing saved captions, with durable caption persistence and wrapped multiline preview/export.
-- Documented the boundary between the Codex Skill, MCP execution transport, and a future standalone CLI.
+- Documented the boundary between the Codex Skill and MCP execution transport.
 
 ## [0.2.1] - 2026-08-30
 

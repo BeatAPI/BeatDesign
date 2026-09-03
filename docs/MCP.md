@@ -157,7 +157,7 @@ the MCP tool contract instead of guessing an opaque operation object.
   revisions every two seconds while idle and check again on focus/visibility,
   so MCP writes become visible without a full event bus.
 
-## Skill, MCP, and CLI
+## Skill and MCP
 
 - The Codex Skill is the workflow layer: it tells the Agent when to select a
   project, which MCP tools to combine, where user authorization is required, and
@@ -165,7 +165,3 @@ the MCP tool contract instead of guessing an opaque operation object.
 - MCP is the structured execution layer used by Codex, Claude Code, Cursor, and
   other compatible Agents. Its schemas, project boundary, command receipts, and
   browser handoffs are the supported external control contract.
-- BeatDesign does not currently ship a standalone end-user CLI. `pnpm mcp` starts
-  the MCP server; it is not a `beatdesign ...` command interface. A future CLI
-  should remain a thin transport over the same Command Kernel rather than adding
-  a second implementation.

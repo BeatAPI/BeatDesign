@@ -98,7 +98,7 @@ Codex 把插件复制到了仓库外，需要将 `BEATDESIGN_ROOT` 设置为本�
 插件内的 Skill 负责选择并打开用户可见的审核界面，MCP Server 负责执行项目级操作。环境变量和启动器说明见
 [Codex 插件接入文档](./integrations/codex/beatdesign/README.md)。
 
-Skill 负责告诉 Agent 如何组合工作流，MCP 是实际读取和修改 BeatDesign 的结构化控制协议。当前尚未提供独立的 `beatdesign ...` CLI；`pnpm mcp` 是 MCP Server 启动命令，不是面向用户的命令行操作界面。
+Skill 负责告诉 Agent 如何组合工作流，MCP 是实际读取和修改 BeatDesign 的结构化控制协议。
 
 26 个工具按照稳定的产品概念分组：
 

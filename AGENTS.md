@@ -35,7 +35,7 @@ Do not embed a proprietary general chatbot. BeatDesign must be complete without 
 ## Architecture rules
 
 - Browser components call typed local API helpers; they do not import the database or receive raw provider credentials.
-- UI and MCP writes share the same Command Kernel, validation, revision checks, project-asset boundary, and durable persistence path. Any future CLI must use that path too.
+- UI and MCP writes share the same Command Kernel, validation, revision checks, project-asset boundary, and durable persistence path.
 - MCP never writes SQLite directly and never replaces an entire Canvas or Timeline document. External Agents use incremental `canvas.apply` and `editor.apply` operations with stable IDs, revisions, and idempotency keys.
 - Canvas layout snapshots are a UI persistence exception for drag, resize, and viewport state; external Agents still use semantic Canvas operations.
 - Agent changes must become visible in the browser workspace and remain inspectable, reversible where supported, and verifiable. A database revision alone is not proof of a successful user-visible operation.

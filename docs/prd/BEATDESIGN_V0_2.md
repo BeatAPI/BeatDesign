@@ -118,7 +118,7 @@ Editor Clip 必须引用具体 `assetId`，不能动态跟随 Canvas Generation 
 - Timeline Node 在 Canvas 中可见并可打开 Editor。
 - revision/CAS 保持现有保护。
 - Command 请求运行时 Schema、Project Asset 校验、稳定 ID 和短期幂等回执。
-- Editor 并发保存三方合并；MCP/CLI 只能执行增量 `editor.apply`，不能整份替换时间线。
+- Editor 并发保存三方合并；MCP 只能执行增量 `editor.apply`，不能整份替换时间线。
 - Generation 服务端从 Asset ID 与 generation intent 编译权威媒体输入。
 - 图片 Clip 与可拖动的图片持续时间。
 - MCP 本地素材导入桥与 2 秒 UI revision 同步。
@@ -145,7 +145,7 @@ Editor Clip 必须引用具体 `assetId`，不能动态跟随 Canvas Generation 
 
 ## 6. Command Kernel
 
-Command Kernel 是 UI、MCP 和未来 CLI 的唯一写入入口。MCP 不直接修改 SQLite，也不整份覆盖 Canvas Snapshot。
+Command Kernel 是 UI 与 MCP 的唯一写入入口。MCP 不直接修改 SQLite，也不整份覆盖 Canvas Snapshot。
 
 统一结果目标：
 

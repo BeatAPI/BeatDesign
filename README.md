@@ -104,9 +104,7 @@ server performs the project-scoped operation. See the
 and launcher details.
 
 The Skill is the Agent's workflow guidance; MCP is the structured control
-protocol that actually reads and changes BeatDesign. BeatDesign does not yet
-ship a separate `beatdesign ...` CLI—`pnpm mcp` starts the MCP server rather
-than acting as an end-user command interface.
+protocol that actually reads and changes BeatDesign.
 
 The 26 tools are grouped by durable product concepts:
 

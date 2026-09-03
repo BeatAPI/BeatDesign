@@ -15,7 +15,7 @@
 1. Canvas：负责素材、提示词、生成任务、版本和来源关系。
 2. Editor：负责时间线、精确裁剪、音频、字幕、预览和 MP4 导出。
 
-第一阶段只完成 GitHub 开源版和 localhost 工作流。Electron 桌面壳、通用 Plugin SDK、MCP/CLI 和内置 Agent 均不在本阶段范围内。
+第一阶段只完成 GitHub 开源版和 localhost 工作流。Electron 桌面壳、通用 Plugin SDK、MCP 和内置 Agent 均不在本阶段范围内。
 
 第一阶段必须跑通的唯一主链路：
 
@@ -69,7 +69,7 @@ BeatAPI 生成 10 秒视频
 - 不做 Electron、macOS 签名、公证和自动更新。
 - 不分发原生 FFmpeg 二进制。
 - 不做通用 Plugin SDK。
-- 不做 MCP、CLI 或画布内聊天 Agent。
+- 不做 MCP 或画布内聊天 Agent。
 - 不做完整剪映、Premiere 或 DaVinci 功能对齐。
 - 不承诺 4K 长视频、ProRes、多机位和电影级调色。
 - 不做多人协作、云项目同步和素材市场。

@@ -24,7 +24,7 @@ BeatDesign 是一个免费、开源、本地优先的 AI 图片/视频创作工�
 - Studio、Canvas、Editor、Assets 和 Generation History。
 - 图片/视频生成、视频分析和后续音频能力入口。
 - 本地媒体处理、预览、剪辑、诊断和导出。
-- Command Kernel、MCP、Codex Skill 和可视化交接；独立 CLI 为后续可选入口。
+- Command Kernel、MCP、Codex Skill 和可视化交接。
 - BeatAPI 官方连接和 BYOK。
 
 ### BeatAPI 服务负责
@@ -80,7 +80,7 @@ Codex / Claude Code / Other Agent
 | Take | 同一 Clip 的备选媒体版本，可恢复 Original |
 | Canvas Edge | 用户视觉组织关系 |
 | Generation Lineage | 真实生成或派生来源关系 |
-| Command Kernel | UI、MCP 以及未来 CLI 共用的唯一业务操作层 |
+| Command Kernel | UI 与 MCP 共用的唯一业务操作层 |
 
 ## 5. 已完成并有代码支撑的能力
 
@@ -136,12 +136,12 @@ Codex / Claude Code / Other Agent
 - 命令中的 Asset 会按当前 Project membership 重新验证，并由服务端写入权威媒体 URL。
 - `project_command_receipt` 保存短期幂等回执；同一项目和幂等键只执行一次，并有限时、限量清理。
 - 幂等键会绑定首次 command；复用到另一个 command 会返回 `INVALID_COMMAND`，不会静默冒用旧结果。
-- UI 内部允许 revision-checked `editor.replace_document` 支撑 undo/redo 和本地自动保存；MCP 和未来 CLI 被明确禁止整份替换，只能调用 `editor.apply`。
+- UI 内部允许 revision-checked `editor.replace_document` 支撑 undo/redo 和本地自动保存；MCP 被明确禁止整份替换，只能调用 `editor.apply`。
 - Generation 的 `AssetFirstGenerationRequest` 已成为服务端权威输入：适配器媒体参数由 Asset ID 和当前 generation intent 编译，旧的客户端 URL 字段不再决定引用事实。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
 - 本地 stdio MCP Server 提供 26 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；`bdesign_editor_import_srt` 导入字幕轨。
-- Codex Plugin 内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核。当前没有独立 `beatdesign ...` CLI；`pnpm mcp` 是 MCP Server 启动命令。
+- Codex Plugin 内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核。
 
 ## 6. v0.2 Phase 1 本地已实现
 
@@ -230,7 +230,7 @@ Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snap
 1. 没有 Agent 时，BeatDesign 仍然是完整可用的产品。
 2. 每次生成先形成 Asset，再由 Canvas 或 Editor 引用。
 3. Editor 锁定具体 Asset，不自动跟随 Canvas 切换版本。
-4. UI、MCP 和未来 CLI 必须调用同一个 Command Kernel。
+4. UI 与 MCP 必须调用同一个 Command Kernel。
 5. MCP 不直接写 SQLite，不盲目覆盖完整 Snapshot。
 6. 本地操作不自动把素材上传到外部服务。
 7. 付费生成必须经过 precheck 和用户确认。

@@ -36,10 +36,10 @@ Upload storage is a separate adapter boundary. File selection remains browser-lo
 
 ## Command boundary
 
-UI actions and the local MCP server call the same Command Kernel. A future standalone CLI must call that kernel too. The kernel owns validation and pure document operations for Canvas and Editor. Persistence boundaries remain responsible for revision checks, durable writes, and returning the authoritative document.
+UI actions and the local MCP server call the same Command Kernel. The kernel owns validation and pure document operations for Canvas and Editor. Persistence boundaries remain responsible for revision checks, durable writes, and returning the authoritative document.
 
 ```text
-UI / MCP / CLI
+UI / MCP
        |
 Command envelope + validation
        |
@@ -50,7 +50,7 @@ revision-checked project persistence
 SQLite + project media files
 ```
 
-MCP does not write SQLite directly or replace an entire Canvas or Timeline document. Its tools call `persistBeatDesignCommand` with a transport-controlled `origin=mcp`. The public UI route assigns `origin=ui` server-side and rejects an `origin` request field. UI-only timeline replacement exists for local autosave and undo/redo, remains revision-checked, and is rejected for MCP and future CLI origins. Generation commands are asset-first and intentionally have no `placement` field; the server compiles provider media URLs from project-owned Asset IDs and the one-time generation intent before submission.
+MCP does not write SQLite directly or replace an entire Canvas or Timeline document. Its tools call `persistBeatDesignCommand` with a transport-controlled `origin=mcp`. The public UI route assigns `origin=ui` server-side and rejects an `origin` request field. UI-only timeline replacement exists for local autosave and undo/redo, remains revision-checked, and is rejected for MCP origins. Generation commands are asset-first and intentionally have no `placement` field; the server compiles provider media URLs from project-owned Asset IDs and the one-time generation intent before submission.
 
 External incremental Canvas and Editor commands use a bounded conflict-recovery wrapper around the same persistence function. If the final CAS write loses a short race to UI autosave, the wrapper reloads the authoritative document and reapplies the same stable-ID operation at most twice. It never retries full-document replacement. Persistent conflicts return the latest revision and an explicit retry instruction.
 
