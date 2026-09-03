@@ -20,6 +20,7 @@ All notable changes to BeatDesign are documented in this file.
 - Made continue-from-tail-frame retries stable, conflict-aware, and rollback-safe.
 - Made SRT replacement validate the complete input before changing saved captions, with durable caption persistence and wrapped multiline preview/export.
 - Documented the boundary between the Codex Skill and MCP execution transport.
+- Made Agent startup reuse an existing healthy BeatDesign workspace and keep the fixed review URL instead of silently moving to another port.
 - Aligned Codex, Claude Code, WorkBuddy, LobeHub, and application package metadata on version `0.2.2`.
 
 ## [0.2.1] - 2026-08-30
