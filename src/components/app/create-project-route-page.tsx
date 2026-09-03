@@ -3,6 +3,7 @@ import { AlertCircleIcon, Loader2Icon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { appConfig } from '@/config';
+import { normalizeLocale } from '@/config/locale';
 import type { WorkspaceMode } from '@/config/workspace-modes';
 import { buildPostCreateProjectDetailPath } from '@/core/projects/project-entry';
 import { apiJsonPost } from '@/lib/api-client';
@@ -24,7 +25,7 @@ export type CreateProjectRouteData = {
 };
 
 function getCopy(locale: string) {
-  const messageLocale = locale.startsWith('zh') ? 'zh' : 'en';
+  const messageLocale = normalizeLocale(locale);
   return {
     title: m['BeatAPI.project.newTitle']({}, { locale: messageLocale }),
     description: m['BeatAPI.project.newDescription'](

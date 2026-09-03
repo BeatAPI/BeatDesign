@@ -8,11 +8,12 @@ import {
 import { useState, type ReactNode } from 'react';
 
 import { Link } from '@/core/i18n/navigation';
+import { normalizeLocale } from '@/config/locale';
 import { m } from '@/paraglide/messages.js';
 import { BeatApiProductShell } from './beatapi-product-shell';
 
 function getCopy(locale: string) {
-  const messageLocale = locale === 'zh' ? 'zh' : 'en';
+  const messageLocale = normalizeLocale(locale);
   return {
     eyebrow: m['product.home.eyebrow']({}, { locale: messageLocale }),
     titleLine1: m['product.home.titleLine1']({}, { locale: messageLocale }),

@@ -13,6 +13,7 @@ export const paraglideCompilerOptions = {
       localized: [
         ['zh', '/api/:path(.*)?'],
         ['en', '/api/:path(.*)?'],
+        ['ja', '/api/:path(.*)?'],
       ],
     },
     // English is the primary locale and stays unprefixed; Chinese uses /zh.
@@ -21,13 +22,15 @@ export const paraglideCompilerOptions = {
       localized: [
         ['en', '/'],
         ['zh', '/zh'],
+        ['ja', '/ja'],
       ],
     },
-    // "as-needed" prefix: English unprefixed, Chinese under /zh.
+    // "as-needed" prefix: English unprefixed, Chinese and Japanese prefixed.
     {
       pattern: '/:path(.*)?',
       localized: [
         ['zh', '/zh/:path(.*)?'],
+        ['ja', '/ja/:path(.*)?'],
         ['en', '/:path(.*)?'],
       ],
     },

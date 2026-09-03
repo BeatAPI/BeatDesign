@@ -4,7 +4,7 @@
  * BeatDesign's server actions (subscribe-newsletter, send-message) call
  * `getLocale()` from `next-intl/server`. TanStack uses Paraglide for i18n,
  * whose `getLocale()` lives in `@/paraglide/runtime.js` and returns the
- * same locale string ('en' | 'zh'). We re-export it under the expected
+ * same locale string ('en' | 'zh' | 'ja'). We re-export it under the expected
  * name so server code copied from BeatDesign compiles unchanged.
  */
 export { getLocale } from '@/paraglide/runtime.js';

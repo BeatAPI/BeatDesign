@@ -5,6 +5,8 @@ import path from 'node:path';
 
 const root = process.cwd();
 const hanPattern = /\p{Script=Han}/u;
+const placeholderPattern = /\{[A-Za-z][A-Za-z0-9_]*\}/g;
+const localeOptionalPlaceholders = new Set(['{plural}']);
 
 function readJson(relativePath) {
   return JSON.parse(readFileSync(path.join(root, relativePath), 'utf8'));
@@ -53,27 +55,59 @@ function assertNoHanInFile(relativePath, failures) {
   });
 }
 
-const en = flattenMessages(readJson('messages/en.json'));
-const zh = flattenMessages(readJson('messages/zh.json'));
+const localeCodes = ['en', 'zh', 'ja'];
+const messages = Object.fromEntries(
+  localeCodes.map((locale) => [
+    locale,
+    flattenMessages(readJson(`messages/${locale}.json`)),
+  ])
+);
+const en = messages.en;
 const failures = [];
 
-const missingInEn = Object.keys(zh).filter((key) => !(key in en));
-const missingInZh = Object.keys(en).filter((key) => !(key in zh));
+for (const locale of localeCodes) {
+  const localeMessages = messages[locale];
+  const missing = Object.keys(en).filter((key) => !(key in localeMessages));
+  const extra = Object.keys(localeMessages).filter((key) => !(key in en));
+  if (missing.length > 0) {
+    failures.push(
+      `Missing ${missing.length} key(s) in messages/${locale}.json:\n${missing
+        .slice(0, 50)
+        .join('\n')}`
+    );
+  }
+  if (extra.length > 0) {
+    failures.push(
+      `Extra ${extra.length} key(s) in messages/${locale}.json:\n${extra
+        .slice(0, 50)
+        .join('\n')}`
+    );
+  }
 
-if (missingInEn.length > 0) {
-  failures.push(
-    `Missing ${missingInEn.length} key(s) in messages/en.json:\n${missingInEn
-      .slice(0, 50)
-      .join('\n')}`
-  );
-}
-
-if (missingInZh.length > 0) {
-  failures.push(
-    `Missing ${missingInZh.length} key(s) in messages/zh.json:\n${missingInZh
-      .slice(0, 50)
-      .join('\n')}`
-  );
+  for (const [key, englishValue] of Object.entries(en)) {
+    const localizedValue = localeMessages[key];
+    if (
+      typeof englishValue !== 'string' ||
+      typeof localizedValue !== 'string'
+    ) {
+      continue;
+    }
+    const englishPlaceholders = [...englishValue.matchAll(placeholderPattern)]
+      .map(([placeholder]) => placeholder)
+      .filter((placeholder) => !localeOptionalPlaceholders.has(placeholder))
+      .sort();
+    const localizedPlaceholders = [
+      ...localizedValue.matchAll(placeholderPattern),
+    ]
+      .map(([placeholder]) => placeholder)
+      .filter((placeholder) => !localeOptionalPlaceholders.has(placeholder))
+      .sort();
+    if (englishPlaceholders.join('\0') !== localizedPlaceholders.join('\0')) {
+      failures.push(
+        `Placeholder mismatch in messages/${locale}.json for ${key}: expected ${englishPlaceholders.join(', ') || '(none)'}, received ${localizedPlaceholders.join(', ') || '(none)'}`
+      );
+    }
+  }
 }
 
 const emptyEnglishValues = Object.entries(en).filter(
@@ -109,6 +143,12 @@ const englishContentFiles = [
 
 for (const relativePath of englishContentFiles) {
   assertNoHanInFile(relativePath, failures);
+  for (const locale of localeCodes.filter((item) => item !== 'en')) {
+    const localizedPath = relativePath.replace(/\.en\.mdx$/, `.${locale}.mdx`);
+    if (!existsSync(path.join(root, localizedPath))) {
+      failures.push(`Missing localized content page: ${localizedPath}`);
+    }
+  }
 }
 
 const uiSourceFiles = [
@@ -137,8 +177,9 @@ if (failures.length > 0) {
 console.log(
   [
     'i18n check passed',
-    `- en keys: ${Object.keys(en).length}`,
-    `- zh keys: ${Object.keys(zh).length}`,
+    ...localeCodes.map(
+      (locale) => `- ${locale} keys: ${Object.keys(messages[locale]).length}`
+    ),
     `- English content files checked: ${englishContentFiles.length}`,
     `- UI source files checked: ${uiSourceFiles.length}`,
   ].join('\n')

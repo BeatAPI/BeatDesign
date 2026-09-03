@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Images, LayoutPanelTop, Scissors, Workflow } from 'lucide-react';
 
 import { WorkspaceApiConfigDialog } from '@/components/app/workspace-api-config-dialog';
+import { LanguageSwitcher } from '@/components/app/language-switcher';
 import { GitHubIcon } from '@/components/icons/github';
 import { Link } from '@/core/i18n/navigation';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
@@ -178,6 +179,7 @@ export function ProductPageShell({
                   </Link>
                 </nav>
               ) : null}
+              <LanguageSwitcher variant="workspace" />
               <WorkspaceApiConfigDialog
                 providerId={ACTIVE_GENERATION_PROVIDER_ID}
               />

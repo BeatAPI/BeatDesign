@@ -1,4 +1,5 @@
 import type { WorkspaceMode } from '@/config/workspace-modes';
+import { normalizeLocale } from '@/config/locale';
 import {
   parseProjectEntryIntent,
 } from '@/core/projects/project-entry';
@@ -12,7 +13,7 @@ export async function loadCreateProjectRoute(
   const locale = getLocale();
   const { target, model, prompt } = parseProjectEntryIntent(search);
   const resolvedPrompt = prompt?.trim() || undefined;
-  const messageLocale = locale.startsWith('zh') ? 'zh' : 'en';
+  const messageLocale = normalizeLocale(locale);
   const projectName = resolvedPrompt
     ? resolvedPrompt.slice(0, 48)
     : m['BeatAPI.project.defaultName']({}, { locale: messageLocale });

@@ -1,6 +1,7 @@
 import { m } from '@/paraglide/messages.js';
+import { normalizeLocale, type AppLocale } from '@/config/locale';
 
-type BeatCanvasNodeLocale = 'en' | 'zh';
+type BeatCanvasNodeLocale = AppLocale;
 type BeatCanvasNodeCopy = {
   imageGeneration: string;
   videoGeneration: string;
@@ -26,6 +27,9 @@ const resolveBeatCanvasNodeLocale = (): BeatCanvasNodeLocale => {
     if (documentLocale.startsWith('zh')) {
       return 'zh';
     }
+    if (documentLocale.startsWith('ja')) {
+      return 'ja';
+    }
     if (documentLocale.startsWith('en')) {
       return 'en';
     }
@@ -39,9 +43,12 @@ const resolveBeatCanvasNodeLocale = (): BeatCanvasNodeLocale => {
     if (browserLocale.startsWith('zh')) {
       return 'zh';
     }
+    if (browserLocale.startsWith('ja')) {
+      return 'ja';
+    }
   }
 
-  return 'zh';
+  return normalizeLocale('en');
 };
 
 const getNodeCopyForLocale = (locale: BeatCanvasNodeLocale): BeatCanvasNodeCopy => ({

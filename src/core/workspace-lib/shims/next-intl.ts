@@ -12,11 +12,13 @@
 // mapping every key to a paraglide function and covers arbitrary namespaces.
 import zhMessages from '@/../messages/zh.json';
 import enMessages from '@/../messages/en.json';
+import jaMessages from '@/../messages/ja.json';
 import { getLocale } from '@/paraglide/runtime.js';
 
 const MESSAGE_TREES: Record<string, Record<string, unknown>> = {
   zh: zhMessages,
   en: enMessages,
+  ja: jaMessages,
 };
 
 function resolveKey(tree: unknown, path: string): string | undefined {
@@ -80,7 +82,7 @@ export function useLocale(): string {
 export type Locale = string;
 
 export const DEFAULT_LOCALE = 'en';
-export const LOCALES = ['en', 'zh'];
+export const LOCALES = ['en', 'zh', 'ja'];
 
 export type Messages = typeof enMessages;
 

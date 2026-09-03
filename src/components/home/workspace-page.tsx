@@ -8,6 +8,7 @@ import {
 import { useState } from 'react';
 
 import { BeatApiProductShell } from '@/components/marketing/beatapi-product-shell';
+import { normalizeLocale } from '@/config/locale';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
   Dialog,
@@ -23,7 +24,7 @@ import type { WorkspaceProjectCardItem } from '@/core/workspace-lib/app/workspac
 import { m } from '@/paraglide/messages.js';
 
 function getHistoryCopy(locale: string) {
-  const messageLocale = locale === 'zh' ? 'zh' : 'en';
+  const messageLocale = normalizeLocale(locale);
   return {
     eyebrow: m['product.history.eyebrow']({}, { locale: messageLocale }),
     title: m['product.history.title']({}, { locale: messageLocale }),

@@ -1,7 +1,15 @@
-// Locale display names for the language switcher UI.
-// Locales themselves are defined in project.inlang/settings.json and
-// exposed at runtime via @/paraglide/runtime.js (locales, baseLocale).
-export const localeNames: Record<string, string> = {
+export const supportedLocales = ['en', 'zh', 'ja'] as const;
+
+export type AppLocale = (typeof supportedLocales)[number];
+
+// Native display names for the language switcher UI.
+export const localeNames: Record<AppLocale, string> = {
   en: 'English',
   zh: '中文',
+  ja: '日本語',
 };
+
+export function normalizeLocale(locale?: string | null): AppLocale {
+  const normalized = locale?.trim().toLowerCase() ?? '';
+  return supportedLocales.find((item) => normalized.startsWith(item)) ?? 'en';
+}

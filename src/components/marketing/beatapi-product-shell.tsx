@@ -1,24 +1,16 @@
 import {
-  Check,
-  ChevronDown,
-  Globe2,
   Menu,
   X,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
+import { LanguageSwitcher } from '@/components/app/language-switcher';
+import { normalizeLocale } from '@/config/locale';
 import { Link } from '@/core/i18n/navigation';
 import { appConfig } from '@/config';
 import { m } from '@/paraglide/messages.js';
-import { setLocale } from '@/paraglide/runtime.js';
 
 type ProductSurface = 'home' | 'projects';
-
-type ProductLocale = 'en' | 'zh';
-
-function normalizeLocale(locale: string): ProductLocale {
-  return locale === 'zh' ? 'zh' : 'en';
-}
 
 function getShellCopy(locale: string) {
   const messageLocale = normalizeLocale(locale);
@@ -38,8 +30,6 @@ function getShellCopy(locale: string) {
       {},
       { locale: messageLocale }
     ),
-    english: m['product.shell.english']({}, { locale: 'en' }),
-    chinese: m['product.shell.chinese']({}, { locale: 'zh' }),
     terms: m['product.shell.terms']({}, { locale: messageLocale }),
     privacy: m['product.shell.privacy']({}, { locale: messageLocale }),
   };
@@ -107,71 +97,6 @@ function CapsuleNav({
   );
 }
 
-function LocaleMenu({ locale, copy }: { locale: ProductLocale; copy: ShellCopy }) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const options = [
-    { code: 'en' as const, label: copy.english },
-    { code: 'zh' as const, label: copy.chinese },
-  ];
-
-  useEffect(() => {
-    if (!open) return;
-    function closeMenu(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', closeMenu);
-    return () => document.removeEventListener('mousedown', closeMenu);
-  }, [open]);
-
-  function switchLanguage(nextLocale: ProductLocale) {
-    setOpen(false);
-    if (nextLocale !== locale) setLocale(nextLocale);
-  }
-
-  return (
-    <div ref={menuRef} className="relative">
-      <button
-        type="button"
-        aria-label={copy.switchLanguage}
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-8 items-center gap-1 rounded-full px-2 text-[13px] font-medium text-white/45 transition hover:bg-white/[0.06] hover:text-white"
-      >
-        <Globe2 className="size-3.5" />
-        {locale.toUpperCase()}
-        <ChevronDown
-          className={`size-3 opacity-70 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 min-w-[132px] overflow-hidden rounded-[12px] border border-white/[0.08] bg-[#151517] p-1 shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
-          {options.map((option) => (
-            <button
-              key={option.code}
-              type="button"
-              onClick={() => switchLanguage(option.code)}
-              className={`flex w-full items-center justify-between rounded-[8px] px-2.5 py-2 text-left text-[13px] transition hover:bg-white/[0.06] ${
-                option.code === locale
-                  ? 'text-white'
-                  : 'text-[var(--beat-text-2)] hover:text-white'
-              }`}
-            >
-              {option.label}
-              {option.code === locale ? (
-                <Check className="size-3.5 text-[var(--beat-accent)]" />
-              ) : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export function BeatApiProductShell({
   active,
   locale,
@@ -199,7 +124,7 @@ export function BeatApiProductShell({
 
           <div className="ml-auto flex items-center gap-2">
             <div className="hidden md:block">
-              <LocaleMenu locale={currentLocale} copy={copy} />
+              <LanguageSwitcher />
             </div>
 
             <button
@@ -232,7 +157,7 @@ export function BeatApiProductShell({
               <span className="text-[11px] font-medium text-[#77777e]">
                 {copy.switchLanguage}
               </span>
-              <LocaleMenu locale={currentLocale} copy={copy} />
+              <LanguageSwitcher />
             </div>
           </div>
         ) : null}

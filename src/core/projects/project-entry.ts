@@ -6,7 +6,9 @@ import {
 import { formatProjectActivityDate } from './format-project-activity-date';
 
 const getLocalizedRoute = (route: string, locale?: string | null) =>
-  locale === 'zh' ? `/zh${route === '/' ? '' : route}` : route;
+  locale === 'zh' || locale === 'ja'
+    ? `/${locale}${route === '/' ? '' : route}`
+    : route;
 
 export type ProjectEntryIntent = {
   target?: string;

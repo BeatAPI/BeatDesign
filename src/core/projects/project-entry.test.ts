@@ -24,6 +24,16 @@ test('keeps prompt query after creation so the workspace can resume the intent',
   );
 });
 
+test('keeps the Japanese locale prefix in project workspace links', () => {
+  const path = buildPostCreateProjectDetailPath({
+    locale: 'ja',
+    projectId: 'project-1',
+    mode: 'editor',
+  });
+
+  assert.equal(path, '/ja/editor/project-1');
+});
+
 test('preserves a stable Canvas focus card in project links', () => {
   const path = buildProjectDetailPathWithIntent({
     projectId: 'project-1',
