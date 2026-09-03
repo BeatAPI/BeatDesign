@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "beatdesign": {
+      "type": "streamableHttp",
+      "url": "http://127.0.0.1:3031/mcp",
+      "timeout": 30000
+    }
+  }
+}

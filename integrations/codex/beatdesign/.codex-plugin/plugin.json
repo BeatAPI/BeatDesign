@@ -1,6 +1,6 @@
 {
   "name": "beatdesign",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Control a local BeatDesign Canvas, generation workspace, and video Editor through MCP.",
   "author": {
     "name": "BeatAPI"
@@ -21,7 +21,7 @@
       "Turn these project assets into a rough video timeline",
       "Diagnose the current timeline and fix safe editing issues"
     ],
-    "brandColor": "#111111"
+    "brandColor": "#FF6B1A"
   },
   "mcpServers": "./.mcp.json"
 }

@@ -1,9 +1,10 @@
 {
-  "$comment": "WorkBuddy — merge the beatdesign entry into the mcpServers object of ~/.workbuddy/mcp.json. WorkBuddy runs servers with its own environment, so pass an explicit PATH that contains node/pnpm when using the pnpm -C form.",
+  "$comment": "WorkBuddy manual setup — start pnpm dev:agent in BeatDesign, then merge this entry into ~/.workbuddy/mcp.json. For marketplace packaging, use integrations/workbuddy/beatdesign instead.",
   "mcpServers": {
     "beatdesign": {
-      "command": "/absolute/path/to/Beat Design/node_modules/.bin/tsx",
-      "args": ["/absolute/path/to/Beat Design/scripts/mcp-server.ts"],
+      "type": "streamableHttp",
+      "url": "http://127.0.0.1:3031/mcp",
+      "timeout": 30000,
       "description": "BeatDesign local-first AI canvas (BeatAPI). Open http://127.0.0.1:3020 for the browser view."
     }
   }

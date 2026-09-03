@@ -1,6 +1,6 @@
 {
   "name": "beatdesign",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "The open-source, local-first AI canvas for image and video creation and analysis",
   "license": "Apache-2.0",
@@ -19,7 +19,8 @@
   "packageManager": "pnpm@10.32.1",
   "type": "module",
   "scripts": {
-    "dev": "tsx scripts/prepare-paraglide.ts && vite dev --host 127.0.0.1 --port 3020",
+    "dev": "tsx scripts/prepare-paraglide.ts && vite dev --host 127.0.0.1 --port 3020 --strictPort",
+    "dev:agent": "node scripts/dev-with-mcp.mjs",
     "test": "node scripts/run-tests.mjs",
     "typecheck": "tsc --noEmit",
     "i18n:check": "node scripts/check-i18n.mjs",

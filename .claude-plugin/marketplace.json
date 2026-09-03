@@ -1,0 +1,19 @@
+{
+  "name": "beatdesign",
+  "owner": {
+    "name": "BeatAPI"
+  },
+  "description": "Official BeatDesign plugins for Claude Code.",
+  "version": "0.2.2",
+  "plugins": [
+    {
+      "name": "beatdesign",
+      "source": "./integrations/claude-code/beatdesign",
+      "description": "Operate a local BeatDesign Canvas and video Editor through MCP.",
+      "version": "0.2.2",
+      "author": {
+        "name": "BeatAPI"
+      }
+    }
+  ]
+}

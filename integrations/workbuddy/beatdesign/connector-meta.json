@@ -1,0 +1,24 @@
+{
+  "name": "BeatDesign",
+  "name_zh": "BeatDesign 本地创作工作台",
+  "name_en": "BeatDesign",
+  "description": "通过自然语言操作本地 BeatDesign 画布、素材、生成任务、视频时间线和字幕。",
+  "description_zh": "通过自然语言操作本地 BeatDesign 画布、素材、生成任务、视频时间线和字幕。",
+  "description_en": "Operate a local BeatDesign Canvas, Assets, generation tasks, video timeline, and captions with natural language.",
+  "source": "beatapi-beatdesign",
+  "type": "mcp",
+  "version": "0.2.2",
+  "minWorkbuddyVersion": "4.24.0",
+  "examples_zh": [
+    "打开我最近的 BeatDesign 项目并总结画布内容",
+    "把这些项目素材排成一条短视频粗剪时间线",
+    "导入这个 SRT 字幕并把编辑器停在第一条字幕",
+    "提取这段视频的尾帧并创建续写节点"
+  ],
+  "examples_en": [
+    "Open my latest BeatDesign project and summarize its Canvas",
+    "Arrange these project Assets into a rough short-video timeline",
+    "Import this SRT file and leave the Editor at the first caption",
+    "Extract this video's tail frame and create a continuation node"
+  ]
+}
