@@ -1,63 +1,66 @@
 <p align="center">
-  <img src="./docs/assets/beatdesign-readme-cover-v3.jpg" alt="BeatDesign — one local creative workspace, controlled by any MCP-capable agent" width="100%" />
+  <img src="./docs/assets/beatdesign-readme-cover-v3.jpg" alt="BeatDesign infinite Canvas and local video Editor" width="100%" />
 </p>
 
 <h1 align="center">BeatDesign</h1>
 
 <p align="center">
-  <strong>One local creative workspace. Any agent.</strong><br />
-  Generate on a Canvas, edit on a timeline, and let an MCP-capable Agent operate the same project beside you.
+  <strong>Your local Higgsfield alternative.</strong><br />
+  Build image and video workflows on an infinite Canvas, finish them in a browser-native Editor, and let any MCP-capable Agent work in the same Project.
 </p>
 
 <p align="center">
   <a href="https://design.beatapi.io">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
-  <a href="#agent-control-through-mcp">MCP</a> ·
-  <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">Product status</a> ·
-  <a href="./README.zh-CN.md">中文</a>
+  <a href="#use-beatdesign-with-an-agent">MCP</a> ·
+  <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">Product status</a>
 </p>
 
-BeatDesign is a free, open-source, local-first AI media workbench. It combines a guided Studio, an infinite Canvas, a short-form video Editor, and one shared Asset library inside a single local Project.
+<p align="center">
+  <strong>English</strong> ·
+  <a href="./README.zh-CN.md">简体中文</a> ·
+  <a href="./README.ja.md">日本語</a>
+</p>
 
-The browser is your visual workspace. An Agent such as Codex, Claude Code, Cursor, or another MCP-capable host can read and modify the same Project through BeatDesign's 26 local tools. Generic coding Agents use local stdio; QwenWork and Doubao Work can use the local Streamable HTTP endpoint. There is no account system, subscription, local credit ledger, or admin panel in this repository.
+BeatDesign is an independent, open-source, local-first workspace for AI image and video creation. It is built for people who want the connected creative flow of tools such as Higgsfield, with a workspace they can run, inspect, and extend on their own machine.
 
-## The creative loop
+## Two creative modes, one Project
+
+### Infinite Canvas
+
+Drop in prompts, images, video, and audio. Connect nodes, branch ideas, compare generations, reuse outputs, and keep the full visual workflow inside one project.
+
+### Video Editor
+
+Turn Canvas results into a local timeline. Trim, split, move, mix audio, import SRT captions, create alternate AI Takes, preview, and export MP4 in the browser.
+
+Studio provides a focused generation surface. Assets keeps every imported and generated file available across Canvas, Editor, and MCP.
+
+## Why BeatDesign
+
+- **Local by default.** Projects, media, Canvas state, timelines, and generation history stay in your local workspace.
+- **Canvas and Editor stay connected.** A generated result becomes a reusable project Asset instead of disappearing inside one tool.
+- **Bring your own Agent.** Codex, Claude Code, Cursor, and other MCP hosts can inspect and update the same Project you see in the browser.
+- **Bring your own generation access.** BeatAPI is the built-in provider. Local importing, arranging, editing, previewing, and exporting do not require an API key.
+- **Fork-friendly foundations.** Provider adapters, project storage, and the command layer are explicit extension points.
+
+## From idea to finished video
 
 ```text
 Prompt or local media
         ↓
-Studio / Canvas ── generate, branch, connect, reuse
+Infinite Canvas ─── connect, generate, branch, compare
         ↓
-Shared Assets ─── image, video, audio, extracted clip, render
+Shared Assets ───── images, video, audio, extracted clips
         ↓
-Editor ────────── trim, split, move, mix, AI redo, export MP4
+Video Editor ────── trim, arrange, preview, export MP4
         ↑
-Any MCP Agent ─── inspect and apply project-level commands
+Any MCP Agent ───── works in the same local Project
 ```
-
-The result is one continuous workflow instead of separate AI generators, download folders, and editing tools.
-
-## One Project, four views
-
-| View | What it is for |
-| --- | --- |
-| **Studio** | Prompt-first image/video generation and Standard or Deep video analysis. |
-| **Canvas** | Connected media nodes, generation history, references, branching, and reusable outputs. |
-| **Editor** | A local short-form timeline for video, still images, and audio, with non-destructive editing and MP4 export. |
-| **Assets** | The project-scoped source of truth shared by Studio, Canvas, Editor, and MCP. |
-
-## Why it feels different
-
-- **Local by default.** Projects, Canvas snapshots, timelines, generation history, and imported media stay in the local workspace.
-- **Agent-native, not Agent-locked.** BeatDesign exposes standard stdio and Streamable HTTP MCP transports instead of embedding one proprietary chatbot.
-- **Asset-first.** Generated and imported media become stable project Assets before they are placed on Canvas or Editor.
-- **One command path.** UI and MCP writes pass through the same Command Kernel, revision checks, and persisted receipts.
-- **Browser-native preview and export.** Preview and MP4 export use WebCodecs and Mediabunny, so the core visual workflow does not require system FFmpeg. The optional Agent-side video-frame tools use a local `ffmpeg` executable.
-- **Provider boundary is explicit.** BeatAPI is the built-in generation adapter; forks can register their own adapter without rewriting Canvas or Editor.
 
 ## Quick start
 
-Requirements: Node.js 22+, pnpm 10+, and current Chrome on macOS or Windows.
+Requirements include Node.js 22+, `pnpm` 10+, and a current Chrome browser on macOS or Windows.
 
 ```bash
 pnpm install
@@ -67,156 +70,70 @@ pnpm dev
 
 Open [http://127.0.0.1:3020](http://127.0.0.1:3020).
 
-Local import, Canvas work, timeline editing, preview, and MP4 export do not require an API key. Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when you want to generate, analyze media, or use AI redo.
+Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when you want to generate or analyze media, or use AI redo. Selecting a local file does not upload it to a provider.
 
-The core browser workspace does not require FFmpeg. To use
-`bdesign_asset_extract_frame` or `bdesign_canvas_continue_from_tail` through
-MCP, install `ffmpeg` on `PATH` or set `BEATDESIGN_FFMPEG` to its absolute path.
+### Choose how to run BeatDesign
 
-## Agent control through MCP
+| Command | Starts |
+| --- | --- |
+| `pnpm dev` | The visual workspace |
+| `pnpm dev:agent` | The visual workspace and local HTTP MCP endpoint |
+| `pnpm mcp` | The stdio MCP server for coding Agents |
 
-BeatDesign runs the visual workspace plus one Agent control transport over the same SQLite database:
+## Use BeatDesign with an Agent
 
-| Process | Command | Role |
+BeatDesign exposes 26 local MCP tools for Projects, Assets, Canvas, generation, and Editor operations. Agent changes use the same project services and become visible in the browser workspace.
+
+After connecting your MCP host, you can ask:
+
+> Open my latest BeatDesign project, add these clips to a timeline, import the subtitles, and leave the Editor open for review.
+
+## Platform compatibility
+
+| Coding Agent / platform | Status | Quick setup |
 | --- | --- | --- |
-| Visual workspace | `pnpm dev` | Opens Studio, Canvas, Editor, and Assets in the browser. |
-| Agent control plane | `pnpm --silent mcp` | Exposes project-level tools over stdio. |
-| HTTP connector | `pnpm --silent mcp:http` | Exposes `/mcp` on `127.0.0.1:3031` for QwenWork and Doubao Work. |
-| Agent-ready workspace | `pnpm dev:agent` | Starts the visual workspace and loopback HTTP connector together. |
+| [Claude Code](./integrations/claude-code/beatdesign/README.md) | ✅ Supported | [Plugin or MCP config](./integrations/claude-code/) |
+| [Codex](./integrations/codex/beatdesign/README.md) | ✅ Supported | [Plugin setup](./integrations/codex/beatdesign/README.md) |
+| [ZCode](./integrations/zcode/config.example.json) | ✅ Supported | [MCP config](./integrations/zcode/config.example.json) |
+| [OpenCode](./integrations/opencode/) | ✅ Supported | [MCP config](./integrations/opencode/) |
+| [Cursor](./integrations/cursor/mcp.json.example) | ✅ Supported | [MCP config](./integrations/cursor/mcp.json.example) |
+| [Windsurf](./integrations/windsurf/mcp_config.json.example) | ✅ Supported | [MCP config](./integrations/windsurf/mcp_config.json.example) |
+| [VS Code + GitHub Copilot](./integrations/vscode/mcp.json.example) | ✅ Supported | [MCP config](./integrations/vscode/mcp.json.example) |
+| [Cline / Roo Code](./integrations/cline/mcp_settings.json.example) | ✅ Supported | [MCP config](./integrations/cline/mcp_settings.json.example) |
+| [Qwen Code](./integrations/qwen/settings.example.json) | ✅ Supported | [MCP config](./integrations/qwen/settings.example.json) |
+| [Gemini CLI](./integrations/gemini/settings.example.json) | ✅ Supported | [MCP config](./integrations/gemini/settings.example.json) |
+| [Hermes Agent](./integrations/hermes/config.yaml.snippet) | ✅ Supported | [MCP config](./integrations/hermes/config.yaml.snippet) |
+| [Kiro](./integrations/kiro/mcp.json.example) | ✅ Supported | [MCP config](./integrations/kiro/mcp.json.example) |
+| [Trae](./integrations/trae/mcp.json.example) | ✅ Supported | [MCP config](./integrations/trae/mcp.json.example) |
+| [WorkBuddy](./integrations/workbuddy/beatdesign/README.md) | ✅ Supported | [Connector setup](./integrations/workbuddy/beatdesign/README.md) |
+| [QwenWork](./integrations/qwenwork/mcp.json.example) | ✅ Supported | [HTTP connector](./integrations/qwenwork/mcp.json.example) |
+| [Doubao Work](./integrations/doubao-work/mcp.json.example) | ✅ Supported | [HTTP connector](./integrations/doubao-work/mcp.json.example) |
 
-Run the stdio control plane for coding Agents, or the HTTP connector for office
-connectors; normally you do not need to run both.
-
-The repository includes a root `.mcp.json` for compatible hosts, a Codex
-plugin, a Claude Code plugin marketplace, and a WorkBuddy Connector package
-under [`integrations/`](./integrations/README.md).
-
-### Codex local plugin
-
-Keep `pnpm dev` running, then install
-`integrations/codex/beatdesign` as a local plugin in Codex and start a new task.
-If Codex copies the plugin outside this clone, set `BEATDESIGN_ROOT` to the
-absolute repository path. You can then ask, for example:
-
-> Open my latest BeatDesign project, import these subtitles, and leave the
-> Editor open at the first caption so I can review it.
-
-The bundled Skill selects and opens the visible review surface; the bundled MCP
-server performs the project-scoped operation. See the
-[Codex plugin setup](./integrations/codex/beatdesign/README.md) for environment
-and launcher details.
-
-The Skill is the Agent's workflow guidance; MCP is the structured control
-protocol that actually reads and changes BeatDesign.
-
-### Claude Code and WorkBuddy
-
-Claude Code can install the repository marketplace and its BeatDesign plugin;
-WorkBuddy can load the MCP + Skill Connector submission package. Both use the
-loopback MCP endpoint, so start `pnpm dev:agent` first. Their host-specific
-setup and validation files live in
-[`integrations/claude-code/beatdesign`](./integrations/claude-code/beatdesign/)
-and [`integrations/workbuddy/beatdesign`](./integrations/workbuddy/beatdesign/).
-
-These packages provide installation metadata and workflow guidance; they do
-not create another backend or duplicate the visual editor. The MCP tools return
-the exact local Canvas or Editor URL for review.
-
-The 26 tools are grouped by durable product concepts:
-
-- **Project (5):** list, read, create, target the current MCP session, open a browser review surface.
-- **Asset (4):** list, read, import a local image/video/audio file, extract a video frame.
-- **Canvas (5):** read, open/focus a browser view, search, apply incremental operations, continue from a tail frame.
-- **Generation (5):** discover models and parameters, submit, refresh status, read history.
-- **Editor (7):** read, edit, import SRT captions, inspect a semantic snapshot, diagnose, deep-link a view, read command history.
-
-MCP does not automate UI pixels. It returns structured handoff metadata so a capable host can open or reuse the exact Canvas or Editor tab. The Agent applies stable commands, and BeatDesign refreshes that visible workspace from the same local state.
-
-See [MCP setup and tool boundaries](./docs/MCP.md).
+[Open the full Agent integration guide →](./integrations/README.md)
 
 ## What works today
 
-### Canvas and generation
+- Image and video generation plus Standard and Deep video analysis.
+- Image, video, audio, generation, timeline, and text nodes on the Canvas.
+- Project Assets shared across Studio, Canvas, Editor, and MCP.
+- Non-destructive timeline editing with image, video, audio, and SRT caption tracks.
+- Local preview and browser-side H.264/AAC MP4 export with WebCodecs and Mediabunny.
+- English, Chinese, and Japanese interfaces.
+- Local stdio and Streamable HTTP MCP transports.
 
-- Image, video, audio, timeline, and text-oriented Canvas nodes.
-- Prompt/model/parameter configuration from one code-defined BeatAPI catalog.
-- Asset references, connected workflows, generation history, and locally persisted outputs.
-- Image/video generation plus Standard and Deep video analysis.
-- Canvas-to-Editor handoff through shared Assets and timeline nodes.
+BeatDesign currently focuses on local, short-form creative workflows. Hosted collaboration, multiple named timelines, advanced transitions, speed controls, waveforms, and desktop packaging remain outside the current release.
 
-### Local Editor
+[See the complete shipped and planned scope →](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
-- Video, still-image, and audio clips on a shared timeline.
-- Drag-to-trim, split, move, delete, ripple delete, still-image duration editing, and an SRT caption track.
-- Undo/redo, playback, source range selection, audio volume and fades.
-- Selected-range AI redo as non-destructive Takes.
-- Timeline diagnostics for gaps, overlaps, missing media, duration mismatches, and tiny clips.
-- Browser-side H.264/AAC MP4 export; completed renders return to project Assets.
+## Project guides
 
-### Local persistence
-
-- SQLite project data under `data/`.
-- Project-owned media under `data/project-assets/<project-id>/`.
-- Revision-aware Canvas and Editor saving.
-- English and Chinese UI.
-
-## Data and provider boundary
-
-```text
-Browser UI / MCP
-      ↓
-Command Kernel + Project services
-      ↓
-SQLite + data/project-assets
-      ↓ only after a confirmed generation request
-Generation adapter (BeatAPI by default)
-      ↓
-Output copied back into the local Asset library
-```
-
-API keys and optional R2/S3 credentials are encrypted in the local SQLite workspace. Selecting or dragging a local file does not send it to a provider. BeatDesign persists the file locally first and uploads only the durable project Asset required by a confirmed generation request. BeatAPI Files is the default upload path; users can select their own public R2/S3-compatible bucket in Connections.
-
-BeatDesign does not reproduce provider billing, balance, or rate-limit logic. It returns the provider's result or error to the UI/MCP caller. The upstream repository ships the official BeatAPI adapter; a fork can implement `BaseAdapter`, register it, and select it in `src/config/generation-providers.ts`.
-
-Read [provider architecture](./PROVIDERS.md) and [system architecture](./ARCHITECTURE.md) for the full contract.
-
-## Current v0.2 boundaries
-
-BeatDesign v0.2 is focused on local, short-form AI video workflows:
-
-- Current Chrome on macOS and Windows.
-- Common browser-decodable images, MP4/MOV video, and MP3/WAV/M4A/AAC/OGG audio.
-- One active timeline per Project and browser-memory-constrained export.
-- Canvas and Editor poll for Agent revisions every two seconds; a realtime event bus is not implemented yet.
-- Editor MCP snapshot is semantic inspection, not a rendered pixel frame.
-- Caption style presets, transitions, speed controls, waveforms, multiple named timelines, and native desktop packaging remain follow-up work.
-
-The complete completed/planned boundary lives in [Product plan and status](./docs/PRODUCT_PLAN_AND_STATUS.md).
-
-## Developer commands
-
-| Command | Purpose |
-| --- | --- |
-| `pnpm dev` | Start the local app on `127.0.0.1:3020`. |
-| `pnpm dev:agent` | Start the app and loopback HTTP MCP endpoint together. |
-| `pnpm --silent mcp` | Start the local MCP server over stdio. |
-| `pnpm typecheck` | Check TypeScript contracts. |
-| `pnpm test` | Run unit and contract tests. |
-| `pnpm i18n:check` | Validate English and Chinese messages. |
-| `pnpm build` | Build the production app. |
-| `pnpm db:push` | Apply the local SQLite schema during development. |
-| `pnpm media:localize` | Copy provider-hosted media in existing snapshots into local project storage. |
-
-## Contributing
-
-Start with [CONTRIBUTING.md](./CONTRIBUTING.md), then use:
-
-- [ARCHITECTURE.md](./ARCHITECTURE.md) for system boundaries.
-- [WORKSPACE_MODES.md](./WORKSPACE_MODES.md) for product surfaces.
-- [docs/MCP.md](./docs/MCP.md) for Agent integration.
-- [DESIGN.md](./DESIGN.md) for the BeatDesign visual language.
-- [SECURITY.md](./SECURITY.md) for local-workspace safety.
+- [Product status](./docs/PRODUCT_PLAN_AND_STATUS.md)
+- [MCP setup](./docs/MCP.md)
+- [Architecture](./ARCHITECTURE.md)
+- [Provider integration](./PROVIDERS.md)
+- [Contributing](./CONTRIBUTING.md)
+- [Security](./SECURITY.md)
 
 ## License
 
-BeatDesign is licensed under [Apache License 2.0](./LICENSE). The license covers the code, not BeatAPI trademarks, service access, model-provider rights, or third-party assets. The timeline contract is derived from MIT-licensed OpenReel and the browser media pipeline uses MPL-2.0 Mediabunny; see [`third_party/`](./third_party) and [TRADEMARKS.md](./TRADEMARKS.md).
+BeatDesign is licensed under [Apache License 2.0](./LICENSE). BeatAPI and BeatDesign trademarks, third-party model access, and bundled third-party components remain subject to their respective terms. See [third-party notices](./third_party/) and [trademark policy](./TRADEMARKS.md).

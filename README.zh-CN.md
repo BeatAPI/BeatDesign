@@ -1,63 +1,66 @@
 <p align="center">
-  <img src="./docs/assets/beatdesign-readme-cover-v3.jpg" alt="BeatDesign——一个可被任意 MCP Agent 操控的本地创作工作台" width="100%" />
+  <img src="./docs/assets/beatdesign-readme-cover-v3.jpg" alt="BeatDesign 无限 Canvas 与本地视频 Editor" width="100%" />
 </p>
 
 <h1 align="center">BeatDesign</h1>
 
 <p align="center">
-  <strong>一个本地创作工作台，连接任意 Agent。</strong><br />
-  在 Canvas 上生成，在时间线上编辑，让支持 MCP 的 Agent 在旁边操控同一个项目。
+  <strong>在本地运行的 Higgsfield 开源替代方案</strong><br />
+  在无限 Canvas 上组织图片与视频工作流，在浏览器 Editor 中完成剪辑，也可以让任何支持 MCP 的 Agent 操作同一个 Project。
 </p>
 
 <p align="center">
-  <a href="https://design.beatapi.io/zh/">官方网站</a> ·
+  <a href="https://design.beatapi.io">网站</a> ·
   <a href="#快速开始">快速开始</a> ·
-  <a href="#通过-mcp-让-agent-操控">MCP</a> ·
-  <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">产品状态</a> ·
-  <a href="./README.md">English</a>
+  <a href="#让-agent-操作-beatdesign">MCP</a> ·
+  <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">产品状态</a>
 </p>
 
-BeatDesign 是一个免费、开源、本地优先的 AI 媒体工作台。它把引导式 Studio、无限 Canvas、短视频 Editor 和共享 Asset 素材库放进同一个本地 Project。
+<p align="center">
+  <a href="./README.md">English</a> ·
+  <strong>简体中文</strong> ·
+  <a href="./README.ja.md">日本語</a>
+</p>
 
-浏览器是用户可见的创作空间。Codex、Claude Code、Cursor 或其他支持 MCP 的 Agent，可以通过 BeatDesign 的 26 个本地工具读取和修改同一个 Project。通用编程 Agent 使用本地 stdio；千问办公和豆包办公可以使用本地 Streamable HTTP 连接器。本仓库不包含账号、订阅、本地积分账本、支付或管理后台。
+BeatDesign 是一个独立、开源、本地优先的 AI 图片与视频创作工作台。它适合喜欢 Higgsfield 这类连贯创作流程，同时希望在自己的电脑上运行、检查和扩展工作空间的人。
 
-## 连续创作闭环
+## 两种核心创作模式，一个 Project
+
+### 无限 Canvas
+
+放入提示词、图片、视频和音频。连接节点、创建分支、比较生成结果、复用素材，把完整的视觉工作流保留在同一个项目里。
+
+### 视频 Editor
+
+把 Canvas 结果送入本地时间线。你可以裁剪、分割、移动、混合音频、导入 SRT 字幕、创建 AI 备选 Take，并在浏览器中预览和导出 MP4。
+
+Studio 提供更专注的单次生成入口。Assets 让导入和生成的文件在 Canvas、Editor 与 MCP 之间持续可用。
+
+## 为什么选择 BeatDesign
+
+- **默认保存在本地。** 项目、媒体、Canvas 状态、时间线和生成历史都留在本地工作空间。
+- **Canvas 与 Editor 连在一起。** 生成结果会成为可复用的项目 Asset，不会困在某个单独工具里。
+- **可以使用自己的 Agent。** Codex、Claude Code、Cursor 和其他 MCP Host 可以读取并修改浏览器里正在使用的同一个 Project。
+- **自行配置生成服务。** BeatAPI 是内置 Provider。本地导入、排列、剪辑、预览和导出不需要 API Key。
+- **适合继续扩展。** Provider Adapter、项目存储和 Command Kernel 都有明确的扩展边界。
+
+## 从想法到完整视频
 
 ```text
-提示词或本地素材
+提示词或本地媒体
         ↓
-Studio / Canvas ── 生成、分支、连接、复用
+无限 Canvas ─── 连接、生成、分支、比较
         ↓
-共享 Assets ───── 图片、视频、音频、截取片段、成片
+共享 Assets ─── 图片、视频、音频、派生片段
         ↓
-Editor ────────── 裁剪、切分、移动、混音、AI 重做、导出 MP4
+视频 Editor ─── 裁剪、排列、预览、导出 MP4
         ↑
-任意 MCP Agent ── 读取项目并执行项目级指令
+任意 MCP Agent ─ 操作同一个本地 Project
 ```
-
-它把原本分散在 AI 生成器、下载文件夹和剪辑软件里的步骤，收敛成一条连续工作流。
-
-## 一个 Project，四个视图
-
-| 视图 | 用途 |
-| --- | --- |
-| **Studio** | 用提示词完成图片/视频生成，以及 Standard / Deep 视频分析。 |
-| **Canvas** | 组织媒体节点、生成历史、引用关系、分支与可复用输出。 |
-| **Editor** | 在本地时间线上编辑视频、图片和音频，并导出 MP4。 |
-| **Assets** | Studio、Canvas、Editor 和 MCP 共享的项目级素材事实层。 |
-
-## BeatDesign 的核心区别
-
-- **本地优先。** Project、Canvas 快照、时间线、生成历史和导入媒体都保存在本地工作区。
-- **Agent 原生，但不绑定某个 Agent。** BeatDesign 暴露标准 stdio 和 Streamable HTTP MCP Server，而不是内置一个封闭聊天机器人。
-- **Asset-first。** 生成和导入的媒体先成为稳定的 Project Asset，再进入 Canvas 或 Editor。
-- **统一命令路径。** UI 与 MCP 写操作共用 Command Kernel、revision 检查和持久化 receipt。
-- **浏览器原生预览与导出。** 预览和 MP4 导出使用 WebCodecs 与 Mediabunny，因此核心可视工作流不要求安装系统 FFmpeg；可选的 Agent 视频抽帧工具会使用本地 `ffmpeg`。
-- **Provider 边界清楚。** BeatAPI 是默认内置生成适配器；fork 可以增加自己的适配器，不需要重写 Canvas 或 Editor。
 
 ## 快速开始
 
-需要 Node.js 22+、pnpm 10+，以及 macOS 或 Windows 上的新版 Chrome。
+需要 Node.js 22+、`pnpm` 10+，以及 macOS 或 Windows 上的新版 Chrome。
 
 ```bash
 pnpm install
@@ -67,148 +70,70 @@ pnpm dev
 
 打开 [http://127.0.0.1:3020](http://127.0.0.1:3020)。
 
-本地导入、Canvas 操作、时间线剪辑、预览和 MP4 导出都不需要 API Key。只有在生成、分析媒体或使用 AI 重做时，才需要填写自己的 [BeatAPI API Key](https://beatapi.io/dashboard/apikeys)。
+只有在生成、分析媒体或使用 AI 重做时，才需要添加自己的 [BeatAPI API Key](https://beatapi.io/dashboard/apikeys)。选择本地文件不会自动上传到 Provider。
 
-核心浏览器工作台不依赖 FFmpeg。通过 MCP 使用
-`bdesign_asset_extract_frame` 或 `bdesign_canvas_continue_from_tail` 时，需让
-`ffmpeg` 位于 `PATH`，或者把 `BEATDESIGN_FFMPEG` 设置为它的绝对路径。
+### 选择启动方式
 
-## 通过 MCP 让 Agent 操控
+| 命令 | 启动内容 |
+| --- | --- |
+| `pnpm dev` | 可视化工作空间 |
+| `pnpm dev:agent` | 可视化工作空间与本地 HTTP MCP Endpoint |
+| `pnpm mcp` | 面向编程 Agent 的 stdio MCP Server |
 
-BeatDesign 本地运行可视工作台，再选择一种 Agent 控制传输读取同一个 SQLite 数据库：
+## 让 Agent 操作 BeatDesign
 
-| 进程 | 命令 | 作用 |
+BeatDesign 提供 26 个本地 MCP 工具，覆盖 Project、Asset、Canvas、生成和 Editor 操作。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
+
+连接 MCP Host 后，可以直接提出这样的要求。
+
+> 打开我最近的 BeatDesign 项目，把这些片段加入时间线，导入字幕，然后把 Editor 停在方便我检查的位置。
+
+## 平台兼容性
+
+| 编程 Agent / 平台 | 状态 | 快速接入 |
 | --- | --- | --- |
-| 可视工作台 | `pnpm dev` | 在浏览器中打开 Studio、Canvas、Editor 和 Assets。 |
-| Agent 控制面 | `pnpm --silent mcp` | 通过 stdio 暴露项目级工具。 |
-| HTTP 连接器 | `pnpm --silent mcp:http` | 在 `127.0.0.1:3031` 暴露 `/mcp`，供千问办公和豆包办公使用。 |
-| Agent 工作模式 | `pnpm dev:agent` | 同时启动可视工作台与本机 HTTP MCP。 |
+| [Claude Code](./integrations/claude-code/beatdesign/README.md) | ✅ 已支持 | [插件或 MCP 配置](./integrations/claude-code/) |
+| [Codex](./integrations/codex/beatdesign/README.md) | ✅ 已支持 | [插件配置](./integrations/codex/beatdesign/README.md) |
+| [ZCode](./integrations/zcode/config.example.json) | ✅ 已支持 | [MCP 配置](./integrations/zcode/config.example.json) |
+| [OpenCode](./integrations/opencode/) | ✅ 已支持 | [MCP 配置](./integrations/opencode/) |
+| [Cursor](./integrations/cursor/mcp.json.example) | ✅ 已支持 | [MCP 配置](./integrations/cursor/mcp.json.example) |
+| [Windsurf](./integrations/windsurf/mcp_config.json.example) | ✅ 已支持 | [MCP 配置](./integrations/windsurf/mcp_config.json.example) |
+| [VS Code + GitHub Copilot](./integrations/vscode/mcp.json.example) | ✅ 已支持 | [MCP 配置](./integrations/vscode/mcp.json.example) |
+| [Cline / Roo Code](./integrations/cline/mcp_settings.json.example) | ✅ 已支持 | [MCP 配置](./integrations/cline/mcp_settings.json.example) |
+| [Qwen Code](./integrations/qwen/settings.example.json) | ✅ 已支持 | [MCP 配置](./integrations/qwen/settings.example.json) |
+| [Gemini CLI](./integrations/gemini/settings.example.json) | ✅ 已支持 | [MCP 配置](./integrations/gemini/settings.example.json) |
+| [Hermes Agent](./integrations/hermes/config.yaml.snippet) | ✅ 已支持 | [MCP 配置](./integrations/hermes/config.yaml.snippet) |
+| [Kiro](./integrations/kiro/mcp.json.example) | ✅ 已支持 | [MCP 配置](./integrations/kiro/mcp.json.example) |
+| [Trae](./integrations/trae/mcp.json.example) | ✅ 已支持 | [MCP 配置](./integrations/trae/mcp.json.example) |
+| [WorkBuddy](./integrations/workbuddy/beatdesign/README.md) | ✅ 已支持 | [Connector 配置](./integrations/workbuddy/beatdesign/README.md) |
+| [QwenWork](./integrations/qwenwork/mcp.json.example) | ✅ 已支持 | [HTTP Connector](./integrations/qwenwork/mcp.json.example) |
+| [Doubao Work](./integrations/doubao-work/mcp.json.example) | ✅ 已支持 | [HTTP Connector](./integrations/doubao-work/mcp.json.example) |
 
-编程 Agent 使用 stdio 控制面，办公连接器使用 HTTP 控制面；通常不需要同时运行两者。
-
-仓库根目录已经包含兼容宿主可读取的 `.mcp.json`；仓库还提供 Codex
-插件、Claude Code 插件市场和 WorkBuddy Connector 包，统一放在
-[`integrations/`](./integrations/README.md) 下。
-
-### Codex 本地插件
-
-保持 `pnpm dev` 运行，然后在 Codex 中把
-`integrations/codex/beatdesign` 作为本地插件安装，并新建一个任务。如果
-Codex 把插件复制到了仓库外，需要将 `BEATDESIGN_ROOT` 设置为本仓库的绝对路径。之后可以直接这样说：
-
-> 打开我最新的 BeatDesign 项目，导入这些字幕，并把 Editor 停在第一条字幕的位置让我审核。
-
-插件内的 Skill 负责选择并打开用户可见的审核界面，MCP Server 负责执行项目级操作。环境变量和启动器说明见
-[Codex 插件接入文档](./integrations/codex/beatdesign/README.md)。
-
-Skill 负责告诉 Agent 如何组合工作流，MCP 是实际读取和修改 BeatDesign 的结构化控制协议。
-
-### Claude Code 与 WorkBuddy
-
-Claude Code 可以直接添加本仓库的插件市场并安装 BeatDesign 插件；WorkBuddy
-可以加载已按 MCP + Skill 规范整理的 Connector 包。两者都连接本机 MCP，使用前先运行
-`pnpm dev:agent`。宿主专用文件分别位于
-[`integrations/claude-code/beatdesign`](./integrations/claude-code/beatdesign/)
-和 [`integrations/workbuddy/beatdesign`](./integrations/workbuddy/beatdesign/)。
-
-这些接入包只负责安装元数据和工作流指导，不会创建第二套后端或复制编辑器。MCP
-会返回准确的本地 Canvas / Editor 地址供用户审核。
-
-26 个工具按照稳定的产品概念分组：
-
-- **Project（5）：** 列表、读取、创建、绑定当前 MCP 会话、打开浏览器审核界面。
-- **Asset（4）：** 列表、读取、导入本地图片/视频/音频、抽取视频帧。
-- **Canvas（5）：** 读取、打开并聚焦浏览器视图、搜索、增量修改、尾帧续写。
-- **Generation（5）：** 获取模型与参数、提交生成、刷新状态、读取历史。
-- **Editor（7）：** 读取、编辑、导入 SRT 字幕、语义快照、诊断、视图深链、命令历史。
-
-MCP 不会模拟点击界面像素。它会返回结构化页面交接信息，让支持的宿主打开或复用准确的 Canvas/Editor 标签页。Agent 提交稳定命令后，BeatDesign 从同一份本地状态刷新这个可见工作区。
-
-详细接入方式见 [MCP 设置与工具边界](./docs/MCP.md)。
+[查看完整的 Agent 接入指南 →](./integrations/README.md)
 
 ## 当前已经支持
 
-### Canvas 与生成
+- 图片与视频生成，以及 Standard 和 Deep 视频分析。
+- Canvas 上的图片、视频、音频、生成、Timeline 和文本节点。
+- Studio、Canvas、Editor 与 MCP 共用的 Project Assets。
+- 支持图片、视频、音频和 SRT 字幕轨的非破坏式时间线编辑。
+- 使用 WebCodecs 与 Mediabunny 完成本地预览和浏览器端 H.264/AAC MP4 导出。
+- 英文、中文和日文界面。
+- 本地 stdio 与 Streamable HTTP MCP Transport。
 
-- 图片、视频、音频、时间线及文本向 Canvas 节点。
-- 由一份代码目录统一定义的 BeatAPI 模型、参数与引用能力。
-- Asset 引用、连接工作流、生成历史和本地持久化输出。
-- 图片/视频生成，以及 Standard / Deep 视频分析。
-- 通过共享 Asset 与时间线节点完成 Canvas-to-Editor 交接。
+BeatDesign 当前专注本地短视频创作。在线协作、多个命名 Timeline、高级转场、变速、波形和桌面安装包仍不属于当前版本。
 
-### 本地 Editor
+[查看完整的已完成能力与规划边界 →](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
-- 视频、静态图片和音频共用一条时间线。
-- 拖动裁剪、切分、移动、删除、波纹删除、静态图片时长调整和 SRT 字幕轨。
-- Undo/redo、播放、源素材范围选择、音量和淡入淡出。
-- 把选中区间交给 AI 重做，并以非破坏性 Take 保存。
-- 检查空隙、重叠、素材缺失、时长不一致和过短片段。
-- 在浏览器中导出 H.264/AAC MP4；成片会回到 Project Assets。
+## 项目文档
 
-### 本地持久化
-
-- Project 数据保存在 `data/` 下的 SQLite。
-- 项目媒体保存在 `data/project-assets/<project-id>/`。
-- Canvas 与 Editor 使用 revision-aware 保存。
-- 中英文界面。
-
-## 数据与 Provider 边界
-
-```text
-浏览器 UI / MCP
-      ↓
-Command Kernel + Project services
-      ↓
-SQLite + data/project-assets
-      ↓ 仅在用户确认生成后
-Generation adapter（默认 BeatAPI）
-      ↓
-输出复制回本地 Asset 素材库
-```
-
-API Key 和可选的 R2/S3 凭据会加密保存在本地 SQLite。选择或拖入本地文件不会把它发送给 Provider；BeatDesign 会先把它持久化为本地 Project Asset，只有用户确认生成后，才上传该次生成真正需要的素材。默认使用 BeatAPI Files，用户也可以在“连接配置”中选择自己的公网 R2/S3 兼容存储桶。
-
-BeatDesign 不重复实现 Provider 的余额、计费或限流逻辑，只把 Provider 的结果或错误返回给 UI / MCP。上游仓库内置官方 BeatAPI 适配器；fork 可以实现 `BaseAdapter`，并在 `src/config/generation-providers.ts` 中注册和选择。
-
-完整约定见 [Provider 架构](./PROVIDERS.md) 与 [系统架构](./ARCHITECTURE.md)。
-
-## v0.2 当前边界
-
-BeatDesign v0.2 聚焦本地 AI 短视频工作流：
-
-- 支持 macOS / Windows 上的新版 Chrome。
-- 支持常见浏览器可解码图片、MP4/MOV 视频，以及 MP3/WAV/M4A/AAC/OGG 音频。
-- 每个 Project 当前只有一条活动时间线；导出仍受浏览器内存约束。
-- Canvas 和 Editor 每两秒轮询 Agent revision；暂未实现实时事件总线。
-- Editor MCP snapshot 是语义检查，不是像素截图。
-- 字幕样式、转场、变速、波形、多时间线和原生桌面封装仍属于后续阶段。
-
-完整的已完成/待完成边界见 [产品规划与当前状态](./docs/PRODUCT_PLAN_AND_STATUS.md)。
-
-## 开发命令
-
-| 命令 | 作用 |
-| --- | --- |
-| `pnpm dev` | 在 `127.0.0.1:3020` 启动本地应用。 |
-| `pnpm dev:agent` | 同时启动应用与本机 HTTP MCP。 |
-| `pnpm --silent mcp` | 通过 stdio 启动本地 MCP Server。 |
-| `pnpm typecheck` | 检查 TypeScript 契约。 |
-| `pnpm test` | 运行单元与契约测试。 |
-| `pnpm i18n:check` | 校验中英文消息。 |
-| `pnpm build` | 构建生产版本。 |
-| `pnpm db:push` | 在本地开发中应用 SQLite schema。 |
-| `pnpm media:localize` | 把旧 Project 快照中的 Provider 媒体复制到本地素材目录。 |
-
-## 参与贡献
-
-先阅读 [CONTRIBUTING.md](./CONTRIBUTING.md)，再按需查看：
-
-- [ARCHITECTURE.md](./ARCHITECTURE.md)：系统边界。
-- [WORKSPACE_MODES.md](./WORKSPACE_MODES.md)：产品视图。
-- [docs/MCP.md](./docs/MCP.md)：Agent 接入。
-- [DESIGN.md](./DESIGN.md)：BeatDesign 视觉语言。
-- [SECURITY.md](./SECURITY.md)：本地工作区安全。
+- [产品状态](./docs/PRODUCT_PLAN_AND_STATUS.md)
+- [MCP 接入](./docs/MCP.md)
+- [系统架构](./ARCHITECTURE.md)
+- [Provider 接入](./PROVIDERS.md)
+- [参与贡献](./CONTRIBUTING.md)
+- [安全说明](./SECURITY.md)
 
 ## License
 
-BeatDesign 使用 [Apache License 2.0](./LICENSE)。许可证覆盖代码，不覆盖 BeatAPI 商标、服务访问、模型 Provider 权利或第三方素材。时间线契约派生自 MIT 许可的 OpenReel，浏览器媒体管线使用 MPL-2.0 Mediabunny；详见 [`third_party/`](./third_party) 与 [TRADEMARKS.md](./TRADEMARKS.md)。
+BeatDesign 使用 [Apache License 2.0](./LICENSE)。BeatAPI 与 BeatDesign 商标、第三方模型访问和仓库内第三方组件分别遵循各自条款。详情见[第三方声明](./third_party/)与[商标政策](./TRADEMARKS.md)。
