@@ -30,7 +30,7 @@ function diagnoseTrackOverlap(track: TimelineTrack) {
     const current = clips[index];
     if (current.startTime < previous.startTime + previous.duration - 0.001) {
       diagnostics.push({
-        code: 'clip_overlap',
+        code: track.kind === 'caption' ? 'caption_overlap' : 'clip_overlap',
         severity: 'error',
         trackId: track.id,
         clipId: current.id,
@@ -54,7 +54,7 @@ export function diagnoseTimeline(document: TimelineDocument) {
       const source = clip.activeTakeId
         ? clip.takes.find((take) => take.id === clip.activeTakeId)?.sourceUrl
         : clip.sourceUrl;
-      if (!source) {
+      if (clip.sourceType !== 'caption' && !source) {
         diagnostics.push({
           code: 'media_missing',
           severity: 'error',
@@ -75,7 +75,7 @@ export function diagnoseTimeline(document: TimelineDocument) {
           endTime: clip.startTime + clip.duration,
         });
       }
-      if (clip.duration < 0.1) {
+      if (clip.sourceType !== 'caption' && clip.duration < 0.1) {
         diagnostics.push({
           code: 'tiny_clip',
           severity: 'warning',
@@ -111,6 +111,24 @@ export function diagnoseTimeline(document: TimelineDocument) {
       startTime: visibleVideoEnd,
       endTime: document.duration,
     });
+  }
+
+  const captionClips = document.tracks
+    .filter((track) => track.kind === 'caption' && !track.hidden)
+    .flatMap((track) => track.clips);
+  if (videoClips.length > 0) {
+    for (const clip of captionClips) {
+      if (clip.startTime + clip.duration > visibleVideoEnd + 0.05) {
+        diagnostics.push({
+          code: 'caption_out_of_video',
+          severity: 'warning',
+          trackId: clip.trackId,
+          clipId: clip.id,
+          startTime: visibleVideoEnd,
+          endTime: clip.startTime + clip.duration,
+        });
+      }
+    }
   }
 
   return diagnostics;

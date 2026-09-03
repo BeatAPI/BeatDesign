@@ -424,6 +424,7 @@
         "listView": "List view",
         "importVisual": "Visual",
         "importAudio": "Audio",
+        "importSrt": "Captions",
         "empty": "No media imported",
         "noResults": "No matching media",
         "drop": "Drop an image or video here",
@@ -492,6 +493,7 @@
         "title": "Timeline",
         "visualTrack": "Visual 1",
         "audioTrack": "Audio 1",
+        "captionTrack": "Captions",
         "start": "Start",
         "dragHint": "Drag the clip to move · drag either edge to trim",
         "trimStart": "Drag to trim the clip start",
@@ -512,8 +514,12 @@
         "type": {
           "image": "Still image",
           "video": "Video clip",
-          "audio": "Audio clip"
+          "audio": "Audio clip",
+          "caption": "Caption"
         }
+      },
+      "captions": {
+        "text": "Caption text"
       },
       "audio": {
         "volume": "Volume",
@@ -577,6 +583,8 @@
         "canvasNodeFailed": "The timeline could not be added to Canvas.",
         "redoAssetMissing": "The generated Take was not saved into project assets.",
         "redoFailed": "BeatAPI could not redo this selection.",
+        "srtImportFailed": "The SRT file could not be imported.",
+        "srtTooLarge": "The SRT file is too large.",
         "clipOverlap": "This position overlaps another clip on the same track."
       }
     },

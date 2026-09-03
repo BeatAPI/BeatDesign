@@ -12,12 +12,12 @@
   "interface": {
     "displayName": "BeatDesign",
     "shortDescription": "Create and edit local media projects",
-    "longDescription": "BeatDesign connects Codex to a free local-first Canvas and video Editor. Read projects and Assets, generate media with logical model capabilities, and apply safe incremental Canvas or timeline edits.",
+    "longDescription": "BeatDesign connects Codex to a free local-first Canvas and video Editor. Target a project, open the exact review surface in Codex, and apply safe incremental Canvas or timeline edits over shared local Assets.",
     "developerName": "BeatAPI",
     "category": "Design",
     "capabilities": ["Read", "Write"],
     "defaultPrompt": [
-      "Open my latest BeatDesign project and summarize the canvas",
+      "Open my latest BeatDesign project in the sidebar and summarize the canvas",
       "Turn these project assets into a rough video timeline",
       "Diagnose the current timeline and fix safe editing issues"
     ],

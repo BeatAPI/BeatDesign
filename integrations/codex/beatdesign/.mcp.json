@@ -6,6 +6,7 @@
       "env_vars": [
         "BEATDESIGN_ROOT",
         "BEATDESIGN_NODE",
+        "BEATDESIGN_FFMPEG",
         "NODE_ENV",
         "DATABASE_PROVIDER",
         "DATABASE_URL",

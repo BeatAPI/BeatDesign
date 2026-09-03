@@ -24,7 +24,7 @@ BeatDesign 是一个免费、开源、本地优先的 AI 图片/视频创作工�
 - Studio、Canvas、Editor、Assets 和 Generation History。
 - 图片/视频生成、视频分析和后续音频能力入口。
 - 本地媒体处理、预览、剪辑、诊断和导出。
-- Command Kernel、MCP、CLI 和可视化交接。
+- Command Kernel、MCP、Codex Skill 和可视化交接；独立 CLI 为后续可选入口。
 - BeatAPI 官方连接和 BYOK。
 
 ### BeatAPI 服务负责
@@ -80,7 +80,7 @@ Codex / Claude Code / Other Agent
 | Take | 同一 Clip 的备选媒体版本，可恢复 Original |
 | Canvas Edge | 用户视觉组织关系 |
 | Generation Lineage | 真实生成或派生来源关系 |
-| Command Kernel | UI、MCP、CLI 共用的唯一业务操作层 |
+| Command Kernel | UI、MCP 以及未来 CLI 共用的唯一业务操作层 |
 
 ## 5. 已完成并有代码支撑的能力
 
@@ -125,7 +125,7 @@ Codex / Claude Code / Other Agent
 ### 媒体技术
 
 - 使用 WebCodecs + Mediabunny 在浏览器完成媒体检查、编码和 MP4 封装。
-- 不要求用户安装系统 FFmpeg。
+- 核心浏览器预览和 MP4 导出不要求系统 FFmpeg；可选的 MCP/Node 视频抽帧使用 `PATH` 中的 `ffmpeg` 或 `BEATDESIGN_FFMPEG`。
 - OpenReel 只作为时间线术语、文档模型和非破坏式编辑行为的参考；未打包其完整 UI 和应用外壳。
 - 媒体 metadata 采用限并发队列并带超时释放；单个损坏媒体不会永久阻塞后续卡片。
 
@@ -136,11 +136,12 @@ Codex / Claude Code / Other Agent
 - 命令中的 Asset 会按当前 Project membership 重新验证，并由服务端写入权威媒体 URL。
 - `project_command_receipt` 保存短期幂等回执；同一项目和幂等键只执行一次，并有限时、限量清理。
 - 幂等键会绑定首次 command；复用到另一个 command 会返回 `INVALID_COMMAND`，不会静默冒用旧结果。
-- UI 内部允许 revision-checked `editor.replace_document` 支撑 undo/redo 和本地自动保存；MCP/CLI 被明确禁止整份替换，只能调用 `editor.apply`。
+- UI 内部允许 revision-checked `editor.replace_document` 支撑 undo/redo 和本地自动保存；MCP 和未来 CLI 被明确禁止整份替换，只能调用 `editor.apply`。
 - Generation 的 `AssetFirstGenerationRequest` 已成为服务端权威输入：适配器媒体参数由 Asset ID 和当前 generation intent 编译，旧的客户端 URL 字段不再决定引用事实。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
-- 本地 stdio MCP Server 提供 20 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_asset_import` 把本地文件导入项目 Asset 库。
+- 本地 stdio MCP Server 提供 26 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；`bdesign_editor_import_srt` 导入字幕轨。
+- Codex Plugin 内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核。当前没有独立 `beatdesign ...` CLI；`pnpm mcp` 是 MCP Server 启动命令。
 
 ## 6. v0.2 Phase 1 本地已实现
 
@@ -154,14 +155,15 @@ Codex / Claude Code / Other Agent
 - Canvas -> Timeline Node -> Editor 连续工作流。
 - Editor 自动保存接入命令入口，并补齐冲突三方合并、重复操作保护和稳定播放头时间。
 - 图片 Clip、时间线拖拽调整持续时间与图片/视频统一视觉轨。
-- 本地 MCP Server 提供 20 个 Project、Asset、Canvas、Generation、Editor 工具；支持从绝对路径导入本地素材。
+- 本地 MCP Server 提供 26 个 Project、Asset、Canvas、Generation、Editor 工具；支持会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写，以及导入 SRT 字幕。
+- MCP 增量 Canvas/Editor 命令在短暂 revision 竞争时会基于最新权威文档限次自动重放；持续冲突返回最新 revision 和明确重试提示。
 - Canvas 与 Editor 每 2 秒并在页面重新聚焦时检查 MCP 写入的新 revision。
 
 本阶段的本地验收边界：类型检查、自动测试、国际化检查、生产构建和浏览器关键路径。Git 提交、远端合并和公开 Release 属于后续独立状态。
 
 2026-08-30 浏览器实操证据：保留了本地项目 `v0.2 QA – Canvas-to-Editor`。一段 10.01 秒本地 MP4 已完成“尾帧提取 -> 派生图片 Asset -> 下一段视频 Generation Node -> Timeline Node -> 打开 Editor -> 裁取 3.00–7.00 秒 -> 得到 4.00 秒 Clip -> 导出 H.264/AAC MP4 -> Render 写回 Assets”的闭环。实操同时发现并修复了开发服务器把 `Sec-Fetch-Dest: video/image/audio` 错当成静态文件、导致本地媒体 404 的问题。
 
-2026-08-30 本轮内核验收：未知 command 返回 `INVALID_COMMAND`；伪造 Asset 返回 `NOT_FOUND`；相同幂等键连续提交两次只产生一条回执且返回同一 revision；`origin=mcp` 的整份 Timeline 替换被拒绝。本地 MCP 工具目录为 20 个；Canvas / Editor 操作的完整 JSON Schema、未知 command、伪造 Asset、幂等回执、MCP 本地素材导入和 `origin=mcp` 禁止整份 Timeline 替换均有自动测试覆盖。发布门禁的最新测试数量以仓库当前 `pnpm test` 结果为准。
+2026-08-30 本轮内核验收：未知 command 返回 `INVALID_COMMAND`；伪造 Asset 返回 `NOT_FOUND`；相同幂等键连续提交两次只产生一条回执且返回同一 revision；`origin=mcp` 的整份 Timeline 替换被拒绝。当时的本地 MCP 工具目录为 20 个；Canvas / Editor 操作的完整 JSON Schema、未知 command、伪造 Asset、幂等回执、MCP 本地素材导入和 `origin=mcp` 禁止整份 Timeline 替换均有自动测试覆盖。当前工具数量见上方“已完成”栏目，发布门禁的最新测试数量以仓库当前 `pnpm test` 结果为准。
 
 2026-08-30 MCP 可见联调证据：在已打开的本地 Canvas 中，通过 stdio MCP 修改生成节点提示词，页面在轮询周期内自动显示新内容；在已打开的 Editor 中，通过 `bdesign_editor_edit` 把图片 Clip 从 4.00 秒改为 3.50 秒，时间线和素材信息同步更新，无需刷新。联调完成后，Canvas 提示词与 Editor 时长均通过 MCP 恢复原值。该联调同时修复了 Canvas 在存在待保存本地布局时跳过 Agent revision 的问题。
 
@@ -169,7 +171,7 @@ Codex / Claude Code / Other Agent
 
 ### 产品 P1
 
-- 字幕轨、SRT 导入、字幕样式和转录入口。
+- 字幕样式和转录入口。字幕轨与 SRT 导入已完成基础版（UI + MCP）。
 - 时间线吸附、缩放、音频波形和多选。
 - 变速和音频变速策略。
 - 交叉溶解、淡入淡出、黑场转场。
@@ -182,7 +184,7 @@ Codex / Claude Code / Other Agent
 
 - MCP Resources 和更完整的 schema versioning。
 - Agent Activity、命令审计和实时 UI 事件桥。
-- Claude Code 等宿主的一键安装体验；Codex 当前只有仓库内薄插件封装。
+- Claude Code 等宿主的一键安装体验；Codex 已有仓库内本地插件、项目会话绑定、Browser handoff 和工作流 Skill，但尚未进入 Marketplace。
 - headless 预览/导出本地媒体 Worker。
 
 当前可以称为“已支持本地 MCP 基础版”，但不能称为完整 Agent 编辑环境：像素级 Snapshot、headless 导出、实时 UI 事件和永久审计仍未实现。本地文件导入桥已完成；UI 当前使用 2 秒 revision 轮询和聚焦检查，而不是实时事件推送。
@@ -194,7 +196,7 @@ Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snap
 - Electron/Tauri 壳。
 - 内置 Node runtime、MCP 和媒体 Worker。
 - 原生文件选择、系统集成、签名、公证和自动更新。
-- 需要时再评估内置原生 FFmpeg；当前开源 localhost 版本不要求它。
+- 桌面封装阶段再评估是否内置 FFmpeg；当前开源 localhost 的核心 UI 不依赖它，但 MCP/Node 抽帧工具需要用户提供本地 `ffmpeg`。
 
 ## 8. 路线图
 
@@ -228,7 +230,7 @@ Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snap
 1. 没有 Agent 时，BeatDesign 仍然是完整可用的产品。
 2. 每次生成先形成 Asset，再由 Canvas 或 Editor 引用。
 3. Editor 锁定具体 Asset，不自动跟随 Canvas 切换版本。
-4. UI、MCP 和 CLI 必须调用同一个 Command Kernel。
+4. UI、MCP 和未来 CLI 必须调用同一个 Command Kernel。
 5. MCP 不直接写 SQLite，不盲目覆盖完整 Snapshot。
 6. 本地操作不自动把素材上传到外部服务。
 7. 付费生成必须经过 precheck 和用户确认。

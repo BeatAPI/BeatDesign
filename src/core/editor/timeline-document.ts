@@ -31,7 +31,7 @@ export type TimelineClip = {
   sourceUrl: string;
   trackId: string;
   name: string;
-  sourceType: 'image' | 'video' | 'audio';
+  sourceType: 'image' | 'video' | 'audio' | 'caption';
   startTime: number;
   duration: number;
   inPoint: number;
@@ -41,6 +41,7 @@ export type TimelineClip = {
   muted: boolean;
   fadeIn: number;
   fadeOut: number;
+  text?: string;
   audioRole?: TimelineAudioRole;
   takes: TimelineTake[];
   activeTakeId: string | null;
@@ -81,10 +82,10 @@ export class TimelineDocumentValidationError extends Error {
 const timelineClipSchema = z.object({
   id: z.string().min(1).max(160),
   assetId: z.string().min(1).max(160),
-  sourceUrl: z.string().min(1).max(4096),
+  sourceUrl: z.string().max(4096),
   trackId: z.string().min(1).max(160),
   name: z.string().min(1).max(240),
-  sourceType: z.enum(['image', 'video', 'audio']),
+  sourceType: z.enum(['image', 'video', 'audio', 'caption']),
   startTime: z.number().finite().min(0).max(86_400),
   duration: z.number().finite().positive().max(86_400),
   inPoint: z.number().finite().min(0).max(86_400),
@@ -94,13 +95,14 @@ const timelineClipSchema = z.object({
   muted: z.boolean(),
   fadeIn: z.number().finite().min(0).max(86_400).default(0),
   fadeOut: z.number().finite().min(0).max(86_400).default(0),
+  text: z.string().max(4_000).default(''),
   audioRole: z.enum(['music', 'voice', 'sfx', 'source']).optional(),
   takes: z
     .array(
       z.object({
         id: z.string().min(1).max(160),
         assetId: z.string().min(1).max(160),
-        sourceUrl: z.string().min(1).max(4096),
+        sourceUrl: z.string().max(4096),
         name: z.string().min(1).max(240),
         sourceDuration: z.number().finite().positive().max(86_400),
         sourceGenerationId: z.string().min(1).max(200).nullable(),
@@ -194,6 +196,15 @@ export function createTimelineDocument({
         muted: false,
         clips: [],
       },
+      {
+        id: createId('caption-track'),
+        kind: 'caption',
+        name: 'Captions',
+        locked: false,
+        hidden: false,
+        muted: false,
+        clips: [],
+      },
     ],
   };
 }
@@ -262,6 +273,7 @@ export function addSourceClip(
     muted: false,
     fadeIn: 0,
     fadeOut: 0,
+    text: '',
     audioRole: source.audioRole,
     takes: [],
     activeTakeId: null,
@@ -349,7 +361,20 @@ export function normalizeTimelineDocument(
           'Timeline clip points to a different track.'
         );
       }
-      if (clip.outPoint <= clip.inPoint || clip.outPoint > clip.sourceDuration) {
+      if (
+        clip.sourceType !== 'caption' &&
+        (!clip.sourceUrl ||
+          clip.outPoint <= clip.inPoint ||
+          clip.outPoint > clip.sourceDuration)
+      ) {
+        throw new TimelineDocumentValidationError(
+          'Timeline clip has an invalid source range.'
+        );
+      }
+      if (
+        clip.sourceType === 'caption' &&
+        (clip.outPoint <= clip.inPoint || clip.outPoint > clip.sourceDuration)
+      ) {
         throw new TimelineDocumentValidationError(
           'Timeline clip has an invalid source range.'
         );
@@ -364,9 +389,24 @@ export function normalizeTimelineDocument(
       }
     }
   }
+  const tracks = parsed.tracks.some((track) => track.kind === 'caption')
+    ? parsed.tracks
+    : [
+        ...parsed.tracks,
+        {
+          id: createId('caption-track'),
+          kind: 'caption' as const,
+          name: 'Captions',
+          locked: false,
+          hidden: false,
+          muted: false,
+          clips: [],
+        },
+      ];
   return {
     ...parsed,
-    duration: calculateTimelineDuration(parsed.tracks),
+    tracks,
+    duration: calculateTimelineDuration(tracks),
   };
 }
 

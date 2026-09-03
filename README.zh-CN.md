@@ -19,7 +19,7 @@
 
 BeatDesign 是一个免费、开源、本地优先的 AI 媒体工作台。它把引导式 Studio、无限 Canvas、短视频 Editor 和共享 Asset 素材库放进同一个本地 Project。
 
-浏览器是用户可见的创作空间。Codex、Claude Code、Cursor 或其他支持 MCP 的 Agent，可以通过 BeatDesign 的 20 个本地工具读取和修改同一个 Project。通用编程 Agent 使用本地 stdio；千问办公和豆包办公可以使用本地 Streamable HTTP 连接器。本仓库不包含账号、订阅、本地积分账本、支付或管理后台。
+浏览器是用户可见的创作空间。Codex、Claude Code、Cursor 或其他支持 MCP 的 Agent，可以通过 BeatDesign 的 26 个本地工具读取和修改同一个 Project。通用编程 Agent 使用本地 stdio；千问办公和豆包办公可以使用本地 Streamable HTTP 连接器。本仓库不包含账号、订阅、本地积分账本、支付或管理后台。
 
 ## 连续创作闭环
 
@@ -52,7 +52,7 @@ Editor ────────── 裁剪、切分、移动、混音、AI 重
 - **Agent 原生，但不绑定某个 Agent。** BeatDesign 暴露标准 stdio 和 Streamable HTTP MCP Server，而不是内置一个封闭聊天机器人。
 - **Asset-first。** 生成和导入的媒体先成为稳定的 Project Asset，再进入 Canvas 或 Editor。
 - **统一命令路径。** UI 与 MCP 写操作共用 Command Kernel、revision 检查和持久化 receipt。
-- **不要求安装系统 FFmpeg。** 预览和 MP4 导出使用浏览器 WebCodecs 与 Mediabunny。
+- **浏览器原生预览与导出。** 预览和 MP4 导出使用 WebCodecs 与 Mediabunny，因此核心可视工作流不要求安装系统 FFmpeg；可选的 Agent 视频抽帧工具会使用本地 `ffmpeg`。
 - **Provider 边界清楚。** BeatAPI 是默认内置生成适配器；fork 可以增加自己的适配器，不需要重写 Canvas 或 Editor。
 
 ## 快速开始
@@ -69,6 +69,10 @@ pnpm dev
 
 本地导入、Canvas 操作、时间线剪辑、预览和 MP4 导出都不需要 API Key。只有在生成、分析媒体或使用 AI 重做时，才需要填写自己的 [BeatAPI API Key](https://beatapi.io/dashboard/apikeys)。
 
+核心浏览器工作台不依赖 FFmpeg。通过 MCP 使用
+`bdesign_asset_extract_frame` 或 `bdesign_canvas_continue_from_tail` 时，需让
+`ffmpeg` 位于 `PATH`，或者把 `BEATDESIGN_FFMPEG` 设置为它的绝对路径。
+
 ## 通过 MCP 让 Agent 操控
 
 BeatDesign 本地运行可视工作台，再选择一种 Agent 控制传输读取同一个 SQLite 数据库：
@@ -81,17 +85,30 @@ BeatDesign 本地运行可视工作台，再选择一种 Agent 控制传输读�
 
 编程 Agent 使用 stdio 控制面，办公连接器使用 HTTP 控制面；通常不需要同时运行两者。
 
-仓库根目录已经包含兼容宿主可读取的 `.mcp.json`；Codex 的轻量启动封装位于 `integrations/codex/beatdesign`。
+仓库根目录已经包含兼容宿主可读取的 `.mcp.json`；Codex 的启动封装和工作流 Skill 位于 `integrations/codex/beatdesign`。
 
-20 个工具按照稳定的产品概念分组：
+### Codex 本地插件
 
-- **Project（3）：** 列表、读取、创建。
-- **Asset（3）：** 列表、读取、导入本地图片/视频/音频。
-- **Canvas（3）：** 读取、搜索、增量修改。
+保持 `pnpm dev` 运行，然后在 Codex 中把
+`integrations/codex/beatdesign` 作为本地插件安装，并新建一个任务。如果
+Codex 把插件复制到了仓库外，需要将 `BEATDESIGN_ROOT` 设置为本仓库的绝对路径。之后可以直接这样说：
+
+> 打开我最新的 BeatDesign 项目，导入这些字幕，并把 Editor 停在第一条字幕的位置让我审核。
+
+插件内的 Skill 负责选择并打开用户可见的审核界面，MCP Server 负责执行项目级操作。环境变量和启动器说明见
+[Codex 插件接入文档](./integrations/codex/beatdesign/README.md)。
+
+Skill 负责告诉 Agent 如何组合工作流，MCP 是实际读取和修改 BeatDesign 的结构化控制协议。当前尚未提供独立的 `beatdesign ...` CLI；`pnpm mcp` 是 MCP Server 启动命令，不是面向用户的命令行操作界面。
+
+26 个工具按照稳定的产品概念分组：
+
+- **Project（5）：** 列表、读取、创建、绑定当前 MCP 会话、打开浏览器审核界面。
+- **Asset（4）：** 列表、读取、导入本地图片/视频/音频、抽取视频帧。
+- **Canvas（5）：** 读取、打开并聚焦浏览器视图、搜索、增量修改、尾帧续写。
 - **Generation（5）：** 获取模型与参数、提交生成、刷新状态、读取历史。
-- **Editor（6）：** 读取、编辑、语义快照、诊断、视图深链、命令历史。
+- **Editor（7）：** 读取、编辑、导入 SRT 字幕、语义快照、诊断、视图深链、命令历史。
 
-MCP 不会模拟点击界面像素。Agent 读取 Project、提交稳定命令，BeatDesign 再从同一份本地状态刷新用户可见的 Canvas 或 Editor。
+MCP 不会模拟点击界面像素。它会返回结构化页面交接信息，让支持的宿主打开或复用准确的 Canvas/Editor 标签页。Agent 提交稳定命令后，BeatDesign 从同一份本地状态刷新这个可见工作区。
 
 详细接入方式见 [MCP 设置与工具边界](./docs/MCP.md)。
 
@@ -108,7 +125,7 @@ MCP 不会模拟点击界面像素。Agent 读取 Project、提交稳定命令�
 ### 本地 Editor
 
 - 视频、静态图片和音频共用一条时间线。
-- 拖动裁剪、切分、移动、删除、波纹删除，以及静态图片时长调整。
+- 拖动裁剪、切分、移动、删除、波纹删除、静态图片时长调整和 SRT 字幕轨。
 - Undo/redo、播放、源素材范围选择、音量和淡入淡出。
 - 把选中区间交给 AI 重做，并以非破坏性 Take 保存。
 - 检查空隙、重叠、素材缺失、时长不一致和过短片段。
@@ -150,7 +167,7 @@ BeatDesign v0.2 聚焦本地 AI 短视频工作流：
 - 每个 Project 当前只有一条活动时间线；导出仍受浏览器内存约束。
 - Canvas 和 Editor 每两秒轮询 Agent revision；暂未实现实时事件总线。
 - Editor MCP snapshot 是语义检查，不是像素截图。
-- 字幕、转场、变速、波形、多时间线和原生桌面封装仍属于后续阶段。
+- 字幕样式、转场、变速、波形、多时间线和原生桌面封装仍属于后续阶段。
 
 完整的已完成/待完成边界见 [产品规划与当前状态](./docs/PRODUCT_PLAN_AND_STATUS.md)。
 

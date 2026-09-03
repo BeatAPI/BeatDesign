@@ -19,7 +19,7 @@
 
 BeatDesign is a free, open-source, local-first AI media workbench. It combines a guided Studio, an infinite Canvas, a short-form video Editor, and one shared Asset library inside a single local Project.
 
-The browser is your visual workspace. An Agent such as Codex, Claude Code, Cursor, or another MCP-capable host can read and modify the same Project through BeatDesign's 20 local tools. Generic coding Agents use local stdio; QwenWork and Doubao Work can use the local Streamable HTTP endpoint. There is no account system, subscription, local credit ledger, or admin panel in this repository.
+The browser is your visual workspace. An Agent such as Codex, Claude Code, Cursor, or another MCP-capable host can read and modify the same Project through BeatDesign's 26 local tools. Generic coding Agents use local stdio; QwenWork and Doubao Work can use the local Streamable HTTP endpoint. There is no account system, subscription, local credit ledger, or admin panel in this repository.
 
 ## The creative loop
 
@@ -52,7 +52,7 @@ The result is one continuous workflow instead of separate AI generators, downloa
 - **Agent-native, not Agent-locked.** BeatDesign exposes standard stdio and Streamable HTTP MCP transports instead of embedding one proprietary chatbot.
 - **Asset-first.** Generated and imported media become stable project Assets before they are placed on Canvas or Editor.
 - **One command path.** UI and MCP writes pass through the same Command Kernel, revision checks, and persisted receipts.
-- **No system FFmpeg setup.** Preview and MP4 export use browser-native WebCodecs and Mediabunny.
+- **Browser-native preview and export.** Preview and MP4 export use WebCodecs and Mediabunny, so the core visual workflow does not require system FFmpeg. The optional Agent-side video-frame tools use a local `ffmpeg` executable.
 - **Provider boundary is explicit.** BeatAPI is the built-in generation adapter; forks can register their own adapter without rewriting Canvas or Editor.
 
 ## Quick start
@@ -69,6 +69,10 @@ Open [http://127.0.0.1:3020](http://127.0.0.1:3020).
 
 Local import, Canvas work, timeline editing, preview, and MP4 export do not require an API key. Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when you want to generate, analyze media, or use AI redo.
 
+The core browser workspace does not require FFmpeg. To use
+`bdesign_asset_extract_frame` or `bdesign_canvas_continue_from_tail` through
+MCP, install `ffmpeg` on `PATH` or set `BEATDESIGN_FFMPEG` to its absolute path.
+
 ## Agent control through MCP
 
 BeatDesign runs the visual workspace plus one Agent control transport over the same SQLite database:
@@ -82,17 +86,37 @@ BeatDesign runs the visual workspace plus one Agent control transport over the s
 Run the stdio control plane for coding Agents, or the HTTP connector for office
 connectors; normally you do not need to run both.
 
-The repository includes a root `.mcp.json` for compatible hosts and a thin Codex launcher under `integrations/codex/beatdesign`.
+The repository includes a root `.mcp.json` for compatible hosts and a Codex launcher plus workspace Skill under `integrations/codex/beatdesign`.
 
-The 20 tools are grouped by durable product concepts:
+### Codex local plugin
 
-- **Project (3):** list, read, create.
-- **Asset (3):** list, read, import a local image/video/audio file.
-- **Canvas (3):** read, search, apply incremental operations.
+Keep `pnpm dev` running, then install
+`integrations/codex/beatdesign` as a local plugin in Codex and start a new task.
+If Codex copies the plugin outside this clone, set `BEATDESIGN_ROOT` to the
+absolute repository path. You can then ask, for example:
+
+> Open my latest BeatDesign project, import these subtitles, and leave the
+> Editor open at the first caption so I can review it.
+
+The bundled Skill selects and opens the visible review surface; the bundled MCP
+server performs the project-scoped operation. See the
+[Codex plugin setup](./integrations/codex/beatdesign/README.md) for environment
+and launcher details.
+
+The Skill is the Agent's workflow guidance; MCP is the structured control
+protocol that actually reads and changes BeatDesign. BeatDesign does not yet
+ship a separate `beatdesign ...` CLI—`pnpm mcp` starts the MCP server rather
+than acting as an end-user command interface.
+
+The 26 tools are grouped by durable product concepts:
+
+- **Project (5):** list, read, create, target the current MCP session, open a browser review surface.
+- **Asset (4):** list, read, import a local image/video/audio file, extract a video frame.
+- **Canvas (5):** read, open/focus a browser view, search, apply incremental operations, continue from a tail frame.
 - **Generation (5):** discover models and parameters, submit, refresh status, read history.
-- **Editor (6):** read, edit, inspect a semantic snapshot, diagnose, deep-link a view, read command history.
+- **Editor (7):** read, edit, import SRT captions, inspect a semantic snapshot, diagnose, deep-link a view, read command history.
 
-MCP does not automate UI pixels. The Agent reads the Project, applies stable commands, and BeatDesign refreshes the visible Canvas or Editor from the same local state.
+MCP does not automate UI pixels. It returns structured handoff metadata so a capable host can open or reuse the exact Canvas or Editor tab. The Agent applies stable commands, and BeatDesign refreshes that visible workspace from the same local state.
 
 See [MCP setup and tool boundaries](./docs/MCP.md).
 
@@ -109,7 +133,7 @@ See [MCP setup and tool boundaries](./docs/MCP.md).
 ### Local Editor
 
 - Video, still-image, and audio clips on a shared timeline.
-- Drag-to-trim, split, move, delete, ripple delete, and still-image duration editing.
+- Drag-to-trim, split, move, delete, ripple delete, still-image duration editing, and an SRT caption track.
 - Undo/redo, playback, source range selection, audio volume and fades.
 - Selected-range AI redo as non-destructive Takes.
 - Timeline diagnostics for gaps, overlaps, missing media, duration mismatches, and tiny clips.
@@ -151,7 +175,7 @@ BeatDesign v0.2 is focused on local, short-form AI video workflows:
 - One active timeline per Project and browser-memory-constrained export.
 - Canvas and Editor poll for Agent revisions every two seconds; a realtime event bus is not implemented yet.
 - Editor MCP snapshot is semantic inspection, not a rendered pixel frame.
-- Captions, transitions, speed controls, waveforms, multiple named timelines, and native desktop packaging remain follow-up work.
+- Caption style presets, transitions, speed controls, waveforms, multiple named timelines, and native desktop packaging remain follow-up work.
 
 The complete completed/planned boundary lives in [Product plan and status](./docs/PRODUCT_PLAN_AND_STATUS.md).
 

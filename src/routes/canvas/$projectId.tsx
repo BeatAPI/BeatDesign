@@ -10,6 +10,7 @@ export const Route = createFileRoute('/canvas/$projectId')({
     model: (search.model as string) || undefined,
     prompt: (search.prompt as string) || undefined,
     preview: (search.preview as string) || undefined,
+    focus: (search.focus as string) || undefined,
   }),
   loaderDeps: ({ search }) => ({ search }),
   loader: ({ params, deps }) =>

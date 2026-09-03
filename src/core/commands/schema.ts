@@ -331,6 +331,22 @@ export const editorOperationSchema = z.discriminatedUnion('type', [
       publicUrl: z.string().trim().max(4096).optional().default(''),
     })
     .strict(),
+  z
+    .object({
+      type: z.literal('upsert_caption'),
+      clipId: commandIdSchema,
+      text: z.string().trim().min(1).max(4_000),
+      startTime: finiteTimeSchema,
+      duration: positiveDurationSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('import_srt'),
+      srt: z.string().min(1).max(200_000),
+      replace: z.boolean().optional(),
+    })
+    .strict(),
 ]);
 
 export const beatDesignCommandSchema: z.ZodType<BeatDesignCommand> =

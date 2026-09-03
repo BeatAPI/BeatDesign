@@ -13,13 +13,35 @@ import { listGenerationModelDescriptors } from '@/core/generation-providers';
 
 import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
 
-test('MCP tool catalog is exactly 20 named tools', () => {
+test('MCP tool catalog is exactly 26 named tools', () => {
   const source = readFileSync(new URL('./server.ts', import.meta.url), 'utf8');
   const registered = [...source.matchAll(/server\.registerTool\(\s*'([^']+)'/g)].map(
     (match) => match[1]
   );
-  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 20);
+  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 26);
   assert.deepEqual(registered, [...BEATDESIGN_MCP_TOOL_NAMES]);
+});
+
+test('project targeting accepts an explicit workspace handoff destination', () => {
+  const source = readFileSync(new URL('./server.ts', import.meta.url), 'utf8');
+  const targetRegistration = source.match(
+    /'bdesign_project_target',[\s\S]*?server\.registerTool\(\s*'bdesign_project_open'/
+  )?.[0];
+
+  assert.ok(targetRegistration);
+  assert.match(
+    targetRegistration,
+    /view: z\.enum\(\['studio', 'canvas', 'editor', 'assets'\]\)/
+  );
+  assert.match(targetRegistration, /focusCardId: idSchema\.optional\(\)/);
+  assert.match(
+    targetRegistration,
+    /time: z\.number\(\)\.finite\(\)\.min\(0\)\.optional\(\)/
+  );
+  assert.match(
+    targetRegistration,
+    /buildProjectHandoff\(project, \{ view, focusCardId, time \}\)/
+  );
 });
 
 test('MCP origin cannot replace a timeline document', async () => {
@@ -67,6 +89,8 @@ test('Canvas and Editor operations expose concrete JSON Schemas to MCP hosts', (
     'add_take',
     'activate_take',
     'set_render',
+    'upsert_caption',
+    'import_srt',
   ]) {
     assert.match(editorJson, new RegExp(operation));
   }
@@ -74,6 +98,17 @@ test('Canvas and Editor operations expose concrete JSON Schemas to MCP hosts', (
   assert.match(canvasJson, /referenceCardIds/);
   assert.match(editorJson, /rightClipId/);
   assert.match(editorJson, /image/);
+  assert.equal(
+    editorOperationSchema.safeParse({
+      type: 'add_clip',
+      clipId: 'caption-1',
+      assetId: 'caption-1',
+      name: 'Caption',
+      sourceType: 'caption',
+      sourceDuration: 1,
+    }).success,
+    false
+  );
 });
 
 test('Canvas upsert accepts a minimal explicit generation card', () => {

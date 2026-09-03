@@ -12,6 +12,7 @@ export type ProjectEntryIntent = {
   target?: string;
   model?: string;
   prompt?: string;
+  focus?: string;
 };
 
 type ProjectWorkspaceIntent = ProjectEntryIntent & {
@@ -30,6 +31,9 @@ const applyProjectEntryIntent = (
   }
   if (intent.prompt) {
     searchParams.set('prompt', intent.prompt);
+  }
+  if (intent.focus) {
+    searchParams.set('focus', intent.focus);
   }
   return searchParams;
 };
@@ -54,6 +58,7 @@ export function parseProjectEntryIntent(
     target: readValue('target'),
     model: readValue('model'),
     prompt: readValue('prompt'),
+    focus: readValue('focus'),
   };
 }
 

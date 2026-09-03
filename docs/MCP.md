@@ -67,8 +67,10 @@ BeatDesign is a visual workspace plus one selected Agent control transport shari
 2. `pnpm mcp` is the Agent control plane over stdio for coding Agents.
 3. `pnpm mcp:http` is the optional Streamable HTTP control plane for QwenWork and Doubao Work.
 
-An Agent never "opens the Canvas as a sidebar" inside Codex or Claude Code.
-It calls tools. You watch the same project at `http://127.0.0.1:3020`.
+The MCP server returns structured browser handoffs. In Codex, the bundled Skill
+uses the in-app Browser to open or reuse the exact Canvas or Editor tab and
+leaves it visible while the Agent works. Other hosts can use the clean
+`workspaceUrl` returned by the same tools.
 
 The Codex plugin is optional packaging. Claude Code, OpenCode, Cursor, and any
 other MCP stdio host can skip it and start `pnpm --silent mcp` directly. QwenWork
@@ -81,19 +83,43 @@ OpenCode `mcp` config.
 
 ## Tool groups
 
-There are **20** tools:
+There are **26** tools:
 
-- Project (3): list, get, create.
-- Asset (3): list, get by project membership, and import a local file.
-- Canvas (3): get, search, incremental apply.
+- Project (5): list, get, create, target the current MCP session, and open a
+  workspace review surface.
+- Asset (4): list, get by project membership, import a local file, and extract a
+  video frame.
+- Canvas (5): get, browser view/focus, search, incremental apply, and
+  continue-from-tail-frame.
 - Generation (5): list model capabilities, read one model, submit an
   asset-first request, refresh status, and list history.
-- Editor (6): get, incremental edit, semantic snapshot, diagnostics, deep-link
-  view, and command history.
+- Editor (7): get, incremental edit, SRT import, semantic snapshot, diagnostics,
+  deep-link view, and command history.
 
 MCP writes use `origin=mcp` assigned inside the server. `canvas.apply` and
 `editor.apply` accept stable IDs, revisions, and idempotency keys. The server
 does not expose full Canvas or Timeline replacement.
+
+Call `bdesign_project_target` once after choosing a project. Project-scoped
+tools can then omit `projectId` for the lifetime of that MCP session.
+`bdesign_project_open`, `bdesign_canvas_view`, and `bdesign_editor_view` return
+clean direct links plus `browserHandoff`, `openStrategy`, and `liveProject`
+metadata. Canvas links accept a stable card ID and focus that card after the
+project is restored.
+
+External incremental Canvas and Editor commands automatically replay up to two
+times when their final CAS write loses a short revision race. Every replay
+loads the newest authoritative document and reapplies the stable-ID operation;
+it never retries a full-document replacement. Recovered results include
+`conflictRecovery`; persistent conflicts include a bounded `retry` instruction
+with the latest known revision.
+
+`bdesign_canvas_continue_from_tail` uses the same bounded conflict recovery. A
+stable command ID also stabilizes its derived frame Asset and continuation node,
+so an uncertain or concurrent retry does not duplicate them. If the Canvas write
+still fails, a frame created by that attempt is removed before the failure is
+returned. The tool creates the local continuation setup only; its returned
+`next` generation request remains a separate, potentially paid action.
 
 Generation tools accept a logical `modelId`, generic `parameters`, and Asset
 references. Call `bdesign_generation_models` or
@@ -113,7 +139,13 @@ the MCP tool contract instead of guessing an opaque operation object.
 
 - `bdesign_editor_snapshot` resolves active clips and source times; it does not
   rasterize a pixel frame yet.
-- Browser-only MP4 export is not exposed as a headless MCP tool yet.
+- `bdesign_asset_extract_frame` and `bdesign_canvas_continue_from_tail` decode
+  the local video file. MCP/Node uses `ffmpeg` on PATH (or `BEATDESIGN_FFMPEG`);
+  this is not a required system install for the browser UI.
+- SRT import validates the whole subtitle document before replacing the current
+  caption track. Malformed input leaves the saved timeline unchanged.
+- Browser-only MP4 export is not exposed as a headless MCP tool yet. Caption
+  burn-in is included when the browser exports an MP4.
 - `bdesign_asset_import` copies a local image, video, or audio file into the
   project Asset library from an absolute path. It does not place the Asset on
   Canvas or Editor; use `bdesign_canvas_apply` or `bdesign_editor_edit` after.
@@ -124,3 +156,16 @@ the MCP tool contract instead of guessing an opaque operation object.
 - Live UI event push is not implemented. Canvas and Editor poll project
   revisions every two seconds while idle and check again on focus/visibility,
   so MCP writes become visible without a full event bus.
+
+## Skill, MCP, and CLI
+
+- The Codex Skill is the workflow layer: it tells the Agent when to select a
+  project, which MCP tools to combine, where user authorization is required, and
+  which Canvas or Editor view must remain open for review.
+- MCP is the structured execution layer used by Codex, Claude Code, Cursor, and
+  other compatible Agents. Its schemas, project boundary, command receipts, and
+  browser handoffs are the supported external control contract.
+- BeatDesign does not currently ship a standalone end-user CLI. `pnpm mcp` starts
+  the MCP server; it is not a `beatdesign ...` command interface. A future CLI
+  should remain a thin transport over the same Command Kernel rather than adding
+  a second implementation.

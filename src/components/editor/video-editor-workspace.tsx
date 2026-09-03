@@ -14,6 +14,7 @@ import {
   SkipForward,
   SlidersHorizontal,
   Sparkles,
+  Subtitles,
   Trash2,
   Upload,
   Undo2,
@@ -38,6 +39,10 @@ import {
   applyEditorOperations,
   type EditorOperation,
 } from '@/core/commands/editor-commands';
+import {
+  findCaptionAtTime,
+  MAX_SRT_FILE_BYTES,
+} from '@/core/editor/captions';
 import {
   createTimelineDocument,
   findTimelineClip,
@@ -112,7 +117,7 @@ export function findVisualClipAtTimelineTime(
 ) {
   const visualClips = document.tracks
     .flatMap((track) => track.clips)
-    .filter((clip) => clip.sourceType !== 'audio')
+    .filter((clip) => clip.sourceType === 'image' || clip.sourceType === 'video')
     .sort((left, right) => left.startTime - right.startTime);
   const safeTime = Math.max(0, Math.min(timelineTime, document.duration));
 
@@ -204,11 +209,15 @@ function TimelineClipBlock({
           ? 'cursor-grab border-[var(--beat-accent)] bg-[#2a1a12] shadow-[0_0_0_1px_rgba(255,103,0,0.3),0_8px_24px_rgba(0,0,0,0.2)] active:cursor-grabbing'
           : clip.sourceType === 'audio'
             ? 'cursor-grab border-[var(--beat-graph)]/30 bg-[var(--beat-graph)]/12 hover:border-[var(--beat-graph)]/50 hover:bg-[var(--beat-graph)]/18 active:cursor-grabbing'
+            : clip.sourceType === 'caption'
+              ? 'cursor-grab border-white/16 bg-[#1d2430] hover:border-white/28 hover:bg-[#232b38] active:cursor-grabbing'
             : 'cursor-grab border-white/12 bg-[#202124] hover:border-white/24 hover:bg-[#242529] active:cursor-grabbing'
       }`}
       style={{ left: `${left}%`, width: `${Math.max(width, 1.2)}%` }}
       title={
-        clip.sourceType === 'image'
+        clip.sourceType === 'caption'
+          ? clip.text || clip.name
+          : clip.sourceType === 'image'
           ? `${clip.name} · ${clip.duration.toFixed(2)}s`
           : `${clip.name} · ${formatTime(clip.inPoint)}–${formatTime(clip.outPoint)}`
       }
@@ -248,7 +257,7 @@ function TimelineClipBlock({
         <span className="absolute inset-0 bg-gradient-to-r from-black/72 via-black/38 to-black/10" />
         <span className="relative flex h-full min-w-0 flex-col justify-between px-2.5 py-2">
           <span className="block truncate text-[11px] font-[560] tracking-[-0.01em] text-white/95">
-            {clip.name}
+            {clip.sourceType === 'caption' ? clip.text || clip.name : clip.name}
           </span>
           <span className="flex items-center gap-1.5 text-[10px] font-[500] tabular-nums text-white/62">
             {clip.sourceType === 'image' ? (
@@ -313,6 +322,7 @@ export function VideoEditorWorkspace({
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const srtInputRef = useRef<HTMLInputElement>(null);
   const sourceFileRef = useRef<File | null>(null);
   const audioElementsRef = useRef(new Map<string, HTMLAudioElement>());
   const imagePlaybackFrameRef = useRef<number | null>(null);
@@ -377,7 +387,10 @@ export function VideoEditorWorkspace({
       : 0,
     0.001
   );
-  const primaryVisualClip = clips.find((clip) => clip.sourceType !== 'audio');
+  const primaryVisualClip = clips.find(
+    (clip) => clip.sourceType === 'image' || clip.sourceType === 'video'
+  );
+  const activeCaption = findCaptionAtTime(document, timelineCurrentTime);
   const activeVisualClip = findVisualClipAtTimelineTime(
     document,
     timelineCurrentTime
@@ -408,6 +421,7 @@ export function VideoEditorWorkspace({
     const seenAssetIds = new Set<string>();
     return clips
       .filter((clip) => {
+        if (clip.sourceType === 'caption') return false;
         if (seenAssetIds.has(clip.assetId)) return false;
         seenAssetIds.add(clip.assetId);
         return clip.name.toLowerCase().includes(mediaSearch.trim().toLowerCase());
@@ -1138,6 +1152,24 @@ export function VideoEditorWorkspace({
     }
   };
 
+  const importSrtFile = async (file: File) => {
+    setError(null);
+    if (file.size > MAX_SRT_FILE_BYTES) {
+      setError(t('errors.srtTooLarge'));
+      return;
+    }
+    try {
+      const srt = await file.text();
+      commitDocument((current) =>
+        applyEditorOperations(current, [
+          { type: 'import_srt', srt, replace: true },
+        ]).document
+      );
+    } catch {
+      setError(t('errors.srtImportFailed'));
+    }
+  };
+
   const resizeSelectedImage = (duration: number) => {
     if (!selectedClip || selectedClip.sourceType !== 'image') return;
     commitDocument((current) =>
@@ -1610,6 +1642,17 @@ export function VideoEditorWorkspace({
         className="hidden"
         onChange={handleAudioInput}
       />
+      <input
+        ref={srtInputRef}
+        type="file"
+        accept=".srt,application/x-subrip,text/plain"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void importSrtFile(file);
+        }}
+      />
       {clips
         .filter((clip) => clip.sourceType === 'audio')
         .map((clip) => (
@@ -1698,6 +1741,14 @@ export function VideoEditorWorkspace({
               >
                 <Music2 className="size-3.5" />
                 {t('media.importAudio')}
+              </button>
+              <button
+                type="button"
+                onClick={() => srtInputRef.current?.click()}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.035] text-xs font-[540] text-white/68 transition hover:bg-white/[0.075] hover:text-white"
+              >
+                <Subtitles className="size-3.5" />
+                {t('media.importSrt')}
               </button>
             </div>
           </div>
@@ -1842,6 +1893,13 @@ export function VideoEditorWorkspace({
           </div>
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black/35 p-4 sm:p-8">
+            {activeCaption?.text ? (
+              <div className="pointer-events-none absolute inset-x-8 bottom-8 z-10 flex justify-center">
+                <p className="max-w-3xl whitespace-pre-line break-words rounded-lg bg-black/72 px-4 py-2 text-center text-sm font-[560] leading-6 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                  {activeCaption.text}
+                </p>
+              </div>
+            ) : null}
             {sourceUrl && previewClip?.sourceType === 'image' ? (
               <img
                 src={sourceUrl}
@@ -2146,11 +2204,15 @@ export function VideoEditorWorkspace({
                     <div className="flex h-16 items-center gap-2.5 border-b border-r border-white/[0.07] px-3 text-[11px] font-[520] text-white/55">
                       {track.kind === 'audio' ? (
                         <Volume2 className="size-3.5" />
+                      ) : track.kind === 'caption' ? (
+                        <Subtitles className="size-3.5" />
                       ) : (
                         <FileVideo2 className="size-3.5" />
                       )}
                       {track.kind === 'audio'
                         ? t('timeline.audioTrack')
+                        : track.kind === 'caption'
+                          ? t('timeline.captionTrack')
                         : t('timeline.visualTrack')}
                     </div>
                     <div
@@ -2227,6 +2289,8 @@ export function VideoEditorWorkspace({
                       <ImageIcon className="size-4" />
                     ) : selectedClip.sourceType === 'video' ? (
                       <FileVideo2 className="size-4" />
+                    ) : selectedClip.sourceType === 'caption' ? (
+                      <Subtitles className="size-4" />
                     ) : (
                       <Volume2 className="size-4" />
                     )}
@@ -2262,7 +2326,43 @@ export function VideoEditorWorkspace({
                     </button>
                   </div>
 
-                  {selectedClip.sourceType === 'audio' ? (
+                  {selectedClip.sourceType === 'caption' ? (
+                    <label className="block rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
+                      <span className="mb-2 block text-[10px] font-[520] text-white/45">
+                        {t('captions.text')}
+                      </span>
+                      <textarea
+                        value={selectedClip.text ?? ''}
+                        rows={4}
+                        onChange={(event) => {
+                          const text = event.target.value;
+                          commitDocument((current) =>
+                            applyEditorOperations(
+                              current,
+                              text.trim()
+                                ? [
+                                    {
+                                      type: 'upsert_caption',
+                                      clipId: selectedClip.id,
+                                      text,
+                                      startTime: selectedClip.startTime,
+                                      duration: selectedClip.duration,
+                                    },
+                                  ]
+                                : [
+                                    {
+                                      type: 'remove_clip',
+                                      clipId: selectedClip.id,
+                                    },
+                                  ]
+                            ).document
+                          );
+                          if (!text.trim()) setSelectedClipId(null);
+                        }}
+                        className="w-full resize-none rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-[12px] text-white/88 outline-none focus:border-white/24"
+                      />
+                    </label>
+                  ) : selectedClip.sourceType === 'audio' ? (
                     <div className="space-y-4 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
                       {([
                         ['volume', 0, 1, 0.01, selectedClip.volume],

@@ -1,3 +1,4 @@
+import { findCaptionAtTime } from './captions';
 import {
   getTimelineClipSource,
   type TimelineClip,
@@ -127,6 +128,7 @@ async function loadTimelineMedia(
       if (track.hidden || track.muted) continue;
       for (const clip of track.clips) {
         throwIfAborted(signal);
+        if (clip.sourceType === 'caption') continue;
         const source = getTimelineClipSource(clip);
         const response = await fetch(source.sourceUrl, { signal });
         if (!response.ok) {
@@ -200,6 +202,50 @@ function drawImageWithContain(
     drawWidth,
     drawHeight
   );
+}
+
+export function wrapCaptionText(
+  text: string,
+  maxWidth: number,
+  measure: (value: string) => number
+) {
+  const wrapped: string[] = [];
+  const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
+
+  const pushParagraph = (paragraph: string) => {
+    if (!paragraph) {
+      wrapped.push('');
+      return;
+    }
+    const tokens = Array.from(segmenter.segment(paragraph), ({ segment }) => segment);
+    let line = '';
+    for (const token of tokens) {
+      const candidate = `${line}${token}`;
+      if (!line || measure(candidate) <= maxWidth) {
+        line = candidate;
+        continue;
+      }
+      wrapped.push(line.trimEnd());
+      if (measure(token) <= maxWidth) {
+        line = token.trimStart();
+        continue;
+      }
+      line = '';
+      for (const character of Array.from(token)) {
+        const characterCandidate = `${line}${character}`;
+        if (line && measure(characterCandidate) > maxWidth) {
+          wrapped.push(line);
+          line = character;
+        } else {
+          line = characterCandidate;
+        }
+      }
+    }
+    if (line) wrapped.push(line.trimEnd());
+  };
+
+  for (const paragraph of text.split('\n')) pushParagraph(paragraph);
+  return wrapped;
 }
 
 function gainAt(clip: TimelineClip, clipOffset: number) {
@@ -402,6 +448,28 @@ export async function exportTimelineMp4({
           sample.drawWithFit(context, { fit: 'contain' });
           sample.close();
         }
+      }
+      const caption = findCaptionAtTime(document, timelineTime);
+      if (caption?.text) {
+        const fontSize = Math.max(28, Math.round(height * 0.042));
+        context.font = `600 ${fontSize}px sans-serif`;
+        context.textAlign = 'center';
+        context.textBaseline = 'bottom';
+        const lines = wrapCaptionText(
+          caption.text,
+          width * 0.82,
+          (value) => context.measureText(value).width
+        );
+        const lineHeight = fontSize * 1.3;
+        const baseY = height - Math.round(height * 0.08);
+        lines.forEach((line, index) => {
+          const y = baseY - (lines.length - 1 - index) * lineHeight;
+          context.lineWidth = Math.max(4, Math.round(fontSize / 8));
+          context.strokeStyle = 'rgba(0,0,0,0.72)';
+          context.fillStyle = '#fff';
+          context.strokeText(line, width / 2, y);
+          context.fillText(line, width / 2, y);
+        });
       }
       await videoSource.add(timelineTime, frameDuration, {
         keyFrame: frame % frameRate === 0,

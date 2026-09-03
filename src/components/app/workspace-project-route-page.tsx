@@ -43,6 +43,7 @@ export function WorkspaceProjectRoutePage({
           initialTarget={data.target}
           initialModelId={data.modelId}
           initialPrompt={data.prompt}
+          initialFocusCardId={data.focusCardId}
         />
       )}
     </ProductPageShell>

@@ -1,4 +1,8 @@
 import {
+  applySrtToTimeline,
+  upsertCaptionCue,
+} from '@/core/editor/captions';
+import {
   activateTimelineTake,
   addSourceClip,
   addTimelineTake,
@@ -58,7 +62,15 @@ export type EditorOperation =
       };
     }
   | { type: 'activate_take'; clipId: string; takeId: string | null }
-  | { type: 'set_render'; assetId: string; publicUrl: string };
+  | { type: 'set_render'; assetId: string; publicUrl: string }
+  | {
+      type: 'upsert_caption';
+      clipId: string;
+      text: string;
+      startTime: number;
+      duration: number;
+    }
+  | { type: 'import_srt'; srt: string; replace?: boolean };
 
 const listClipIds = (document: TimelineDocument) =>
   new Set(document.tracks.flatMap((track) => track.clips.map((clip) => clip.id)));
@@ -142,6 +154,23 @@ export function applyEditorOperations(
         throw new BeatDesignCommandError('NOT_FOUND', `Clip ${operation.clipId} was not found.`);
       }
       next = activateTimelineTake(document, operation.clipId, operation.takeId);
+    } else if (operation.type === 'upsert_caption') {
+      const text = operation.text.trim();
+      if (!text) {
+        throw new BeatDesignCommandError(
+          'INVALID_COMMAND',
+          `Editor operation ${index} has empty caption text.`
+        );
+      }
+      next = upsertCaptionCue(document, {
+        clipId: operation.clipId,
+        text,
+        startTime: operation.startTime,
+        endTime: operation.startTime + operation.duration,
+      });
+    } else if (operation.type === 'import_srt') {
+      next = applySrtToTimeline(document, operation.srt, operation.replace !== false);
+      changedIds.add(next.id);
     } else {
       next = setTimelineRender(document, {
         id: operation.assetId,

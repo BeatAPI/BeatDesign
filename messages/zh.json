@@ -424,6 +424,7 @@
         "listView": "列表视图",
         "importVisual": "画面",
         "importAudio": "音频",
+        "importSrt": "字幕",
         "empty": "尚未导入素材",
         "noResults": "没有匹配的素材",
         "drop": "拖入图片或视频",
@@ -492,6 +493,7 @@
         "title": "时间线",
         "visualTrack": "画面 1",
         "audioTrack": "声音 1",
+        "captionTrack": "字幕",
         "start": "起始位置",
         "dragHint": "拖动片段调整位置 · 拖动两侧边缘裁剪",
         "trimStart": "拖动以裁剪片段开头",
@@ -512,8 +514,12 @@
         "type": {
           "image": "静态图片",
           "video": "视频片段",
-          "audio": "音频片段"
+          "audio": "音频片段",
+          "caption": "字幕"
         }
+      },
+      "captions": {
+        "text": "字幕文案"
       },
       "audio": {
         "volume": "音量",
@@ -577,6 +583,8 @@
         "canvasNodeFailed": "无法将时间线加入 Canvas。",
         "redoAssetMissing": "生成结果没有保存到项目素材。",
         "redoFailed": "BeatAPI 无法重做这个选区。",
+        "srtImportFailed": "无法导入这个 SRT 字幕文件。",
+        "srtTooLarge": "这个 SRT 字幕文件过大。",
         "clipOverlap": "这个位置会与同一轨道上的其他片段重叠。"
       }
     },

@@ -41,7 +41,15 @@ import {
 } from '@/core/beatcanvas/project-asset-transfer';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { toast } from 'sonner';
 import {
   addProjectAssetsToTimeline,
@@ -161,6 +169,7 @@ export function BeatCanvasShell({
   initialTarget,
   initialModelId,
   initialPrompt,
+  initialFocusCardId,
 }: {
   projectId: string;
   projectPath: string;
@@ -171,9 +180,11 @@ export function BeatCanvasShell({
   initialTarget: string | null;
   initialModelId: string | null;
   initialPrompt: string | null;
+  initialFocusCardId: string | null;
 }) {
   const rawStudioT = useTranslations('AppShell.studio');
   const projectAssetsT = useTranslations('AppShell.header.projectAssets');
+  const handledInitialFocusCardIdRef = useRef<string | null>(null);
   const queryClient = useQueryClient();
   const refreshWorkspaceAfterGeneration = useCallback(() => {
     void invalidateWorkspaceAfterGeneration(queryClient);
@@ -1382,6 +1393,32 @@ export function BeatCanvasShell({
     onEmptyProjectSnapshotSaved: handleEmptyProjectSnapshotSaved,
     onProjectSnapshotConflict: handleProjectSnapshotConflict,
   });
+
+  useEffect(() => {
+    const focusCardId = initialFocusCardId?.trim();
+    if (
+      !focusCardId ||
+      !isCanvasReady ||
+      handledInitialFocusCardIdRef.current === focusCardId ||
+      !canvasCards[focusCardId]
+    ) {
+      return;
+    }
+
+    handledInitialFocusCardIdRef.current = focusCardId;
+    handleSelectShape(focusCardId);
+    focusShape(focusCardId);
+    if (canvasCards[focusCardId]?.kind === 'generation') {
+      setActiveComposerCardId(focusCardId);
+    }
+  }, [
+    canvasCards,
+    focusShape,
+    handleSelectShape,
+    initialFocusCardId,
+    isCanvasReady,
+    setActiveComposerCardId,
+  ]);
 
   // Listen for card connector events from the overlay
   useEffect(() => {

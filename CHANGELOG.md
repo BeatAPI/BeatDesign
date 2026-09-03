@@ -2,6 +2,20 @@
 
 All notable changes to BeatDesign are documented in this file.
 
+## Unreleased
+
+### Added
+
+- MCP video frame extraction and Canvas continue-from-tail-frame tools.
+- Editor caption track, SRT import, MCP `bdesign_editor_import_srt`, and caption burn-in on browser MP4 export.
+
+### Changed
+
+- Made tail-frame extraction decode the actual final frames instead of assuming a 30fps source.
+- Made continue-from-tail-frame retries stable, conflict-aware, and rollback-safe.
+- Made SRT replacement validate the complete input before changing saved captions, with durable caption persistence and wrapped multiline preview/export.
+- Documented the boundary between the Codex Skill, MCP execution transport, and a future standalone CLI.
+
 ## [0.2.1] - 2026-08-30
 
 ### Changed
@@ -39,7 +53,7 @@ All notable changes to BeatDesign are documented in this file.
 
 - Editor snapshots are semantic rather than pixel-rendered.
 - MP4 export remains browser-driven and is not yet available as a headless MCP tool.
-- Captions, transitions, speed controls, multiple named timelines, and native desktop packaging remain follow-up work.
+- Caption style presets, transitions, speed controls, multiple named timelines, and native desktop packaging remain follow-up work.
 
 [0.2.1]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.1
 [0.2.0]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.0

@@ -84,6 +84,7 @@ export async function normalizeCommandAssetReferences({
         ...track,
         clips: await Promise.all(
           track.clips.map(async (clip) => {
+            if (clip.sourceType === 'caption') return clip;
             const sourceAsset = await loadCommandAsset({
               projectId,
               assetId: clip.assetId,
@@ -133,6 +134,12 @@ export async function normalizeCommandAssetReferences({
             expectedType: operation.sourceType,
           });
           return { ...operation, sourceUrl: asset.publicUrl };
+        }
+        if (
+          operation.type === 'upsert_caption' ||
+          operation.type === 'import_srt'
+        ) {
+          return operation;
         }
         if (operation.type === 'add_take') {
           const asset = await loadCommandAsset({

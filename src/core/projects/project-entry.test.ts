@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  buildProjectDetailPathWithIntent,
   buildPostCreateProjectDetailPath,
+  parseProjectEntryIntent,
   serializeProjectCenterCard,
 } from './project-entry';
 
@@ -19,6 +21,20 @@ test('keeps prompt query after creation so the workspace can resume the intent',
   assert.equal(
     path,
     '/zh/studio/project-1?target=image&model=gpt-image-2&prompt=new+product+hero'
+  );
+});
+
+test('preserves a stable Canvas focus card in project links', () => {
+  const path = buildProjectDetailPathWithIntent({
+    projectId: 'project-1',
+    mode: 'canvas',
+    focus: 'card:hero',
+  });
+
+  assert.equal(path, '/canvas/project-1?focus=card%3Ahero');
+  assert.equal(
+    parseProjectEntryIntent(new URLSearchParams('focus=card%3Ahero')).focus,
+    'card:hero'
   );
 });
 

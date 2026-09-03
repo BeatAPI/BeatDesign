@@ -18,7 +18,7 @@ export async function loadWorkspaceProjectRoute({
   workspaceMode: WorkspaceMode;
 }) {
   const locale = getLocale();
-  const { target, model, prompt } = parseProjectEntryIntent(search);
+  const { target, model, prompt, focus } = parseProjectEntryIntent(search);
 
   const projectState = await loadProjectWithLatestSnapshotFn({
     data: { projectId },
@@ -34,6 +34,7 @@ export async function loadWorkspaceProjectRoute({
     target: target ?? null,
     modelId: model ?? null,
     prompt: prompt ?? null,
+    focusCardId: focus ?? null,
     projectPath: buildLocalizedProjectDetailPath({
       locale,
       projectId: projectState.project.id,

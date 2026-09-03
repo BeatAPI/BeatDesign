@@ -1,18 +1,24 @@
 # BeatDesign Codex plugin
 
-This folder is only a **Codex packaging wrapper**. It starts the same local
-stdio MCP server as `pnpm mcp`. It does not embed the Canvas UI.
+This folder packages the local stdio MCP server plus the BeatDesign workspace
+Skill. It does not embed or duplicate the Canvas UI; it hands the exact local
+Canvas or Editor URL to Codex's in-app Browser for visible review.
 
 ## What actually happens
 
 ```text
-Browser: pnpm dev  →  http://127.0.0.1:3020  (you look at Canvas/Editor)
-Agent:   MCP stdio →  pnpm mcp               (Agent calls 20 tools)
+Browser: pnpm dev  →  http://127.0.0.1:3020  (Canvas/Editor review surface)
+Agent:   MCP stdio →  pnpm mcp               (Agent calls 26 tools)
 Both processes share the same local SQLite + project files.
 ```
 
-The Agent does **not** open a BeatDesign sidebar inside Codex. You keep the
-browser open; the Agent writes through MCP; the UI polls and refreshes.
+`bdesign_project_open`, `bdesign_canvas_view`, and `bdesign_editor_view` return
+structured browser handoffs. When the Codex Browser skill is available, the
+Agent opens or reuses the matching sidebar tab and leaves it visible while MCP
+writes are reflected by the local UI.
+
+The MCP session can bind a project with `bdesign_project_target`, so subsequent
+project-scoped tools may omit `projectId`.
 
 You do **not** need this plugin for every Agent. Any MCP host that can start a
 local stdio command can use BeatDesign. The Codex plugin is only the convenient
@@ -27,7 +33,10 @@ install shape for Codex.
    `BEATDESIGN_ROOT=/absolute/path/to/Beat Design`
    If Codex's GUI environment does not expose Node.js, also set
    `BEATDESIGN_NODE=/absolute/path/to/node`.
-4. Start a new Codex thread and check that `bdesign_project_list` exists.
+   Tail-frame extraction additionally needs `ffmpeg` on Codex's `PATH`, or
+   `BEATDESIGN_FFMPEG=/absolute/path/to/ffmpeg`.
+4. Start a new Codex thread and check that `bdesign_project_list` and the
+   `beatdesign-workspace` Skill exist.
 
 Marketplace submission is later. Local folder install is enough to test.
 

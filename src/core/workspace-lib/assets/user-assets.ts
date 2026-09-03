@@ -150,6 +150,12 @@ export const getProjectAssetById = async ({
       filename: userAsset.filename,
       mimeType: userAsset.mimeType,
       sizeBytes: userAsset.sizeBytes,
+      source: userAsset.source,
+      assetClass: userAsset.assetClass,
+      width: userAsset.width,
+      height: userAsset.height,
+      durationMs: userAsset.durationMs,
+      metadata: userAsset.metadata,
     })
     .from(projectAssetMembership)
     .innerJoin(userAsset, eq(userAsset.id, projectAssetMembership.assetId))
