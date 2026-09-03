@@ -56,7 +56,7 @@ External incremental Canvas and Editor commands use a bounded conflict-recovery 
 
 Compound MCP helpers must preserve those same semantics across their local side effects. Tail-frame continuation derives stable Asset and Canvas IDs from its command ID, shares concurrent calls, uses bounded Canvas conflict recovery, and removes a newly created frame if the Canvas write ultimately fails.
 
-The local MCP session may bind one active Project. View tools return clean workspace URLs plus host-neutral browser handoff metadata; the Codex Skill uses that metadata to open or reuse the exact Canvas or Editor review surface. This UI handoff remains packaging/orchestration over the localhost product, not a second frontend.
+The local MCP session may bind one active Project. View tools return clean workspace URLs plus host-neutral browser handoff metadata. The Codex Skill can open or reuse the exact Canvas or Editor review surface; Claude Code and WorkBuddy packages preserve the same URL for their available browser or user handoff. Every host package remains orchestration over the localhost product, not a second frontend or backend.
 
 Canvas layout persistence is the deliberate exception on the UI side: drag, resize, viewport, and the complete visual arrangement are saved as a revision-checked snapshot. Semantic Canvas operations are also exposed through `canvas.apply`, and external agents must use those operations rather than snapshot replacement.
 

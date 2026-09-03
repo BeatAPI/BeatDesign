@@ -15,6 +15,9 @@ pnpm --silent mcp
 
 # For QwenWork / Doubao Work connectors (use this instead of stdio):
 pnpm --silent mcp:http
+
+# For the Claude Code plugin or WorkBuddy Connector:
+pnpm dev:agent
 ```
 
 For a generic MCP host, register:
@@ -37,7 +40,7 @@ against this clone. Hosts that cannot set a cwd and prefer pnpm can use
 `pnpm --silent -C "/absolute/path/to/Beat Design" mcp` instead. On Windows the
 binary is `node_modules/.bin/tsx.cmd`.
 
-Per-agent config templates (Claude Code, ZCode, OpenCode, Cursor, Windsurf, VS
+Per-agent packages and config templates (Claude Code, ZCode, OpenCode, Cursor, Windsurf, VS
 Code, Cline, Roo Code, Qwen Code, QwenWork, Gemini CLI, Hermes, Kiro, Trae,
 WorkBuddy, Doubao Work) live in
 [`integrations/`](../integrations/README.md).
@@ -55,9 +58,13 @@ connector. The HTTP server stays on loopback by default; set
 `BEATDESIGN_MCP_TOKEN` and send an `Authorization: Bearer ...` header when the
 connector configuration supports headers.
 
-The Codex plugin source is under `integrations/codex/beatdesign`. When a host
+The Codex plugin source is under `integrations/codex/beatdesign`. When Codex
 copies that plugin outside this repository, pass `BEATDESIGN_ROOT` with the
-absolute repository path.
+absolute repository path. Claude Code has a dedicated repository marketplace
+and plugin under `integrations/claude-code/beatdesign`; WorkBuddy has an MCP +
+Skill Connector under `integrations/workbuddy/beatdesign`. Those two packages
+connect to the loopback HTTP endpoint started by `pnpm dev:agent` and therefore
+do not depend on the Agent's working directory.
 
 ## Mental model
 
@@ -66,20 +73,23 @@ BeatDesign is a visual workspace plus one selected Agent control transport shari
 1. `pnpm dev` is the visual workbench in the browser.
 2. `pnpm mcp` is the Agent control plane over stdio for coding Agents.
 3. `pnpm mcp:http` is the optional Streamable HTTP control plane for QwenWork and Doubao Work.
+4. `pnpm dev:agent` starts the visual workbench and HTTP control plane together
+   for packaged host integrations.
 
 The MCP server returns structured browser handoffs. In Codex, the bundled Skill
 uses the in-app Browser to open or reuse the exact Canvas or Editor tab and
 leaves it visible while the Agent works. Other hosts can use the clean
 `workspaceUrl` returned by the same tools.
 
-The Codex plugin is optional packaging. Claude Code, OpenCode, Cursor, and any
-other MCP stdio host can skip it and start `pnpm --silent mcp` directly. QwenWork
-and Doubao Work use the HTTP command instead. A marketplace application is not
+Host packages are optional installation layers. Claude Code, OpenCode, Cursor,
+and any other MCP stdio host can still start `pnpm --silent mcp` directly.
+Claude Code's plugin and the WorkBuddy Connector use the local HTTP command;
+QwenWork and Doubao Work use the same endpoint. Marketplace review is not
 required for local use.
 
-Repo-root `.mcp.json` is the Claude Code / generic host config. See
-`integrations/codex/beatdesign/README.md` for Codex folder install and
-OpenCode `mcp` config.
+Repo-root `.mcp.json` is the Claude Code / generic direct-stdio config. See
+`integrations/README.md` for the Codex, Claude Code, WorkBuddy, and OpenCode
+installation shapes.
 
 ## Tool groups
 
@@ -159,7 +169,7 @@ the MCP tool contract instead of guessing an opaque operation object.
 
 ## Skill and MCP
 
-- The Codex Skill is the workflow layer: it tells the Agent when to select a
+- The host Skills are the workflow layer: they tell the Agent when to select a
   project, which MCP tools to combine, where user authorization is required, and
   which Canvas or Editor view must remain open for review.
 - MCP is the structured execution layer used by Codex, Claude Code, Cursor, and

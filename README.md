@@ -82,11 +82,14 @@ BeatDesign runs the visual workspace plus one Agent control transport over the s
 | Visual workspace | `pnpm dev` | Opens Studio, Canvas, Editor, and Assets in the browser. |
 | Agent control plane | `pnpm --silent mcp` | Exposes project-level tools over stdio. |
 | HTTP connector | `pnpm --silent mcp:http` | Exposes `/mcp` on `127.0.0.1:3031` for QwenWork and Doubao Work. |
+| Agent-ready workspace | `pnpm dev:agent` | Starts the visual workspace and loopback HTTP connector together. |
 
 Run the stdio control plane for coding Agents, or the HTTP connector for office
 connectors; normally you do not need to run both.
 
-The repository includes a root `.mcp.json` for compatible hosts and a Codex launcher plus workspace Skill under `integrations/codex/beatdesign`.
+The repository includes a root `.mcp.json` for compatible hosts, a Codex
+plugin, a Claude Code plugin marketplace, and a WorkBuddy Connector package
+under [`integrations/`](./integrations/README.md).
 
 ### Codex local plugin
 
@@ -105,6 +108,19 @@ and launcher details.
 
 The Skill is the Agent's workflow guidance; MCP is the structured control
 protocol that actually reads and changes BeatDesign.
+
+### Claude Code and WorkBuddy
+
+Claude Code can install the repository marketplace and its BeatDesign plugin;
+WorkBuddy can load the MCP + Skill Connector submission package. Both use the
+loopback MCP endpoint, so start `pnpm dev:agent` first. Their host-specific
+setup and validation files live in
+[`integrations/claude-code/beatdesign`](./integrations/claude-code/beatdesign/)
+and [`integrations/workbuddy/beatdesign`](./integrations/workbuddy/beatdesign/).
+
+These packages provide installation metadata and workflow guidance; they do
+not create another backend or duplicate the visual editor. The MCP tools return
+the exact local Canvas or Editor URL for review.
 
 The 26 tools are grouped by durable product concepts:
 
@@ -182,6 +198,7 @@ The complete completed/planned boundary lives in [Product plan and status](./doc
 | Command | Purpose |
 | --- | --- |
 | `pnpm dev` | Start the local app on `127.0.0.1:3020`. |
+| `pnpm dev:agent` | Start the app and loopback HTTP MCP endpoint together. |
 | `pnpm --silent mcp` | Start the local MCP server over stdio. |
 | `pnpm typecheck` | Check TypeScript contracts. |
 | `pnpm test` | Run unit and contract tests. |

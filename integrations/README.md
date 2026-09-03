@@ -20,7 +20,7 @@ Replace `/absolute/path/to/Beat Design` in each template with your clone path.
 
 | Agent | Template | Install location | Notes |
 | --- | --- | --- | --- |
-| Claude Code | [`claude-code/mcp.json.example`](./claude-code/mcp.json.example) | project `.mcp.json` or `~/.claude.json` | repo root `.mcp.json` is already included; entry also repairs foreign cwd |
+| Claude Code | [`claude-code/beatdesign/`](./claude-code/beatdesign/) · [`claude-code/mcp.json.example`](./claude-code/mcp.json.example) | Claude plugin marketplace or project `.mcp.json` | dedicated Skill + loopback MCP plugin, with direct stdio config as the manual alternative |
 | Codex | [`codex/beatdesign/`](./codex/beatdesign/) | Codex plugin folder or `~/.codex/config.toml` `[mcp_servers.beatdesign]` | launcher handles `cd` + `BEATDESIGN_ROOT`; set `BEATDESIGN_NODE` if GUI PATH lacks Node |
 | ZCode (智谱) | [`zcode/config.example.json`](./zcode/config.example.json) | `~/.zcode/cli/config.json` or `<repo>/.zcode/config.json` | strict schema; supports `cwd`; also reads `.agents/mcp.json` as fallback |
 | OpenCode | [`opencode/opencode.example.json`](./opencode/opencode.example.json) · [`opencode/opencode.v2.example.json`](./opencode/opencode.v2.example.json) | `~/.config/opencode/opencode.json` or project `opencode.json` | 1.x uses flat `mcp`; V2 uses nested `mcp.servers`; both use one command array |
@@ -34,13 +34,15 @@ Replace `/absolute/path/to/Beat Design` in each template with your clone path.
 | Hermes Agent (Nous Research) | [`hermes/config.yaml.snippet`](./hermes/config.yaml.snippet) | `~/.hermes/config.yaml` | YAML `mcp_servers:` block |
 | Kiro | [`kiro/mcp.json.example`](./kiro/mcp.json.example) | `~/.kiro/settings/mcp.json` or `.kiro/settings/mcp.json` | MCP must be enabled in Kiro |
 | Trae (字节跳动) | [`trae/mcp.json.example`](./trae/mcp.json.example) | `.trae/mcp.json` | global servers live in the Trae MCP UI panel |
-| WorkBuddy | [`workbuddy/mcp.json.snippet`](./workbuddy/mcp.json.snippet) | `~/.workbuddy/mcp.json` | pass an explicit `PATH` env when using `pnpm -C` |
+| WorkBuddy | [`workbuddy/beatdesign/`](./workbuddy/beatdesign/) · [`workbuddy/mcp.json.snippet`](./workbuddy/mcp.json.snippet) | Connector package or `~/.workbuddy/mcp.json` | MCP + Skill submission package; start `pnpm dev:agent` first |
 | 豆包办公 / 豆包工作任务 | [`doubao-work/mcp.json.example`](./doubao-work/mcp.json.example) | 技能 · 连接器 · 伙伴 → 新建自定义连接器 | choose HTTP and use the local `/mcp` URL |
 
 Not supported: Doubao desktop (豆包电脑版) currently has no user-facing
 local stdio configuration. The separate Doubao Work / work-task product has a
 custom HTTP connector; use the dedicated template above.
 
-After registering, restart the agent and look for the `bdesign_*` tools. The
-visual workspace stays at `http://127.0.0.1:3020` via `pnpm dev`; MCP writes
-poll into the UI within two seconds.
+For the Claude Code plugin or WorkBuddy Connector, run `pnpm dev:agent` so the
+visual workspace and loopback MCP endpoint start together. For direct stdio
+templates, keep using `pnpm dev` plus the configured stdio process. After
+registering, restart or reconnect the Agent and look for the `bdesign_*` tools;
+MCP writes poll into the visible workspace within two seconds.

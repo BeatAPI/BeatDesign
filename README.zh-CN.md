@@ -82,10 +82,13 @@ BeatDesign 本地运行可视工作台，再选择一种 Agent 控制传输读�
 | 可视工作台 | `pnpm dev` | 在浏览器中打开 Studio、Canvas、Editor 和 Assets。 |
 | Agent 控制面 | `pnpm --silent mcp` | 通过 stdio 暴露项目级工具。 |
 | HTTP 连接器 | `pnpm --silent mcp:http` | 在 `127.0.0.1:3031` 暴露 `/mcp`，供千问办公和豆包办公使用。 |
+| Agent 工作模式 | `pnpm dev:agent` | 同时启动可视工作台与本机 HTTP MCP。 |
 
 编程 Agent 使用 stdio 控制面，办公连接器使用 HTTP 控制面；通常不需要同时运行两者。
 
-仓库根目录已经包含兼容宿主可读取的 `.mcp.json`；Codex 的启动封装和工作流 Skill 位于 `integrations/codex/beatdesign`。
+仓库根目录已经包含兼容宿主可读取的 `.mcp.json`；仓库还提供 Codex
+插件、Claude Code 插件市场和 WorkBuddy Connector 包，统一放在
+[`integrations/`](./integrations/README.md) 下。
 
 ### Codex 本地插件
 
@@ -99,6 +102,17 @@ Codex 把插件复制到了仓库外，需要将 `BEATDESIGN_ROOT` 设置为本�
 [Codex 插件接入文档](./integrations/codex/beatdesign/README.md)。
 
 Skill 负责告诉 Agent 如何组合工作流，MCP 是实际读取和修改 BeatDesign 的结构化控制协议。
+
+### Claude Code 与 WorkBuddy
+
+Claude Code 可以直接添加本仓库的插件市场并安装 BeatDesign 插件；WorkBuddy
+可以加载已按 MCP + Skill 规范整理的 Connector 包。两者都连接本机 MCP，使用前先运行
+`pnpm dev:agent`。宿主专用文件分别位于
+[`integrations/claude-code/beatdesign`](./integrations/claude-code/beatdesign/)
+和 [`integrations/workbuddy/beatdesign`](./integrations/workbuddy/beatdesign/)。
+
+这些接入包只负责安装元数据和工作流指导，不会创建第二套后端或复制编辑器。MCP
+会返回准确的本地 Canvas / Editor 地址供用户审核。
 
 26 个工具按照稳定的产品概念分组：
 
@@ -176,6 +190,7 @@ BeatDesign v0.2 聚焦本地 AI 短视频工作流：
 | 命令 | 作用 |
 | --- | --- |
 | `pnpm dev` | 在 `127.0.0.1:3020` 启动本地应用。 |
+| `pnpm dev:agent` | 同时启动应用与本机 HTTP MCP。 |
 | `pnpm --silent mcp` | 通过 stdio 启动本地 MCP Server。 |
 | `pnpm typecheck` | 检查 TypeScript 契约。 |
 | `pnpm test` | 运行单元与契约测试。 |

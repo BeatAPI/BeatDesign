@@ -47,10 +47,11 @@ Same MCP command, different config files:
 | Host | Needs Codex plugin? | Config |
 |---|---|---|
 | Codex | Yes, this folder | Local plugin install |
-| Claude Code | No | Repo-root `.mcp.json` |
+| Claude Code | No | Dedicated package at `integrations/claude-code/beatdesign` or repo-root `.mcp.json` |
 | OpenCode | No | `opencode.json` `mcp.beatdesign` local command |
 | Cursor / generic MCP | No | stdio `pnpm --silent mcp` |
-| Pi / WorkBuddy / Hermes | Only if that host speaks MCP stdio | Same command |
+| WorkBuddy | No | Dedicated Connector at `integrations/workbuddy/beatdesign` |
+| Hermes | No | Same stdio MCP command |
 
 Generic stdio config:
 

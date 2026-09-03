@@ -141,7 +141,7 @@ Codex / Claude Code / Other Agent
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
 - 本地 stdio MCP Server 提供 26 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；`bdesign_editor_import_srt` 导入字幕轨。
-- Codex Plugin 内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核。
+- Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 
 ## 6. v0.2 Phase 1 本地已实现
 
@@ -184,7 +184,7 @@ Codex / Claude Code / Other Agent
 
 - MCP Resources 和更完整的 schema versioning。
 - Agent Activity、命令审计和实时 UI 事件桥。
-- Claude Code 等宿主的一键安装体验；Codex 已有仓库内本地插件、项目会话绑定、Browser handoff 和工作流 Skill，但尚未进入 Marketplace。
+- 外部市场正式审核与上架。仓库已提供 Codex 本地插件、可直接添加的 Claude Code 仓库插件市场，以及符合目录结构的 WorkBuddy MCP + Skill Connector；这些本地接入包不等于已通过第三方市场审核。
 - headless 预览/导出本地媒体 Worker。
 
 当前可以称为“已支持本地 MCP 基础版”，但不能称为完整 Agent 编辑环境：像素级 Snapshot、headless 导出、实时 UI 事件和永久审计仍未实现。本地文件导入桥已完成；UI 当前使用 2 秒 revision 轮询和聚焦检查，而不是实时事件推送。
