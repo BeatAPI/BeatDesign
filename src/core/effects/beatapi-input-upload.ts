@@ -72,11 +72,16 @@ export const uploadBeatApiInputFile = async ({
   }
   const data = asRecord(asRecord(payload)?.data) ?? asRecord(payload);
   const url = readString(data?.url);
+  const key = readString(data?.key) ?? readString(data?.id);
   if (!url || !isPublicHttpMediaUrl(url)) {
     throw new Error('BeatAPI upload response is incomplete');
   }
-  return url;
+  return { url, key: key ?? url };
 };
+
+export const uploadBeatApiInputUrl = async (
+  input: Parameters<typeof uploadBeatApiInputFile>[0]
+) => (await uploadBeatApiInputFile(input)).url;
 
 export const ensureBeatApiInputUrl = async ({
   url,
@@ -122,7 +127,7 @@ export const ensureBeatApiInputUrl = async ({
   new Uint8Array(bodyBuffer).set(bytes);
   const blob = new Blob([bodyBuffer], { type: contentType });
 
-  return uploadBeatApiInputFile({
+  return uploadBeatApiInputUrl({
     baseUrl,
     apiKey,
     body: blob,

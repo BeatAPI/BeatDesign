@@ -57,6 +57,7 @@ export type SubmitEffectGenerationInput = {
   generationIntentId?: string | null;
   requireProject?: boolean;
   metadata?: Record<string, unknown>;
+  authorizedReferenceUrls?: string[];
 };
 
 const asObject = (value: unknown): Record<string, unknown> =>
@@ -136,6 +137,7 @@ export async function submitEffectGeneration({
   generationIntentId,
   requireProject = true,
   metadata,
+  authorizedReferenceUrls = [],
 }: SubmitEffectGenerationInput): Promise<SubmitEffectGenerationResult> {
   if (!Number.isFinite(effectId)) {
     return { status: 400, body: { error: 'effectId is required' } };
@@ -268,6 +270,9 @@ export async function submitEffectGeneration({
       projectAssetUrls,
       snapshot: projectState?.snapshot,
     });
+    authorizedProjectUrls.push(
+      ...authorizedReferenceUrls.filter((url) => referencedUrls.includes(url))
+    );
     let admittedIntentId = normalizedIntentId;
     let intent = await consumeGenerationUploadIntent({
       intentId: admittedIntentId,

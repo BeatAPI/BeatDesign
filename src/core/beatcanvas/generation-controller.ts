@@ -456,6 +456,7 @@ type PollGenerationUntilCompleteParams = {
   sleepImpl?: (ms: number) => Promise<void>;
   maxAttempts?: number;
   pollIntervalMs?: number;
+  maxConsecutiveStatusFailures?: number;
 };
 
 export const pollGenerationUntilComplete = async ({
@@ -468,21 +469,48 @@ export const pollGenerationUntilComplete = async ({
   sleepImpl = sleep,
   maxAttempts = 120,
   pollIntervalMs = 5000,
+  maxConsecutiveStatusFailures = 6,
 }: PollGenerationUntilCompleteParams) => {
   let lastOutput: unknown = null;
+  let consecutiveStatusFailures = 0;
 
   for (let count = 0; count < maxAttempts; count += 1) {
-    const response = await getEffectStatusImpl({
-      wmTaskId,
-      effectId,
-      syncProvider: 1,
-    });
+    let response: Awaited<ReturnType<typeof defaultGetEffectStatus>>;
+    try {
+      response = await getEffectStatusImpl({
+        wmTaskId,
+        effectId,
+        syncProvider: 1,
+      });
+    } catch (error) {
+      consecutiveStatusFailures += 1;
+      if (consecutiveStatusFailures > maxConsecutiveStatusFailures) {
+        throw new GenerationFailure(
+          'polling',
+          error instanceof Error
+            ? error.message
+            : translate('messages.statusRequestFailed')
+        );
+      }
+      await sleepImpl(pollIntervalMs);
+      continue;
+    }
     if (!response.ok) {
+      const retryable =
+        response.status >= 500 ||
+        response.status === 408 ||
+        response.status === 429;
+      consecutiveStatusFailures += 1;
+      if (retryable && consecutiveStatusFailures <= maxConsecutiveStatusFailures) {
+        await sleepImpl(pollIntervalMs);
+        continue;
+      }
       throw new GenerationFailure(
         'polling',
         response.data.error || translate('messages.statusRequestFailed')
       );
     }
+    consecutiveStatusFailures = 0;
 
     const nextStatus = (response.data.status ??
       'processing') as EffectClientStatus;
