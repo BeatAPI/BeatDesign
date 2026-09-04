@@ -158,7 +158,7 @@ button[aria-disabled="true"] {
 
 /*
  * Shared popover / panel motion for the BeatAPI dark product surfaces.
- * Enter easing follows DESIGN.md (cubic-bezier(.22,1,.36,1), 160ms).
+ * Enter easing follows docs/DESIGN.md (cubic-bezier(.22,1,.36,1), 160ms).
  */
 @keyframes beat-pop-in {
   from {

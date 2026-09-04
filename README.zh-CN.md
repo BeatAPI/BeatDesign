@@ -129,11 +129,11 @@ BeatDesign 当前专注本地短视频创作。在线协作、多个命名 Timel
 
 - [产品状态](./docs/PRODUCT_PLAN_AND_STATUS.md)
 - [MCP 接入](./docs/MCP.md)
-- [系统架构](./ARCHITECTURE.md)
-- [Provider 接入](./PROVIDERS.md)
-- [参与贡献](./CONTRIBUTING.md)
-- [安全说明](./SECURITY.md)
+- [系统架构](./docs/ARCHITECTURE.md)
+- [Provider 接入](./docs/PROVIDERS.md)
+- [参与贡献](./.github/CONTRIBUTING.md)
+- [安全说明](./.github/SECURITY.md)
 
 ## License
 
-BeatDesign 使用 [Apache License 2.0](./LICENSE)。BeatAPI 与 BeatDesign 商标、第三方模型访问和仓库内第三方组件分别遵循各自条款。详情见[第三方声明](./third_party/)与[商标政策](./TRADEMARKS.md)。
+BeatDesign 使用 [Apache License 2.0](./LICENSE)。BeatAPI 与 BeatDesign 商标、第三方模型访问和仓库内第三方组件分别遵循各自条款。详情见[第三方声明](./third_party/)与[商标政策](./docs/TRADEMARKS.md)。

@@ -129,11 +129,11 @@ BeatDesign currently focuses on local, short-form creative workflows. Hosted col
 
 - [Product status](./docs/PRODUCT_PLAN_AND_STATUS.md)
 - [MCP setup](./docs/MCP.md)
-- [Architecture](./ARCHITECTURE.md)
-- [Provider integration](./PROVIDERS.md)
-- [Contributing](./CONTRIBUTING.md)
-- [Security](./SECURITY.md)
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Provider integration](./docs/PROVIDERS.md)
+- [Contributing](./.github/CONTRIBUTING.md)
+- [Security](./.github/SECURITY.md)
 
 ## License
 
-BeatDesign is licensed under [Apache License 2.0](./LICENSE). BeatAPI and BeatDesign trademarks, third-party model access, and bundled third-party components remain subject to their respective terms. See [third-party notices](./third_party/) and [trademark policy](./TRADEMARKS.md).
+BeatDesign is licensed under [Apache License 2.0](./LICENSE). BeatAPI and BeatDesign trademarks, third-party model access, and bundled third-party components remain subject to their respective terms. See [third-party notices](./third_party/) and [trademark policy](./docs/TRADEMARKS.md).

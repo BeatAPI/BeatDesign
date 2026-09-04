@@ -248,8 +248,8 @@ Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snap
 2. 本文 `docs/PRODUCT_PLAN_AND_STATUS.md`
 3. `docs/prd/BEATDESIGN_V0_2.md`
 4. `README.md`
-5. `ARCHITECTURE.md`
-6. `PROVIDERS.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/PROVIDERS.md`
 7. `docs/prd/VIDEO_TIMELINE_PHASE_1.md`
 
 修改产品前先运行：

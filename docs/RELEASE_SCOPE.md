@@ -20,4 +20,4 @@ Release verification requires a clean install, schema creation, production build
 - [x] Run a visible Canvas/Editor + MCP smoke test: Canvas prompt changes and Editor duration changes appeared without a page refresh, then the QA fixture was restored through MCP.
 - [x] Push the verified commit, tag `v0.2.2`, and publish the GitHub Release with explicit user authorization.
 
-Release notes are maintained in [`CHANGELOG.md`](./CHANGELOG.md).
+Release notes are maintained in [`CHANGELOG.md`](../CHANGELOG.md).

@@ -129,11 +129,11 @@ BeatDesignの現行リリースは、ローカルでのショート動画制作�
 
 - [製品ステータス](./docs/PRODUCT_PLAN_AND_STATUS.md)
 - [MCP設定](./docs/MCP.md)
-- [アーキテクチャ](./ARCHITECTURE.md)
-- [Provider連携](./PROVIDERS.md)
-- [コントリビューション](./CONTRIBUTING.md)
-- [セキュリティ](./SECURITY.md)
+- [アーキテクチャ](./docs/ARCHITECTURE.md)
+- [Provider連携](./docs/PROVIDERS.md)
+- [コントリビューション](./.github/CONTRIBUTING.md)
+- [セキュリティ](./.github/SECURITY.md)
 
 ## ライセンス
 
-BeatDesignは[Apache License 2.0](./LICENSE)で提供されます。BeatAPIおよびBeatDesignの商標、第三者モデルへのアクセス、同梱される第三者コンポーネントには、それぞれの条件が適用されます。[第三者に関する通知](./third_party/)と[商標ポリシー](./TRADEMARKS.md)をご覧ください。
+BeatDesignは[Apache License 2.0](./LICENSE)で提供されます。BeatAPIおよびBeatDesignの商標、第三者モデルへのアクセス、同梱される第三者コンポーネントには、それぞれの条件が適用されます。[第三者に関する通知](./third_party/)と[商標ポリシー](./docs/TRADEMARKS.md)をご覧ください。

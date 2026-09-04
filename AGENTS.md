@@ -5,10 +5,10 @@ BeatDesign is the independent, open-source Create workspace in the broader BeatA
 ## Source of truth
 
 - Read `docs/PRODUCT_PLAN_AND_STATUS.md` before changing product scope or describing a capability as complete.
-- Read `ARCHITECTURE.md` before changing framework, database, provider, storage, deployment, MCP, or workspace boundaries.
-- Read `PROVIDERS.md` before changing models, provider bindings, uploads, polling, or upstream request mapping.
-- Read `DESIGN.md` before making visual or UI decisions. Follow its typography, color, spacing, component, and interaction language unless the user explicitly approves a change.
-- Read `RELEASE_SCOPE.md` before describing the repository as release-ready, published, deployed, or verified.
+- Read `docs/ARCHITECTURE.md` before changing framework, database, provider, storage, deployment, MCP, or workspace boundaries.
+- Read `docs/PROVIDERS.md` before changing models, provider bindings, uploads, polling, or upstream request mapping.
+- Read `docs/DESIGN.md` before making visual or UI decisions. Follow its typography, color, spacing, component, and interaction language unless the user explicitly approves a change.
+- Read `docs/RELEASE_SCOPE.md` before describing the repository as release-ready, published, deployed, or verified.
 - Roadmaps and marketing material are context, not implementation proof. Current code, tests, and the completed sections of `docs/PRODUCT_PLAN_AND_STATUS.md` define shipped behavior.
 
 ## Product boundary
@@ -64,6 +64,15 @@ Do not embed a proprietary general chatbot. BeatDesign must be complete without 
 - Do not edit `src/routeTree.gen.ts` manually.
 - Preserve unrelated user changes in a dirty worktree.
 
+## Local promotion workspace
+
+- `/promotion-kit/` is a local-only, Git-ignored workspace for reusable product copy, screenshots, editable visual templates, and verified promotion scripts. It is not a product source of truth and may be absent in a fresh clone.
+- Keep channel submission, review, publication, ranking, and outreach status outside this repository. The promotion kit stores reusable materials, not campaign operations.
+- Use English as the default locale for reusable product screenshots. Create Chinese or Japanese variants only for a specific localized deliverable.
+- Before reusing marketing copy or visuals, reconcile versioned claims against `docs/PRODUCT_PLAN_AND_STATUS.md`, the current README, and current code. Never treat an older campaign file or image label as proof of current behavior.
+- Promotional screenshots must use non-sensitive demo media and must not expose provider keys, cookies, tokens, personal data, private filenames, task IDs, or request IDs. Record the app version, commit, locale, capture date, and verification notes in the local promotion-kit index.
+- Follow `docs/DESIGN.md` and the current product UI when creating promotional visuals. Keep raw captures separate from processed exports, and do not present a concept render as a verified product screenshot.
+
 ## Verification and completion language
 
 After code changes, run:
@@ -75,6 +84,6 @@ pnpm i18n:check
 pnpm build
 ```
 
-Run focused browser and MCP checks when changing Canvas, Editor, project persistence, provider submission, or Agent-visible behavior. A release check additionally requires clean installation/schema setup, MCP handshake, and local route smoke testing as defined in `RELEASE_SCOPE.md`.
+Run focused browser and MCP checks when changing Canvas, Editor, project persistence, provider submission, or Agent-visible behavior. A release check additionally requires clean installation/schema setup, MCP handshake, and local route smoke testing as defined in `docs/RELEASE_SCOPE.md`.
 
 Keep these states separate when reporting completion: source change, automated checks, browser validation, MCP-to-UI validation, credentialed or paid BeatAPI end-to-end validation, commit, push/merge, GitHub Release, hosted demo, and deployment. Never infer a later state from an earlier one.
