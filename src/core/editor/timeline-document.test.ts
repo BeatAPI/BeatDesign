@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  addOverlayClip,
   addSourceClip,
   activateTimelineTake,
   addTimelineTake,
@@ -10,10 +11,12 @@ import {
   findTimelineClip,
   getTimelineClipSource,
   normalizeTimelineDocument,
+  overlayOpacityAt,
   moveTimelineClip,
   rippleDeleteTimelineClip,
   resizeTimelineClip,
   updateTimelineAudioClip,
+  updateTimelineOverlay,
   splitTimelineClip,
   trimTimelineClip,
 } from './timeline-document';
@@ -57,9 +60,10 @@ test('version 1 timelines migrate with empty Take and render state', () => {
   delete (legacy as Partial<typeof current>).captionStyle;
 
   const migrated = normalizeTimelineDocument(legacy, 'project-1');
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.equal(migrated.lastRenderAssetId, null);
   assert.equal(migrated.captionStyle, 'classic');
+  assert.ok(migrated.tracks.some((track) => track.kind === 'overlay'));
 });
 
 test('version 2 timelines migrate the visual track without losing clips', () => {
@@ -82,9 +86,44 @@ test('version 2 timelines migrate the visual track without losing clips', () => 
     })),
   };
   const migrated = normalizeTimelineDocument(legacy, 'project-1');
-  assert.equal(migrated.schemaVersion, 3);
+  assert.equal(migrated.schemaVersion, 4);
   assert.equal(migrated.tracks[0]?.name, 'Visual 1');
   assert.equal(migrated.tracks[0]?.clips.length, 1);
+});
+
+test('image overlays have independent timing, transform, and fades', () => {
+  let document = createTimelineDocument({ projectId: 'project-1', name: 'Demo' });
+  document = addSourceClip(document, {
+    assetId: 'video-1',
+    sourceUrl: '/video.mp4',
+    name: 'video.mp4',
+    sourceType: 'video',
+    sourceDuration: 15,
+  });
+  document = addOverlayClip(document, {
+    clipId: 'brand-overlay',
+    assetId: 'brand-1',
+    sourceUrl: '/brand.png',
+    name: 'BeatDesign brand',
+    startTime: 12.4,
+    duration: 2.6,
+    x: 0.52,
+    y: 0.3,
+    width: 0.64,
+    fadeIn: 0.6,
+  });
+  const overlay = findTimelineClip(document, 'brand-overlay');
+  assert.ok(overlay?.overlay);
+  assert.equal(overlay.startTime, 12.4);
+  assert.equal(overlayOpacityAt(overlay, 12.4), 0);
+  assert.ok(overlayOpacityAt(overlay, 12.7) > 0.49);
+
+  const updated = updateTimelineOverlay(document, overlay.id, {
+    opacity: 0.8,
+    rotation: 8,
+  });
+  assert.equal(findTimelineClip(updated, overlay.id)?.overlay?.opacity, 0.8);
+  assert.equal(findTimelineClip(updated, overlay.id)?.overlay?.rotation, 8);
 });
 
 test('image clips share the visual track and can change still duration', () => {

@@ -5,6 +5,7 @@ import {
 } from '@/core/editor/captions';
 import {
   activateTimelineTake,
+  addOverlayClip,
   addSourceClip,
   addTimelineTake,
   findTimelineClip,
@@ -16,6 +17,7 @@ import {
   splitTimelineClip,
   trimTimelineClip,
   updateTimelineAudioClip,
+  updateTimelineOverlay,
   type TimelineAudioRole,
   type CaptionStylePreset,
   type TimelineDocument,
@@ -35,6 +37,22 @@ export type EditorOperation =
       audioRole?: TimelineAudioRole;
       clipId?: string;
     }
+  | {
+      type: 'add_overlay';
+      clipId?: string;
+      assetId: string;
+      sourceUrl: string;
+      name: string;
+      startTime: number;
+      duration: number;
+      x?: number;
+      y?: number;
+      width?: number;
+      opacity?: number;
+      rotation?: number;
+      fadeIn?: number;
+      fadeOut?: number;
+    }
   | { type: 'trim_clip'; clipId: string; inPoint: number; outPoint: number }
   | {
       type: 'split_clip';
@@ -51,6 +69,19 @@ export type EditorOperation =
       patch: {
         volume?: number;
         muted?: boolean;
+        fadeIn?: number;
+        fadeOut?: number;
+      };
+    }
+  | {
+      type: 'update_overlay';
+      clipId: string;
+      patch: {
+        x?: number;
+        y?: number;
+        width?: number;
+        opacity?: number;
+        rotation?: number;
         fadeIn?: number;
         fadeOut?: number;
       };
@@ -97,6 +128,17 @@ export function applyEditorOperations(
         );
       }
       next = addSourceClip(document, operation);
+      if (next === document && operation.clipId && beforeClipIds.has(operation.clipId)) {
+        continue;
+      }
+    } else if (operation.type === 'add_overlay') {
+      if (!operation.assetId || !operation.sourceUrl || operation.duration <= 0) {
+        throw new BeatDesignCommandError(
+          'INVALID_COMMAND',
+          `Editor operation ${index} has an invalid overlay source.`
+        );
+      }
+      next = addOverlayClip(document, operation);
       if (next === document && operation.clipId && beforeClipIds.has(operation.clipId)) {
         continue;
       }
@@ -147,6 +189,15 @@ export function applyEditorOperations(
         throw new BeatDesignCommandError('NOT_FOUND', `Audio clip ${operation.clipId} was not found.`);
       }
       next = updateTimelineAudioClip(document, operation.clipId, operation.patch);
+    } else if (operation.type === 'update_overlay') {
+      const clip = findTimelineClip(document, operation.clipId);
+      if (!clip?.overlay) {
+        throw new BeatDesignCommandError(
+          'NOT_FOUND',
+          `Overlay clip ${operation.clipId} was not found.`
+        );
+      }
+      next = updateTimelineOverlay(document, operation.clipId, operation.patch);
     } else if (operation.type === 'add_take') {
       if (!findTimelineClip(document, operation.clipId)) {
         throw new BeatDesignCommandError('NOT_FOUND', `Clip ${operation.clipId} was not found.`);
@@ -177,7 +228,7 @@ export function applyEditorOperations(
     } else if (operation.type === 'set_caption_style') {
       next = setCaptionStyle(document, operation.preset);
       changedIds.add(next.id);
-    } else {
+    } else if (operation.type === 'set_render') {
       next = setTimelineRender(document, {
         id: operation.assetId,
         publicUrl: operation.publicUrl,

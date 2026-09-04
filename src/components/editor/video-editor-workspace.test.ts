@@ -108,10 +108,19 @@ test('preview follows the visual clip at the playhead even when another clip is 
         sourceDuration: 7,
         startTime: 0,
       },
+      {
+        type: 'add_overlay',
+        assetId: 'brand',
+        sourceUrl: '/brand.png',
+        name: 'Brand overlay',
+        startTime: 1,
+        duration: 2,
+      },
     ]
   ).document;
 
   assert.equal(findVisualClipAtTimelineTime(timeline, 1)?.name, 'Visual A');
+  assert.equal(findVisualClipAtTimelineTime(timeline, 2)?.name, 'Visual A');
   assert.equal(findVisualClipAtTimelineTime(timeline, 5)?.name, 'Visual B');
   assert.equal(findVisualClipAtTimelineTime(timeline, 7)?.name, 'Visual B');
 });

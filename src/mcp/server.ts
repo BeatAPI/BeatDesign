@@ -232,6 +232,9 @@ function semanticTimelineSnapshot(
           sourceTime: clip.inPoint + (clampedTime - clip.startTime),
           muted: track.muted || clip.muted,
           volume: clip.volume,
+          overlay: clip.overlay,
+          fadeIn: clip.fadeIn,
+          fadeOut: clip.fadeOut,
         },
       ];
     })
@@ -768,7 +771,7 @@ export function createBeatDesignMcpServer() {
   server.registerTool(
     'bdesign_editor_edit',
     {
-      description: 'Apply incremental timeline operations such as add, trim, split, move, remove, audio updates, Takes, captions, caption styles, and SRT import.',
+      description: 'Apply incremental timeline operations such as media and image-overlay add/update, trim, split, move, remove, audio updates, Takes, captions, caption styles, and SRT import.',
       inputSchema: commandMetadataSchema.extend({
         projectId: idSchema.optional(),
         operations: z.array(editorOperationSchema).min(1).max(500),

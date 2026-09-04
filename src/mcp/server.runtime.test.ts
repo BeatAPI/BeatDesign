@@ -80,12 +80,14 @@ test('Canvas and Editor operations expose concrete JSON Schemas to MCP hosts', (
   }
   for (const operation of [
     'add_clip',
+    'add_overlay',
     'trim_clip',
     'split_clip',
     'move_clip',
     'set_clip_duration',
     'remove_clip',
     'update_audio',
+    'update_overlay',
     'add_take',
     'activate_take',
     'set_render',

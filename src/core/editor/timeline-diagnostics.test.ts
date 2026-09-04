@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   activateTimelineTake,
+  addOverlayClip,
   addTimelineTake,
   addSourceClip,
   createTimelineDocument,
@@ -94,6 +95,38 @@ test('timeline diagnostics report overlap in a malformed persisted document', ()
           diagnostic.code === 'clip_overlap' && diagnostic.severity === 'error'
       )
     );
+});
+
+test('an overlay may overlap the base video but cannot extend beyond it', () => {
+  let document = createTimelineDocument({ projectId: 'p1', name: 'Timeline' });
+  document = addSourceClip(document, {
+    assetId: 'v1',
+    sourceUrl: '/v1.mp4',
+    name: 'One',
+    sourceType: 'video',
+    sourceDuration: 5,
+  });
+  document = addOverlayClip(document, {
+    assetId: 'o1',
+    sourceUrl: '/logo.png',
+    name: 'Logo',
+    startTime: 3,
+    duration: 2,
+  });
+  assert.deepEqual(diagnoseTimeline(document), []);
+
+  const malformed = addOverlayClip(document, {
+    assetId: 'o2',
+    sourceUrl: '/logo-2.png',
+    name: 'Late logo',
+    startTime: 5,
+    duration: 1,
+  });
+  assert.ok(
+    diagnoseTimeline(malformed).some(
+      (diagnostic) => diagnostic.code === 'overlay_out_of_video'
+    )
+  );
 });
 
 test('a take shorter than its clip cannot be activated', () => {

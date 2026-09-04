@@ -3,6 +3,7 @@ import {
   FileVideo2,
   Grid2X2,
   ImageIcon,
+  Layers2,
   List,
   Music2,
   Pause,
@@ -47,8 +48,11 @@ import {
 } from '@/core/editor/captions';
 import {
   createTimelineDocument,
+  findOverlayClipsAtTime,
   findTimelineClip,
   getTimelineClipSource,
+  isOverlayClip,
+  overlayOpacityAt,
   type TimelineClip,
   type TimelineDocument,
 } from '@/core/editor/timeline-document';
@@ -119,6 +123,7 @@ export function findVisualClipAtTimelineTime(
   timelineTime: number
 ) {
   const visualClips = document.tracks
+    .filter((track) => track.kind === 'video' && !track.hidden && !track.muted)
     .flatMap((track) => track.clips)
     .filter((clip) => clip.sourceType === 'image' || clip.sourceType === 'video')
     .sort((left, right) => left.startTime - right.startTime);
@@ -327,6 +332,7 @@ export function VideoEditorWorkspace({
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const overlayInputRef = useRef<HTMLInputElement>(null);
   const srtInputRef = useRef<HTMLInputElement>(null);
   const sourceFileRef = useRef<File | null>(null);
   const audioElementsRef = useRef(new Map<string, HTMLAudioElement>());
@@ -347,6 +353,10 @@ export function VideoEditorWorkspace({
   const [isTimelineHydrated, setIsTimelineHydrated] = useState(false);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
   const [metadata, setMetadata] = useState<LocalMediaMetadata | null>(null);
+  const [previewDimensions, setPreviewDimensions] = useState({
+    width: 16,
+    height: 9,
+  });
   const [selectedClipId, setSelectedClipId] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [timelineCursorTime, setTimelineCursorTime] = useState(0);
@@ -374,6 +384,9 @@ export function VideoEditorWorkspace({
   const selectedClip = selectedClipId
     ? findTimelineClip(document, selectedClipId)
     : undefined;
+  const selectedIsOverlay = selectedClip
+    ? isOverlayClip(document, selectedClip.id)
+    : false;
   const displayedSelectedClip =
     selectedClip && timelineDragPreview?.id === selectedClip.id
       ? { ...selectedClip, ...timelineDragPreview }
@@ -392,11 +405,14 @@ export function VideoEditorWorkspace({
       : 0,
     0.001
   );
-  const primaryVisualClip = clips.find(
-    (clip) => clip.sourceType === 'image' || clip.sourceType === 'video'
-  );
+  const primaryVisualClip = document.tracks
+    .find((track) => track.kind === 'video')
+    ?.clips.find(
+      (clip) => clip.sourceType === 'image' || clip.sourceType === 'video'
+    );
   const activeCaption = findCaptionAtTime(document, timelineCurrentTime);
   const activeCaptionStyle = getCaptionStyleDefinition(document.captionStyle);
+  const activeOverlays = findOverlayClipsAtTime(document, timelineCurrentTime);
   const activeVisualClip = findVisualClipAtTimelineTime(
     document,
     timelineCurrentTime
@@ -509,8 +525,8 @@ export function VideoEditorWorkspace({
         lastSavedDocumentRef.current = nextDocument;
         documentRef.current = nextDocument;
         const visualClips = nextDocument.tracks
-          .flatMap((track) => track.clips)
-          .filter((clip) => clip.sourceType !== 'audio');
+          .filter((track) => track.kind === 'video')
+          .flatMap((track) => track.clips);
         const requestedTimelineTime = Number(
           new URLSearchParams(window.location.search).get('t')
         );
@@ -693,14 +709,25 @@ export function VideoEditorWorkspace({
         resetDocument(remote.document);
 
         const remoteVisualClips = remote.document.tracks
-          .flatMap((track) => track.clips)
-          .filter((clip) => clip.sourceType !== 'audio');
+          .filter((track) => track.kind === 'video')
+          .flatMap((track) => track.clips);
+        const remoteClips = remote.document.tracks.flatMap(
+          (track) => track.clips
+        );
         const nextSelectedClip =
           (selectedClipId
-            ? remoteVisualClips.find((clip) => clip.id === selectedClipId)
+            ? remoteClips.find((clip) => clip.id === selectedClipId)
             : undefined) ?? remoteVisualClips[0];
-        const nextSource = nextSelectedClip
-          ? getTimelineClipSource(nextSelectedClip)
+        const nextPreviewClip =
+          nextSelectedClip &&
+          remoteVisualClips.some((clip) => clip.id === nextSelectedClip.id)
+            ? nextSelectedClip
+            : findVisualClipAtTimelineTime(
+                remote.document,
+                nextSelectedClip?.startTime ?? timelineCurrentTime
+              ) ?? remoteVisualClips[0];
+        const nextSource = nextPreviewClip
+          ? getTimelineClipSource(nextPreviewClip)
           : null;
         setSelectedClipId(nextSelectedClip?.id ?? null);
         setSourceUrl(nextSource?.sourceUrl ?? null);
@@ -708,17 +735,17 @@ export function VideoEditorWorkspace({
           Math.max(0, Math.min(time, remote.document.duration))
         );
         setCurrentTime((time) =>
-          nextSelectedClip
+          nextPreviewClip
             ? Math.max(
                 nextSource?.inPoint ?? 0,
-                Math.min(time, nextSource?.outPoint ?? nextSelectedClip.duration)
+                Math.min(time, nextSource?.outPoint ?? nextPreviewClip.duration)
               )
             : 0
         );
         setMetadata(
-          nextSelectedClip?.sourceType === 'video'
+          nextPreviewClip?.sourceType === 'video'
             ? {
-                duration: nextSelectedClip.sourceDuration,
+                duration: nextPreviewClip.sourceDuration,
                 width: null,
                 height: null,
                 hasVideo: true,
@@ -890,6 +917,10 @@ export function VideoEditorWorkspace({
       Math.min(clip.duration, timelineTime - clip.startTime)
     );
     setTimelineCursorTime(clip.startTime + offset);
+    if (isOverlayClip(document, clip.id)) {
+      seekTimeline(clip.startTime + offset);
+      return;
+    }
     if (clip.sourceType !== 'audio') {
       const source = getTimelineClipSource(clip);
       setSourceUrl(source.sourceUrl);
@@ -1014,6 +1045,66 @@ export function VideoEditorWorkspace({
   const handleFileInput = (event: ChangeEvent<HTMLInputElement>) => {
     const [file] = Array.from(event.target.files ?? []);
     if (file) void loadFile(file);
+    event.target.value = '';
+  };
+
+  const loadOverlayFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError(t('errors.overlayImageOnly'));
+      return;
+    }
+    const hasBaseVisual = document.tracks.some(
+      (track) => track.kind === 'video' && track.clips.length > 0
+    );
+    if (!hasBaseVisual || document.duration <= 0) {
+      setError(t('errors.overlayNeedsVisual'));
+      return;
+    }
+    setError(null);
+    setIsInspecting(true);
+    try {
+      const imageBitmap = await createImageBitmap(file);
+      const persistedAsset = await uploadLocalProjectAsset({
+        projectId,
+        file,
+        width: imageBitmap.width,
+        height: imageBitmap.height,
+      });
+      imageBitmap.close();
+      const duration = Math.min(3, document.duration);
+      const startTime = Math.max(0, document.duration - duration);
+      const nextDocument = applyEditorOperations(document, [
+        {
+          type: 'add_overlay',
+          assetId: persistedAsset.id,
+          sourceUrl: persistedAsset.publicUrl,
+          name: file.name,
+          startTime,
+          duration,
+          x: 0.5,
+          y: 0.25,
+          width: 0.7,
+          opacity: 1,
+          fadeIn: Math.min(0.6, duration),
+        },
+      ]).document;
+      const nextClip = nextDocument.tracks
+        .find((track) => track.kind === 'overlay')
+        ?.clips.find((clip) => clip.assetId === persistedAsset.id);
+      commitDocument(nextDocument);
+      setSelectedClipId(nextClip?.id ?? null);
+      setTimelineCursorTime(startTime);
+      setIsPlaying(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : t('errors.inspectFailed'));
+    } finally {
+      setIsInspecting(false);
+    }
+  };
+
+  const handleOverlayInput = (event: ChangeEvent<HTMLInputElement>) => {
+    const [file] = Array.from(event.target.files ?? []);
+    if (file) void loadOverlayFile(file);
     event.target.value = '';
   };
 
@@ -1649,6 +1740,13 @@ export function VideoEditorWorkspace({
         onChange={handleAudioInput}
       />
       <input
+        ref={overlayInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/avif,image/*"
+        className="hidden"
+        onChange={handleOverlayInput}
+      />
+      <input
         ref={srtInputRef}
         type="file"
         accept=".srt,application/x-subrip,text/plain"
@@ -1755,6 +1853,14 @@ export function VideoEditorWorkspace({
               >
                 <Subtitles className="size-3.5" />
                 {t('media.importSrt')}
+              </button>
+              <button
+                type="button"
+                onClick={() => overlayInputRef.current?.click()}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.035] text-xs font-[540] text-white/68 transition hover:bg-white/[0.075] hover:text-white"
+              >
+                <Layers2 className="size-3.5" />
+                {t('media.importOverlay')}
               </button>
             </div>
           </div>
@@ -1902,54 +2008,37 @@ export function VideoEditorWorkspace({
           </div>
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black/35 p-4 sm:p-8">
-            {activeCaption?.text ? (
+            {sourceUrl && previewClip ? (
               <div
-                className="pointer-events-none absolute inset-x-8 z-10 flex justify-center"
-                style={{ bottom: `${activeCaptionStyle.bottomOffset * 100}%` }}
+                className="relative h-full max-h-full max-w-full overflow-hidden rounded-xl bg-black shadow-2xl"
+                style={{
+                  aspectRatio: `${previewDimensions.width} / ${previewDimensions.height}`,
+                }}
               >
-                <p
-                  className="max-w-3xl whitespace-pre-line break-words rounded-lg px-4 py-2 text-center text-sm text-white sm:text-lg"
-                  style={{
-                    maxWidth: `${activeCaptionStyle.maxWidth * 100}%`,
-                    fontWeight: activeCaptionStyle.fontWeight,
-                    lineHeight: activeCaptionStyle.lineHeight,
-                    textTransform: activeCaptionStyle.uppercase
-                      ? 'uppercase'
-                      : 'none',
-                    background: activeCaptionStyle.backgroundStyle ?? 'transparent',
-                    WebkitTextStroke: activeCaptionStyle.strokeStyle
-                      ? `${Math.max(1, activeCaptionStyle.strokeScale * 8)}px ${activeCaptionStyle.strokeStyle}`
-                      : undefined,
-                    paintOrder: 'stroke fill',
-                    textShadow: activeCaptionStyle.strokeStyle
-                      ? '0 2px 8px rgba(0,0,0,0.45)'
-                      : '0 8px 24px rgba(0,0,0,0.35)',
-                    fontSize:
-                      document.captionStyle === 'bold'
-                        ? 'clamp(16px, 2.2vw, 30px)'
-                        : document.captionStyle === 'minimal'
-                          ? 'clamp(12px, 1.6vw, 21px)'
-                          : 'clamp(14px, 1.9vw, 25px)',
-                  }}
-                >
-                  {activeCaption.text}
-                </p>
-              </div>
-            ) : null}
-            {sourceUrl && previewClip?.sourceType === 'image' ? (
-              <img
-                src={sourceUrl}
-                alt={previewClip.name}
-                className="h-full w-full max-w-5xl rounded-xl bg-black object-contain shadow-2xl"
-              />
-            ) : sourceUrl && previewClip?.sourceType === 'video' ? (
-              <video
+              {previewClip.sourceType === 'image' ? (
+                <img
+                  src={sourceUrl}
+                  alt={previewClip.name}
+                  className="size-full object-contain"
+                  onLoad={(event) =>
+                    setPreviewDimensions({
+                      width: event.currentTarget.naturalWidth || 16,
+                      height: event.currentTarget.naturalHeight || 9,
+                    })
+                  }
+                />
+              ) : (
+                <video
                 ref={videoRef}
                 src={sourceUrl}
                 playsInline
-                className="h-full w-full max-w-5xl rounded-xl bg-black object-contain shadow-2xl"
+                className="size-full object-contain"
                 onLoadedMetadata={(event) => {
                   if (!previewClip || !previewSource) return;
+                  setPreviewDimensions({
+                    width: event.currentTarget.videoWidth || 16,
+                    height: event.currentTarget.videoHeight || 9,
+                  });
                   const target = Math.max(
                     previewSource.inPoint,
                     Math.min(previewSource.outPoint, currentTime)
@@ -1997,6 +2086,62 @@ export function VideoEditorWorkspace({
                   }
                 }}
               />
+              )}
+              {activeOverlays.map((overlay) => (
+                <img
+                  key={overlay.id}
+                  src={overlay.sourceUrl}
+                  alt=""
+                  className={`pointer-events-none absolute z-10 h-auto max-w-none ${
+                    selectedClipId === overlay.id
+                      ? 'drop-shadow-[0_0_10px_rgba(118,169,255,0.45)]'
+                      : ''
+                  }`}
+                  style={{
+                    left: `${overlay.overlay!.x * 100}%`,
+                    top: `${overlay.overlay!.y * 100}%`,
+                    width: `${overlay.overlay!.width * 100}%`,
+                    opacity: overlayOpacityAt(overlay, timelineCurrentTime),
+                    transform: `translate(-50%, -50%) rotate(${overlay.overlay!.rotation}deg)`,
+                  }}
+                />
+              ))}
+              {activeCaption?.text ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 z-20 flex justify-center"
+                  style={{ bottom: `${activeCaptionStyle.bottomOffset * 100}%` }}
+                >
+                  <p
+                    className="whitespace-pre-line break-words rounded-lg px-4 py-2 text-center text-white"
+                    style={{
+                      maxWidth: `${activeCaptionStyle.maxWidth * 100}%`,
+                      fontWeight: activeCaptionStyle.fontWeight,
+                      lineHeight: activeCaptionStyle.lineHeight,
+                      textTransform: activeCaptionStyle.uppercase
+                        ? 'uppercase'
+                        : 'none',
+                      background:
+                        activeCaptionStyle.backgroundStyle ?? 'transparent',
+                      WebkitTextStroke: activeCaptionStyle.strokeStyle
+                        ? `${Math.max(1, activeCaptionStyle.strokeScale * 8)}px ${activeCaptionStyle.strokeStyle}`
+                        : undefined,
+                      paintOrder: 'stroke fill',
+                      textShadow: activeCaptionStyle.strokeStyle
+                        ? '0 2px 8px rgba(0,0,0,0.45)'
+                        : '0 8px 24px rgba(0,0,0,0.35)',
+                      fontSize:
+                        document.captionStyle === 'bold'
+                          ? 'clamp(16px, 2.2vw, 30px)'
+                          : document.captionStyle === 'minimal'
+                            ? 'clamp(12px, 1.6vw, 21px)'
+                            : 'clamp(14px, 1.9vw, 25px)',
+                    }}
+                  >
+                    {activeCaption.text}
+                  </p>
+                </div>
+              ) : null}
+              </div>
             ) : (
               <button
                 type="button"
@@ -2242,6 +2387,8 @@ export function VideoEditorWorkspace({
                         <Volume2 className="size-3.5" />
                       ) : track.kind === 'caption' ? (
                         <Subtitles className="size-3.5" />
+                      ) : track.kind === 'overlay' ? (
+                        <Layers2 className="size-3.5" />
                       ) : (
                         <FileVideo2 className="size-3.5" />
                       )}
@@ -2249,7 +2396,9 @@ export function VideoEditorWorkspace({
                         ? t('timeline.audioTrack')
                         : track.kind === 'caption'
                           ? t('timeline.captionTrack')
-                        : t('timeline.visualTrack')}
+                          : track.kind === 'overlay'
+                            ? t('timeline.overlayTrack')
+                            : t('timeline.visualTrack')}
                     </div>
                     <div
                       data-timeline-track
@@ -2321,7 +2470,9 @@ export function VideoEditorWorkspace({
               <>
                 <div className="flex items-center gap-3 border-b border-white/[0.07] pb-4">
                   <span className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl bg-white/[0.055] text-white/62">
-                    {selectedClip.sourceType === 'image' ? (
+                    {selectedIsOverlay ? (
+                      <Layers2 className="size-4" />
+                    ) : selectedClip.sourceType === 'image' ? (
                       <ImageIcon className="size-4" />
                     ) : selectedClip.sourceType === 'video' ? (
                       <FileVideo2 className="size-4" />
@@ -2336,7 +2487,12 @@ export function VideoEditorWorkspace({
                       {selectedClip.name}
                     </span>
                     <span className="mt-1 block text-[10px] text-white/38">
-                      {t(`clipInspector.type.${selectedClip.sourceType}`)} ·{' '}
+                      {t(
+                        `clipInspector.type.${
+                          selectedIsOverlay ? 'overlay' : selectedClip.sourceType
+                        }`
+                      )}{' '}
+                      ·{' '}
                       {displayedSelectedClip.duration.toFixed(2)}s
                     </span>
                   </span>
@@ -2446,6 +2602,82 @@ export function VideoEditorWorkspace({
                             </button>
                           ))}
                         </div>
+                      </div>
+                    </div>
+                  ) : selectedIsOverlay && selectedClip.overlay ? (
+                    <div className="space-y-4 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
+                      {([
+                        ['x', 0, 1, 0.01, selectedClip.overlay.x],
+                        ['y', 0, 1, 0.01, selectedClip.overlay.y],
+                        ['width', 0.05, 2, 0.01, selectedClip.overlay.width],
+                        ['opacity', 0, 1, 0.01, selectedClip.overlay.opacity],
+                        ['rotation', -180, 180, 1, selectedClip.overlay.rotation],
+                        ['fadeIn', 0, selectedClip.duration, 0.01, selectedClip.fadeIn],
+                        ['fadeOut', 0, selectedClip.duration, 0.01, selectedClip.fadeOut],
+                      ] as const).map(([field, min, max, step, value]) => (
+                        <label key={field} className="block">
+                          <span className="mb-2 flex items-center justify-between text-[10px] font-[520] text-white/45">
+                            <span>{t(`overlay.${field}`)}</span>
+                            <span className="tabular-nums text-white/62">
+                              {field === 'fadeIn' || field === 'fadeOut'
+                                ? `${value.toFixed(2)}s`
+                                : field === 'rotation'
+                                  ? `${Math.round(value)}°`
+                                  : `${Math.round(value * 100)}%`}
+                            </span>
+                          </span>
+                          <input
+                            type="range"
+                            min={min}
+                            max={max}
+                            step={step}
+                            value={value}
+                            onChange={(event) =>
+                              commitDocument((current) =>
+                                applyEditorOperations(current, [
+                                  {
+                                    type: 'update_overlay',
+                                    clipId: selectedClip.id,
+                                    patch: { [field]: Number(event.target.value) },
+                                  },
+                                ]).document
+                              )
+                            }
+                            className="h-1 w-full accent-[var(--beat-graph)]"
+                          />
+                        </label>
+                      ))}
+                      <div className="grid grid-cols-2 gap-2 border-t border-white/[0.07] pt-3">
+                        <label className="block">
+                          <span className="mb-2 block text-[10px] text-white/38">
+                            {t('clipInspector.timelinePosition')}
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={0.01}
+                            value={Number(selectedClip.startTime.toFixed(2))}
+                            onChange={(event) =>
+                              moveSelectedClip(Number(event.target.value))
+                            }
+                            className="h-8 w-full rounded-lg border border-white/10 bg-black/25 px-2 text-[11px] tabular-nums text-white/80 outline-none focus:border-[var(--beat-graph)]/55"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-2 block text-[10px] text-white/38">
+                            {t('clipInspector.stillDuration')}
+                          </span>
+                          <input
+                            type="number"
+                            min={MIN_CLIP_DURATION}
+                            step={0.1}
+                            value={Number(selectedClip.duration.toFixed(2))}
+                            onChange={(event) =>
+                              resizeSelectedImage(Number(event.target.value))
+                            }
+                            className="h-8 w-full rounded-lg border border-white/10 bg-black/25 px-2 text-[11px] tabular-nums text-white/80 outline-none focus:border-[var(--beat-graph)]/55"
+                          />
+                        </label>
                       </div>
                     </div>
                   ) : selectedClip.sourceType === 'audio' ? (

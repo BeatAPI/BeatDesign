@@ -426,6 +426,7 @@
         "importVisual": "画面",
         "importAudio": "音频",
         "importSrt": "字幕",
+        "importOverlay": "叠加",
         "empty": "尚未导入素材",
         "noResults": "没有匹配的素材",
         "drop": "拖入图片或视频",
@@ -493,6 +494,7 @@
         "tracks": "轨道",
         "title": "时间线",
         "visualTrack": "画面 1",
+        "overlayTrack": "叠加 1",
         "audioTrack": "声音 1",
         "captionTrack": "字幕",
         "start": "起始位置",
@@ -516,7 +518,8 @@
           "image": "静态图片",
           "video": "视频片段",
           "audio": "音频片段",
-          "caption": "字幕"
+          "caption": "字幕",
+          "overlay": "图片叠加"
         }
       },
       "captions": {
@@ -537,6 +540,15 @@
         "unmute": "取消静音",
         "mutedHint": "当前片段已静音，音量参数会继续保留。",
         "activeHint": "音频跟随时间线播放头，淡入淡出会同时应用于预览和导出。"
+      },
+      "overlay": {
+        "x": "水平位置",
+        "y": "垂直位置",
+        "width": "宽度",
+        "opacity": "透明度",
+        "rotation": "旋转",
+        "fadeIn": "淡入",
+        "fadeOut": "淡出"
       },
       "panel": {
         "title": "片段助手",
@@ -573,6 +585,7 @@
         "take_duration_mismatch": "当前 AI Take 短于时间线片段，已阻止导出，避免尾帧冻结。",
         "caption_overlap": "字幕存在重叠，已阻止导出。",
         "caption_out_of_video": "有字幕超出视频范围，已阻止导出。",
+        "overlay_out_of_video": "有叠加图片超出主视频范围，已阻止导出。",
         "tiny_clip": "有片段过短，可能无法稳定导出。",
         "empty_track": "空轨道将在导出时忽略。"
       },
@@ -580,6 +593,8 @@
         "videoOnly": "请选择视频文件。",
         "visualOnly": "请选择图片或视频文件。",
         "audioOnly": "请选择 MP3、WAV、M4A、AAC 或 OGG 音频文件。",
+        "overlayImageOnly": "请选择一张图片作为叠加层。",
+        "overlayNeedsVisual": "请先加入主画面，再添加叠加图片。",
         "noVideoTrack": "这个文件里没有可读取的视频轨道。",
         "noAudioTrack": "这个文件里没有可读取的音频轨道。",
         "inspectFailed": "浏览器无法读取这个媒体文件。",

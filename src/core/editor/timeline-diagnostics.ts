@@ -7,6 +7,7 @@ export type TimelineDiagnosticCode =
   | 'take_duration_mismatch'
   | 'caption_overlap'
   | 'caption_out_of_video'
+  | 'overlay_out_of_video'
   | 'tiny_clip'
   | 'empty_track';
 
@@ -87,7 +88,7 @@ export function diagnoseTimeline(document: TimelineDocument) {
   }
 
   const videoClips = document.tracks
-    .filter((track) => track.kind === 'video' && !track.hidden)
+    .filter((track) => track.kind === 'video' && !track.hidden && !track.muted)
     .flatMap((track) => track.clips)
     .sort(byStartTime);
   let visibleVideoEnd = 0;
@@ -117,6 +118,24 @@ export function diagnoseTimeline(document: TimelineDocument) {
     .filter((track) => track.kind === 'caption' && !track.hidden)
     .flatMap((track) => track.clips);
   if (videoClips.length > 0) {
+    const overlayClips = document.tracks
+      .filter((track) => track.kind === 'overlay' && !track.hidden && !track.muted)
+      .flatMap((track) => track.clips);
+    for (const clip of overlayClips) {
+      if (
+        clip.startTime < videoClips[0].startTime - 0.05 ||
+        clip.startTime + clip.duration > visibleVideoEnd + 0.05
+      ) {
+        diagnostics.push({
+          code: 'overlay_out_of_video',
+          severity: 'error',
+          trackId: clip.trackId,
+          clipId: clip.id,
+          startTime: clip.startTime,
+          endTime: clip.startTime + clip.duration,
+        });
+      }
+    }
     for (const clip of captionClips) {
       if (clip.startTime + clip.duration > visibleVideoEnd + 0.05) {
         diagnostics.push({

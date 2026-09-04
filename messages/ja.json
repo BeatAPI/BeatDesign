@@ -426,6 +426,7 @@
         "importVisual": "ビジュアル",
         "importAudio": "音声",
         "importSrt": "字幕",
+        "importOverlay": "オーバーレイ",
         "empty": "メディアはまだありません",
         "noResults": "一致するメディアはありません",
         "drop": "画像または動画をここにドロップ",
@@ -493,6 +494,7 @@
         "tracks": "トラック",
         "title": "Timeline",
         "visualTrack": "ビジュアル 1",
+        "overlayTrack": "オーバーレイ 1",
         "audioTrack": "音声 1",
         "captionTrack": "字幕",
         "start": "開始",
@@ -516,7 +518,8 @@
           "image": "静止画",
           "video": "動画Clip",
           "audio": "音声Clip",
-          "caption": "字幕"
+          "caption": "字幕",
+          "overlay": "画像オーバーレイ"
         }
       },
       "captions": {
@@ -537,6 +540,15 @@
         "unmute": "ミュート解除",
         "mutedHint": "このClipはミュートされています。音量設定は保持されます。",
         "activeHint": "音声はTimelineの再生ヘッドに追従し、プレビューと書き出し時にフェードが適用されます。"
+      },
+      "overlay": {
+        "x": "水平位置",
+        "y": "垂直位置",
+        "width": "幅",
+        "opacity": "不透明度",
+        "rotation": "回転",
+        "fadeIn": "フェードイン",
+        "fadeOut": "フェードアウト"
       },
       "panel": {
         "title": "Clip Agent",
@@ -573,6 +585,7 @@
         "take_duration_mismatch": "アクティブなAI TakeがTimelineのClipより短いため、書き出しできません。",
         "caption_overlap": "字幕が重なっているため、書き出しできません。",
         "caption_out_of_video": "字幕が動画の範囲外にあるため、書き出しできません。",
+        "overlay_out_of_video": "オーバーレイがベース動画の範囲外にあるため、書き出しできません。",
         "tiny_clip": "Clipが短すぎるため、安定して書き出せません。",
         "empty_track": "空のトラックは無視されます。"
       },
@@ -580,6 +593,8 @@
         "videoOnly": "動画ファイルを選択してください。",
         "visualOnly": "画像または動画ファイルを選択してください。",
         "audioOnly": "MP3、WAV、M4A、AAC、またはOGG音声ファイルを選択してください。",
+        "overlayImageOnly": "オーバーレイ用の画像を選択してください。",
+        "overlayNeedsVisual": "先にベース画像または動画を追加してください。",
         "noVideoTrack": "このファイルには読み取り可能な動画トラックがありません。",
         "noAudioTrack": "このファイルには読み取り可能な音声トラックがありません。",
         "inspectFailed": "ブラウザーでこのメディアファイルを読み取れませんでした。",

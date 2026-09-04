@@ -426,6 +426,7 @@
         "importVisual": "Visual",
         "importAudio": "Audio",
         "importSrt": "Captions",
+        "importOverlay": "Overlay",
         "empty": "No media imported",
         "noResults": "No matching media",
         "drop": "Drop an image or video here",
@@ -493,6 +494,7 @@
         "tracks": "Tracks",
         "title": "Timeline",
         "visualTrack": "Visual 1",
+        "overlayTrack": "Overlay 1",
         "audioTrack": "Audio 1",
         "captionTrack": "Captions",
         "start": "Start",
@@ -516,7 +518,8 @@
           "image": "Still image",
           "video": "Video clip",
           "audio": "Audio clip",
-          "caption": "Caption"
+          "caption": "Caption",
+          "overlay": "Image overlay"
         }
       },
       "captions": {
@@ -537,6 +540,15 @@
         "unmute": "Unmute",
         "mutedHint": "This clip is muted. Its volume setting is preserved.",
         "activeHint": "Audio follows the timeline playhead and fades are applied during preview and export."
+      },
+      "overlay": {
+        "x": "Horizontal position",
+        "y": "Vertical position",
+        "width": "Width",
+        "opacity": "Opacity",
+        "rotation": "Rotation",
+        "fadeIn": "Fade in",
+        "fadeOut": "Fade out"
       },
       "panel": {
         "title": "Clip Agent",
@@ -573,6 +585,7 @@
         "take_duration_mismatch": "Export is blocked because the active AI Take is shorter than its timeline clip.",
         "caption_overlap": "Export is blocked because captions overlap.",
         "caption_out_of_video": "Export is blocked because a caption sits outside the video range.",
+        "overlay_out_of_video": "Export is blocked because an overlay sits outside the base video range.",
         "tiny_clip": "A clip is too short to export reliably.",
         "empty_track": "An empty track will be ignored."
       },
@@ -580,6 +593,8 @@
         "videoOnly": "Choose a video file.",
         "visualOnly": "Choose an image or video file.",
         "audioOnly": "Choose an MP3, WAV, M4A, AAC, or OGG audio file.",
+        "overlayImageOnly": "Choose an image for the overlay.",
+        "overlayNeedsVisual": "Add a base image or video before adding an overlay.",
         "noVideoTrack": "This file does not contain a readable video track.",
         "noAudioTrack": "This file does not contain a readable audio track.",
         "inspectFailed": "The browser could not read this media file.",

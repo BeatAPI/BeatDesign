@@ -145,6 +145,12 @@ incremental operation as a concrete JSON Schema. Agents can discover required
 IDs, time fields, media roles, card parameters, Takes, and render fields from
 the MCP tool contract instead of guessing an opaque operation object.
 
+Editor agents add a project-owned image overlay with `add_overlay`, then adjust
+its normalized position, width, opacity, rotation, and fades with
+`update_overlay`. Overlay clips live on their own visual track, may overlap the
+base video, and remain subject to the same revision checks, Asset boundary, and
+durable timeline persistence as UI edits. Captions are composited after overlays.
+
 For a newly connected Canvas node, append a `place_card` operation after its
 `upsert_card`. By default it places the target once to the right of the frames
 listed in `sourceCardIds`, or to the right of the card's `referenceCardIds` when

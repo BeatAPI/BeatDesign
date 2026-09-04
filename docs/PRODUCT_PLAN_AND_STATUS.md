@@ -107,16 +107,18 @@ Codex / Claude Code / Other Agent
 
 ### Editor
 
-- 项目级 TimelineDocument、Video/Audio Track、Clip 和 Take。
+- 项目级 TimelineDocument、Video/Overlay/Audio/Caption Track、Clip 和 Take。
 - 视频和音频导入。
 - 非破坏式 trim、split、move、delete 和 ripple delete。
 - undo/redo。
 - 音量、静音、淡入和淡出。
+- 图片 Overlay 叠加，支持位置、宽度、透明度、旋转和淡入淡出；预览与 MP4 导出保持一致。
 - 浏览器本地预览。
 - 选区派生 MP4。
 - BeatAPI 选区 AI redo。
 - Redo 结果作为 Take 保存、激活和恢复 Original。
 - 完整 Timeline H.264/AAC MP4 导出。
+- 字幕在 Overlay 之后绘制，确保字幕始终位于最终画面层。
 - 导出写回 Assets 和 Canvas Timeline Node。
 - 缺失素材、Clip 重叠和视频轨空隙诊断。
 - Editor 自动保存统一走 Command Kernel；并发写入使用 revision/CAS 和三方合并，不再用旧文档覆盖新版本。

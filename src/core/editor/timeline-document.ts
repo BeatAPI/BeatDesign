@@ -9,11 +9,30 @@
 
 import { z } from 'zod';
 
-export const TIMELINE_SCHEMA_VERSION = 3 as const;
+export const TIMELINE_SCHEMA_VERSION = 4 as const;
 
-export type TimelineTrackKind = 'video' | 'audio' | 'caption';
+export type TimelineTrackKind = 'video' | 'overlay' | 'audio' | 'caption';
 export type TimelineAudioRole = 'music' | 'voice' | 'sfx' | 'source';
 export type CaptionStylePreset = 'classic' | 'bold' | 'boxed' | 'minimal';
+
+export type TimelineOverlayTransform = {
+  /** Horizontal center in normalized output coordinates. */
+  x: number;
+  /** Vertical center in normalized output coordinates. */
+  y: number;
+  /** Width as a fraction of the output frame width. */
+  width: number;
+  opacity: number;
+  rotation: number;
+};
+
+export const DEFAULT_OVERLAY_TRANSFORM: TimelineOverlayTransform = {
+  x: 0.5,
+  y: 0.25,
+  width: 0.7,
+  opacity: 1,
+  rotation: 0,
+};
 
 export type TimelineTake = {
   id: string;
@@ -44,6 +63,7 @@ export type TimelineClip = {
   fadeOut: number;
   text?: string;
   audioRole?: TimelineAudioRole;
+  overlay: TimelineOverlayTransform | null;
   takes: TimelineTake[];
   activeTakeId: string | null;
 };
@@ -99,6 +119,17 @@ const timelineClipSchema = z.object({
   fadeOut: z.number().finite().min(0).max(86_400).default(0),
   text: z.string().max(4_000).default(''),
   audioRole: z.enum(['music', 'voice', 'sfx', 'source']).optional(),
+  overlay: z
+    .object({
+      x: z.number().finite().min(0).max(1),
+      y: z.number().finite().min(0).max(1),
+      width: z.number().finite().min(0.05).max(2),
+      opacity: z.number().finite().min(0).max(1),
+      rotation: z.number().finite().min(-180).max(180),
+    })
+    .strict()
+    .nullable()
+    .default(null),
   takes: z
     .array(
       z.object({
@@ -119,7 +150,7 @@ const timelineClipSchema = z.object({
 
 const timelineTrackSchema = z.object({
   id: z.string().min(1).max(160),
-  kind: z.enum(['video', 'audio', 'caption']),
+  kind: z.enum(['video', 'overlay', 'audio', 'caption']),
   name: z.string().min(1).max(120),
   locked: z.boolean(),
   hidden: z.boolean(),
@@ -188,6 +219,15 @@ export function createTimelineDocument({
         id: createId('video-track'),
         kind: 'video',
         name: 'Visual 1',
+        locked: false,
+        hidden: false,
+        muted: false,
+        clips: [],
+      },
+      {
+        id: createId('overlay-track'),
+        kind: 'overlay',
+        name: 'Overlay 1',
         locked: false,
         hidden: false,
         muted: false,
@@ -281,6 +321,7 @@ export function addSourceClip(
     fadeOut: 0,
     text: '',
     audioRole: source.audioRole,
+    overlay: null,
     takes: [],
     activeTakeId: null,
   };
@@ -295,6 +336,74 @@ export function addSourceClip(
   );
 }
 
+export function addOverlayClip(
+  document: TimelineDocument,
+  source: {
+    assetId: string;
+    sourceUrl?: string;
+    name: string;
+    startTime: number;
+    duration: number;
+    clipId?: string;
+    x?: number;
+    y?: number;
+    width?: number;
+    opacity?: number;
+    rotation?: number;
+    fadeIn?: number;
+    fadeOut?: number;
+  }
+) {
+  const track = document.tracks.find((candidate) => candidate.kind === 'overlay');
+  if (!track || !source.assetId || !source.sourceUrl) return document;
+  if (source.clipId && findTimelineClip(document, source.clipId)) return document;
+  const duration = roundTime(finiteNonNegative(source.duration));
+  if (duration < 0.04) return document;
+  const startTime = roundTime(finiteNonNegative(source.startTime));
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
+  const overlay: TimelineOverlayTransform = {
+    x: clamp(source.x ?? DEFAULT_OVERLAY_TRANSFORM.x, 0, 1),
+    y: clamp(source.y ?? DEFAULT_OVERLAY_TRANSFORM.y, 0, 1),
+    width: clamp(source.width ?? DEFAULT_OVERLAY_TRANSFORM.width, 0.05, 2),
+    opacity: clamp(source.opacity ?? DEFAULT_OVERLAY_TRANSFORM.opacity, 0, 1),
+    rotation: clamp(
+      source.rotation ?? DEFAULT_OVERLAY_TRANSFORM.rotation,
+      -180,
+      180
+    ),
+  };
+  const clip: TimelineClip = {
+    id: source.clipId?.trim() || createId('overlay'),
+    assetId: source.assetId,
+    sourceUrl: source.sourceUrl,
+    trackId: track.id,
+    name: source.name,
+    sourceType: 'image',
+    startTime,
+    duration,
+    inPoint: 0,
+    outPoint: duration,
+    sourceDuration: duration,
+    volume: 1,
+    muted: false,
+    fadeIn: clamp(source.fadeIn ?? 0, 0, duration),
+    fadeOut: clamp(source.fadeOut ?? 0, 0, duration),
+    text: '',
+    overlay,
+    takes: [],
+    activeTakeId: null,
+  };
+  return withUpdatedTracks(
+    document,
+    document.tracks.map((candidate) =>
+      candidate.id === track.id
+        ? { ...candidate, clips: [...candidate.clips, clip] }
+        : candidate
+    )
+  );
+}
+
 export function normalizeTimelineDocument(
   value: unknown,
   expectedProjectId?: string
@@ -305,7 +414,7 @@ export function normalizeTimelineDocument(
       : null;
   const legacyDocument = value as Record<string, unknown>;
   const migrated =
-    version === 1 || version === 2
+    version === 1 || version === 2 || version === 3
       ? {
           ...legacyDocument,
           schemaVersion: TIMELINE_SCHEMA_VERSION,
@@ -338,6 +447,7 @@ export function normalizeTimelineDocument(
                                       ? null
                                       : ((clip as { activeTakeId?: unknown })
                                           .activeTakeId ?? null),
+                                  overlay: null,
                                 }
                               : clip
                           )
@@ -393,27 +503,149 @@ export function normalizeTimelineDocument(
           'Timeline clip points to a missing take.'
         );
       }
+      if (
+        (track.kind === 'overlay' &&
+          (clip.sourceType !== 'image' || !clip.overlay)) ||
+        (track.kind !== 'overlay' && clip.overlay)
+      ) {
+        throw new TimelineDocumentValidationError(
+          'Timeline overlay metadata does not match its track.'
+        );
+      }
     }
   }
-  const tracks = parsed.tracks.some((track) => track.kind === 'caption')
-    ? parsed.tracks
-    : [
-        ...parsed.tracks,
-        {
-          id: createId('caption-track'),
-          kind: 'caption' as const,
-          name: 'Captions',
-          locked: false,
-          hidden: false,
-          muted: false,
-          clips: [],
-        },
-      ];
+  let tracks: TimelineTrack[] = parsed.tracks;
+  if (!tracks.some((track) => track.kind === 'overlay')) {
+    const overlayTrack: TimelineTrack = {
+      id: createId('overlay-track'),
+      kind: 'overlay',
+      name: 'Overlay 1',
+      locked: false,
+      hidden: false,
+      muted: false,
+      clips: [],
+    };
+    const baseTrackIndex = tracks.findIndex((track) => track.kind === 'video');
+    tracks = [
+      ...tracks.slice(0, baseTrackIndex + 1),
+      overlayTrack,
+      ...tracks.slice(baseTrackIndex + 1),
+    ];
+  }
+  if (!tracks.some((track) => track.kind === 'caption')) {
+    tracks = [
+      ...tracks,
+      {
+        id: createId('caption-track'),
+        kind: 'caption' as const,
+        name: 'Captions',
+        locked: false,
+        hidden: false,
+        muted: false,
+        clips: [],
+      },
+    ];
+  }
   return {
     ...parsed,
     tracks,
     duration: calculateTimelineDuration(tracks),
   };
+}
+
+export function isOverlayClip(document: TimelineDocument, clipId: string) {
+  return document.tracks.some(
+    (track) =>
+      track.kind === 'overlay' && track.clips.some((clip) => clip.id === clipId)
+  );
+}
+
+export function findOverlayClipsAtTime(
+  document: TimelineDocument,
+  timelineTime: number
+) {
+  return document.tracks.flatMap((track) =>
+    track.kind !== 'overlay' || track.hidden || track.muted
+      ? []
+      : track.clips.filter(
+          (clip) =>
+            timelineTime >= clip.startTime &&
+            timelineTime < clip.startTime + clip.duration
+        )
+  );
+}
+
+export function overlayOpacityAt(clip: TimelineClip, timelineTime: number) {
+  if (!clip.overlay || clip.muted) return 0;
+  const offset = timelineTime - clip.startTime;
+  if (offset < 0 || offset >= clip.duration) return 0;
+  const fadeIn = clip.fadeIn > 0 ? Math.min(1, offset / clip.fadeIn) : 1;
+  const fadeOut =
+    clip.fadeOut > 0
+      ? Math.min(1, (clip.duration - offset) / clip.fadeOut)
+      : 1;
+  return Math.max(
+    0,
+    Math.min(1, clip.overlay.opacity * Math.min(fadeIn, fadeOut))
+  );
+}
+
+export function updateTimelineOverlay(
+  document: TimelineDocument,
+  clipId: string,
+  patch: Partial<TimelineOverlayTransform> & {
+    fadeIn?: number;
+    fadeOut?: number;
+  }
+) {
+  const clip = findTimelineClip(document, clipId);
+  if (!clip?.overlay || !isOverlayClip(document, clipId)) return document;
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
+  return withUpdatedTracks(
+    document,
+    document.tracks.map((track) => ({
+      ...track,
+      clips: track.clips.map((candidate) =>
+        candidate.id === clipId
+          ? {
+              ...candidate,
+              fadeIn:
+                typeof patch.fadeIn === 'number'
+                  ? clamp(patch.fadeIn, 0, candidate.duration)
+                  : candidate.fadeIn,
+              fadeOut:
+                typeof patch.fadeOut === 'number'
+                  ? clamp(patch.fadeOut, 0, candidate.duration)
+                  : candidate.fadeOut,
+              overlay: {
+                ...candidate.overlay!,
+                x:
+                  typeof patch.x === 'number'
+                    ? clamp(patch.x, 0, 1)
+                    : candidate.overlay!.x,
+                y:
+                  typeof patch.y === 'number'
+                    ? clamp(patch.y, 0, 1)
+                    : candidate.overlay!.y,
+                width:
+                  typeof patch.width === 'number'
+                    ? clamp(patch.width, 0.05, 2)
+                    : candidate.overlay!.width,
+                opacity:
+                  typeof patch.opacity === 'number'
+                    ? clamp(patch.opacity, 0, 1)
+                    : candidate.overlay!.opacity,
+                rotation:
+                  typeof patch.rotation === 'number'
+                    ? clamp(patch.rotation, -180, 180)
+                    : candidate.overlay!.rotation,
+              },
+            }
+          : candidate
+      ),
+    }))
+  );
 }
 
 export function getTimelineClipSource(clip: TimelineClip) {

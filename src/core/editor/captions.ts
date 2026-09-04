@@ -250,6 +250,7 @@ const captionClip = ({
     fadeIn: 0,
     fadeOut: 0,
     text: cue.text,
+    overlay: null,
     takes: [],
     activeTakeId: null,
   };
