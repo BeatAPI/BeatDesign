@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { createTimelineDocument } from '@/core/editor/timeline-document';
@@ -10,6 +11,19 @@ import {
   shouldPersistTimelineDocument,
   timelineDocumentsEqualForPersistence,
 } from './video-editor-workspace';
+
+test('Inspector can be closed and reopened from accessible controls', async () => {
+  const source = await readFile(
+    new URL('./video-editor-workspace.tsx', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(source, /const \[isInspectorOpen, setInspectorOpen\] = useState\(true\)/);
+  assert.match(source, /setInspectorOpen\(false\)/);
+  assert.match(source, /setInspectorOpen\(\(current\) => !current\)/);
+  assert.match(source, /aria-label=\{t\(isInspectorOpen \? 'panel\.close' : 'panel\.open'\)\}/);
+  assert.match(source, /aria-label=\{t\('panel\.close'\)\}/);
+});
 
 test('overlay preview dragging maps pixels to normalized frame coordinates', () => {
   assert.deepEqual(

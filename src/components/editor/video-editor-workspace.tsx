@@ -21,6 +21,7 @@ import {
   Undo2,
   Redo2,
   Volume2,
+  X,
 } from 'lucide-react';
 import {
   type ChangeEvent,
@@ -408,6 +409,7 @@ export function VideoEditorWorkspace({
   } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [exactControlsOpen, setExactControlsOpen] = useState(false);
+  const [isInspectorOpen, setInspectorOpen] = useState(true);
   const [isInspecting, setIsInspecting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
@@ -2124,6 +2126,20 @@ export function VideoEditorWorkspace({
               </div>
               <button
                 type="button"
+                onClick={() => setInspectorOpen((current) => !current)}
+                className={`hidden size-8 place-items-center rounded-lg border transition sm:grid ${
+                  isInspectorOpen
+                    ? 'border-[var(--beat-accent)]/35 bg-[var(--beat-accent)]/10 text-[var(--beat-accent)]'
+                    : 'border-white/10 bg-white/[0.035] text-white/55 hover:bg-white/[0.075] hover:text-white'
+                }`}
+                aria-label={t(isInspectorOpen ? 'panel.close' : 'panel.open')}
+                title={t(isInspectorOpen ? 'panel.close' : 'panel.open')}
+                aria-pressed={isInspectorOpen}
+              >
+                <SlidersHorizontal className="size-3.5" />
+              </button>
+              <button
+                type="button"
                 onClick={() =>
                   isExporting
                     ? exportControllerRef.current?.abort()
@@ -2620,12 +2636,27 @@ export function VideoEditorWorkspace({
           </div>
         </section>
 
-        <aside className="hidden w-[300px] shrink-0 flex-col border-l border-white/[0.07] bg-[#171719] sm:flex xl:w-[336px]">
+        <aside
+          className={
+            isInspectorOpen
+              ? 'hidden w-[300px] shrink-0 flex-col border-l border-white/[0.07] bg-[#171719] sm:flex xl:w-[336px]'
+              : 'hidden'
+          }
+        >
           <div className="flex h-12 items-center justify-between border-b border-white/[0.07] px-4">
             <div className="flex items-center gap-2 text-sm font-[600] text-white/88">
               <SlidersHorizontal className="size-4 text-white/48" />
               {t('panel.title')}
             </div>
+            <button
+              type="button"
+              onClick={() => setInspectorOpen(false)}
+              className="grid size-7 place-items-center rounded-md text-white/38 transition hover:bg-white/[0.06] hover:text-white/82"
+              aria-label={t('panel.close')}
+              title={t('panel.close')}
+            >
+              <X className="size-3.5" />
+            </button>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4">

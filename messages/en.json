@@ -559,6 +559,8 @@
       },
       "panel": {
         "title": "Inspector",
+        "open": "Open Inspector",
+        "close": "Close Inspector",
         "subtitle": "Timeline properties",
         "properties": "Properties",
         "quickActions": "Clip actions",

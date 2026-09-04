@@ -559,6 +559,8 @@
       },
       "panel": {
         "title": "インスペクター",
+        "open": "インスペクターを開く",
+        "close": "インスペクターを閉じる",
         "subtitle": "Timelineのプロパティ",
         "properties": "プロパティ",
         "quickActions": "Clipの操作",

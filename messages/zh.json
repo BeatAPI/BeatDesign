@@ -559,6 +559,8 @@
       },
       "panel": {
         "title": "属性检查器",
+        "open": "打开属性检查器",
+        "close": "关闭属性检查器",
         "subtitle": "时间线属性",
         "properties": "片段属性",
         "quickActions": "片段操作",
