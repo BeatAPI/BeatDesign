@@ -9,7 +9,7 @@
 
 import { z } from 'zod';
 
-export const TIMELINE_SCHEMA_VERSION = 4 as const;
+export const TIMELINE_SCHEMA_VERSION = 5 as const;
 
 export type TimelineTrackKind = 'video' | 'overlay' | 'audio' | 'caption';
 export type TimelineAudioRole = 'music' | 'voice' | 'sfx' | 'source';
@@ -24,6 +24,15 @@ export type TimelineOverlayTransform = {
   width: number;
   opacity: number;
   rotation: number;
+};
+
+export type TimelineCaptionTransform = {
+  /** Font size as a fraction of the output frame height. */
+  fontScale: number;
+  /** Maximum text width as a fraction of the output frame width. */
+  maxWidth: number;
+  /** Distance from the bottom edge as a fraction of the output frame height. */
+  bottomOffset: number;
 };
 
 export const DEFAULT_OVERLAY_TRANSFORM: TimelineOverlayTransform = {
@@ -64,6 +73,7 @@ export type TimelineClip = {
   text?: string;
   audioRole?: TimelineAudioRole;
   overlay: TimelineOverlayTransform | null;
+  caption: TimelineCaptionTransform | null;
   takes: TimelineTake[];
   activeTakeId: string | null;
 };
@@ -126,6 +136,15 @@ const timelineClipSchema = z.object({
       width: z.number().finite().min(0.05).max(2),
       opacity: z.number().finite().min(0).max(1),
       rotation: z.number().finite().min(-180).max(180),
+    })
+    .strict()
+    .nullable()
+    .default(null),
+  caption: z
+    .object({
+      fontScale: z.number().finite().min(0.015).max(0.12),
+      maxWidth: z.number().finite().min(0.25).max(0.98),
+      bottomOffset: z.number().finite().min(0.02).max(0.9),
     })
     .strict()
     .nullable()
@@ -322,6 +341,7 @@ export function addSourceClip(
     text: '',
     audioRole: source.audioRole,
     overlay: null,
+    caption: null,
     takes: [],
     activeTakeId: null,
   };
@@ -391,6 +411,7 @@ export function addOverlayClip(
     fadeOut: clamp(source.fadeOut ?? 0, 0, duration),
     text: '',
     overlay,
+    caption: null,
     takes: [],
     activeTakeId: null,
   };
@@ -414,7 +435,7 @@ export function normalizeTimelineDocument(
       : null;
   const legacyDocument = value as Record<string, unknown>;
   const migrated =
-    version === 1 || version === 2 || version === 3
+    version === 1 || version === 2 || version === 3 || version === 4
       ? {
           ...legacyDocument,
           schemaVersion: TIMELINE_SCHEMA_VERSION,
@@ -447,7 +468,11 @@ export function normalizeTimelineDocument(
                                       ? null
                                       : ((clip as { activeTakeId?: unknown })
                                           .activeTakeId ?? null),
-                                  overlay: null,
+                                  overlay:
+                                    version === 4
+                                      ? ((clip as { overlay?: unknown }).overlay ?? null)
+                                      : null,
+                                  caption: null,
                                 }
                               : clip
                           )
@@ -510,6 +535,14 @@ export function normalizeTimelineDocument(
       ) {
         throw new TimelineDocumentValidationError(
           'Timeline overlay metadata does not match its track.'
+        );
+      }
+      if (
+        (track.kind === 'caption' && clip.sourceType !== 'caption') ||
+        (track.kind !== 'caption' && clip.caption)
+      ) {
+        throw new TimelineDocumentValidationError(
+          'Timeline caption metadata does not match its track.'
         );
       }
     }
@@ -641,6 +674,39 @@ export function updateTimelineOverlay(
                     ? clamp(patch.rotation, -180, 180)
                     : candidate.overlay!.rotation,
               },
+            }
+          : candidate
+      ),
+    }))
+  );
+}
+
+export function replaceTimelineOverlayAsset(
+  document: TimelineDocument,
+  clipId: string,
+  source: { assetId: string; sourceUrl: string; name: string }
+) {
+  const clip = findTimelineClip(document, clipId);
+  if (
+    !clip?.overlay ||
+    !isOverlayClip(document, clipId) ||
+    !source.assetId ||
+    !source.sourceUrl ||
+    !source.name
+  ) {
+    return document;
+  }
+  return withUpdatedTracks(
+    document,
+    document.tracks.map((track) => ({
+      ...track,
+      clips: track.clips.map((candidate) =>
+        candidate.id === clipId
+          ? {
+              ...candidate,
+              assetId: source.assetId,
+              sourceUrl: source.sourceUrl,
+              name: source.name,
             }
           : candidate
       ),

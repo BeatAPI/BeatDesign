@@ -348,6 +348,15 @@ export const editorOperationSchema = z.discriminatedUnion('type', [
     .strict(),
   z
     .object({
+      type: z.literal('replace_overlay_asset'),
+      clipId: commandIdSchema,
+      assetId: commandIdSchema,
+      sourceUrl: z.string().trim().max(4096).optional().default(''),
+      name: z.string().trim().min(1).max(240),
+    })
+    .strict(),
+  z
+    .object({
       type: z.literal('add_take'),
       clipId: commandIdSchema,
       take: z
@@ -398,6 +407,22 @@ export const editorOperationSchema = z.discriminatedUnion('type', [
     .object({
       type: z.literal('set_caption_style'),
       preset: z.enum(['classic', 'bold', 'boxed', 'minimal']),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('update_caption'),
+      clipId: commandIdSchema,
+      patch: z
+        .object({
+          fontScale: z.number().finite().min(0.015).max(0.12).optional(),
+          maxWidth: z.number().finite().min(0.25).max(0.98).optional(),
+          bottomOffset: z.number().finite().min(0.02).max(0.9).optional(),
+        })
+        .strict()
+        .refine((value) => Object.keys(value).length > 0, {
+          message: 'Caption update must include at least one field.',
+        }),
     })
     .strict(),
 ]);

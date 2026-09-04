@@ -5,10 +5,36 @@ import { createTimelineDocument } from '@/core/editor/timeline-document';
 import { applyEditorOperations } from '@/core/commands/editor-commands';
 import {
   findVisualClipAtTimelineTime,
+  moveOverlayInPreview,
   PROJECT_TIMELINE_EXTERNAL_POLL_INTERVAL_MS,
   shouldPersistTimelineDocument,
   timelineDocumentsEqualForPersistence,
 } from './video-editor-workspace';
+
+test('overlay preview dragging maps pixels to normalized frame coordinates', () => {
+  assert.deepEqual(
+    moveOverlayInPreview({
+      originX: 0.5,
+      originY: 0.25,
+      deltaX: 100,
+      deltaY: 50,
+      frameWidth: 500,
+      frameHeight: 1000,
+    }),
+    { x: 0.7, y: 0.3 }
+  );
+  assert.deepEqual(
+    moveOverlayInPreview({
+      originX: 0.98,
+      originY: 0.02,
+      deltaX: 100,
+      deltaY: -100,
+      frameWidth: 500,
+      frameHeight: 1000,
+    }),
+    { x: 1, y: 0 }
+  );
+});
 
 test('does not echo a remotely loaded timeline back through UI autosave', () => {
   const remote = createTimelineDocument({

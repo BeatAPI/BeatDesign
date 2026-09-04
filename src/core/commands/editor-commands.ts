@@ -1,6 +1,7 @@
 import {
   applySrtToTimeline,
   setCaptionStyle,
+  updateCaptionTransform,
   upsertCaptionCue,
 } from '@/core/editor/captions';
 import {
@@ -10,6 +11,7 @@ import {
   addTimelineTake,
   findTimelineClip,
   moveTimelineClip,
+  replaceTimelineOverlayAsset,
   removeTimelineClip,
   resizeTimelineClip,
   rippleDeleteTimelineClip,
@@ -87,6 +89,13 @@ export type EditorOperation =
       };
     }
   | {
+      type: 'replace_overlay_asset';
+      clipId: string;
+      assetId: string;
+      sourceUrl: string;
+      name: string;
+    }
+  | {
       type: 'add_take';
       clipId: string;
       take: Omit<TimelineTake, 'id' | 'createdAt'> & {
@@ -104,7 +113,16 @@ export type EditorOperation =
       duration: number;
     }
   | { type: 'import_srt'; srt: string; replace?: boolean }
-  | { type: 'set_caption_style'; preset: CaptionStylePreset };
+  | { type: 'set_caption_style'; preset: CaptionStylePreset }
+  | {
+      type: 'update_caption';
+      clipId: string;
+      patch: {
+        fontScale?: number;
+        maxWidth?: number;
+        bottomOffset?: number;
+      };
+    };
 
 const listClipIds = (document: TimelineDocument) =>
   new Set(document.tracks.flatMap((track) => track.clips.map((clip) => clip.id)));
@@ -198,6 +216,15 @@ export function applyEditorOperations(
         );
       }
       next = updateTimelineOverlay(document, operation.clipId, operation.patch);
+    } else if (operation.type === 'replace_overlay_asset') {
+      const clip = findTimelineClip(document, operation.clipId);
+      if (!clip?.overlay) {
+        throw new BeatDesignCommandError(
+          'NOT_FOUND',
+          `Overlay clip ${operation.clipId} was not found.`
+        );
+      }
+      next = replaceTimelineOverlayAsset(document, operation.clipId, operation);
     } else if (operation.type === 'add_take') {
       if (!findTimelineClip(document, operation.clipId)) {
         throw new BeatDesignCommandError('NOT_FOUND', `Clip ${operation.clipId} was not found.`);
@@ -228,6 +255,15 @@ export function applyEditorOperations(
     } else if (operation.type === 'set_caption_style') {
       next = setCaptionStyle(document, operation.preset);
       changedIds.add(next.id);
+    } else if (operation.type === 'update_caption') {
+      const clip = findTimelineClip(document, operation.clipId);
+      if (!clip || clip.sourceType !== 'caption') {
+        throw new BeatDesignCommandError(
+          'NOT_FOUND',
+          `Caption clip ${operation.clipId} was not found.`
+        );
+      }
+      next = updateCaptionTransform(document, operation.clipId, operation.patch);
     } else if (operation.type === 'set_render') {
       next = setTimelineRender(document, {
         id: operation.assetId,

@@ -525,6 +525,11 @@
       "captions": {
         "text": "Caption text",
         "style": "Caption style",
+        "currentCue": "Current caption",
+        "currentCueHint": "This cue only",
+        "fontScale": "Text size",
+        "maxWidth": "Maximum width",
+        "bottomOffset": "Position from bottom",
         "styles": {
           "classic": "Classic",
           "bold": "Bold",
@@ -542,6 +547,8 @@
         "activeHint": "Audio follows the timeline playhead and fades are applied during preview and export."
       },
       "overlay": {
+        "dragLabel": "Move image overlay",
+        "dragHint": "Drag to move · Arrow keys to nudge",
         "x": "Horizontal position",
         "y": "Vertical position",
         "width": "Width",
@@ -551,14 +558,13 @@
         "fadeOut": "Fade out"
       },
       "panel": {
-        "title": "Clip Agent",
-        "local": "Local",
-        "subtitle": "Your editing workspace",
+        "title": "Inspector",
+        "subtitle": "Timeline properties",
         "properties": "Properties",
         "quickActions": "Clip actions",
         "exactHint": "Open Exact to edit source range, duration, and timeline position.",
         "welcomeTitle": "Edit with a clear workflow",
-        "welcomeDescription": "Select a timeline clip to edit its properties here. Your source media stays local until an action explicitly needs BeatAPI.",
+        "welcomeDescription": "Select a timeline clip to edit its properties here, or let any MCP-capable agent update the same timeline. Your source media stays local until an action explicitly needs BeatAPI.",
         "workflow": {
           "studio": {
             "title": "Start in Studio",

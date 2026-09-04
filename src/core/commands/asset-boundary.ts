@@ -143,10 +143,19 @@ export async function normalizeCommandAssetReferences({
           });
           return { ...operation, sourceUrl: asset.publicUrl };
         }
+        if (operation.type === 'replace_overlay_asset') {
+          const asset = await loadCommandAsset({
+            projectId,
+            assetId: operation.assetId,
+            expectedType: 'image',
+          });
+          return { ...operation, sourceUrl: asset.publicUrl };
+        }
         if (
           operation.type === 'upsert_caption' ||
           operation.type === 'import_srt' ||
           operation.type === 'set_caption_style' ||
+          operation.type === 'update_caption' ||
           operation.type === 'update_overlay'
         ) {
           return operation;

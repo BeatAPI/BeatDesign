@@ -13,6 +13,7 @@ import {
   normalizeTimelineDocument,
   overlayOpacityAt,
   moveTimelineClip,
+  replaceTimelineOverlayAsset,
   rippleDeleteTimelineClip,
   resizeTimelineClip,
   updateTimelineAudioClip,
@@ -60,7 +61,7 @@ test('version 1 timelines migrate with empty Take and render state', () => {
   delete (legacy as Partial<typeof current>).captionStyle;
 
   const migrated = normalizeTimelineDocument(legacy, 'project-1');
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.equal(migrated.lastRenderAssetId, null);
   assert.equal(migrated.captionStyle, 'classic');
   assert.ok(migrated.tracks.some((track) => track.kind === 'overlay'));
@@ -86,7 +87,7 @@ test('version 2 timelines migrate the visual track without losing clips', () => 
     })),
   };
   const migrated = normalizeTimelineDocument(legacy, 'project-1');
-  assert.equal(migrated.schemaVersion, 4);
+  assert.equal(migrated.schemaVersion, 5);
   assert.equal(migrated.tracks[0]?.name, 'Visual 1');
   assert.equal(migrated.tracks[0]?.clips.length, 1);
 });
@@ -124,6 +125,17 @@ test('image overlays have independent timing, transform, and fades', () => {
   });
   assert.equal(findTimelineClip(updated, overlay.id)?.overlay?.opacity, 0.8);
   assert.equal(findTimelineClip(updated, overlay.id)?.overlay?.rotation, 8);
+
+  const replaced = replaceTimelineOverlayAsset(updated, overlay.id, {
+    assetId: 'brand-2',
+    sourceUrl: '/brand-v2.png',
+    name: 'BeatDesign brand v2',
+  });
+  const replacement = findTimelineClip(replaced, overlay.id);
+  assert.equal(replacement?.assetId, 'brand-2');
+  assert.equal(replacement?.sourceUrl, '/brand-v2.png');
+  assert.equal(replacement?.overlay?.x, 0.52);
+  assert.equal(replacement?.startTime, 12.4);
 });
 
 test('image clips share the visual track and can change still duration', () => {

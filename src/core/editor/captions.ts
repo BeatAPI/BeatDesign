@@ -1,6 +1,7 @@
 import {
   calculateTimelineDuration,
   type CaptionStylePreset,
+  type TimelineCaptionTransform,
   type TimelineClip,
   type TimelineDocument,
   type TimelineTrack,
@@ -104,6 +105,20 @@ export function getCaptionStyleDefinition(preset: CaptionStylePreset) {
   return CAPTION_STYLE_DEFINITIONS[preset];
 }
 
+export function getResolvedCaptionStyle(
+  document: TimelineDocument,
+  clip?: TimelineClip | null
+): CaptionStyleDefinition {
+  const preset = getCaptionStyleDefinition(document.captionStyle);
+  if (!clip?.caption) return preset;
+  return {
+    ...preset,
+    fontScale: clip.caption.fontScale,
+    maxWidth: clip.caption.maxWidth,
+    bottomOffset: clip.caption.bottomOffset,
+  };
+}
+
 export function setCaptionStyle(
   document: TimelineDocument,
   preset: CaptionStylePreset
@@ -112,6 +127,48 @@ export function setCaptionStyle(
   return {
     ...document,
     captionStyle: preset,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function updateCaptionTransform(
+  document: TimelineDocument,
+  clipId: string,
+  patch: Partial<TimelineCaptionTransform>
+) {
+  const clip = document.tracks
+    .find((track) => track.kind === 'caption')
+    ?.clips.find((candidate) => candidate.id === clipId);
+  if (!clip || clip.sourceType !== 'caption') return document;
+  const current = getResolvedCaptionStyle(document, clip);
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
+  const caption: TimelineCaptionTransform = {
+    fontScale:
+      typeof patch.fontScale === 'number'
+        ? clamp(patch.fontScale, 0.015, 0.12)
+        : current.fontScale,
+    maxWidth:
+      typeof patch.maxWidth === 'number'
+        ? clamp(patch.maxWidth, 0.25, 0.98)
+        : current.maxWidth,
+    bottomOffset:
+      typeof patch.bottomOffset === 'number'
+        ? clamp(patch.bottomOffset, 0.02, 0.9)
+        : current.bottomOffset,
+  };
+  return {
+    ...document,
+    tracks: document.tracks.map((track) =>
+      track.kind !== 'caption'
+        ? track
+        : {
+            ...track,
+            clips: track.clips.map((candidate) =>
+              candidate.id === clipId ? { ...candidate, caption } : candidate
+            ),
+          }
+    ),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -226,10 +283,12 @@ const captionClip = ({
   trackId,
   cue,
   clipId,
+  caption,
 }: {
   trackId: string;
   cue: ParsedCaptionCue;
   clipId?: string;
+  caption?: TimelineCaptionTransform | null;
 }): TimelineClip => {
   const duration = roundTime(cue.endTime - cue.startTime);
   const id = clipId?.trim() || createId('caption');
@@ -251,6 +310,7 @@ const captionClip = ({
     fadeOut: 0,
     text: cue.text,
     overlay: null,
+    caption: caption ?? null,
     takes: [],
     activeTakeId: null,
   };
@@ -263,7 +323,13 @@ export function upsertCaptionCue(
   const next = ensureCaptionTrack(document);
   const track = next.tracks.find((item) => item.kind === 'caption');
   if (!track) return document;
-  const clip = captionClip({ trackId: track.id, cue, clipId: cue.clipId });
+  const existing = track.clips.find((candidate) => candidate.id === cue.clipId);
+  const clip = captionClip({
+    trackId: track.id,
+    cue,
+    clipId: cue.clipId,
+    caption: existing?.caption,
+  });
   const tracks = next.tracks.map((item) =>
     item.id !== track.id
       ? item

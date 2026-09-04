@@ -525,6 +525,11 @@
       "captions": {
         "text": "字幕テキスト",
         "style": "字幕スタイル",
+        "currentCue": "現在の字幕",
+        "currentCueHint": "この字幕のみ",
+        "fontScale": "文字サイズ",
+        "maxWidth": "最大幅",
+        "bottomOffset": "下端からの位置",
         "styles": {
           "classic": "クラシック",
           "bold": "ボールド",
@@ -542,6 +547,8 @@
         "activeHint": "音声はTimelineの再生ヘッドに追従し、プレビューと書き出し時にフェードが適用されます。"
       },
       "overlay": {
+        "dragLabel": "画像オーバーレイを移動",
+        "dragHint": "ドラッグで移動・矢印キーで微調整",
         "x": "水平位置",
         "y": "垂直位置",
         "width": "幅",
@@ -551,14 +558,13 @@
         "fadeOut": "フェードアウト"
       },
       "panel": {
-        "title": "Clip Agent",
-        "local": "ローカル",
-        "subtitle": "編集ワークスペース",
+        "title": "インスペクター",
+        "subtitle": "Timelineのプロパティ",
         "properties": "プロパティ",
         "quickActions": "Clipの操作",
         "exactHint": "詳細設定を開き、ソース範囲、長さ、Timeline上の位置を編集します。",
         "welcomeTitle": "明確な流れで編集",
-        "welcomeDescription": "TimelineのClipを選択すると、ここでプロパティを編集できます。BeatAPIが明示的に必要な操作を行うまで、ソースメディアはローカルに保持されます。",
+        "welcomeDescription": "TimelineのClipを選択すると、ここでプロパティを編集できます。MCP対応の汎用Agentも同じTimelineを更新できます。BeatAPIが明示的に必要な操作を行うまで、ソースメディアはローカルに保持されます。",
         "workflow": {
           "studio": {
             "title": "Studioから始める",

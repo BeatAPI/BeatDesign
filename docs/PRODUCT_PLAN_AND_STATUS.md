@@ -112,16 +112,17 @@ Codex / Claude Code / Other Agent
 - 非破坏式 trim、split、move、delete 和 ripple delete。
 - undo/redo。
 - 音量、静音、淡入和淡出。
-- 图片 Overlay 叠加，支持位置、宽度、透明度、旋转和淡入淡出；预览与 MP4 导出保持一致。
+- 图片 Overlay 叠加，支持在预览中直接拖动，并可精确调整位置、宽度、透明度、旋转和淡入淡出；预览与 MP4 导出保持一致。
 - 浏览器本地预览。
 - 选区派生 MP4。
 - BeatAPI 选区 AI redo。
 - Redo 结果作为 Take 保存、激活和恢复 Original。
 - 完整 Timeline H.264/AAC MP4 导出。
-- 字幕在 Overlay 之后绘制，确保字幕始终位于最终画面层。
+- 字幕在 Overlay 之后绘制，确保字幕始终位于最终画面层；单条字幕可独立调整字号、最大宽度和垂直位置，UI 与 MCP 共用同一操作。
 - 导出写回 Assets 和 Canvas Timeline Node。
 - 缺失素材、Clip 重叠和视频轨空隙诊断。
 - Editor 自动保存统一走 Command Kernel；并发写入使用 revision/CAS 和三方合并，不再用旧文档覆盖新版本。
+- 右侧栏是 Agent 中立的 Timeline Inspector，不内置或假装存在专有 Clip Agent；Codex、Claude Code、Cursor 等通用 Agent 通过 MCP 修改同一份 Timeline。
 - 同一次加入时间线使用稳定 Clip ID 和幂等键，重复点击、网络重试不会重复插入同一批 Clip。
 - Take 必须覆盖 Clip 时长；过短 Take 不可激活，诊断会阻止可能产生冻结尾帧的导出。
 

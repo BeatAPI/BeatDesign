@@ -525,6 +525,11 @@
       "captions": {
         "text": "字幕文案",
         "style": "字幕样式",
+        "currentCue": "当前字幕",
+        "currentCueHint": "仅调整这一句",
+        "fontScale": "文字大小",
+        "maxWidth": "最大宽度",
+        "bottomOffset": "距底部位置",
         "styles": {
           "classic": "经典描边",
           "bold": "短视频粗体",
@@ -542,6 +547,8 @@
         "activeHint": "音频跟随时间线播放头，淡入淡出会同时应用于预览和导出。"
       },
       "overlay": {
+        "dragLabel": "移动叠加图片",
+        "dragHint": "拖动移动 · 方向键微调",
         "x": "水平位置",
         "y": "垂直位置",
         "width": "宽度",
@@ -551,14 +558,13 @@
         "fadeOut": "淡出"
       },
       "panel": {
-        "title": "片段助手",
-        "local": "本地",
-        "subtitle": "你的剪辑工作区",
+        "title": "属性检查器",
+        "subtitle": "时间线属性",
         "properties": "片段属性",
         "quickActions": "片段操作",
         "exactHint": "展开精确参数，可以修改素材范围、持续时间和时间线位置。",
         "welcomeTitle": "按清晰流程完成剪辑",
-        "welcomeDescription": "选择时间线片段后，可在这里编辑参数。除非某个操作明确需要 BeatAPI，否则源素材始终保留在本地。",
+        "welcomeDescription": "选择时间线片段后，可在这里编辑参数；任何支持 MCP 的通用 Agent 也能修改同一条时间线。除非某个操作明确需要 BeatAPI，否则源素材始终保留在本地。",
         "workflow": {
           "studio": {
             "title": "从 Studio 开始",

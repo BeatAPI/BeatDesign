@@ -5,6 +5,7 @@ import { applyEditorOperations } from '@/core/commands/editor-commands';
 
 import {
   applySrtToTimeline,
+  getResolvedCaptionStyle,
   getCaptionStyleDefinition,
   findCaptionAtTime,
   formatSrtTimestamp,
@@ -99,6 +100,52 @@ test('caption style presets persist and are applied through the command kernel',
   assert.equal(result.changedIds.includes(result.document.id), true);
   assert.equal(getCaptionStyleDefinition('bold').uppercase, true);
   assert.doesNotThrow(() => normalizeTimelineDocument(result.document, 'p1'));
+});
+
+test('one caption cue can override size and position without changing the next cue', () => {
+  const timeline = applySrtToTimeline(
+    createTimelineDocument({ projectId: 'p1', name: 'Demo' }),
+    SAMPLE_SRT
+  );
+  const captions =
+    timeline.tracks.find((track) => track.kind === 'caption')?.clips ?? [];
+  const first = captions[0];
+  const second = captions[1];
+  assert.ok(first && second);
+
+  const updated = applyEditorOperations(timeline, [
+    {
+      type: 'update_caption',
+      clipId: first.id,
+      patch: {
+        fontScale: 0.032,
+        maxWidth: 0.64,
+        bottomOffset: 0.16,
+      },
+    },
+  ]).document;
+  const firstStyle = getResolvedCaptionStyle(
+    updated,
+    findCaptionAtTime(updated, 0.5)
+  );
+  assert.equal(firstStyle.fontScale, 0.032);
+  assert.equal(firstStyle.maxWidth, 0.64);
+  assert.equal(firstStyle.bottomOffset, 0.16);
+  assert.equal(
+    getResolvedCaptionStyle(updated, findCaptionAtTime(updated, 2)).fontScale,
+    getCaptionStyleDefinition('classic').fontScale
+  );
+
+  const editedText = applyEditorOperations(updated, [
+    {
+      type: 'upsert_caption',
+      clipId: first.id,
+      text: 'Smaller opening caption',
+      startTime: first.startTime,
+      duration: first.duration,
+    },
+  ]).document;
+  assert.equal(findCaptionAtTime(editedText, 0.5)?.caption?.fontScale, 0.032);
 });
 
 test('caption overlap is diagnosed separately from video overlap', () => {

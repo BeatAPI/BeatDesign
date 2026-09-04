@@ -1,4 +1,4 @@
-import { findCaptionAtTime, getCaptionStyleDefinition } from './captions';
+import { findCaptionAtTime, getResolvedCaptionStyle } from './captions';
 import {
   getTimelineClipSource,
   overlayOpacityAt,
@@ -546,7 +546,7 @@ export async function exportTimelineMp4({
       }
       const caption = findCaptionAtTime(document, timelineTime);
       if (caption?.text) {
-        const style = getCaptionStyleDefinition(document.captionStyle);
+        const style = getResolvedCaptionStyle(document, caption);
         const fontSize = Math.max(24, Math.round(height * style.fontScale));
         context.font = `${style.fontWeight} ${fontSize}px sans-serif`;
         context.textAlign = 'center';

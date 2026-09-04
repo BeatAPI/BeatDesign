@@ -25,6 +25,7 @@ import {
 import {
   type ChangeEvent,
   type DragEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
   useMemo,
@@ -44,6 +45,7 @@ import {
   CAPTION_STYLE_PRESETS,
   findCaptionAtTime,
   getCaptionStyleDefinition,
+  getResolvedCaptionStyle,
   MAX_SRT_FILE_BYTES,
 } from '@/core/editor/captions';
 import {
@@ -92,6 +94,41 @@ type TimelineDragSession = {
   timelineDuration: number;
   preview: TimelineClipInteractionPreview;
 };
+
+type OverlayDragSession = {
+  clipId: string;
+  pointerId: number;
+  originClientX: number;
+  originClientY: number;
+  originX: number;
+  originY: number;
+  frameWidth: number;
+  frameHeight: number;
+  x: number;
+  y: number;
+};
+
+export function moveOverlayInPreview({
+  originX,
+  originY,
+  deltaX,
+  deltaY,
+  frameWidth,
+  frameHeight,
+}: {
+  originX: number;
+  originY: number;
+  deltaX: number;
+  deltaY: number;
+  frameWidth: number;
+  frameHeight: number;
+}) {
+  const clamp = (value: number) => Math.max(0, Math.min(1, value));
+  return {
+    x: clamp(originX + deltaX / Math.max(1, frameWidth)),
+    y: clamp(originY + deltaY / Math.max(1, frameHeight)),
+  };
+}
 
 export function shouldPersistTimelineDocument({
   isHydrated,
@@ -330,6 +367,7 @@ export function VideoEditorWorkspace({
   const loadFailedMessage = t('errors.loadFailed');
   const saveFailedMessage = t('errors.saveFailed');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const previewFrameRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const overlayInputRef = useRef<HTMLInputElement>(null);
@@ -338,6 +376,7 @@ export function VideoEditorWorkspace({
   const audioElementsRef = useRef(new Map<string, HTMLAudioElement>());
   const imagePlaybackFrameRef = useRef<number | null>(null);
   const timelineDragRef = useRef<TimelineDragSession | null>(null);
+  const overlayDragRef = useRef<OverlayDragSession | null>(null);
   const timelineLoadedRef = useRef(false);
   const timelineVersionRef = useRef<number | null>(null);
   const lastSavedDocumentRef = useRef<TimelineDocument | null>(null);
@@ -362,6 +401,11 @@ export function VideoEditorWorkspace({
   const [timelineCursorTime, setTimelineCursorTime] = useState(0);
   const [timelineDragPreview, setTimelineDragPreview] =
     useState<TimelineClipInteractionPreview | null>(null);
+  const [overlayDragPreview, setOverlayDragPreview] = useState<{
+    clipId: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [exactControlsOpen, setExactControlsOpen] = useState(false);
   const [isInspecting, setIsInspecting] = useState(false);
@@ -394,6 +438,10 @@ export function VideoEditorWorkspace({
   const selectedSource = selectedClip
     ? getTimelineClipSource(selectedClip)
     : null;
+  const selectedCaptionStyle =
+    selectedClip?.sourceType === 'caption'
+      ? getResolvedCaptionStyle(document, selectedClip)
+      : null;
   const timelineCurrentTime = Math.max(
     0,
     Math.min(timelineCursorTime, document.duration)
@@ -411,7 +459,7 @@ export function VideoEditorWorkspace({
       (clip) => clip.sourceType === 'image' || clip.sourceType === 'video'
     );
   const activeCaption = findCaptionAtTime(document, timelineCurrentTime);
-  const activeCaptionStyle = getCaptionStyleDefinition(document.captionStyle);
+  const activeCaptionStyle = getResolvedCaptionStyle(document, activeCaption);
   const activeOverlays = findOverlayClipsAtTime(document, timelineCurrentTime);
   const activeVisualClip = findVisualClipAtTimelineTime(
     document,
@@ -468,6 +516,103 @@ export function VideoEditorWorkspace({
       setHistoryRevision((value) => value + 1);
       return next;
     });
+  };
+
+  const startOverlayDrag = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    overlay: TimelineClip
+  ) => {
+    if (!overlay.overlay || event.button !== 0) return;
+    const frame = previewFrameRef.current?.getBoundingClientRect();
+    if (!frame) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setSelectedClipId(overlay.id);
+    overlayDragRef.current = {
+      clipId: overlay.id,
+      pointerId: event.pointerId,
+      originClientX: event.clientX,
+      originClientY: event.clientY,
+      originX: overlay.overlay.x,
+      originY: overlay.overlay.y,
+      frameWidth: frame.width,
+      frameHeight: frame.height,
+      x: overlay.overlay.x,
+      y: overlay.overlay.y,
+    };
+    setOverlayDragPreview({
+      clipId: overlay.id,
+      x: overlay.overlay.x,
+      y: overlay.overlay.y,
+    });
+  };
+
+  const moveOverlayDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = overlayDragRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    const position = moveOverlayInPreview({
+      originX: session.originX,
+      originY: session.originY,
+      deltaX: event.clientX - session.originClientX,
+      deltaY: event.clientY - session.originClientY,
+      frameWidth: session.frameWidth,
+      frameHeight: session.frameHeight,
+    });
+    session.x = position.x;
+    session.y = position.y;
+    setOverlayDragPreview({ clipId: session.clipId, ...position });
+  };
+
+  const finishOverlayDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const session = overlayDragRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    overlayDragRef.current = null;
+    setOverlayDragPreview(null);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    commitDocument((current) =>
+      applyEditorOperations(current, [
+        {
+          type: 'update_overlay',
+          clipId: session.clipId,
+          patch: { x: session.x, y: session.y },
+        },
+      ]).document
+    );
+  };
+
+  const nudgeOverlay = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    overlay: TimelineClip
+  ) => {
+    if (!overlay.overlay) return;
+    const step = event.shiftKey ? 0.05 : 0.01;
+    const delta =
+      event.key === 'ArrowLeft'
+        ? { x: -step, y: 0 }
+        : event.key === 'ArrowRight'
+          ? { x: step, y: 0 }
+          : event.key === 'ArrowUp'
+            ? { x: 0, y: -step }
+            : event.key === 'ArrowDown'
+              ? { x: 0, y: step }
+              : null;
+    if (!delta) return;
+    event.preventDefault();
+    commitDocument((current) =>
+      applyEditorOperations(current, [
+        {
+          type: 'update_overlay',
+          clipId: overlay.id,
+          patch: {
+            x: overlay.overlay!.x + delta.x,
+            y: overlay.overlay!.y + delta.y,
+          },
+        },
+      ]).document
+    );
   };
 
   const resetDocument = (next: typeof document) => {
@@ -2010,7 +2155,8 @@ export function VideoEditorWorkspace({
           <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black/35 p-4 sm:p-8">
             {sourceUrl && previewClip ? (
               <div
-                className="relative h-full max-h-full max-w-full overflow-hidden rounded-xl bg-black shadow-2xl"
+                ref={previewFrameRef}
+                className="relative h-full max-h-full max-w-full overflow-hidden rounded-xl bg-black shadow-2xl [container-type:size]"
                 style={{
                   aspectRatio: `${previewDimensions.width} / ${previewDimensions.height}`,
                 }}
@@ -2087,25 +2233,50 @@ export function VideoEditorWorkspace({
                 }}
               />
               )}
-              {activeOverlays.map((overlay) => (
-                <img
-                  key={overlay.id}
-                  src={overlay.sourceUrl}
-                  alt=""
-                  className={`pointer-events-none absolute z-10 h-auto max-w-none ${
-                    selectedClipId === overlay.id
-                      ? 'drop-shadow-[0_0_10px_rgba(118,169,255,0.45)]'
-                      : ''
-                  }`}
-                  style={{
-                    left: `${overlay.overlay!.x * 100}%`,
-                    top: `${overlay.overlay!.y * 100}%`,
-                    width: `${overlay.overlay!.width * 100}%`,
-                    opacity: overlayOpacityAt(overlay, timelineCurrentTime),
-                    transform: `translate(-50%, -50%) rotate(${overlay.overlay!.rotation}deg)`,
-                  }}
-                />
-              ))}
+              {activeOverlays.map((overlay) => {
+                const position =
+                  overlayDragPreview?.clipId === overlay.id
+                    ? overlayDragPreview
+                    : overlay.overlay!;
+                const selected = selectedClipId === overlay.id;
+                return (
+                  <button
+                    key={overlay.id}
+                    type="button"
+                    aria-label={`${t('overlay.dragLabel')}: ${overlay.name}`}
+                    title={t('overlay.dragHint')}
+                    onPointerDown={(event) => startOverlayDrag(event, overlay)}
+                    onPointerMove={moveOverlayDrag}
+                    onPointerUp={finishOverlayDrag}
+                    onPointerCancel={finishOverlayDrag}
+                    onKeyDown={(event) => nudgeOverlay(event, overlay)}
+                    className={`absolute z-10 m-0 touch-none border-0 bg-transparent p-0 text-left outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-[var(--beat-graph)] ${
+                      selected
+                        ? 'cursor-grab ring-1 ring-[var(--beat-graph)] shadow-[0_0_0_3px_rgba(127,176,242,0.12),0_0_18px_rgba(118,169,255,0.3)] active:cursor-grabbing'
+                        : 'cursor-move hover:ring-1 hover:ring-white/55'
+                    }`}
+                    style={{
+                      left: `${position.x * 100}%`,
+                      top: `${position.y * 100}%`,
+                      width: `${overlay.overlay!.width * 100}%`,
+                      opacity: overlayOpacityAt(overlay, timelineCurrentTime),
+                      transform: `translate(-50%, -50%) rotate(${overlay.overlay!.rotation}deg)`,
+                    }}
+                  >
+                    <img
+                      src={overlay.sourceUrl}
+                      alt=""
+                      draggable={false}
+                      className="block h-auto w-full select-none"
+                    />
+                    {selected ? (
+                      <span className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/12 bg-[#111214]/92 px-2 py-1 text-[9px] font-[560] text-white/72 shadow-lg backdrop-blur-md">
+                        {t('overlay.dragHint')}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
               {activeCaption?.text ? (
                 <div
                   className="pointer-events-none absolute inset-x-0 z-20 flex justify-center"
@@ -2129,12 +2300,7 @@ export function VideoEditorWorkspace({
                       textShadow: activeCaptionStyle.strokeStyle
                         ? '0 2px 8px rgba(0,0,0,0.45)'
                         : '0 8px 24px rgba(0,0,0,0.35)',
-                      fontSize:
-                        document.captionStyle === 'bold'
-                          ? 'clamp(16px, 2.2vw, 30px)'
-                          : document.captionStyle === 'minimal'
-                            ? 'clamp(12px, 1.6vw, 21px)'
-                            : 'clamp(14px, 1.9vw, 25px)',
+                      fontSize: `clamp(10px, ${activeCaptionStyle.fontScale * 100}cqh, 80px)`,
                     }}
                   >
                     {activeCaption.text}
@@ -2454,15 +2620,12 @@ export function VideoEditorWorkspace({
           </div>
         </section>
 
-        <aside className="hidden w-[336px] shrink-0 flex-col border-l border-white/[0.07] bg-[#171719] min-[1120px]:flex">
+        <aside className="hidden w-[300px] shrink-0 flex-col border-l border-white/[0.07] bg-[#171719] sm:flex xl:w-[336px]">
           <div className="flex h-12 items-center justify-between border-b border-white/[0.07] px-4">
             <div className="flex items-center gap-2 text-sm font-[600] text-white/88">
-              <Sparkles className="size-4 text-[#8d83ff]" />
+              <SlidersHorizontal className="size-4 text-white/48" />
               {t('panel.title')}
             </div>
-            <span className="rounded-md bg-white/[0.055] px-2 py-1 text-[9px] font-[560] uppercase tracking-[0.08em] text-white/35">
-              {t('panel.local')}
-            </span>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
@@ -2603,6 +2766,73 @@ export function VideoEditorWorkspace({
                           ))}
                         </div>
                       </div>
+                      {selectedCaptionStyle ? (
+                        <div className="space-y-3 border-t border-white/[0.07] pt-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-[10px] font-[560] text-white/56">
+                              {t('captions.currentCue')}
+                            </span>
+                            <span className="text-[9px] text-white/30">
+                              {t('captions.currentCueHint')}
+                            </span>
+                          </div>
+                          {([
+                            [
+                              'fontScale',
+                              0.015,
+                              0.12,
+                              0.001,
+                              selectedCaptionStyle.fontScale,
+                            ],
+                            [
+                              'maxWidth',
+                              0.25,
+                              0.98,
+                              0.01,
+                              selectedCaptionStyle.maxWidth,
+                            ],
+                            [
+                              'bottomOffset',
+                              0.02,
+                              0.9,
+                              0.01,
+                              selectedCaptionStyle.bottomOffset,
+                            ],
+                          ] as const).map(([field, min, max, step, value]) => (
+                            <label key={field} className="block">
+                              <span className="mb-2 flex items-center justify-between text-[10px] font-[520] text-white/45">
+                                <span>{t(`captions.${field}`)}</span>
+                                <span className="tabular-nums text-white/62">
+                                  {field === 'fontScale'
+                                    ? `${(value * 100).toFixed(1)}%`
+                                    : `${Math.round(value * 100)}%`}
+                                </span>
+                              </span>
+                              <input
+                                type="range"
+                                min={min}
+                                max={max}
+                                step={step}
+                                value={value}
+                                onChange={(event) =>
+                                  commitDocument((current) =>
+                                    applyEditorOperations(current, [
+                                      {
+                                        type: 'update_caption',
+                                        clipId: selectedClip.id,
+                                        patch: {
+                                          [field]: Number(event.target.value),
+                                        },
+                                      },
+                                    ]).document
+                                  )
+                                }
+                                className="h-1 w-full accent-[var(--beat-graph)]"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   ) : selectedIsOverlay && selectedClip.overlay ? (
                     <div className="space-y-4 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">

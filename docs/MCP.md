@@ -147,9 +147,15 @@ the MCP tool contract instead of guessing an opaque operation object.
 
 Editor agents add a project-owned image overlay with `add_overlay`, then adjust
 its normalized position, width, opacity, rotation, and fades with
-`update_overlay`. Overlay clips live on their own visual track, may overlap the
+`update_overlay`. Use `replace_overlay_asset` with another project-owned image
+Asset to swap the artwork while preserving the clip's timing and transform.
+Overlay clips live on their own visual track, may overlap the
 base video, and remain subject to the same revision checks, Asset boundary, and
-durable timeline persistence as UI edits. Captions are composited after overlays.
+durable timeline persistence as UI edits. The UI also lets users drag an active
+overlay directly in the preview frame. Captions are composited after overlays.
+Use `update_caption` to tune one caption cue's normalized font size, maximum
+width, and bottom position without changing later cues; `set_caption_style`
+continues to select the shared visual preset.
 
 For a newly connected Canvas node, append a `place_card` operation after its
 `upsert_card`. By default it places the target once to the right of the frames
