@@ -639,6 +639,8 @@
       },
       "apiConfig": {
         "triggerLabel": "API configuration",
+        "triggerConfiguredLabel": "API configuration — BeatAPI connected",
+        "loadingConnection": "Loading BeatAPI connection",
         "title": "Connections",
         "description": "Paste your own BeatAPI API key. No shared key is included.",
         "providerTab": "AI Provider",

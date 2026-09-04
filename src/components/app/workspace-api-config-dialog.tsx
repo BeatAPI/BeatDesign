@@ -69,34 +69,22 @@ type StorageConfigState = {
 function ApiConfigForm({
   providerLabel,
   isDefault,
+  state,
+  loaded,
   onSaved,
 }: {
   providerLabel: string;
   isDefault: boolean;
-  onSaved: () => void;
+  state: BeatApiConfigState | null;
+  loaded: boolean;
+  onSaved: (state: BeatApiConfigState) => void;
 }) {
   const t = useTranslations('AppShell.header.apiConfig');
-  const [state, setState] = useState<BeatApiConfigState | null>(null);
   const [apiKey, setApiKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [replacing, setReplacing] = useState(false);
   const configured = Boolean(state?.apiKeyConfigured && state.apiKeyPreview);
-  const showEditor = !configured || replacing;
-
-  useEffect(() => {
-    let cancelled = false;
-    void apiGet<BeatApiConfigState>('/api/config/beatapi')
-      .then((config) => {
-        if (cancelled || !config) return;
-        setState(config);
-      })
-      .catch(() => {
-        // unreadable config (signed out / DB down) — keep the preset host
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const showEditor = loaded && (!configured || replacing);
 
   async function save() {
     const nextKey = apiKey.trim();
@@ -110,12 +98,11 @@ function ApiConfigForm({
       toast.success(t('saved'));
       setApiKey('');
       setReplacing(false);
-      setState({
+      onSaved({
         baseUrl: DEFAULT_BEATAPI_BASE_URL,
         apiKeyConfigured: true,
         apiKeyPreview: result?.apiKeyPreview || maskApiKeyPreview(nextKey),
       });
-      onSaved();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
     } finally {
@@ -149,7 +136,12 @@ function ApiConfigForm({
           ) : null}
         </div>
 
-        {showEditor ? (
+        {!loaded ? (
+          <div
+            className="h-11 animate-pulse rounded-[12px] border border-white/[0.08] bg-white/[0.04] motion-reduce:animate-none"
+            aria-label={t('loadingConnection')}
+          />
+        ) : showEditor ? (
           <input
             id="beatapi-key"
             type="password"
@@ -428,15 +420,52 @@ export function WorkspaceApiConfigDialog({
   const provider = getBeatCanvasProviderPublicConfig(providerId);
   const [saveSignal, setSaveSignal] = useState(0);
   const [section, setSection] = useState<'provider' | 'storage'>('provider');
+  const [providerState, setProviderState] =
+    useState<BeatApiConfigState | null>(null);
+  const [providerStateLoaded, setProviderStateLoaded] = useState(false);
+  const providerConfigured = Boolean(
+    providerState?.apiKeyConfigured && providerState.apiKeyPreview
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    void apiGet<BeatApiConfigState>('/api/config/beatapi')
+      .then((config) => {
+        if (!cancelled) setProviderState(config);
+      })
+      .catch(() => {
+        if (!cancelled) setProviderState(null);
+      })
+      .finally(() => {
+        if (!cancelled) setProviderStateLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <Dialog>
       <DialogTrigger
-        aria-label={t('triggerLabel')}
-        title={t('triggerLabel')}
-        className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-white/[0.09] bg-white/[0.035] text-[#a0a1a8] transition hover:border-white/[0.18] hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a33]/45"
+        aria-label={
+          providerConfigured ? t('triggerConfiguredLabel') : t('triggerLabel')
+        }
+        title={
+          providerConfigured ? t('triggerConfiguredLabel') : t('triggerLabel')
+        }
+        className={`relative inline-flex size-9 shrink-0 items-center justify-center rounded-full border bg-white/[0.035] transition hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ff7a33]/45 ${
+          providerConfigured
+            ? 'border-[#ff7a33]/35 text-[#ff8b4d]'
+            : 'border-white/[0.09] text-[#a0a1a8] hover:border-white/[0.18]'
+        }`}
       >
         <PlugGlyph className="size-[18px]" />
+        {providerConfigured ? (
+          <span
+            className="absolute right-0 top-0 size-2.5 rounded-full border-2 border-[#111214] bg-[#c7f36b]"
+            aria-hidden="true"
+          />
+        ) : null}
       </DialogTrigger>
 
       <DialogContent className="beat-product-shell max-h-[88vh] overflow-y-auto rounded-[24px] border border-white/10 bg-[#111214] p-0 text-[#f5f5f7] shadow-[0_34px_110px_rgba(0,0,0,0.62)] ring-0 sm:max-w-[480px] [&_[data-slot=dialog-close]]:right-4 [&_[data-slot=dialog-close]]:top-4 [&_[data-slot=dialog-close]]:text-white/45 [&_[data-slot=dialog-close]]:hover:bg-white/[0.07] [&_[data-slot=dialog-close]]:hover:text-white">
@@ -478,7 +507,13 @@ export function WorkspaceApiConfigDialog({
             key={`provider-${saveSignal}`}
             providerLabel={provider.label}
             isDefault={provider.isDefault}
-            onSaved={() => setSaveSignal((n) => n + 1)}
+            state={providerState}
+            loaded={providerStateLoaded}
+            onSaved={(nextState) => {
+              setProviderState(nextState);
+              setProviderStateLoaded(true);
+              setSaveSignal((n) => n + 1);
+            }}
           />
         ) : (
           <StorageConfigForm

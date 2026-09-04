@@ -639,6 +639,8 @@
       },
       "apiConfig": {
         "triggerLabel": "API 配置",
+        "triggerConfiguredLabel": "API 配置 — BeatAPI 已连接",
+        "loadingConnection": "正在读取 BeatAPI 连接",
         "title": "连接配置",
         "description": "粘贴你自己的 BeatAPI API Key，项目不内置共享密钥。",
         "providerTab": "AI Provider",

@@ -57,3 +57,12 @@ test('API configuration presets the BeatAPI endpoint and saves key + host', () =
   assert.match(apiConfigSource, /https:\/\/beatapi\.io\/dashboard\/apikeys/);
   assert.doesNotMatch(apiConfigSource, /apiJson(?:Get|Post).*\/api\/config\/storage/);
 });
+
+test('API configuration exposes persisted connection state without revealing the key', () => {
+  assert.match(apiConfigSource, /providerStateLoaded/);
+  assert.match(apiConfigSource, /triggerConfiguredLabel/);
+  assert.match(apiConfigSource, /apiKeyPreview/);
+  assert.match(apiConfigSource, /maskApiKeyPreview/);
+  assert.match(apiConfigSource, /bg-\[#c7f36b\]/);
+  assert.doesNotMatch(apiConfigSource, /type="text"[\s\S]{0,120}id="beatapi-key"/);
+});

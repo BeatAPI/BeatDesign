@@ -639,6 +639,8 @@
       },
       "apiConfig": {
         "triggerLabel": "API設定",
+        "triggerConfiguredLabel": "API設定 — BeatAPI接続済み",
+        "loadingConnection": "BeatAPI接続を読み込み中",
         "title": "接続",
         "description": "ご自身のBeatAPI APIキーを貼り付けてください。共有キーは含まれていません。",
         "providerTab": "AIプロバイダー",
