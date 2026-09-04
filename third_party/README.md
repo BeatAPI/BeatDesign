@@ -27,5 +27,7 @@ machine-readable pin is in
 
 The preserved license is in [`mediabunny/LICENSE`](./mediabunny/LICENSE).
 Mediabunny is consumed as an unmodified npm dependency. BeatDesign does not
-bundle a native FFmpeg executable and does not require a system FFmpeg
-installation.
+bundle a native FFmpeg executable, and browser-native editing and MP4 export do
+not require a system FFmpeg installation. Optional MCP/Node frame extraction
+and Timeline rendering require user-provided `ffmpeg`; Timeline rendering also
+requires `ffprobe`.

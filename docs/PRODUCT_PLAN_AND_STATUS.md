@@ -200,7 +200,7 @@ Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snap
 - Electron/Tauri 壳。
 - 内置 Node runtime、MCP 和媒体 Worker。
 - 原生文件选择、系统集成、签名、公证和自动更新。
-- 桌面封装阶段再评估是否内置 FFmpeg；当前开源 localhost 的核心 UI 不依赖它，但 MCP/Node 抽帧工具需要用户提供本地 `ffmpeg`。
+- 桌面封装阶段再评估是否内置 FFmpeg；当前开源 localhost 的核心 UI 不依赖它，但 MCP/Node 抽帧需要用户提供本地 `ffmpeg`，权威时间线导出还需要 `ffprobe`。
 
 ## 8. 路线图
 

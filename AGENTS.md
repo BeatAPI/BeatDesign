@@ -40,7 +40,7 @@ Do not embed a proprietary general chatbot. BeatDesign must be complete without 
 - Canvas layout snapshots are a UI persistence exception for drag, resize, and viewport state; external Agents still use semantic Canvas operations.
 - Agent changes must become visible in the browser workspace and remain inspectable, reversible where supported, and verifiable. A database revision alone is not proof of a successful user-visible operation.
 - Studio, Canvas, Editor, Assets, and MCP share project, task, asset, and generation services rather than duplicating business logic.
-- Preview and MP4 export use browser-native WebCodecs and Mediabunny. Do not make system FFmpeg a requirement for the core localhost UI. Node-side MCP frame extraction may use `ffmpeg` from `PATH` or `BEATDESIGN_FFMPEG` and must fail with a clear setup error when unavailable.
+- Preview and browser-side MP4 export use browser-native WebCodecs and Mediabunny. Do not make system FFmpeg a requirement for the core localhost UI. Node-side MCP frame extraction and Timeline rendering may use `ffmpeg` from `PATH` or `BEATDESIGN_FFMPEG`; Timeline rendering also uses `ffprobe` from `PATH` or `BEATDESIGN_FFPROBE`. These tools must fail with a clear setup error when a required binary is unavailable.
 
 ## Provider and storage boundary
 
