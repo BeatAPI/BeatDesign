@@ -63,11 +63,11 @@ test('API configuration exposes persisted connection state without revealing the
   assert.match(apiConfigSource, /triggerConfiguredLabel/);
   assert.match(apiConfigSource, /apiKeyPreview/);
   assert.match(apiConfigSource, /maskApiKeyPreview/);
-  assert.match(apiConfigSource, /connectedTitle/);
-  assert.match(apiConfigSource, /savedKeyLabel/);
-  assert.match(apiConfigSource, /changeKeyDescription/);
   assert.match(apiConfigSource, /bg-\[#c7f36b\]/);
   assert.doesNotMatch(apiConfigSource, /connectHint/);
   assert.doesNotMatch(apiConfigSource, /replaceKey/);
+  assert.doesNotMatch(apiConfigSource, /changeKey/);
+  assert.match(apiConfigSource, /configured && !editing/);
+  assert.match(apiConfigSource, /configuredKeyMask/);
   assert.doesNotMatch(apiConfigSource, /type="text"[\s\S]{0,120}id="beatapi-key"/);
 });
