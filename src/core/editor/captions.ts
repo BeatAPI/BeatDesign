@@ -1,5 +1,6 @@
 import {
   calculateTimelineDuration,
+  type CaptionStylePreset,
   type TimelineClip,
   type TimelineDocument,
   type TimelineTrack,
@@ -14,6 +15,106 @@ export type ParsedCaptionCue = {
   endTime: number;
   text: string;
 };
+
+export type CaptionStyleDefinition = {
+  fontScale: number;
+  fontWeight: number;
+  lineHeight: number;
+  maxWidth: number;
+  bottomOffset: number;
+  uppercase: boolean;
+  fillStyle: string;
+  strokeStyle: string | null;
+  strokeScale: number;
+  backgroundStyle: string | null;
+  horizontalPaddingScale: number;
+  verticalPaddingScale: number;
+};
+
+export const CAPTION_STYLE_PRESETS: readonly CaptionStylePreset[] = [
+  'classic',
+  'bold',
+  'boxed',
+  'minimal',
+];
+
+const CAPTION_STYLE_DEFINITIONS: Record<
+  CaptionStylePreset,
+  CaptionStyleDefinition
+> = {
+  classic: {
+    fontScale: 0.042,
+    fontWeight: 600,
+    lineHeight: 1.3,
+    maxWidth: 0.82,
+    bottomOffset: 0.08,
+    uppercase: false,
+    fillStyle: '#ffffff',
+    strokeStyle: 'rgba(0,0,0,0.72)',
+    strokeScale: 0.125,
+    backgroundStyle: null,
+    horizontalPaddingScale: 0,
+    verticalPaddingScale: 0,
+  },
+  bold: {
+    fontScale: 0.052,
+    fontWeight: 800,
+    lineHeight: 1.12,
+    maxWidth: 0.78,
+    bottomOffset: 0.1,
+    uppercase: true,
+    fillStyle: '#ffffff',
+    strokeStyle: 'rgba(0,0,0,0.9)',
+    strokeScale: 0.2,
+    backgroundStyle: null,
+    horizontalPaddingScale: 0,
+    verticalPaddingScale: 0,
+  },
+  boxed: {
+    fontScale: 0.04,
+    fontWeight: 700,
+    lineHeight: 1.25,
+    maxWidth: 0.76,
+    bottomOffset: 0.08,
+    uppercase: false,
+    fillStyle: '#ffffff',
+    strokeStyle: null,
+    strokeScale: 0,
+    backgroundStyle: 'rgba(10,11,13,0.82)',
+    horizontalPaddingScale: 0.55,
+    verticalPaddingScale: 0.3,
+  },
+  minimal: {
+    fontScale: 0.035,
+    fontWeight: 560,
+    lineHeight: 1.35,
+    maxWidth: 0.76,
+    bottomOffset: 0.07,
+    uppercase: false,
+    fillStyle: '#ffffff',
+    strokeStyle: 'rgba(0,0,0,0.48)',
+    strokeScale: 0.08,
+    backgroundStyle: null,
+    horizontalPaddingScale: 0,
+    verticalPaddingScale: 0,
+  },
+};
+
+export function getCaptionStyleDefinition(preset: CaptionStylePreset) {
+  return CAPTION_STYLE_DEFINITIONS[preset];
+}
+
+export function setCaptionStyle(
+  document: TimelineDocument,
+  preset: CaptionStylePreset
+): TimelineDocument {
+  if (document.captionStyle === preset) return document;
+  return {
+    ...document,
+    captionStyle: preset,
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 const createId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
 

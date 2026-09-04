@@ -1,5 +1,6 @@
 import {
   applySrtToTimeline,
+  setCaptionStyle,
   upsertCaptionCue,
 } from '@/core/editor/captions';
 import {
@@ -16,6 +17,7 @@ import {
   trimTimelineClip,
   updateTimelineAudioClip,
   type TimelineAudioRole,
+  type CaptionStylePreset,
   type TimelineDocument,
   type TimelineTake,
 } from '@/core/editor/timeline-document';
@@ -70,7 +72,8 @@ export type EditorOperation =
       startTime: number;
       duration: number;
     }
-  | { type: 'import_srt'; srt: string; replace?: boolean };
+  | { type: 'import_srt'; srt: string; replace?: boolean }
+  | { type: 'set_caption_style'; preset: CaptionStylePreset };
 
 const listClipIds = (document: TimelineDocument) =>
   new Set(document.tracks.flatMap((track) => track.clips.map((clip) => clip.id)));
@@ -170,6 +173,9 @@ export function applyEditorOperations(
       });
     } else if (operation.type === 'import_srt') {
       next = applySrtToTimeline(document, operation.srt, operation.replace !== false);
+      changedIds.add(next.id);
+    } else if (operation.type === 'set_caption_style') {
+      next = setCaptionStyle(document, operation.preset);
       changedIds.add(next.id);
     } else {
       next = setTimelineRender(document, {

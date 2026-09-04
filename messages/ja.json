@@ -520,7 +520,14 @@
         }
       },
       "captions": {
-        "text": "字幕テキスト"
+        "text": "字幕テキスト",
+        "style": "字幕スタイル",
+        "styles": {
+          "classic": "クラシック",
+          "bold": "ボールド",
+          "boxed": "ボックス",
+          "minimal": "ミニマル"
+        }
       },
       "audio": {
         "volume": "音量",

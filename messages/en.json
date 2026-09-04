@@ -520,7 +520,14 @@
         }
       },
       "captions": {
-        "text": "Caption text"
+        "text": "Caption text",
+        "style": "Caption style",
+        "styles": {
+          "classic": "Classic",
+          "bold": "Bold",
+          "boxed": "Boxed",
+          "minimal": "Minimal"
+        }
       },
       "audio": {
         "volume": "Volume",

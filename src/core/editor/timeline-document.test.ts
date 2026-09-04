@@ -54,10 +54,12 @@ test('version 1 timelines migrate with empty Take and render state', () => {
   };
   delete (legacy as Partial<typeof current>).lastRenderAssetId;
   delete (legacy as Partial<typeof current>).lastRenderUrl;
+  delete (legacy as Partial<typeof current>).captionStyle;
 
   const migrated = normalizeTimelineDocument(legacy, 'project-1');
   assert.equal(migrated.schemaVersion, 3);
   assert.equal(migrated.lastRenderAssetId, null);
+  assert.equal(migrated.captionStyle, 'classic');
 });
 
 test('version 2 timelines migrate the visual track without losing clips', () => {

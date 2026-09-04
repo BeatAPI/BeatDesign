@@ -356,6 +356,12 @@ export const editorOperationSchema = z.discriminatedUnion('type', [
       replace: z.boolean().optional(),
     })
     .strict(),
+  z
+    .object({
+      type: z.literal('set_caption_style'),
+      preset: z.enum(['classic', 'bold', 'boxed', 'minimal']),
+    })
+    .strict(),
 ]);
 
 export const beatDesignCommandSchema: z.ZodType<BeatDesignCommand> =

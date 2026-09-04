@@ -40,7 +40,9 @@ import {
   type EditorOperation,
 } from '@/core/commands/editor-commands';
 import {
+  CAPTION_STYLE_PRESETS,
   findCaptionAtTime,
+  getCaptionStyleDefinition,
   MAX_SRT_FILE_BYTES,
 } from '@/core/editor/captions';
 import {
@@ -69,6 +71,7 @@ import {
 import { redoTimelineSelection } from '@/core/editor/beatapi-redo';
 import { fetchRecentAssets } from '@/core/workspace-lib/app/workspace-client-api';
 import { apiJsonGet, apiJsonPost } from '@/lib/api-client';
+import { seekStaticVideoPreview } from '@/core/media/video-preview';
 import {
   WORKSPACE_MUTATION_HEADER,
   WORKSPACE_MUTATION_HEADER_VALUE,
@@ -246,10 +249,12 @@ function TimelineClipBlock({
             preload="metadata"
             aria-hidden="true"
             onLoadedMetadata={(event) => {
-              event.currentTarget.currentTime = Math.min(
-                clip.inPoint + 0.05,
-                Math.max(0, clip.outPoint - 0.05)
+              const video = event.currentTarget;
+              const previewOffset = Math.min(
+                1,
+                Math.max(0, clip.outPoint - clip.inPoint - 0.05)
               );
+              video.currentTime = clip.inPoint + previewOffset;
             }}
             className="absolute inset-0 size-full object-cover opacity-28 transition group-hover:opacity-38"
           />
@@ -391,6 +396,7 @@ export function VideoEditorWorkspace({
     (clip) => clip.sourceType === 'image' || clip.sourceType === 'video'
   );
   const activeCaption = findCaptionAtTime(document, timelineCurrentTime);
+  const activeCaptionStyle = getCaptionStyleDefinition(document.captionStyle);
   const activeVisualClip = findVisualClipAtTimelineTime(
     document,
     timelineCurrentTime
@@ -1787,6 +1793,9 @@ export function VideoEditorWorkspace({
                           playsInline
                           preload="metadata"
                           className="size-full object-cover opacity-80"
+                          onLoadedMetadata={(event) =>
+                            seekStaticVideoPreview(event.currentTarget)
+                          }
                         />
                       ) : (
                         <Music2 className="size-4 text-[var(--beat-graph)]" />
@@ -1894,8 +1903,35 @@ export function VideoEditorWorkspace({
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-black/35 p-4 sm:p-8">
             {activeCaption?.text ? (
-              <div className="pointer-events-none absolute inset-x-8 bottom-8 z-10 flex justify-center">
-                <p className="max-w-3xl whitespace-pre-line break-words rounded-lg bg-black/72 px-4 py-2 text-center text-sm font-[560] leading-6 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+              <div
+                className="pointer-events-none absolute inset-x-8 z-10 flex justify-center"
+                style={{ bottom: `${activeCaptionStyle.bottomOffset * 100}%` }}
+              >
+                <p
+                  className="max-w-3xl whitespace-pre-line break-words rounded-lg px-4 py-2 text-center text-sm text-white sm:text-lg"
+                  style={{
+                    maxWidth: `${activeCaptionStyle.maxWidth * 100}%`,
+                    fontWeight: activeCaptionStyle.fontWeight,
+                    lineHeight: activeCaptionStyle.lineHeight,
+                    textTransform: activeCaptionStyle.uppercase
+                      ? 'uppercase'
+                      : 'none',
+                    background: activeCaptionStyle.backgroundStyle ?? 'transparent',
+                    WebkitTextStroke: activeCaptionStyle.strokeStyle
+                      ? `${Math.max(1, activeCaptionStyle.strokeScale * 8)}px ${activeCaptionStyle.strokeStyle}`
+                      : undefined,
+                    paintOrder: 'stroke fill',
+                    textShadow: activeCaptionStyle.strokeStyle
+                      ? '0 2px 8px rgba(0,0,0,0.45)'
+                      : '0 8px 24px rgba(0,0,0,0.35)',
+                    fontSize:
+                      document.captionStyle === 'bold'
+                        ? 'clamp(16px, 2.2vw, 30px)'
+                        : document.captionStyle === 'minimal'
+                          ? 'clamp(12px, 1.6vw, 21px)'
+                          : 'clamp(14px, 1.9vw, 25px)',
+                  }}
+                >
                   {activeCaption.text}
                 </p>
               </div>
@@ -2327,41 +2363,91 @@ export function VideoEditorWorkspace({
                   </div>
 
                   {selectedClip.sourceType === 'caption' ? (
-                    <label className="block rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
-                      <span className="mb-2 block text-[10px] font-[520] text-white/45">
-                        {t('captions.text')}
-                      </span>
-                      <textarea
-                        value={selectedClip.text ?? ''}
-                        rows={4}
-                        onChange={(event) => {
-                          const text = event.target.value;
-                          commitDocument((current) =>
-                            applyEditorOperations(
-                              current,
-                              text.trim()
-                                ? [
-                                    {
-                                      type: 'upsert_caption',
-                                      clipId: selectedClip.id,
-                                      text,
-                                      startTime: selectedClip.startTime,
-                                      duration: selectedClip.duration,
-                                    },
-                                  ]
-                                : [
-                                    {
-                                      type: 'remove_clip',
-                                      clipId: selectedClip.id,
-                                    },
-                                  ]
-                            ).document
-                          );
-                          if (!text.trim()) setSelectedClipId(null);
-                        }}
-                        className="w-full resize-none rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-[12px] text-white/88 outline-none focus:border-white/24"
-                      />
-                    </label>
+                    <div className="space-y-3 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
+                      <label className="block">
+                        <span className="mb-2 block text-[10px] font-[520] text-white/45">
+                          {t('captions.text')}
+                        </span>
+                        <textarea
+                          value={selectedClip.text ?? ''}
+                          rows={4}
+                          onChange={(event) => {
+                            const text = event.target.value;
+                            commitDocument((current) =>
+                              applyEditorOperations(
+                                current,
+                                text.trim()
+                                  ? [
+                                      {
+                                        type: 'upsert_caption',
+                                        clipId: selectedClip.id,
+                                        text,
+                                        startTime: selectedClip.startTime,
+                                        duration: selectedClip.duration,
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        type: 'remove_clip',
+                                        clipId: selectedClip.id,
+                                      },
+                                    ]
+                              ).document
+                            );
+                            if (!text.trim()) setSelectedClipId(null);
+                          }}
+                          className="w-full resize-none rounded-lg border border-white/10 bg-black/25 px-3 py-2 text-[12px] text-white/88 outline-none focus:border-white/24"
+                        />
+                      </label>
+                      <div>
+                        <span className="mb-2 block text-[10px] font-[520] text-white/45">
+                          {t('captions.style')}
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          {CAPTION_STYLE_PRESETS.map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              aria-pressed={document.captionStyle === preset}
+                              onClick={() =>
+                                commitDocument((current) =>
+                                  applyEditorOperations(current, [
+                                    { type: 'set_caption_style', preset },
+                                  ]).document
+                                )
+                              }
+                              className={`flex h-12 items-center justify-between rounded-lg border px-3 text-left transition ${
+                                document.captionStyle === preset
+                                  ? 'border-[var(--beat-graph)]/65 bg-[var(--beat-graph)]/10 text-white'
+                                  : 'border-white/10 bg-black/20 text-white/55 hover:border-white/20 hover:text-white/82'
+                              }`}
+                            >
+                              <span className="text-[10px] font-[560]">
+                                {t(`captions.styles.${preset}`)}
+                              </span>
+                              <span
+                                className={`grid h-7 min-w-8 place-items-center rounded px-1.5 text-[10px] ${
+                                  preset === 'boxed' ? 'bg-black/80' : ''
+                                }`}
+                                style={{
+                                  fontWeight: getCaptionStyleDefinition(preset).fontWeight,
+                                  textTransform:
+                                    getCaptionStyleDefinition(preset).uppercase
+                                      ? 'uppercase'
+                                      : 'none',
+                                  WebkitTextStroke:
+                                    getCaptionStyleDefinition(preset).strokeStyle
+                                      ? '0.6px rgba(0,0,0,0.85)'
+                                      : undefined,
+                                }}
+                              >
+                                Aa
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   ) : selectedClip.sourceType === 'audio' ? (
                     <div className="space-y-4 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
                       {([

@@ -13,6 +13,7 @@ export const TIMELINE_SCHEMA_VERSION = 3 as const;
 
 export type TimelineTrackKind = 'video' | 'audio' | 'caption';
 export type TimelineAudioRole = 'music' | 'voice' | 'sfx' | 'source';
+export type CaptionStylePreset = 'classic' | 'bold' | 'boxed' | 'minimal';
 
 export type TimelineTake = {
   id: string;
@@ -67,6 +68,7 @@ export type TimelineDocument = {
   duration: number;
   lastRenderAssetId: string | null;
   lastRenderUrl: string | null;
+  captionStyle: CaptionStylePreset;
   tracks: TimelineTrack[];
 };
 
@@ -135,6 +137,9 @@ const timelineDocumentSchema = z.object({
   duration: z.number().finite().min(0).max(86_400),
   lastRenderAssetId: z.string().min(1).max(160).nullable().default(null),
   lastRenderUrl: z.string().min(1).max(4096).nullable().default(null),
+  captionStyle: z
+    .enum(['classic', 'bold', 'boxed', 'minimal'])
+    .default('classic'),
   tracks: z.array(timelineTrackSchema).min(1).max(64),
 });
 
@@ -177,6 +182,7 @@ export function createTimelineDocument({
     duration: 0,
     lastRenderAssetId: null,
     lastRenderUrl: null,
+    captionStyle: 'classic',
     tracks: [
       {
         id: createId('video-track'),

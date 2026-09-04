@@ -91,6 +91,7 @@ test('Canvas and Editor operations expose concrete JSON Schemas to MCP hosts', (
     'set_render',
     'upsert_caption',
     'import_srt',
+    'set_caption_style',
   ]) {
     assert.match(editorJson, new RegExp(operation));
   }

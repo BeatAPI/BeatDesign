@@ -13,6 +13,7 @@ import {
 } from 'react';
 
 import { enqueueMediaMetadataLoad } from '@/core/media/media-load-queue';
+import { seekStaticVideoPreview } from '@/core/media/video-preview';
 import { getBeatCanvasNodeCopy } from './beatcanvas-node-copy';
 import type { BeatCanvasFlowNode } from '../react-flow/beatcanvas-react-flow-types';
 
@@ -243,10 +244,7 @@ export function AssetCardNode({
               preload="metadata"
               draggable={false}
               onLoadedMetadata={(event) => {
-                const video = event.currentTarget;
-                if (video.duration > 0 && video.currentTime === 0) {
-                  video.currentTime = Math.min(0.05, video.duration / 2);
-                }
+                seekStaticVideoPreview(event.currentTarget);
               }}
               onLoadedData={() => setMediaStatus('ready')}
               onError={() => setMediaStatus('error')}

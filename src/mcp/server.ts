@@ -768,7 +768,7 @@ export function createBeatDesignMcpServer() {
   server.registerTool(
     'bdesign_editor_edit',
     {
-      description: 'Apply incremental timeline operations such as add, trim, split, move, remove, audio updates, Takes, captions, and SRT import.',
+      description: 'Apply incremental timeline operations such as add, trim, split, move, remove, audio updates, Takes, captions, caption styles, and SRT import.',
       inputSchema: commandMetadataSchema.extend({
         projectId: idSchema.optional(),
         operations: z.array(editorOperationSchema).min(1).max(500),

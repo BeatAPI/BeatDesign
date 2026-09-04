@@ -5,6 +5,7 @@ import { applyEditorOperations } from '@/core/commands/editor-commands';
 
 import {
   applySrtToTimeline,
+  getCaptionStyleDefinition,
   findCaptionAtTime,
   formatSrtTimestamp,
   parseSrt,
@@ -86,6 +87,18 @@ test('editor import_srt operation is applied through the command kernel', () => 
     result.document.tracks.find((track) => track.kind === 'caption')?.clips ?? [];
   assert.equal(captions.length, 2);
   assert.equal(result.changedIds.includes(result.document.id), true);
+});
+
+test('caption style presets persist and are applied through the command kernel', () => {
+  const timeline = createTimelineDocument({ projectId: 'p1', name: 'Demo' });
+  assert.equal(timeline.captionStyle, 'classic');
+  const result = applyEditorOperations(timeline, [
+    { type: 'set_caption_style', preset: 'bold' },
+  ]);
+  assert.equal(result.document.captionStyle, 'bold');
+  assert.equal(result.changedIds.includes(result.document.id), true);
+  assert.equal(getCaptionStyleDefinition('bold').uppercase, true);
+  assert.doesNotThrow(() => normalizeTimelineDocument(result.document, 'p1'));
 });
 
 test('caption overlap is diagnosed separately from video overlap', () => {

@@ -8,6 +8,7 @@ import {
 import { ScanSearch, Sparkles } from 'lucide-react';
 
 import type { GenerationTake } from '@/core/beatcanvas/generation-history';
+import { seekStaticVideoPreview } from '@/core/media/video-preview';
 
 import { getBeatCanvasNodeCopy } from './beatcanvas-node-copy';
 import type { BeatCanvasFlowNode } from '../react-flow/beatcanvas-react-flow-types';
@@ -290,6 +291,9 @@ export function GenerationCardNode({
                   muted
                   playsInline
                   preload="metadata"
+                  onLoadedMetadata={(event) =>
+                    seekStaticVideoPreview(event.currentTarget)
+                  }
                   draggable={false}
                   onDoubleClick={(event) => {
                     event.preventDefault();
@@ -493,6 +497,9 @@ export function GenerationCardNode({
                       playsInline
                       preload="metadata"
                       className="nowheel"
+                      onLoadedMetadata={(event) =>
+                        seekStaticVideoPreview(event.currentTarget)
+                      }
                       style={{
                         display: 'block',
                         width: '100%',

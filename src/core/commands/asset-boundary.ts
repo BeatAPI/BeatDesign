@@ -137,7 +137,8 @@ export async function normalizeCommandAssetReferences({
         }
         if (
           operation.type === 'upsert_caption' ||
-          operation.type === 'import_srt'
+          operation.type === 'import_srt' ||
+          operation.type === 'set_caption_style'
         ) {
           return operation;
         }

@@ -24,6 +24,7 @@ test('asset cards render videos as draggable video surfaces', () => {
   assert.match(source, /muted/);
   assert.match(source, /playsInline/);
   assert.match(source, /className="nowheel"/);
+  assert.match(source, /seekStaticVideoPreview\(event\.currentTarget\)/);
   assert.doesNotMatch(source, /className="nodrag nowheel"/);
   assert.match(source, /cursor-grab active:cursor-grabbing/);
 });

@@ -1,4 +1,4 @@
-import { findCaptionAtTime } from './captions';
+import { findCaptionAtTime, getCaptionStyleDefinition } from './captions';
 import {
   getTimelineClipSource,
   type TimelineClip,
@@ -248,6 +248,34 @@ export function wrapCaptionText(
   return wrapped;
 }
 
+function drawRoundedCaptionBackground(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + safeRadius, y);
+  context.lineTo(x + width - safeRadius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  context.lineTo(x + width, y + height - safeRadius);
+  context.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - safeRadius,
+    y + height
+  );
+  context.lineTo(x + safeRadius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  context.lineTo(x, y + safeRadius);
+  context.quadraticCurveTo(x, y, x + safeRadius, y);
+  context.closePath();
+  context.fill();
+}
+
 function gainAt(clip: TimelineClip, clipOffset: number) {
   if (clip.muted) return 0;
   const fadeIn = clip.fadeIn > 0 ? Math.min(1, clipOffset / clip.fadeIn) : 1;
@@ -451,23 +479,53 @@ export async function exportTimelineMp4({
       }
       const caption = findCaptionAtTime(document, timelineTime);
       if (caption?.text) {
-        const fontSize = Math.max(28, Math.round(height * 0.042));
-        context.font = `600 ${fontSize}px sans-serif`;
+        const style = getCaptionStyleDefinition(document.captionStyle);
+        const fontSize = Math.max(24, Math.round(height * style.fontScale));
+        context.font = `${style.fontWeight} ${fontSize}px sans-serif`;
         context.textAlign = 'center';
         context.textBaseline = 'bottom';
+        const captionText = style.uppercase
+          ? caption.text.toLocaleUpperCase()
+          : caption.text;
         const lines = wrapCaptionText(
-          caption.text,
-          width * 0.82,
+          captionText,
+          width * style.maxWidth,
           (value) => context.measureText(value).width
         );
-        const lineHeight = fontSize * 1.3;
-        const baseY = height - Math.round(height * 0.08);
+        const lineHeight = fontSize * style.lineHeight;
+        const baseY = height - Math.round(height * style.bottomOffset);
+        if (style.backgroundStyle) {
+          const textWidth = Math.max(
+            ...lines.map((line) => context.measureText(line).width),
+            fontSize
+          );
+          const horizontalPadding = fontSize * style.horizontalPaddingScale;
+          const verticalPadding = fontSize * style.verticalPaddingScale;
+          const backgroundWidth = textWidth + horizontalPadding * 2;
+          const backgroundHeight =
+            lineHeight * lines.length + verticalPadding * 2;
+          context.fillStyle = style.backgroundStyle;
+          drawRoundedCaptionBackground(
+            context,
+            (width - backgroundWidth) / 2,
+            baseY - lineHeight * lines.length - verticalPadding,
+            backgroundWidth,
+            backgroundHeight,
+            fontSize * 0.24
+          );
+        }
         lines.forEach((line, index) => {
           const y = baseY - (lines.length - 1 - index) * lineHeight;
-          context.lineWidth = Math.max(4, Math.round(fontSize / 8));
-          context.strokeStyle = 'rgba(0,0,0,0.72)';
-          context.fillStyle = '#fff';
-          context.strokeText(line, width / 2, y);
+          if (style.strokeStyle) {
+            context.lineWidth = Math.max(
+              2,
+              Math.round(fontSize * style.strokeScale)
+            );
+            context.strokeStyle = style.strokeStyle;
+            context.lineJoin = 'round';
+            context.strokeText(line, width / 2, y);
+          }
+          context.fillStyle = style.fillStyle;
           context.fillText(line, width / 2, y);
         });
       }

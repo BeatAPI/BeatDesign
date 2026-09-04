@@ -520,7 +520,14 @@
         }
       },
       "captions": {
-        "text": "字幕文案"
+        "text": "字幕文案",
+        "style": "字幕样式",
+        "styles": {
+          "classic": "经典描边",
+          "bold": "短视频粗体",
+          "boxed": "深色底框",
+          "minimal": "极简"
+        }
       },
       "audio": {
         "volume": "音量",
