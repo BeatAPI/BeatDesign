@@ -32,7 +32,7 @@ BeatDesign 是一个独立、开源、本地优先的 AI 图片与视频创作�
 
 ### 视频 Editor
 
-把 Canvas 结果送入本地时间线。你可以裁剪、分割、移动、混合音频、导入 SRT 字幕、创建 AI 备选 Take，并在浏览器中预览和导出 MP4。
+把 Canvas 结果送入本地时间线。你可以裁剪、分割、移动、混合音频、放置和调整图片叠层、设置 SRT 字幕样式、创建 AI 备选 Take，并在浏览器中预览和导出 MP4。
 
 Studio 提供更专注的单次生成入口。Assets 让导入和生成的文件在 Canvas、Editor 与 MCP 之间持续可用。
 
@@ -86,7 +86,7 @@ BeatDesign 提供 26 个本地 MCP 工具，覆盖 Project、Asset、Canvas、�
 
 连接 MCP Host 后，可以直接提出这样的要求。
 
-> 打开我最近的 BeatDesign 项目，把这些片段加入时间线，导入字幕，然后把 Editor 停在方便我检查的位置。
+> 打开我最近的 BeatDesign 项目，把这些片段加入时间线，放置品牌图片叠层，调整字幕，然后把 Editor 停在方便我检查的位置。
 
 ## 平台兼容性
 
@@ -116,7 +116,7 @@ BeatDesign 提供 26 个本地 MCP 工具，覆盖 Project、Asset、Canvas、�
 - 图片与视频生成，以及 Standard 和 Deep 视频分析。
 - Canvas 上的图片、视频、音频、生成、Timeline 和文本节点。
 - Studio、Canvas、Editor 与 MCP 共用的 Project Assets。
-- 支持图片、视频、音频和 SRT 字幕轨的非破坏式时间线编辑。
+- 支持图片、视频、音频、可移动图片叠层和带样式 SRT 字幕轨的非破坏式时间线编辑。
 - 使用 WebCodecs 与 Mediabunny 完成本地预览和浏览器端 H.264/AAC MP4 导出。
 - 英文、中文和日文界面。
 - 本地 stdio 与 Streamable HTTP MCP Transport。

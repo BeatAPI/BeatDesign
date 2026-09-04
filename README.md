@@ -32,7 +32,7 @@ Drop in prompts, images, video, and audio. Connect nodes, branch ideas, compare 
 
 ### Video Editor
 
-Turn Canvas results into a local timeline. Trim, split, move, mix audio, import SRT captions, create alternate AI Takes, preview, and export MP4 in the browser.
+Turn Canvas results into a local timeline. Trim, split, move, mix audio, place and transform image overlays, style SRT captions, create alternate AI Takes, preview, and export MP4 in the browser.
 
 Studio provides a focused generation surface. Assets keeps every imported and generated file available across Canvas, Editor, and MCP.
 
@@ -86,7 +86,7 @@ BeatDesign exposes 26 local MCP tools for Projects, Assets, Canvas, generation, 
 
 After connecting your MCP host, you can ask:
 
-> Open my latest BeatDesign project, add these clips to a timeline, import the subtitles, and leave the Editor open for review.
+> Open my latest BeatDesign project, add these clips to a timeline, place the logo overlay, adjust the subtitles, and leave the Editor open for review.
 
 ## Platform compatibility
 
@@ -116,7 +116,7 @@ After connecting your MCP host, you can ask:
 - Image and video generation plus Standard and Deep video analysis.
 - Image, video, audio, generation, timeline, and text nodes on the Canvas.
 - Project Assets shared across Studio, Canvas, Editor, and MCP.
-- Non-destructive timeline editing with image, video, audio, and SRT caption tracks.
+- Non-destructive timeline editing with image, video, audio, movable image overlays, and styled SRT caption tracks.
 - Local preview and browser-side H.264/AAC MP4 export with WebCodecs and Mediabunny.
 - English, Chinese, and Japanese interfaces.
 - Local stdio and Streamable HTTP MCP transports.

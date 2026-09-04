@@ -4,6 +4,24 @@ All notable changes to BeatDesign are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Image overlays in the local Editor, with UI and MCP controls for placement, size, opacity, rotation, fades, and replacement with any project-owned image Asset.
+- Four caption style presets plus per-cue text, timing, size, width, and vertical-position controls shared by the UI and MCP command path.
+- Japanese localization across the released application and public README.
+
+### Changed
+
+- Made new Canvas workflows start with a left-to-right layout and solid, unlabeled connectors while preserving users' saved manual arrangements.
+- Made Canvas prompt controls appear on card hover so they do not obstruct everyday workspace use.
+- Renamed the Editor side panel to the Agent-neutral Inspector and made it closable and reopenable.
+- Simplified BeatAPI key configuration to a clear empty field or full mask with one `Save settings` action.
+
+### Fixed
+
+- Prepared connected local and generated references through the shared upload bridge before remote generation so providers receive public HTTPS media URLs.
+- Made static video previews seek past common opening black frames.
+
 ## [0.2.2] - 2026-09-03
 
 ### Added

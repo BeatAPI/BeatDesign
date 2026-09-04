@@ -2,9 +2,9 @@
 
 - 文档用途：给新加入的开发者、Codex、Claude Code 和其他 AI Agent 提供统一产品上下文
 - 当前基线：BeatDesign v0.2 Phase 1 本地实现
-- 最后核对：2026-09-03
+- 最后核对：2026-09-04
 - 事实边界：只有代码、测试和本文“已完成”栏目共同证明的能力才算完成；规划项不等于已发布
-- 发布状态：v0.2.2 发布候选已完成干净安装、工程、MCP、宿主包与本地路由验证；GitHub Release 与第三方市场审核仍按各自状态单独记录
+- 发布状态：v0.2.2 已发布；当前 `main` 在该版本之上继续包含 Canvas、Editor、MCP 与连接设置改进，尚未另行提升版本号。第三方市场审核仍按各自状态单独记录
 
 ## 1. BeatDesign 是什么
 
@@ -112,17 +112,17 @@ Codex / Claude Code / Other Agent
 - 非破坏式 trim、split、move、delete 和 ripple delete。
 - undo/redo。
 - 音量、静音、淡入和淡出。
-- 图片 Overlay 叠加，支持在预览中直接拖动，并可精确调整位置、宽度、透明度、旋转和淡入淡出；预览与 MP4 导出保持一致。
+- 图片 Overlay 叠加，支持在预览中直接拖动，并可精确调整位置、宽度、透明度、旋转和淡入淡出；可通过 UI 或 MCP 替换为当前 Project 内任意图片 Asset，同时保留原有时间与变换参数；预览与 MP4 导出保持一致。
 - 浏览器本地预览。
 - 选区派生 MP4。
 - BeatAPI 选区 AI redo。
 - Redo 结果作为 Take 保存、激活和恢复 Original。
 - 完整 Timeline H.264/AAC MP4 导出。
-- 字幕在 Overlay 之后绘制，确保字幕始终位于最终画面层；单条字幕可独立调整字号、最大宽度和垂直位置，UI 与 MCP 共用同一操作。
+- 字幕在 Overlay 之后绘制，确保字幕始终位于最终画面层；支持四种共享样式预设，单条字幕可独立调整文字、时间、字号、最大宽度和垂直位置，UI 与 MCP 共用同一操作。
 - 导出写回 Assets 和 Canvas Timeline Node。
 - 缺失素材、Clip 重叠和视频轨空隙诊断。
 - Editor 自动保存统一走 Command Kernel；并发写入使用 revision/CAS 和三方合并，不再用旧文档覆盖新版本。
-- 右侧栏是 Agent 中立的 Timeline Inspector，不内置或假装存在专有 Clip Agent；Codex、Claude Code、Cursor 等通用 Agent 通过 MCP 修改同一份 Timeline。
+- 右侧栏是可关闭、可重新打开且 Agent 中立的 Timeline Inspector，不内置或假装存在专有 Clip Agent；Codex、Claude Code、Cursor 等通用 Agent 通过 MCP 修改同一份 Timeline。
 - 同一次加入时间线使用稳定 Clip ID 和幂等键，重复点击、网络重试不会重复插入同一批 Clip。
 - Take 必须覆盖 Clip 时长；过短 Take 不可激活，诊断会阻止可能产生冻结尾帧的导出。
 
@@ -144,7 +144,7 @@ Codex / Claude Code / Other Agent
 - Generation 的 `AssetFirstGenerationRequest` 已成为服务端权威输入：适配器媒体参数由 Asset ID 和当前 generation intent 编译，旧的客户端 URL 字段不再决定引用事实。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
-- 本地 stdio MCP Server 提供 26 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；`bdesign_editor_import_srt` 导入字幕轨。
+- 本地 stdio MCP Server 提供 26 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay，并调整叠层与单条字幕参数。
 - Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 
 ## 6. v0.2 Phase 1 本地已实现
@@ -159,7 +159,7 @@ Codex / Claude Code / Other Agent
 - Canvas -> Timeline Node -> Editor 连续工作流。
 - Editor 自动保存接入命令入口，并补齐冲突三方合并、重复操作保护和稳定播放头时间。
 - 图片 Clip、时间线拖拽调整持续时间与图片/视频统一视觉轨。
-- 本地 MCP Server 提供 26 个 Project、Asset、Canvas、Generation、Editor 工具；支持会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写，以及导入 SRT 字幕。
+- 本地 MCP Server 提供 26 个 Project、Asset、Canvas、Generation、Editor 工具；支持会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕，以及放置、替换和调整图片 Overlay。
 - MCP 增量 Canvas/Editor 命令在短暂 revision 竞争时会基于最新权威文档限次自动重放；持续冲突返回最新 revision 和明确重试提示。
 - Canvas 与 Editor 每 2 秒并在页面重新聚焦时检查 MCP 写入的新 revision。
 

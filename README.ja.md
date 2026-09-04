@@ -32,7 +32,7 @@ BeatDesignは、AI画像・動画制作のための独立したオープンソ�
 
 ### 動画Editor
 
-Canvasの結果をローカルTimelineへ送ります。トリミング、分割、移動、音声ミックス、SRT字幕の読み込み、AIによる別Takeの作成、プレビュー、ブラウザーでのMP4書き出しに対応します。
+Canvasの結果をローカルTimelineへ送ります。トリミング、分割、移動、音声ミックス、画像オーバーレイの配置と調整、SRT字幕のスタイル設定、AIによる別Takeの作成、プレビュー、ブラウザーでのMP4書き出しに対応します。
 
 Studioは集中した生成画面を提供します。Assetsでは、読み込み済み・生成済みのファイルをCanvas、Editor、MCPから共通して利用できます。
 
@@ -86,7 +86,7 @@ BeatDesignはProject、Asset、Canvas、生成、Editor操作をカバーする2
 
 MCP Hostへ接続した後は、次のように依頼できます。
 
-> 最新のBeatDesign Projectを開き、このClipをTimelineへ追加して字幕を読み込み、確認できるようにEditorを開いてください。
+> 最新のBeatDesign Projectを開き、このClipをTimelineへ追加し、ブランド画像のオーバーレイと字幕を調整して、確認できるようにEditorを開いてください。
 
 ## プラットフォーム互換性
 
@@ -116,7 +116,7 @@ MCP Hostへ接続した後は、次のように依頼できます。
 - 画像・動画生成とStandard、Deep動画分析。
 - Canvas上の画像、動画、音声、生成、Timeline、テキストノード。
 - Studio、Canvas、Editor、MCPで共有されるProject Assets。
-- 画像、動画、音声、SRT字幕トラックに対応した非破壊Timeline編集。
+- 画像、動画、音声、移動可能な画像オーバーレイ、スタイル付きSRT字幕トラックに対応した非破壊Timeline編集。
 - WebCodecsとMediabunnyによるローカルプレビューとブラウザー上のH.264/AAC MP4書き出し。
 - 英語、中国語、日本語のインターフェース。
 - ローカルstdioとStreamable HTTP MCP Transport。
