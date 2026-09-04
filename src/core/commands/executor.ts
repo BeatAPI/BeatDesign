@@ -11,6 +11,7 @@ import {
 } from './canvas-commands';
 import {
   applyEditorOperations,
+  invalidateTimelineRenderIfSourceChanged,
   type EditorOperation,
 } from './editor-commands';
 import {
@@ -81,12 +82,18 @@ export function executeBeatDesignCommand({
     }
 
     if (command.type === 'editor.replace_document') {
+      const document = documents.timeline
+        ? invalidateTimelineRenderIfSourceChanged({
+            previous: documents.timeline,
+            next: command.document,
+          })
+        : command.document;
       return createCommandSuccess({
         commandId,
         projectId,
         origin,
-        changedIds: [command.document.id],
-        data: { timeline: command.document },
+        changedIds: [document.id],
+        data: { timeline: document },
       });
     }
 

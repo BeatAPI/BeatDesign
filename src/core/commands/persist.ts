@@ -8,6 +8,7 @@ import {
 } from '@/core/projects/projects';
 
 import { normalizeCommandAssetReferences } from './asset-boundary';
+import { timelineCanvasCardId } from './canvas-commands';
 import {
   BeatDesignCommandError,
   createCommandFailure,
@@ -57,6 +58,67 @@ type PersistCommandInput = {
   idempotencyKey: string;
   command: BeatDesignCommand;
 };
+
+const timelineClipCount = (document: NonNullable<BeatDesignCommandData['timeline']>) =>
+  document.tracks.reduce((count, track) => count + track.clips.length, 0);
+
+async function syncExistingTimelineCanvasCard({
+  projectId,
+  timeline,
+}: {
+  projectId: string;
+  timeline: NonNullable<BeatDesignCommandData['timeline']>;
+}) {
+  const cardId = timelineCanvasCardId(timeline.id);
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const state = await loadProjectWithLatestSnapshot({ projectId });
+    if (!state || !state.snapshot.cards.some((card) => card.id === cardId)) return null;
+    const commandId = createCommandId();
+    const envelope: BeatDesignCommandEnvelope<BeatDesignCommand> = {
+      commandId,
+      projectId,
+      origin: 'system',
+      expectedRevision: state.snapshotVersion,
+      idempotencyKey: commandId,
+      command: {
+        type: 'canvas.apply',
+        operations: [
+          {
+            type: 'upsert_timeline_node',
+            timelineId: timeline.id,
+            name: timeline.name,
+            durationSec: timeline.duration,
+            clipCount: timelineClipCount(timeline),
+            lastRenderAssetId: timeline.lastRenderAssetId,
+            lastRenderUrl: timeline.lastRenderUrl,
+          },
+        ],
+      },
+    };
+    const executed = executeBeatDesignCommand({
+      envelope,
+      documents: { canvas: state.snapshot },
+    });
+    if (!executed.ok || !executed.data.canvas) {
+      return executed.ok ? 'Canvas timeline node could not be synchronized.' : executed.message;
+    }
+    try {
+      await saveProjectSnapshot({
+        projectId,
+        document: executed.data.canvas,
+        baseVersion: state.snapshotVersion,
+      });
+      return null;
+    } catch (error) {
+      if (!isVersionConflict(error) || attempt === 2) {
+        return error instanceof Error
+          ? error.message
+          : 'Canvas timeline node could not be synchronized.';
+      }
+    }
+  }
+  return 'Canvas timeline node could not be synchronized.';
+}
 
 export function validateExternalCommandAssetReferences({
   origin,
@@ -213,6 +275,19 @@ async function persistBeatDesignCommandOnce({
           timeline: saved.document,
         },
       };
+      const canvasSyncWarning = await syncExistingTimelineCanvasCard({
+        projectId,
+        timeline: saved.document,
+      });
+      if (canvasSyncWarning) {
+        result = {
+          ...result,
+          warnings: [
+            ...result.warnings,
+            `Timeline saved, but its Canvas card is still synchronizing: ${canvasSyncWarning}`,
+          ],
+        };
+      }
     }
 
     return storeCommandReceipt({

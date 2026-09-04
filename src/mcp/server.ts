@@ -22,6 +22,10 @@ import {
   MAX_SRT_FILE_BYTES,
 } from '@/core/editor/captions';
 import { diagnoseTimeline } from '@/core/editor/timeline-diagnostics';
+import {
+  removeRenderedProjectTimelineAsset,
+  renderProjectTimelineToAsset,
+} from '@/core/editor/render-project-timeline';
 import { loadProjectTimeline } from '@/core/editor/timeline-state';
 import { syncGeneration } from '@/core/effects/generation-sync';
 import { listProjectGenerations } from '@/core/effects/project-generations';
@@ -182,12 +186,14 @@ async function executeExternalCommand({
   expectedRevision,
   commandId = createCommandId(),
   idempotencyKey = commandId,
+  maxAttempts,
 }: {
   projectId: string;
   command: unknown;
   expectedRevision?: number | null;
   commandId?: string;
   idempotencyKey?: string;
+  maxAttempts?: number;
 }) {
   if (!(await getActiveProject({ projectId }))) {
     throw new Error('Project not found.');
@@ -202,6 +208,7 @@ async function executeExternalCommand({
       expectedRevision,
       command: parsed,
     },
+    maxAttempts,
   });
 }
 
@@ -834,6 +841,64 @@ export function createBeatDesignMcpServer() {
         idempotencyKey,
         command: { type: 'editor.apply', operations: [{ type: 'import_srt', srt: source, replace }] },
       });
+    })
+  );
+
+  server.registerTool(
+    'bdesign_editor_render',
+    {
+      description:
+        'Render the authoritative Editor timeline to a project-owned MP4 Asset with overlays, captions, and mixed audio. Requires local ffmpeg and ffprobe.',
+      inputSchema: z.object({
+        projectId: idSchema.optional(),
+        expectedRevision: z.number().int().min(0).nullable().optional(),
+      }),
+      annotations: { destructiveHint: false, idempotentHint: false },
+    },
+    withToolErrors(async ({ projectId, expectedRevision }) => {
+      const project = await resolveScopedProject(projectId);
+      const timeline = await loadProjectTimeline(project.id);
+      if (!timeline) throw new Error('Timeline not found.');
+      if (
+        typeof expectedRevision === 'number' &&
+        expectedRevision !== timeline.version
+      ) {
+        throw new Error(
+          `Timeline revision conflict. Read the latest timeline and retry with expectedRevision ${timeline.version}.`
+        );
+      }
+      const asset = await renderProjectTimelineToAsset({
+        projectId: project.id,
+        document: timeline.document,
+        timelineRevision: timeline.version,
+      });
+      const result = await executeExternalCommand({
+        projectId: project.id,
+        expectedRevision: timeline.version,
+        maxAttempts: 1,
+        command: {
+          type: 'editor.apply',
+          operations: [
+            {
+              type: 'set_render',
+              assetId: asset.id,
+              publicUrl: asset.publicUrl,
+            },
+          ],
+        },
+      });
+      if (!result.ok) {
+        await removeRenderedProjectTimelineAsset({
+          projectId: project.id,
+          assetId: asset.id,
+        });
+        throw new Error(result.message);
+      }
+      return {
+        asset,
+        timelineRevision: result.revision,
+        commandId: result.commandId,
+      };
     })
   );
 
