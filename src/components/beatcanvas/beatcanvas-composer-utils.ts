@@ -121,12 +121,16 @@ export const stopComposerKeyboardEvent = <
 export const resolveAnchoredComposerPosition = ({
   frame,
   viewportWidth,
+  viewportHeight,
+  composerHeight,
   preferredWidth = 560,
   edgeInset = 16,
   gap = 14,
 }: {
   frame: { left: number; top: number; width: number; height: number };
   viewportWidth: number;
+  viewportHeight?: number;
+  composerHeight?: number;
   preferredWidth?: number;
   edgeInset?: number;
   gap?: number;
@@ -138,10 +142,31 @@ export const resolveAnchoredComposerPosition = ({
     edgeInset,
     viewportWidth - edgeInset - composerWidth
   );
+  const preferredBelowTop = frame.top + frame.height + gap;
+  let top = preferredBelowTop;
+
+  if (
+    typeof viewportHeight === 'number' &&
+    typeof composerHeight === 'number'
+  ) {
+    const maximumTop = Math.max(
+      edgeInset,
+      viewportHeight - edgeInset - composerHeight
+    );
+    const preferredAboveTop = frame.top - gap - composerHeight;
+
+    if (preferredBelowTop + composerHeight <= viewportHeight - edgeInset) {
+      top = preferredBelowTop;
+    } else if (preferredAboveTop >= edgeInset) {
+      top = preferredAboveTop;
+    } else {
+      top = Math.min(Math.max(preferredBelowTop, edgeInset), maximumTop);
+    }
+  }
 
   return {
     left: Math.min(Math.max(preferredLeft, edgeInset), maximumLeft),
-    top: frame.top + frame.height + gap,
+    top,
   };
 };
 

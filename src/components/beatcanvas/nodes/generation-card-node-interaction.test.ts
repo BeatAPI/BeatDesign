@@ -19,6 +19,18 @@ test('generation media remains a full-card drag surface', () => {
   );
 });
 
+test('generation cards report pointer hover intent for the attached composer', () => {
+  assert.match(source, /fireGenerationCardHover/);
+  assert.match(
+    source,
+    /onPointerEnter=\{\(\) => fireGenerationCardHover\(id, true\)\}/
+  );
+  assert.match(
+    source,
+    /onPointerLeave=\{\(\) => fireGenerationCardHover\(id, false\)\}/
+  );
+});
+
 test('generation node leaves prompt and parameters to the attached Composer', () => {
   assert.doesNotMatch(source, /shapeCopy\.versions/);
   assert.doesNotMatch(source, /latestModelLabel/);

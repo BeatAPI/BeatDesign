@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import {
   type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -57,12 +58,12 @@ import {
   isDraftCard,
   normalizeComposerToken,
   resolveAnchoredComposerPosition,
-  resolveComposerFocusLayout,
   resolveComposerPopoverStateOnPointerDown,
 } from './beatcanvas-composer-utils';
 import { useCanvasFrontLayer } from './beatcanvas-front-layer-context';
 import { CardConnectorOverlay } from './beatcanvas-card-connector-overlay';
 import { beatcanvasPanelClassName } from './beatcanvas-theme';
+import { registerGenerationCardHoverCallback } from './beatcanvas-generation-hover-bridge';
 
 export type { BeatCanvasFrontLayerValue } from './beatcanvas-front-layer-context';
 
@@ -70,6 +71,8 @@ const BEATDESIGN_ZOOM_STEPS = [
   0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2, 2.4, 2.8, 3.2, 3.6, 4,
 ];
 
+const COMPOSER_HOVER_OPEN_DELAY_MS = 140;
+const COMPOSER_HOVER_CLOSE_DELAY_MS = 220;
 
 function areZoomStepsEqual(current: number[] | undefined, next: number[]) {
   return (
@@ -79,24 +82,10 @@ function areZoomStepsEqual(current: number[] | undefined, next: number[]) {
   );
 }
 
-function resolveExplicitAspectRatio(value: string) {
-  const numericRatio = /^(\d+):(\d+)$/.exec(value);
-  if (numericRatio) {
-    const width = Number(numericRatio[1]);
-    const height = Number(numericRatio[2]);
-    return width > 0 && height > 0 ? width / height : null;
-  }
-
-  if (value === 'landscape') return 16 / 9;
-  if (value === 'portrait') return 9 / 16;
-  return null;
-}
-
 export function BeatCanvasFrontLayer() {
   const { editor } = useCanvasEngine();
   const {
     cards,
-    activeComposerCardId,
     composerPresentation,
     effectMetadataMap,
     imageModels,
@@ -142,14 +131,21 @@ export function BeatCanvasFrontLayer() {
   );
   const [edgesVisible, setEdgesVisible] = useState(true);
   const [isSnapToGridActive, setIsSnapToGridActive] = useState(false);
+  const [hoveredComposerCardId, setHoveredComposerCardId] = useState<
+    string | null
+  >(null);
+  const [composerHeight, setComposerHeight] = useState(260);
   const composerRef = useRef<HTMLElement | null>(null);
-  const frontLayerRef = useRef<HTMLDivElement | null>(null);
   const typePickerRef = useRef<HTMLDivElement | null>(null);
   const modelPickerRef = useRef<HTMLDivElement | null>(null);
   const parameterPickerRef = useRef<HTMLDivElement | null>(null);
   const referencePickerRef = useRef<HTMLDivElement | null>(null);
   const versionPickerRef = useRef<HTMLDivElement | null>(null);
-  const lastComposerFocusSignatureRef = useRef('');
+  const hoveredComposerCardIdRef = useRef<string | null>(null);
+  const composerOpenTimerRef = useRef<number | null>(null);
+  const composerCloseTimerRef = useRef<number | null>(null);
+  const isPointerWithinComposerRef = useRef(false);
+  const isFocusWithinComposerRef = useRef(false);
 
   const selectedShapeIds = useCanvasEngineValue(
     (currentEditor) => currentEditor.getSelectedShapeIds(),
@@ -218,12 +214,118 @@ export function BeatCanvasFrontLayer() {
     });
   }, [editor]);
 
+  const clearComposerOpenTimer = useCallback(() => {
+    if (composerOpenTimerRef.current === null) return;
+    window.clearTimeout(composerOpenTimerRef.current);
+    composerOpenTimerRef.current = null;
+  }, []);
+
+  const clearComposerCloseTimer = useCallback(() => {
+    if (composerCloseTimerRef.current === null) return;
+    window.clearTimeout(composerCloseTimerRef.current);
+    composerCloseTimerRef.current = null;
+  }, []);
+
+  const closeHoveredComposer = useCallback(() => {
+    clearComposerOpenTimer();
+    clearComposerCloseTimer();
+    hoveredComposerCardIdRef.current = null;
+    isPointerWithinComposerRef.current = false;
+    isFocusWithinComposerRef.current = false;
+    setHoveredComposerCardId(null);
+    onActiveComposerCardIdChange(null);
+  }, [
+    clearComposerCloseTimer,
+    clearComposerOpenTimer,
+    onActiveComposerCardIdChange,
+  ]);
+
+  const scheduleComposerClose = useCallback(
+    (cardId?: string) => {
+      clearComposerCloseTimer();
+      composerCloseTimerRef.current = window.setTimeout(() => {
+        composerCloseTimerRef.current = null;
+        if (
+          isPointerWithinComposerRef.current ||
+          isFocusWithinComposerRef.current ||
+          (cardId && hoveredComposerCardIdRef.current !== cardId)
+        ) {
+          return;
+        }
+        closeHoveredComposer();
+      }, COMPOSER_HOVER_CLOSE_DELAY_MS);
+    },
+    [clearComposerCloseTimer, closeHoveredComposer]
+  );
+
+  useEffect(() => {
+    registerGenerationCardHoverCallback((cardId, isPointerWithinCard) => {
+      clearComposerOpenTimer();
+
+      if (!isPointerWithinCard) {
+        scheduleComposerClose(cardId);
+        return;
+      }
+
+      clearComposerCloseTimer();
+      const card = cards[cardId];
+      if (!isDraftCard(card)) return;
+
+      if (hoveredComposerCardIdRef.current === cardId) {
+        return;
+      }
+
+      composerOpenTimerRef.current = window.setTimeout(() => {
+        composerOpenTimerRef.current = null;
+        hoveredComposerCardIdRef.current = cardId;
+        setHoveredComposerCardId(cardId);
+        onActiveComposerCardIdChange(cardId);
+      }, COMPOSER_HOVER_OPEN_DELAY_MS);
+    });
+
+    return () => {
+      registerGenerationCardHoverCallback(null);
+      clearComposerOpenTimer();
+      clearComposerCloseTimer();
+    };
+  }, [
+    cards,
+    clearComposerCloseTimer,
+    clearComposerOpenTimer,
+    onActiveComposerCardIdChange,
+    scheduleComposerClose,
+  ]);
+
+  const handleComposerPointerChange = useCallback(
+    (isPointerWithinComposer: boolean) => {
+      isPointerWithinComposerRef.current = isPointerWithinComposer;
+      if (isPointerWithinComposer) {
+        clearComposerCloseTimer();
+        return;
+      }
+      scheduleComposerClose();
+    },
+    [clearComposerCloseTimer, scheduleComposerClose]
+  );
+
+  const handleComposerFocusChange = useCallback(
+    (isFocusWithinComposer: boolean) => {
+      isFocusWithinComposerRef.current = isFocusWithinComposer;
+      if (isFocusWithinComposer) {
+        clearComposerCloseTimer();
+        return;
+      }
+      scheduleComposerClose();
+    },
+    [clearComposerCloseTimer, scheduleComposerClose]
+  );
+
   const activeDraftCard = useMemo(() => {
-    const activeCard = activeComposerCardId
-      ? cards[activeComposerCardId]
+    const activeCard = hoveredComposerCardId
+      ? cards[hoveredComposerCardId]
       : null;
     return isDraftCard(activeCard) ? activeCard : null;
-  }, [activeComposerCardId, cards]);
+  }, [cards, hoveredComposerCardId]);
   const activeDraftFrame = useCanvasEngineValue(
     (currentEditor) => {
       if (!activeDraftCard) return null;
@@ -250,93 +352,52 @@ export function BeatCanvasFrontLayer() {
       }
     }
   );
+  const canvasViewportHeight = useCanvasEngineValue(
+    (currentEditor) => {
+      try {
+        return currentEditor.getContainer().clientHeight;
+      } catch {
+        return 0;
+      }
+    }
+  );
   const activeDraftComposerPosition = useMemo(() => {
-    if (!activeDraftFrame || canvasViewportWidth <= 0) {
+    if (
+      !activeDraftFrame ||
+      canvasViewportWidth <= 0 ||
+      canvasViewportHeight <= 0
+    ) {
       return null;
     }
 
     return resolveAnchoredComposerPosition({
       frame: frameToViewportRect(activeDraftFrame),
       viewportWidth: canvasViewportWidth,
+      viewportHeight: canvasViewportHeight,
+      composerHeight,
     });
   }, [
     activeDraftFrame,
     camera,
+    canvasViewportHeight,
     canvasViewportWidth,
+    composerHeight,
     frameToViewportRect,
   ]);
 
   useEffect(() => {
-    if (!activeDraftCard || !activeDraftFrame) {
-      return;
-    }
+    const composer = composerRef.current;
+    if (!activeDraftCard || !composer) return;
 
-    const expectedAspectRatio = resolveExplicitAspectRatio(
-      activeDraftCard.aspectRatio
-    );
-    if (
-      expectedAspectRatio &&
-      Math.abs(activeDraftFrame.w / activeDraftFrame.h - expectedAspectRatio) >
-        0.02
-    ) {
-      return;
-    }
-
-    const signature = [
-      activeDraftCard.id,
-      activeDraftCard.type,
-      activeDraftCard.aspectRatio,
-    ].join('::');
-    if (lastComposerFocusSignatureRef.current === signature) {
-      return;
-    }
-
-    let focusFrameId: number | null = null;
-    const syncFrameId = window.requestAnimationFrame(() => {
-      focusFrameId = window.requestAnimationFrame(() => {
-        const composer = composerRef.current;
-        const frontLayer = frontLayerRef.current;
-        if (!composer || !frontLayer) return;
-        if (lastComposerFocusSignatureRef.current === signature) return;
-        lastComposerFocusSignatureRef.current = signature;
-
-        const currentZoom = editor.getZoomLevel();
-        const focusLayout = resolveComposerFocusLayout({
-          frameHeight: activeDraftFrame.h,
-          viewportHeight: frontLayer.clientHeight,
-          composerHeight: composer.offsetHeight,
-          currentZoom,
-          zoomSteps: BEATDESIGN_ZOOM_STEPS,
-        });
-
-        editor.centerOnPoint(
-          {
-            x: activeDraftFrame.x + activeDraftFrame.w / 2,
-            y:
-              activeDraftFrame.y +
-              activeDraftFrame.h / 2 +
-              focusLayout.verticalPageOffset,
-          },
-          {
-            zoom: focusLayout.zoom,
-            animation: { duration: 180 },
-          }
-        );
-      });
-    });
-
-    return () => {
-      window.cancelAnimationFrame(syncFrameId);
-      if (focusFrameId !== null) {
-        window.cancelAnimationFrame(focusFrameId);
-      }
+    const updateComposerHeight = () => {
+      setComposerHeight(composer.offsetHeight);
     };
-  }, [
-    activeDraftFrame,
-    composerPresentation,
-    editor,
-    activeDraftCard,
-  ]);
+    updateComposerHeight();
+
+    const observer = new ResizeObserver(updateComposerHeight);
+    observer.observe(composer);
+    return () => observer.disconnect();
+  }, [activeDraftCard?.id]);
 
   const isAnalysisDraft = activeDraftCard?.generationMode === 'analysis';
   const modelOptions = isAnalysisDraft
@@ -721,7 +782,6 @@ export function BeatCanvasFrontLayer() {
 
   return (
     <div
-      ref={frontLayerRef}
       className="pointer-events-none absolute inset-0 z-30"
     >
       {!activeDraftCard ? (
@@ -882,7 +942,9 @@ export function BeatCanvasFrontLayer() {
           isDraftBusy={isDraftBusy}
           isPromptComposing={isPromptComposing}
           labels={labels}
-          onActiveComposerCardIdChange={onActiveComposerCardIdChange}
+          onActiveComposerCardIdChange={closeHoveredComposer}
+          onComposerFocusChange={handleComposerFocusChange}
+          onComposerPointerChange={handleComposerPointerChange}
           onGenerateDraft={onGenerateDraft}
           onPromptChange={handlePromptValueChange}
           onPromptCommit={handlePromptCommit}

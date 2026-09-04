@@ -32,6 +32,8 @@ export function BeatCanvasComposerShell({
   isPromptComposing,
   labels,
   onActiveComposerCardIdChange,
+  onComposerFocusChange,
+  onComposerPointerChange,
   onPromptChange,
   onPromptCommit,
   onGenerateDraft,
@@ -54,6 +56,8 @@ export function BeatCanvasComposerShell({
   isPromptComposing: boolean;
   labels: CanvasLabels;
   onActiveComposerCardIdChange: (cardId: string | null) => void;
+  onComposerFocusChange?: (isFocusWithinComposer: boolean) => void;
+  onComposerPointerChange?: (isPointerWithinComposer: boolean) => void;
   onPromptChange: (nextPrompt: string) => void;
   onPromptCommit: (nextPrompt: string) => void;
   onGenerateDraft: (draftId: string) => void;
@@ -121,7 +125,7 @@ export function BeatCanvasComposerShell({
     <section
       ref={composerRef}
       className={cn(
-        'beat-composer pointer-events-auto absolute z-[60] isolate',
+        'beat-composer beat-pop-in pointer-events-auto absolute z-[60] isolate',
         composerCardClassName,
         'w-[min(560px,calc(100vw-32px))]',
         position ? '' : 'bottom-[98px] left-1/2 -translate-x-1/2'
@@ -129,6 +133,19 @@ export function BeatCanvasComposerShell({
       style={position ? { left: position.left, top: position.top } : undefined}
       onPointerDown={stopComposerEvent}
       onPointerDownCapture={stopComposerEvent}
+      onPointerEnter={() => onComposerPointerChange?.(true)}
+      onPointerLeave={() => onComposerPointerChange?.(false)}
+      onFocusCapture={() => onComposerFocusChange?.(true)}
+      onBlurCapture={(event) => {
+        const nextFocusedElement = event.relatedTarget;
+        if (
+          nextFocusedElement instanceof Node &&
+          event.currentTarget.contains(nextFocusedElement)
+        ) {
+          return;
+        }
+        onComposerFocusChange?.(false);
+      }}
       onKeyDownCapture={stopComposerKeyboardEvent}
       onKeyUpCapture={stopComposerKeyboardEvent}
     >

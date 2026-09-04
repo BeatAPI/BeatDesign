@@ -26,6 +26,18 @@ test('keeps the anchored composer inside the canvas horizontally', () => {
   );
 });
 
+test('places the hover composer above a card when it would overflow below', () => {
+  assert.deepEqual(
+    resolveAnchoredComposerPosition({
+      frame: { left: 300, top: 520, width: 240, height: 220 },
+      viewportWidth: 1200,
+      viewportHeight: 800,
+      composerHeight: 240,
+    }),
+    { left: 140, top: 266 }
+  );
+});
+
 test('reduces zoom only when the frame and composer do not fit vertically', () => {
   assert.deepEqual(
     resolveComposerFocusLayout({

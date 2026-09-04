@@ -11,6 +11,7 @@ import type { GenerationTake } from '@/core/beatcanvas/generation-history';
 
 import { getBeatCanvasNodeCopy } from './beatcanvas-node-copy';
 import type { BeatCanvasFlowNode } from '../react-flow/beatcanvas-react-flow-types';
+import { fireGenerationCardHover } from '../beatcanvas-generation-hover-bridge';
 
 const MAX_VISIBLE_TAKES = 6;
 
@@ -129,6 +130,8 @@ export function GenerationCardNode({
       <div
         data-card-id={id}
         className="group cursor-grab active:cursor-grabbing"
+        onPointerEnter={() => fireGenerationCardHover(id, true)}
+        onPointerLeave={() => fireGenerationCardHover(id, false)}
         style={{
           width: w,
           height: h,
