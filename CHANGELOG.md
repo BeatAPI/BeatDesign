@@ -8,7 +8,7 @@ All notable changes to BeatDesign are documented in this file.
 
 - Image overlays in the local Editor, with UI and MCP controls for placement, size, opacity, rotation, fades, and replacement with any project-owned image Asset.
 - Four caption style presets plus per-cue text, timing, size, width, and vertical-position controls shared by the UI and MCP command path.
-- Japanese localization across the released application and public README.
+- Japanese localization across the application and public READMEs.
 
 ### Changed
 
