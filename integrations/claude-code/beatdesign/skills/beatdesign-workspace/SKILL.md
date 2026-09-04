@@ -64,6 +64,19 @@ opened when the host cannot open it.
   `bdesign_canvas_apply`, then focus the same card with
   `bdesign_canvas_view`.
 
+## Export the authoritative timeline
+
+- When the user authorizes an export, call `bdesign_editor_get`, then call
+  `bdesign_editor_render` with the returned revision. The result is a
+  project-owned MP4 Asset containing visible clips, image overlays, caption
+  burn-in, and mixed audio.
+- If rendering reports that `ffmpeg` or `ffprobe` is unavailable, stop and
+  explain that the MCP process needs those binaries on `PATH`, or absolute
+  `BEATDESIGN_FFMPEG` and `BEATDESIGN_FFPROBE` paths.
+- Render-affecting edits invalidate the previous current render without
+  deleting its historical Asset. If the timeline changes while rendering,
+  read the latest revision and ask before starting another render.
+
 ## Verify the visible result
 
 After a write, read the returned revision and changed IDs. Canvas and Editor

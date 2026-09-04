@@ -127,6 +127,36 @@ export type EditorOperation =
 const listClipIds = (document: TimelineDocument) =>
   new Set(document.tracks.flatMap((track) => track.clips.map((clip) => clip.id)));
 
+const timelineRenderSource = (document: TimelineDocument) => {
+  const {
+    updatedAt: _updatedAt,
+    lastRenderAssetId: _lastRenderAssetId,
+    lastRenderUrl: _lastRenderUrl,
+    ...source
+  } = document;
+  return source;
+};
+
+export function invalidateTimelineRenderIfSourceChanged({
+  previous,
+  next,
+}: {
+  previous: TimelineDocument;
+  next: TimelineDocument;
+}) {
+  if (
+    JSON.stringify(timelineRenderSource(previous)) ===
+    JSON.stringify(timelineRenderSource(next))
+  ) {
+    return next;
+  }
+  return {
+    ...next,
+    lastRenderAssetId: null,
+    lastRenderUrl: null,
+  };
+}
+
 export function applyEditorOperations(
   source: TimelineDocument,
   operations: readonly EditorOperation[]
@@ -270,6 +300,13 @@ export function applyEditorOperations(
         publicUrl: operation.publicUrl,
       });
       changedIds.add(document.id);
+    }
+
+    if (next !== document && operation.type !== 'set_render') {
+      next = invalidateTimelineRenderIfSourceChanged({
+        previous: document,
+        next,
+      });
     }
 
     if (next === document) {

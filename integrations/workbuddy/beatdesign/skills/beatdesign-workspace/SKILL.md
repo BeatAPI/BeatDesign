@@ -44,6 +44,12 @@ BeatDesign MCP 是结构化控制层，浏览器中的 BeatDesign 是用户审�
 - 抽帧和放置节点是本地操作；返回的生成请求是单独的远程付费动作，只有用户明确授权后才能提交。
 - 生成成功只会创建 Asset。用 `bdesign_canvas_apply` 把输出更新到返回的生成卡片，再调用 `bdesign_canvas_view` 聚焦它。
 
+## 导出权威时间线
+
+- 用户明确授权导出后，先调用 `bdesign_editor_get`，再使用返回的 revision 调用 `bdesign_editor_render`。结果是项目内 MP4 Asset，包含可见 Clip、图片 Overlay、烧录字幕和混合音频。
+- 若提示缺少 `ffmpeg` 或 `ffprobe`，请用户把两者加入 MCP 进程的 `PATH`，或设置绝对路径 `BEATDESIGN_FFMPEG` 和 `BEATDESIGN_FFPROBE`；环境未改变前不要重复调用。
+- 会影响画面的时间线修改会让上一版当前导出失效，但不会删除历史 Asset。若导出期间时间线发生变化，先读取最新 revision，再询问用户是否重新导出。
+
 ## 完成标准
 
 写入后核对返回的 revision 和变更 ID，再调用对应 view tool。Canvas 和 Editor 当前通常会在约两秒内或页面重新聚焦时读到 Agent 修改。最终提供准确的 `workspaceUrl` 供用户审核；仅有数据库 revision 不代表用户已经看到结果。

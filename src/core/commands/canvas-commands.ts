@@ -51,8 +51,8 @@ export function buildTimelineCanvasCard({
   name,
   durationSec,
   clipCount,
-  lastRenderAssetId = null,
-  lastRenderUrl = null,
+  lastRenderAssetId,
+  lastRenderUrl,
   referenceCardIds = [],
 }: {
   existing?: CanvasCard;
@@ -65,6 +65,14 @@ export function buildTimelineCanvasCard({
   referenceCardIds?: string[];
 }): CanvasAssetCard {
   const cardId = timelineCanvasCardId(timelineId);
+  const hasRenderUpdate =
+    lastRenderAssetId !== undefined || lastRenderUrl !== undefined;
+  const resolvedRenderAssetId =
+    hasRenderUpdate
+      ? (lastRenderAssetId ?? null)
+      : (existing?.lastRenderAssetId ?? existing?.assetId ?? null);
+  const resolvedRenderUrl =
+    hasRenderUpdate ? (lastRenderUrl ?? null) : (existing?.url ?? null);
   const mergedRefs = Array.from(
     new Set([
       ...(existing?.referenceCardIds ?? []),
@@ -73,11 +81,11 @@ export function buildTimelineCanvasCard({
   );
   return {
     id: cardId,
-    assetId: lastRenderAssetId ?? existing?.assetId ?? null,
+    assetId: resolvedRenderAssetId,
     kind: 'asset',
     type: 'timeline',
     name,
-    url: lastRenderUrl ?? existing?.url ?? null,
+    url: resolvedRenderUrl,
     prompt: existing?.prompt ?? '',
     referenceCardIds: mergedRefs,
     workflowTemplateId: existing?.workflowTemplateId ?? null,
@@ -94,7 +102,7 @@ export function buildTimelineCanvasCard({
     durationSec,
     timelineId,
     clipCount,
-    lastRenderAssetId: lastRenderAssetId ?? existing?.lastRenderAssetId ?? null,
+    lastRenderAssetId: resolvedRenderAssetId,
   };
 }
 export type CanvasCommandApplication = {

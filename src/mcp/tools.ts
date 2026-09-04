@@ -21,6 +21,7 @@ export const BEATDESIGN_MCP_TOOL_NAMES = [
   'bdesign_editor_get',
   'bdesign_editor_edit',
   'bdesign_editor_import_srt',
+  'bdesign_editor_render',
   'bdesign_editor_snapshot',
   'bdesign_editor_diagnostics',
   'bdesign_editor_view',

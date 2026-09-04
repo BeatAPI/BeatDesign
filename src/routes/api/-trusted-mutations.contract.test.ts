@@ -66,3 +66,12 @@ test('workspace multipart mutation routes enforce the same-origin request contra
     assert.match(source, /multipart\/form-data/);
   }
 });
+
+test('legacy timeline replacement still goes through the shared Command Kernel', () => {
+  const source = readFileSync(
+    new URL('./app/projects/$projectId/timeline.ts', import.meta.url),
+    'utf8'
+  );
+  assert.match(source, /persistBeatDesignCommand/);
+  assert.doesNotMatch(source, /saveProjectTimeline\s*\(/);
+});

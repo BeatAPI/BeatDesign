@@ -270,6 +270,78 @@ test('timeline node upsert preserves existing canvas references', () => {
   assert.deepEqual(timelineCard?.referenceCardIds, [assetCard.id]);
   assert.equal(timelineCard?.lastRenderAssetId, 'render-1');
   assert.equal(timelineCard?.durationSec, 8);
+
+  const invalidated = applyCanvasOperations(updated.document, [
+    {
+      type: 'upsert_timeline_node',
+      timelineId: 'timeline-1',
+      name: 'Timeline 1',
+      durationSec: 8,
+      clipCount: 2,
+      lastRenderAssetId: null,
+    },
+  ]).document.cards.find((card) => card.id === 'timeline:timeline-1');
+  assert.equal(invalidated?.assetId, null);
+  assert.equal(invalidated?.url, null);
+  assert.equal(invalidated?.lastRenderAssetId, null);
+});
+
+test('UI timeline replacement invalidates stale renders when edited content changes', () => {
+  const timeline = applyEditorOperations(
+    createTimelineDocument({ projectId: 'project-1', name: 'Timeline 1' }),
+    [
+      {
+        type: 'set_render',
+        assetId: 'render-1',
+        publicUrl: '/render.mp4',
+      },
+    ]
+  ).document;
+  const result = executeBeatDesignCommand({
+    envelope: {
+      commandId: createCommandId(),
+      projectId: 'project-1',
+      origin: 'ui',
+      command: {
+        type: 'editor.replace_document',
+        document: { ...timeline, captionStyle: 'bold' },
+      },
+    },
+    documents: { timeline },
+  });
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.data.timeline?.lastRenderAssetId, null);
+    assert.equal(result.data.timeline?.lastRenderUrl, null);
+  }
+});
+
+test('UI timeline replacement can record a fresh render without invalidating it', () => {
+  const timeline = createTimelineDocument({
+    projectId: 'project-1',
+    name: 'Timeline 1',
+  });
+  const result = executeBeatDesignCommand({
+    envelope: {
+      commandId: createCommandId(),
+      projectId: 'project-1',
+      origin: 'ui',
+      command: {
+        type: 'editor.replace_document',
+        document: {
+          ...timeline,
+          lastRenderAssetId: 'render-1',
+          lastRenderUrl: '/render.mp4',
+        },
+      },
+    },
+    documents: { timeline },
+  });
+  assert.equal(result.ok, true);
+  if (result.ok) {
+    assert.equal(result.data.timeline?.lastRenderAssetId, 'render-1');
+    assert.equal(result.data.timeline?.lastRenderUrl, '/render.mp4');
+  }
 });
 
 test('add_clip with a stable clip id is idempotent', () => {

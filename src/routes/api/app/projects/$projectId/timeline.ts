@@ -8,7 +8,6 @@ import {
 } from '@/core/editor/timeline-document';
 import {
   loadProjectTimeline,
-  saveProjectTimeline,
 } from '@/core/editor/timeline-state';
 import { createCommandId } from '@/core/commands/contracts';
 import { persistBeatDesignCommand } from '@/core/commands/persist';
@@ -59,13 +58,38 @@ async function PUT({
       payload.document,
       params.projectId
     );
-    const saved = await saveProjectTimeline({
+    const commandId = createCommandId();
+    const result = await persistBeatDesignCommand({
       projectId: params.projectId,
-      document,
-      baseVersion:
+      origin: 'ui',
+      commandId,
+      idempotencyKey: commandId,
+      expectedRevision:
         typeof payload.baseVersion === 'number' ? payload.baseVersion : null,
+      command: { type: 'editor.replace_document', document },
     });
-    return Response.json({ timeline: saved });
+    if (!result.ok) {
+      return Response.json(
+        { error: result.message },
+        {
+          status:
+            result.code === 'NOT_FOUND'
+              ? 404
+              : result.code === 'REVISION_CONFLICT'
+                ? 409
+                : 400,
+        }
+      );
+    }
+    if (!result.data.timeline) {
+      return Response.json({ error: 'Timeline command returned no document' }, { status: 500 });
+    }
+    return Response.json({
+      timeline: {
+        document: result.data.timeline,
+        version: result.revision,
+      },
+    });
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) {
       return Response.json({ error: 'Timeline is too large' }, { status: 413 });

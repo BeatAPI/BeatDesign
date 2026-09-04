@@ -8,18 +8,40 @@ import {
   canvasOperationSchema,
   editorOperationSchema,
 } from '@/core/commands/schema';
+import { applyEditorOperations } from '@/core/commands/editor-commands';
 import { createTimelineDocument } from '@/core/editor/timeline-document';
 import { listGenerationModelDescriptors } from '@/core/generation-providers';
 
 import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
 
-test('MCP tool catalog is exactly 26 named tools', () => {
+test('MCP tool catalog is exactly 27 named tools', () => {
   const source = readFileSync(new URL('./server.ts', import.meta.url), 'utf8');
   const registered = [...source.matchAll(/server\.registerTool\(\s*'([^']+)'/g)].map(
     (match) => match[1]
   );
-  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 26);
+  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 27);
   assert.deepEqual(registered, [...BEATDESIGN_MCP_TOOL_NAMES]);
+});
+
+test('timeline edits invalidate an older render before MCP re-renders', () => {
+  const source = createTimelineDocument({
+    projectId: 'project-render-stale',
+    name: 'Render stale guard',
+  });
+  const rendered = applyEditorOperations(source, [
+    {
+      type: 'set_render',
+      assetId: 'render-old',
+      publicUrl: '/assets/render-old.mp4',
+    },
+  ]).document;
+  assert.equal(rendered.lastRenderAssetId, 'render-old');
+
+  const edited = applyEditorOperations(rendered, [
+    { type: 'set_caption_style', preset: 'bold' },
+  ]).document;
+  assert.equal(edited.lastRenderAssetId, null);
+  assert.equal(edited.lastRenderUrl, null);
 });
 
 test('project targeting accepts an explicit workspace handoff destination', () => {

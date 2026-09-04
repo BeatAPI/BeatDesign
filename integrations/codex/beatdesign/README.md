@@ -8,7 +8,7 @@ Canvas or Editor URL to Codex's in-app Browser for visible review.
 
 ```text
 Browser: pnpm dev  →  http://127.0.0.1:3020  (Canvas/Editor review surface)
-Agent:   MCP stdio →  pnpm mcp               (Agent calls 26 tools)
+Agent:   MCP stdio →  pnpm mcp               (Agent calls 27 tools)
 Both processes share the same local SQLite + project files.
 ```
 
