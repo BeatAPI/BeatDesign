@@ -39,6 +39,12 @@ For Canvas-specific review, call `bdesign_canvas_view` with `cardId` so the work
 - After submission, follow generation status until it succeeds, fails, or needs user action. A successful generation creates an Asset but does not place itself. Read the current continuation card, preserve its generation settings, update the returned `generationCardId` with that output through `bdesign_canvas_apply`, then call `bdesign_canvas_view` with the same card ID.
 - If continuation returns `ok=false`, preserve its structured conflict or rollback result. Follow a returned retry instruction at most once after reading current state; do not blindly re-extract frames.
 
+## Export the authoritative timeline
+
+- When the user authorizes an export, call `bdesign_editor_get`, then call `bdesign_editor_render` with the returned revision. The result is a project-owned MP4 Asset that includes visible clips, image overlays, caption burn-in, and mixed audio.
+- If rendering reports that `ffmpeg` or `ffprobe` is unavailable, stop and explain that the MCP host needs those binaries on `PATH`, or absolute `BEATDESIGN_FFMPEG` and `BEATDESIGN_FFPROBE` paths.
+- A render-affecting edit invalidates the previous current render without deleting its historical Asset. If the timeline changes during rendering, read the latest revision and ask before starting another potentially expensive render.
+
 ## Verify what the user can see
 
 After a write, read the returned revision and changed IDs, then inspect the already-open Canvas or Editor. Canvas and Editor currently refresh external revisions within about two seconds and on focus. Confirm the intended card, clip, caption, duration, or media is visible; a successful database revision alone is not completion.

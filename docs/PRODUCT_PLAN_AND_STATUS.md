@@ -129,7 +129,7 @@ Codex / Claude Code / Other Agent
 ### 媒体技术
 
 - 使用 WebCodecs + Mediabunny 在浏览器完成媒体检查、编码和 MP4 封装。
-- 核心浏览器预览和 MP4 导出不要求系统 FFmpeg；可选的 MCP/Node 视频抽帧使用 `PATH` 中的 `ffmpeg` 或 `BEATDESIGN_FFMPEG`。
+- 核心浏览器预览和 MP4 导出不要求系统 FFmpeg；MCP/Node 视频抽帧与权威时间线 MP4 导出使用 `PATH` 中的 `ffmpeg`/`ffprobe`，也可通过 `BEATDESIGN_FFMPEG` 和 `BEATDESIGN_FFPROBE` 指定。
 - OpenReel 只作为时间线术语、文档模型和非破坏式编辑行为的参考；未打包其完整 UI 和应用外壳。
 - 媒体 metadata 采用限并发队列并带超时释放；单个损坏媒体不会永久阻塞后续卡片。
 
@@ -144,7 +144,7 @@ Codex / Claude Code / Other Agent
 - Generation 的 `AssetFirstGenerationRequest` 已成为服务端权威输入：适配器媒体参数由 Asset ID 和当前 generation intent 编译，旧的客户端 URL 字段不再决定引用事实。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
-- 本地 stdio MCP Server 提供 26 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay，并调整叠层与单条字幕参数。
+- 本地 stdio MCP Server 提供 27 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
 - Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 
 ## 6. v0.2 Phase 1 本地已实现
@@ -159,7 +159,7 @@ Codex / Claude Code / Other Agent
 - Canvas -> Timeline Node -> Editor 连续工作流。
 - Editor 自动保存接入命令入口，并补齐冲突三方合并、重复操作保护和稳定播放头时间。
 - 图片 Clip、时间线拖拽调整持续时间与图片/视频统一视觉轨。
-- 本地 MCP Server 提供 26 个 Project、Asset、Canvas、Generation、Editor 工具；支持会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕，以及放置、替换和调整图片 Overlay。
+- 本地 MCP Server 提供 27 个 Project、Asset、Canvas、Generation、Editor 工具；支持会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
 - MCP 增量 Canvas/Editor 命令在短暂 revision 竞争时会基于最新权威文档限次自动重放；持续冲突返回最新 revision 和明确重试提示。
 - Canvas 与 Editor 每 2 秒并在页面重新聚焦时检查 MCP 写入的新 revision。
 
@@ -189,9 +189,9 @@ Codex / Claude Code / Other Agent
 - MCP Resources 和更完整的 schema versioning。
 - Agent Activity、命令审计和实时 UI 事件桥。
 - 外部市场正式审核与上架。仓库已提供 Codex 本地插件、可直接添加的 Claude Code 仓库插件市场，以及符合目录结构的 WorkBuddy MCP + Skill Connector；这些本地接入包不等于已通过第三方市场审核。
-- headless 预览/导出本地媒体 Worker。
+- 独立的 headless 像素预览与后台媒体 Worker；当前 MCP MP4 导出在本地 MCP Server 进程中完成。
 
-当前可以称为“已支持本地 MCP 基础版”，但不能称为完整 Agent 编辑环境：像素级 Snapshot、headless 导出、实时 UI 事件和永久审计仍未实现。本地文件导入桥已完成；UI 当前使用 2 秒 revision 轮询和聚焦检查，而不是实时事件推送。
+当前可以称为“已支持本地 MCP 基础版”，但不能称为完整 Agent 编辑环境：像素级 Snapshot、独立后台媒体 Worker、实时 UI 事件和永久审计仍未实现。本地文件导入桥和 MCP 权威时间线 MP4 导出已完成；UI 当前使用 2 秒 revision 轮询和聚焦检查，而不是实时事件推送。
 
 Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snapshot 自动保存；Canvas/Timeline 业务 operation 已有 Command 合同，Timeline Node 回写也已接入 `/commands`。后续做 MCP parity 时，应继续把可语义化的 Canvas UI 动作迁移为 `canvas.apply`，不能让外部 Agent 调用完整 Snapshot 覆盖。
 

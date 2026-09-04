@@ -82,7 +82,7 @@ Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when y
 
 ## Use BeatDesign with an Agent
 
-BeatDesign exposes 26 local MCP tools for Projects, Assets, Canvas, generation, and Editor operations. Agent changes use the same project services and become visible in the browser workspace.
+BeatDesign exposes 27 local MCP tools for Projects, Assets, Canvas, generation, and Editor operations, including authoritative MP4 timeline rendering. Agent changes use the same project services and become visible in the browser workspace.
 
 After connecting your MCP host, you can ask:
 

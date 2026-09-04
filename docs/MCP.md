@@ -93,7 +93,7 @@ installation shapes.
 
 ## Tool groups
 
-There are **26** tools:
+There are **27** tools:
 
 - Project (5): list, get, create, target the current MCP session, and open a
   workspace review surface.
@@ -103,8 +103,8 @@ There are **26** tools:
   continue-from-tail-frame.
 - Generation (5): list model capabilities, read one model, submit an
   asset-first request, refresh status, and list history.
-- Editor (7): get, incremental edit, SRT import, semantic snapshot, diagnostics,
-  deep-link view, and command history.
+- Editor (8): get, incremental edit, SRT import, authoritative MP4 render,
+  semantic snapshot, diagnostics, deep-link view, and command history.
 
 MCP writes use `origin=mcp` assigned inside the server. `canvas.apply` and
 `editor.apply` accept stable IDs, revisions, and idempotency keys. The server
@@ -157,6 +157,14 @@ Use `update_caption` to tune one caption cue's normalized font size, maximum
 width, and bottom position without changing later cues; `set_caption_style`
 continues to select the shared visual preset.
 
+Use `bdesign_editor_render` to render the authoritative saved timeline to a
+project-owned MP4 Asset. The render includes visible video and image clips,
+image overlays, caption burn-in, and mixed audio. The tool requires `ffmpeg`
+and `ffprobe` on `PATH`, or explicit `BEATDESIGN_FFMPEG` and
+`BEATDESIGN_FFPROBE` paths. If the timeline changes while a render is running,
+the revision-checked commit rejects the stale output and removes that attempt's
+temporary Asset.
+
 For a newly connected Canvas node, append a `place_card` operation after its
 `upsert_card`. By default it places the target once to the right of the frames
 listed in `sourceCardIds`, or to the right of the card's `referenceCardIds` when
@@ -171,12 +179,15 @@ generation independently of prompt text; BeatDesign does not insert synthetic
 - `bdesign_editor_snapshot` resolves active clips and source times; it does not
   rasterize a pixel frame yet.
 - `bdesign_asset_extract_frame` and `bdesign_canvas_continue_from_tail` decode
-  the local video file. MCP/Node uses `ffmpeg` on PATH (or `BEATDESIGN_FFMPEG`);
-  this is not a required system install for the browser UI.
+  the local video file. MCP/Node frame extraction and timeline rendering use
+  `ffmpeg` on PATH (or `BEATDESIGN_FFMPEG`); timeline rendering also uses
+  `ffprobe` (or `BEATDESIGN_FFPROBE`). These are not required system installs
+  for the browser UI.
 - SRT import validates the whole subtitle document before replacing the current
   caption track. Malformed input leaves the saved timeline unchanged.
-- Browser-only MP4 export is not exposed as a headless MCP tool yet. Caption
-  burn-in is included when the browser exports an MP4.
+- Browser-native MP4 export remains available without system FFmpeg.
+  `bdesign_editor_render` provides the corresponding MCP/Node export path and
+  writes the result back as a project Asset.
 - `bdesign_asset_import` copies a local image, video, or audio file into the
   project Asset library from an absolute path. It does not place the Asset on
   Canvas or Editor; use `bdesign_canvas_apply` or `bdesign_editor_edit` after.

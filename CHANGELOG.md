@@ -8,6 +8,7 @@ All notable changes to BeatDesign are documented in this file.
 
 - Image overlays in the local Editor, with UI and MCP controls for placement, size, opacity, rotation, fades, and replacement with any project-owned image Asset.
 - Four caption style presets plus per-cue text, timing, size, width, and vertical-position controls shared by the UI and MCP command path.
+- MCP `bdesign_editor_render` support for rendering the authoritative Timeline to a project-owned MP4 with visible clips, overlays, caption burn-in, and mixed audio.
 - Japanese localization across the application and public READMEs.
 
 ### Changed
@@ -21,6 +22,7 @@ All notable changes to BeatDesign are documented in this file.
 
 - Prepared connected local and generated references through the shared upload bridge before remote generation so providers receive public HTTPS media URLs.
 - Made static video previews seek past common opening black frames.
+- Invalidated stale Timeline renders after render-affecting UI or MCP edits and synchronized the current render state with an existing Canvas Timeline card.
 
 ## [0.2.2] - 2026-09-03
 
