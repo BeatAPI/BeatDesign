@@ -591,7 +591,8 @@ export function createBeatDesignMcpServer() {
   server.registerTool(
     'bdesign_canvas_apply',
     {
-      description: 'Apply incremental Canvas operations. Raw document replacement is not exposed.',
+      description:
+        'Apply incremental Canvas operations. For a newly connected node, append place_card to position it once to the right of its references; later user drag positions remain untouched unless place_card is called again. Raw document replacement is not exposed.',
       inputSchema: commandMetadataSchema.extend({
         projectId: idSchema.optional(),
         operations: z.array(canvasOperationSchema).min(1).max(500),

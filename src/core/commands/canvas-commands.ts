@@ -1,4 +1,5 @@
 import type { CanvasAssetCard, CanvasCard } from '@/core/beatcanvas/canvas-types';
+import { resolveCanvasPlacement } from '@/core/beatcanvas/upload-layout';
 import {
   normalizeProjectSnapshotDocument,
   type ProjectSnapshotDocument,
@@ -16,6 +17,13 @@ export type CanvasOperation =
       type: 'move_card';
       cardId: string;
       frame: ProjectSnapshotShapeFrame;
+    }
+  | {
+      type: 'place_card';
+      cardId: string;
+      sourceCardIds?: string[];
+      side?: 'left' | 'right';
+      offsetIndex?: number;
     }
   | {
       type: 'set_references';
@@ -132,6 +140,34 @@ export function applyCanvasOperations(
     if (operation.type === 'move_card') {
       if (!cards.some((card) => card.id === operation.cardId)) continue;
       frames[operation.cardId] = operation.frame;
+      changedIds.push(operation.cardId);
+      continue;
+    }
+
+    if (operation.type === 'place_card') {
+      const card = cards.find((item) => item.id === operation.cardId);
+      if (!card) continue;
+      const currentFrame = frames[operation.cardId];
+      const size = {
+        w: currentFrame?.w ?? 360,
+        h: currentFrame?.h ?? 260,
+      };
+      const sourceCardIds = operation.sourceCardIds ?? card.referenceCardIds;
+      const sourceFrames = sourceCardIds.flatMap((cardId) => {
+        const frame = frames[cardId];
+        return frame ? [frame] : [];
+      });
+      const occupied = Object.entries(frames).flatMap(([cardId, frame]) =>
+        cardId === operation.cardId ? [] : [frame]
+      );
+      const position = resolveCanvasPlacement({
+        sourceFrames,
+        occupied,
+        size,
+        offsetIndex: operation.offsetIndex,
+        side: operation.side,
+      });
+      frames[operation.cardId] = { ...position, ...size };
       changedIds.push(operation.cardId);
       continue;
     }

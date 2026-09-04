@@ -211,6 +211,15 @@ export const canvasOperationSchema = z.discriminatedUnion('type', [
     .strict(),
   z
     .object({
+      type: z.literal('place_card'),
+      cardId: commandIdSchema,
+      sourceCardIds: z.array(commandIdSchema).max(20).optional(),
+      side: z.enum(['left', 'right']).default('right'),
+      offsetIndex: z.number().int().min(0).max(499).default(0),
+    })
+    .strict(),
+  z
+    .object({
       type: z.literal('set_references'),
       cardId: commandIdSchema,
       referenceCardIds: z.array(commandIdSchema).max(20),

@@ -33,8 +33,8 @@ import {
   resolveWorkspaceAspectRatioFromDimensions,
 } from '@/core/beatcanvas/composer';
 import {
-  resolveCanvasBatchOffset,
-  resolveNonOverlappingPlacement,
+  resolveCanvasPlacement,
+  type CanvasPlacementSide,
 } from '@/core/beatcanvas/upload-layout';
 import {
   type MutableRefObject,
@@ -62,7 +62,6 @@ type ShapeSize = {
   h: number;
 };
 
-type PlacementSide = 'left' | 'right';
 type CanvasFocusOptions = {
   zoom?: number;
 };
@@ -687,22 +686,27 @@ export function useBeatCanvasReactFlowAdapter({
       sourceIds: string[] = [],
       offsetIndex = 0,
       size?: ShapeSize,
-      side: PlacementSide = 'right'
+      side: CanvasPlacementSide = 'right'
     ): ShapePlacement => {
-      const offset = resolveCanvasBatchOffset(offsetIndex, size);
       const editor = editorRef.current;
       if (!editor) {
-        return {
-          x: 80 + offset.x,
-          y: 80 + offset.y,
-        };
+        return resolveCanvasPlacement({
+          occupied: [],
+          size,
+          offsetIndex,
+          side,
+        });
       }
 
-      const existingBounds = sourceIds
+      const sourceFrames = sourceIds
         .map((id) => editor.getShapePageBounds(id as any))
-        .filter(Boolean);
-      const width = size?.w ?? 360;
-      const height = size?.h ?? 260;
+        .filter(Boolean)
+        .map((bounds: any) => ({
+          x: bounds.minX,
+          y: bounds.minY,
+          w: bounds.maxX - bounds.minX,
+          h: bounds.maxY - bounds.minY,
+        }));
       const occupied = Object.keys(canvasCardsRef.current).flatMap((cardId) => {
         const bounds = editor.getShapePageBounds(cardId as any) as
           | { minX: number; minY: number; maxX: number; maxY: number }
@@ -718,44 +722,12 @@ export function useBeatCanvasReactFlowAdapter({
             ]
           : [];
       });
-      let next = {
-        x: 80 + offset.x,
-        y: 80 + offset.y,
-      };
-
-      if (existingBounds.length > 0) {
-        const right = Math.max(
-          ...existingBounds.map((bounds: any) => bounds.maxX)
-        );
-        const left = Math.min(
-          ...existingBounds.map((bounds: any) => bounds.minX)
-        );
-        const top = Math.min(
-          ...existingBounds.map((bounds: any) => bounds.minY)
-        );
-        const bottom = Math.max(
-          ...existingBounds.map((bounds: any) => bounds.maxY)
-        );
-        next = {
-          x:
-            side === 'left'
-              ? left - width - 96 - offset.x
-              : right + 96 + offset.x,
-          y: top + Math.max(0, (bottom - top - height) / 2) + offset.y,
-        };
-      } else if (occupied.length > 0) {
-        const maxX = Math.max(...occupied.map((frame) => frame.x + frame.w));
-        const minY = Math.min(...occupied.map((frame) => frame.y));
-        next = {
-          x: maxX + 48 + offset.x,
-          y: minY + offset.y,
-        };
-      }
-      return resolveNonOverlappingPlacement({
-        ...next,
-        w: width,
-        h: height,
+      return resolveCanvasPlacement({
+        sourceFrames,
         occupied,
+        size,
+        offsetIndex,
+        side,
       });
     },
     [canvasCardsRef]
@@ -918,7 +890,7 @@ export function useBeatCanvasReactFlowAdapter({
       sourceGenerationId?: string | null;
       sourceCardIds?: string[];
       anchorCardIds?: string[];
-      placementSide?: PlacementSide;
+      placementSide?: CanvasPlacementSide;
       placementOffsetIndex?: number;
       activateOnInsert?: boolean;
       size?: ShapeSize;
@@ -1303,7 +1275,7 @@ export function useBeatCanvasReactFlowAdapter({
       presetName?: string;
       aspectRatio?: WorkspaceAspectRatio;
       language?: CanvasDraftCard['language'];
-      placementSide?: PlacementSide;
+      placementSide?: CanvasPlacementSide;
       anchorCardIds?: string[];
       placementOffsetIndex?: number;
       placementPoint?: ShapePlacement;

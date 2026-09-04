@@ -145,6 +145,15 @@ incremental operation as a concrete JSON Schema. Agents can discover required
 IDs, time fields, media roles, card parameters, Takes, and render fields from
 the MCP tool contract instead of guessing an opaque operation object.
 
+For a newly connected Canvas node, append a `place_card` operation after its
+`upsert_card`. By default it places the target once to the right of the frames
+listed in `sourceCardIds`, or to the right of the card's `referenceCardIds` when
+that field is omitted. This is an explicit initial-layout action, not a live
+auto-layout system: later drag positions and large manually arranged graphs stay
+saved until a caller explicitly places the card again. References are passed to
+generation independently of prompt text; BeatDesign does not insert synthetic
+`@Image1` or `@Image2` tokens into a user's prompt.
+
 ## Current boundaries
 
 - `bdesign_editor_snapshot` resolves active clips and source times; it does not

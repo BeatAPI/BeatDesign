@@ -8,6 +8,8 @@ export type CanvasOccupiedFrame = {
   h: number;
 };
 
+export type CanvasPlacementSide = 'left' | 'right';
+
 const framesOverlap = (
   left: CanvasOccupiedFrame,
   right: CanvasOccupiedFrame,
@@ -25,6 +27,7 @@ export const resolveNonOverlappingPlacement = ({
   h,
   occupied,
   gap = CANVAS_BATCH_UPLOAD_GAP,
+  direction = 'right',
 }: {
   x: number;
   y: number;
@@ -32,6 +35,7 @@ export const resolveNonOverlappingPlacement = ({
   h: number;
   occupied: CanvasOccupiedFrame[];
   gap?: number;
+  direction?: CanvasPlacementSide;
 }) => {
   let next = { x, y, w, h };
   for (let attempt = 0; attempt < 48; attempt += 1) {
@@ -40,7 +44,9 @@ export const resolveNonOverlappingPlacement = ({
     }
     next = {
       ...next,
-      x: next.x + w + gap,
+      x:
+        next.x +
+        (direction === 'left' ? -(w + gap) : w + gap),
       y: attempt > 0 && attempt % CANVAS_BATCH_UPLOAD_COLUMNS === 0
         ? next.y + h + gap
         : next.y,
@@ -50,6 +56,68 @@ export const resolveNonOverlappingPlacement = ({
     }
   }
   return { x: next.x, y: next.y };
+};
+
+export const resolveCanvasPlacement = ({
+  sourceFrames = [],
+  occupied,
+  size = { w: 360, h: 260 },
+  offsetIndex = 0,
+  side = 'right',
+  origin = { x: 80, y: 80 },
+  referenceGap = 96,
+}: {
+  sourceFrames?: CanvasOccupiedFrame[];
+  occupied: CanvasOccupiedFrame[];
+  size?: { w: number; h: number };
+  offsetIndex?: number;
+  side?: CanvasPlacementSide;
+  origin?: { x: number; y: number };
+  referenceGap?: number;
+}) => {
+  const offset = resolveCanvasBatchOffset(offsetIndex, size);
+  let next = {
+    x: origin.x + offset.x,
+    y: origin.y + offset.y,
+  };
+
+  if (sourceFrames.length > 0) {
+    const right = Math.max(
+      ...sourceFrames.map((frame) => frame.x + frame.w)
+    );
+    const left = Math.min(...sourceFrames.map((frame) => frame.x));
+    const top = Math.min(...sourceFrames.map((frame) => frame.y));
+    const bottom = Math.max(
+      ...sourceFrames.map((frame) => frame.y + frame.h)
+    );
+    next = {
+      x:
+        side === 'left'
+          ? left - size.w - referenceGap - offset.x
+          : right + referenceGap + offset.x,
+      y: top + (bottom - top - size.h) / 2 + offset.y,
+    };
+  } else if (occupied.length > 0) {
+    const edgeX =
+      side === 'left'
+        ? Math.min(...occupied.map((frame) => frame.x)) -
+          size.w -
+          CANVAS_BATCH_UPLOAD_GAP
+        : Math.max(...occupied.map((frame) => frame.x + frame.w)) +
+          CANVAS_BATCH_UPLOAD_GAP;
+    const minY = Math.min(...occupied.map((frame) => frame.y));
+    next = {
+      x: edgeX + (side === 'left' ? -offset.x : offset.x),
+      y: minY + offset.y,
+    };
+  }
+
+  return resolveNonOverlappingPlacement({
+    ...next,
+    ...size,
+    occupied,
+    direction: side,
+  });
 };
 
 export const resolveCanvasBatchOffset = (
