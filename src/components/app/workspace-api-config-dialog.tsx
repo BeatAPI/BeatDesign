@@ -1,4 +1,4 @@
-import { Cloud, Database } from 'lucide-react';
+import { CheckCircle2, Cloud, Database, KeyRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -121,87 +121,132 @@ function ApiConfigForm({
         ) : null}
       </div>
 
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <label
-            htmlFor="beatapi-key"
-            className="text-[12px] font-medium text-white/45"
-          >
-            {t('keyLabel')}
-          </label>
-          {configured && !replacing ? (
-            <span className="rounded-full border border-[#ff7a33]/30 bg-[#ff7a33]/10 px-2 py-0.5 text-[11px] font-medium text-[#ff9a62]">
-              {t('keyConfigured')}
+      {!loaded ? (
+        <div
+          className="h-[148px] animate-pulse rounded-[16px] border border-white/[0.08] bg-white/[0.04] motion-reduce:animate-none"
+          aria-label={t('loadingConnection')}
+        />
+      ) : configured && !replacing ? (
+        <div
+          className="rounded-[16px] border border-[#c7f36b]/20 bg-[#c7f36b]/[0.045] p-4"
+          role="status"
+        >
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c7f36b]/12 text-[#c7f36b]">
+              <CheckCircle2 className="size-4" aria-hidden="true" />
             </span>
-          ) : null}
-        </div>
-
-        {!loaded ? (
-          <div
-            className="h-11 animate-pulse rounded-[12px] border border-white/[0.08] bg-white/[0.04] motion-reduce:animate-none"
-            aria-label={t('loadingConnection')}
-          />
-        ) : showEditor ? (
-          <input
-            id="beatapi-key"
-            type="password"
-            value={apiKey}
-            onChange={(event) => setApiKey(event.target.value)}
-            placeholder={t('keyPlaceholder')}
-            autoComplete="off"
-            className={inputClassName}
-          />
-        ) : (
-          <div className="flex h-11 items-center rounded-[12px] border border-white/[0.12] bg-white/[0.04] px-3.5 font-mono text-[13px] text-white/80">
-            {state?.apiKeyPreview}
+            <div className="min-w-0">
+              <p className="text-[14px] font-semibold text-white">
+                {t('connectedTitle')}
+              </p>
+              <p className="mt-0.5 text-[12px] leading-5 text-white/48">
+                {t('connectedDescription')}
+              </p>
+            </div>
           </div>
-        )}
 
-        <p className="mt-2 text-[12px] leading-5 text-white/40">
-          {t('connectHint')}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-          {configured && !replacing ? (
+          <div className="mt-4 flex items-center justify-between gap-4 rounded-[11px] border border-white/[0.08] bg-black/15 px-3 py-2.5">
+            <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-white/38">
+              {t('savedKeyLabel')}
+            </span>
+            <code className="truncate font-mono text-[12px] text-white/72">
+              {state?.apiKeyPreview}
+            </code>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
             <button
               type="button"
               onClick={() => setReplacing(true)}
-              className="text-[13px] font-semibold text-white/55 transition hover:text-white"
+              className="rounded-[9px] border border-white/[0.12] bg-white/[0.04] px-3 py-2 text-[12px] font-semibold text-white/72 transition hover:border-white/20 hover:bg-white/[0.07] hover:text-white"
             >
-              {t('replaceKey')}
+              {t('changeKey')}
             </button>
-          ) : null}
-          {replacing ? (
-            <button
-              type="button"
-              onClick={() => {
-                setReplacing(false);
-                setApiKey('');
-              }}
-              className="text-[13px] font-semibold text-white/55 transition hover:text-white"
+            <a
+              href="https://beatapi.io/dashboard/apikeys"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-[12px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
             >
-              {t('cancelReplace')}
-            </button>
-          ) : null}
-          <a
-            href="https://beatapi.io/dashboard/apikeys"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex text-[13px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
-          >
-            {t('getKey')}
-          </a>
+              {t('getKey')}
+            </a>
+          </div>
         </div>
-      </div>
+      ) : showEditor ? (
+        <div className="space-y-4">
+          <div
+            className="flex items-start gap-3 rounded-[14px] border border-white/[0.09] bg-white/[0.025] p-3.5"
+            role="status"
+          >
+            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#ff7a33]/10 text-[#ff9258]">
+              <KeyRound className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-white">
+                {replacing ? t('changeKeyTitle') : t('notConnectedTitle')}
+              </p>
+              <p className="mt-0.5 text-[12px] leading-5 text-white/45">
+                {replacing
+                  ? t('changeKeyDescription')
+                  : t('notConnectedDescription')}
+              </p>
+            </div>
+          </div>
 
-      {showEditor ? (
-        <button
-          type="button"
-          disabled={saving || !apiKey.trim()}
-          onClick={() => void save()}
-          className={saveButtonClassName}
-        >
-          {saving ? t('saving') : t('save')}
-        </button>
+          <div>
+            <label
+              htmlFor="beatapi-key"
+              className="mb-2 block text-[12px] font-medium text-white/45"
+            >
+              {t('keyLabel')}
+            </label>
+            <input
+              id="beatapi-key"
+              type="password"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              placeholder={t('keyPlaceholder')}
+              autoComplete="off"
+              className={inputClassName}
+            />
+          </div>
+
+          <button
+            type="button"
+            disabled={saving || !apiKey.trim()}
+            onClick={() => void save()}
+            className={saveButtonClassName}
+          >
+            {saving
+              ? t('saving')
+              : replacing
+                ? t('saveNewKey')
+                : t('connect')}
+          </button>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {replacing ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setReplacing(false);
+                  setApiKey('');
+                }}
+                className="text-[12px] font-semibold text-white/55 transition hover:text-white"
+              >
+                {t('cancelReplace')}
+              </button>
+            ) : null}
+            <a
+              href="https://beatapi.io/dashboard/apikeys"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex text-[12px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
+            >
+              {t('getKey')}
+            </a>
+          </div>
+        </div>
       ) : null}
     </div>
   );
