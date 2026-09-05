@@ -34,7 +34,7 @@ Replace `/absolute/path/to/Beat Design` in each template with your clone path.
 | Hermes Agent (Nous Research) | [`hermes/config.yaml.snippet`](./hermes/config.yaml.snippet) | `~/.hermes/config.yaml` | YAML `mcp_servers:` block |
 | Kiro | [`kiro/mcp.json.example`](./kiro/mcp.json.example) | `~/.kiro/settings/mcp.json` or `.kiro/settings/mcp.json` | MCP must be enabled in Kiro |
 | Trae (字节跳动) | [`trae/mcp.json.example`](./trae/mcp.json.example) | `.trae/mcp.json` | global servers live in the Trae MCP UI panel |
-| WorkBuddy | [`workbuddy/beatdesign/`](./workbuddy/beatdesign/) · [`workbuddy/mcp.json.snippet`](./workbuddy/mcp.json.snippet) | Connector package or `~/.workbuddy/mcp.json` | MCP + Skill submission package; start `pnpm dev:agent` first |
+| WorkBuddy | [`workbuddy/beatdesign/`](./workbuddy/beatdesign/) · [`workbuddy/mcp.json.snippet`](./workbuddy/mcp.json.snippet) | Connector package or `~/.workbuddy/mcp.json` | MCP + Skill package source; run `pnpm integration:package:workbuddy`, then start `pnpm dev:agent` for local review |
 | 豆包办公 / 豆包工作任务 | [`doubao-work/mcp.json.example`](./doubao-work/mcp.json.example) | 技能 · 连接器 · 伙伴 → 新建自定义连接器 | choose HTTP and use the local `/mcp` URL |
 
 Not supported: Doubao desktop (豆包电脑版) currently has no user-facing

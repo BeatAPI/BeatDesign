@@ -51,7 +51,7 @@ import {
   type BeatDesignWorkspaceHandoff,
 } from './workspace-handoff';
 
-const VERSION = '0.2.2';
+const VERSION = '0.2.3';
 const idSchema = z.string().trim().min(1).max(200);
 
 const toCommandCanvasCards = (cards: unknown[]) =>

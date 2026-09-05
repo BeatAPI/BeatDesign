@@ -16,7 +16,7 @@ pnpm --silent mcp
 # For QwenWork / Doubao Work connectors (use this instead of stdio):
 pnpm --silent mcp:http
 
-# For the Claude Code plugin or WorkBuddy Connector:
+# For the Claude Code plugin or repository-local WorkBuddy development:
 pnpm dev:agent
 ```
 
@@ -62,9 +62,18 @@ The Codex plugin source is under `integrations/codex/beatdesign`. When Codex
 copies that plugin outside this repository, pass `BEATDESIGN_ROOT` with the
 absolute repository path. Claude Code has a dedicated repository marketplace
 and plugin under `integrations/claude-code/beatdesign`; WorkBuddy has an MCP +
-Skill Connector under `integrations/workbuddy/beatdesign`. Those two packages
-connect to the loopback HTTP endpoint started by `pnpm dev:agent` and therefore
-do not depend on the Agent's working directory.
+Skill Connector under `integrations/workbuddy/beatdesign`. Repository-local
+review may use the loopback HTTP endpoint started by `pnpm dev:agent`. The
+public WorkBuddy package instead uses a managed Node.js runtime and a versioned
+stdio npm package that starts the production browser workspace automatically.
+
+Validate the WorkBuddy source with `pnpm integration:check:workbuddy` and create
+the review ZIP with `pnpm integration:package:workbuddy`. The generated archive
+is a local artifact, not evidence of marketplace submission, approval, or
+publication. Follow `integrations/workbuddy/REVIEW_CHECKLIST.md` before upload.
+Build the installable runtime tarball with
+`pnpm integration:pack:workbuddy-runtime`; npm publication remains a separate
+release state.
 
 ## Mental model
 
@@ -74,7 +83,9 @@ BeatDesign is a visual workspace plus one selected Agent control transport shari
 2. `pnpm mcp` is the Agent control plane over stdio for coding Agents.
 3. `pnpm mcp:http` is the optional Streamable HTTP control plane for QwenWork and Doubao Work.
 4. `pnpm dev:agent` starts the visual workbench and HTTP control plane together
-   for packaged host integrations.
+   for repository-local connector development.
+5. The public WorkBuddy runtime package starts the production workbench and
+   stdio MCP together using WorkBuddy's managed Node.js runtime.
 
 The MCP server returns structured browser handoffs. In Codex, the bundled Skill
 uses the in-app Browser to open or reuse the exact Canvas or Editor tab and
@@ -83,9 +94,9 @@ leaves it visible while the Agent works. Other hosts can use the clean
 
 Host packages are optional installation layers. Claude Code, OpenCode, Cursor,
 and any other MCP stdio host can still start `pnpm --silent mcp` directly.
-Claude Code's plugin and the WorkBuddy Connector use the local HTTP command;
-QwenWork and Doubao Work use the same endpoint. Marketplace review is not
-required for local use.
+Claude Code's plugin, QwenWork, and Doubao Work can use the local HTTP command.
+The public WorkBuddy Connector uses the packaged stdio runtime. Marketplace
+review is not required for repository-local use.
 
 Repo-root `.mcp.json` is the Claude Code / generic direct-stdio config. See
 `integrations/README.md` for the Codex, Claude Code, WorkBuddy, and OpenCode

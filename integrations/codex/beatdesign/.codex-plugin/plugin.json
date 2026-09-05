@@ -1,6 +1,6 @@
 {
   "name": "beatdesign",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Control a local BeatDesign Canvas, generation workspace, and video Editor through MCP.",
   "author": {
     "name": "BeatAPI"

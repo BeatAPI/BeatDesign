@@ -25,6 +25,8 @@ const jsonTemplates = [
 type ServerConfig = {
   command?: string | string[];
   args?: string[];
+  npmRegistry?: string;
+  runtime?: { type?: string; version?: string };
   type?: string;
   url?: string;
 };
@@ -46,6 +48,11 @@ const getBeatDesignServer = (config: Record<string, unknown>) => {
 };
 
 test('all JSON Agent integration templates are valid and target the MCP entrypoint', () => {
+  const packageVersion = (
+    JSON.parse(readFileSync(resolve('package.json'), 'utf8')) as {
+      version: string;
+    }
+  ).version;
   for (const relativePath of jsonTemplates) {
     const absolutePath = resolve(relativePath);
     const config = JSON.parse(readFileSync(absolutePath, 'utf8')) as Record<
@@ -55,6 +62,17 @@ test('all JSON Agent integration templates are valid and target the MCP entrypoi
     const server = getBeatDesignServer(config);
 
     assert.ok(server, `${relativePath} must define beatdesign`);
+    if (relativePath === 'integrations/workbuddy/beatdesign/mcp.json') {
+      assert.equal(server.type, 'stdio');
+      assert.equal(server.command, 'npx');
+      assert.deepEqual(server.args, [
+        '--yes',
+        `@beatapi/beatdesign-workbuddy@${packageVersion}`,
+      ]);
+      assert.deepEqual(server.runtime, { type: 'node', version: '22' });
+      assert.equal(server.npmRegistry, 'https://registry.npmjs.org');
+      continue;
+    }
     if (server.url) {
       assert.ok(
         ['http', 'streamable-http', 'streamableHttp'].includes(server.type ?? ''),

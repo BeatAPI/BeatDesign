@@ -8,6 +8,17 @@ Excluded: authentication, login, accounts, payments, subscriptions, credits, API
 
 Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. A real paid BeatAPI generation is a separate credentialed end-to-end check.
 
+## v0.2.3 release gate
+
+- [x] Application, Codex, Claude Code, WorkBuddy, Claude marketplace, and LobeHub metadata agree on `0.2.3`.
+- [x] The WorkBuddy Connector archive passes deterministic structure validation.
+- [x] The packaged WorkBuddy runtime installs in an empty directory, starts the local workspace, completes an MCP handshake, exposes all 27 tools, and keeps data outside the package directory.
+- [x] Run `pnpm typecheck`, `pnpm test`, `pnpm i18n:check`, and `pnpm build` on the release candidate.
+- [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.3` to npm and verify the public registry artifact.
+- [ ] Upload the Connector archive to the WorkBuddy Open Platform and submit it for review.
+- [ ] Record WorkBuddy approval and public marketplace availability only after each state is independently verified.
+- [ ] Push the verified commit, tag `v0.2.3`, and publish the GitHub Release.
+
 ## v0.2.2 release gate
 
 - [x] Application, Codex, Claude Code, WorkBuddy, Claude marketplace, and LobeHub metadata agree on `0.2.2`.

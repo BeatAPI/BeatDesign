@@ -39,3 +39,32 @@ test('local SQLite creates a per-install key and encrypts without OS-specific se
     rmSync(installDir, { recursive: true, force: true });
   }
 });
+
+test('packaged runtime stores the encryption key in its application-data directory', () => {
+  const installDir = mkdtempSync(join(tmpdir(), 'beatdesign-runtime-cwd-'));
+  const dataDir = mkdtempSync(join(tmpdir(), 'beatdesign-runtime-data-'));
+  const moduleUrl = new URL('./crypto.ts', import.meta.url).href;
+  const tsxImport = import.meta.resolve('tsx');
+  const script = `
+    const cryptoModule = await import(${JSON.stringify(`${moduleUrl}?runtime-data-test`)});
+    await cryptoModule.encryptSecret('runtime-secret');
+  `;
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', tsxImport, '--input-type=module', '--eval', script],
+      {
+        cwd: installDir,
+        env: { ...process.env, BEATDESIGN_DATA_DIR: dataDir },
+        encoding: 'utf8',
+      }
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(existsSync(join(dataDir, '.workspace-key')), true);
+    assert.equal(existsSync(join(installDir, 'data', '.workspace-key')), false);
+  } finally {
+    rmSync(installDir, { recursive: true, force: true });
+    rmSync(dataDir, { recursive: true, force: true });
+  }
+});

@@ -9,8 +9,9 @@ BeatDesign MCP 是结构化控制层，浏览器中的 BeatDesign 是用户审�
 
 ## 开始任务
 
-1. 如果 BeatDesign 工具不可用，请用户在 BeatDesign 仓库运行
-   `pnpm dev:agent`，然后重新连接 Connector。
+1. 如果 BeatDesign 工具不可用，请用户在 WorkBuddy 中重试或重新安装
+   Connector。若提示 3020 端口被占用，先关闭正在运行的其他 BeatDesign
+   工作台，再重新连接；公共 Connector 不要求用户克隆仓库或运行 pnpm。
 2. 目标项目不明确时，先调用 `bdesign_project_list`。
 3. 调用一次 `bdesign_project_target` 绑定当前会话；之后可省略
    `projectId`。

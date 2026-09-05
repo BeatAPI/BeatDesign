@@ -58,6 +58,14 @@ Compound MCP helpers must preserve those same semantics across their local side 
 
 The local MCP session may bind one active Project. View tools return clean workspace URLs plus host-neutral browser handoff metadata. The Codex Skill can open or reuse the exact Canvas or Editor review surface; Claude Code and WorkBuddy packages preserve the same URL for their available browser or user handoff. Every host package remains orchestration over the localhost product, not a second frontend or backend.
 
+The public WorkBuddy Connector uses a WorkBuddy-managed Node.js runtime to
+install a versioned BeatDesign package. That package starts the production
+browser workspace and stdio MCP together, while storing SQLite, imported media,
+and the per-install encryption key in the user's operating-system application
+data directory through `BEATDESIGN_DATA_DIR`. This packaging changes startup
+and installation only; it does not create a hosted workspace or another data
+model.
+
 Canvas layout persistence is the deliberate exception on the UI side: drag, resize, viewport, and the complete visual arrangement are saved as a revision-checked snapshot. Semantic Canvas operations are also exposed through `canvas.apply`, and external agents must use those operations rather than snapshot replacement.
 
 ## Persistence

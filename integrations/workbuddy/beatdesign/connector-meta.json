@@ -7,7 +7,7 @@
   "description_en": "Operate a local BeatDesign Canvas, Assets, generation tasks, video timeline, and captions with natural language.",
   "source": "beatapi-beatdesign",
   "type": "mcp",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "minWorkbuddyVersion": "4.24.0",
   "examples_zh": [
     "打开我最近的 BeatDesign 项目并总结画布内容",

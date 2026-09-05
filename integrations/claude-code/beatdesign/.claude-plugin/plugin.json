@@ -1,7 +1,7 @@
 {
   "name": "beatdesign",
   "displayName": "BeatDesign",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Operate a local BeatDesign Canvas, shared Assets, generation workspace, and video Editor through MCP.",
   "author": {
     "name": "BeatAPI",

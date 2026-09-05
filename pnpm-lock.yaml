@@ -102,6 +102,9 @@ importers:
       tailwind-merge:
         specifier: ^3.3.1
         version: 3.5.0
+      tslib:
+        specifier: ^2.8.1
+        version: 2.8.1
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -139,6 +142,9 @@ importers:
       drizzle-kit:
         specifier: ^0.31.4
         version: 0.31.10
+      esbuild:
+        specifier: 0.28.1
+        version: 0.28.1
       nitro:
         specifier: 3.0.260603-beta
         version: 3.0.260603-beta(@libsql/client@0.14.0)(chokidar@5.0.0)(dotenv@17.4.1)(drizzle-orm@0.45.2(@libsql/client@0.14.0)(kysely@0.28.17))(jiti@2.7.0)(rollup@4.62.4)(vite@8.0.16(@types/node@22.19.17)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.21.0))

@@ -4,8 +4,17 @@ All notable changes to BeatDesign are documented in this file.
 
 ## Unreleased
 
+## [0.2.3] - 2026-09-05
+
 ### Added
 
+- A WorkBuddy-managed Node.js runtime package that initializes persistent local
+  data, starts the production browser workspace and stdio MCP together, and
+  removes the Git, pnpm, database-setup, and manual-start prerequisites for
+  Connector users.
+- Deterministic WorkBuddy Connector validation and ZIP packaging, plus a
+  clean-machine review checklist that keeps package, npm publication, review,
+  submission, approval, and marketplace publication states separate.
 - Image overlays in the local Editor, with UI and MCP controls for placement, size, opacity, rotation, fades, and replacement with any project-owned image Asset.
 - Four caption style presets plus per-cue text, timing, size, width, and vertical-position controls shared by the UI and MCP command path.
 - MCP `bdesign_editor_render` support for rendering the authoritative Timeline to a project-owned MP4 with visible clips, overlays, caption burn-in, and mixed audio.
@@ -82,6 +91,7 @@ All notable changes to BeatDesign are documented in this file.
 - MP4 export remains browser-driven and is not yet available as a headless MCP tool.
 - Caption style presets, transitions, speed controls, multiple named timelines, and native desktop packaging remain follow-up work.
 
+[0.2.3]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.3
 [0.2.2]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.2
 [0.2.1]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.1
 [0.2.0]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.0

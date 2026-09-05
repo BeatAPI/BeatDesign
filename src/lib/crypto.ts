@@ -16,7 +16,7 @@
 const ENC_PREFIX = 'enc:v1:';
 const IV_LENGTH = 12;
 const TAG_LENGTH = 16;
-const LOCAL_KEY_PATH = 'data/.workspace-key';
+const LOCAL_KEY_FILENAME = '.workspace-key';
 
 let cachedEncryptionSecret: string | undefined;
 
@@ -45,7 +45,11 @@ function getEncryptionSecret(): string | undefined {
 
   const fs = process.getBuiltinModule('node:fs') as typeof import('node:fs');
   const path = process.getBuiltinModule('node:path') as typeof import('node:path');
-  const keyPath = path.resolve(LOCAL_KEY_PATH);
+  const configuredDataRoot = process.env.BEATDESIGN_DATA_DIR?.trim();
+  const keyPath = path.resolve(
+    configuredDataRoot || 'data',
+    LOCAL_KEY_FILENAME
+  );
   fs.mkdirSync(path.dirname(keyPath), { recursive: true, mode: 0o700 });
 
   try {

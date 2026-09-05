@@ -3,6 +3,8 @@ import { lstatSync } from 'node:fs';
 import { mkdir, rename, unlink, writeFile } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
+import { getBeatDesignDataRoot } from '@/config/data-root';
+
 export const LOCAL_PROJECT_ASSET_BUCKET = 'local-project-assets';
 export const LOCAL_PROJECT_ASSET_PROVIDER = 'local';
 
@@ -26,7 +28,7 @@ const extensionForMimeType = (mimeType: string) => {
 };
 
 export const getLocalProjectAssetRoot = (workspaceRoot = process.cwd()) =>
-  resolve(workspaceRoot, 'data', 'project-assets');
+  resolve(getBeatDesignDataRoot(workspaceRoot), 'project-assets');
 
 export const sanitizeLocalProjectAssetFilename = ({
   filename,
