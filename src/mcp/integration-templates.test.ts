@@ -148,7 +148,7 @@ test('host packages are complete and version-aligned', () => {
   };
   assert.match(workbuddy.source ?? '', /^[a-z0-9]+(?:-[a-z0-9]+)*$/);
   assert.equal(workbuddy.type, 'mcp');
-  assert.equal(workbuddy.minWorkbuddyVersion, '4.24.0');
+  assert.equal(workbuddy.minWorkbuddyVersion, '5.0.0');
   assert.ok((workbuddy.examples_zh?.length ?? 0) >= 2);
   assert.ok((workbuddy.examples_en?.length ?? 0) >= 2);
   assert.match(

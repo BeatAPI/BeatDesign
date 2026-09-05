@@ -8,7 +8,7 @@
   "source": "beatapi-beatdesign",
   "type": "mcp",
   "version": "0.2.3",
-  "minWorkbuddyVersion": "4.24.0",
+  "minWorkbuddyVersion": "5.0.0",
   "examples_zh": [
     "打开我最近的 BeatDesign 项目并总结画布内容",
     "把这些项目素材排成一条短视频粗剪时间线",

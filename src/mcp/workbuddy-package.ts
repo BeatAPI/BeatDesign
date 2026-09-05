@@ -98,6 +98,11 @@ export const validateWorkBuddyConnector = async (
     connectorMeta.description_en,
     'WorkBuddy Connector must define description_en'
   );
+  assert.equal(
+    connectorMeta.minWorkbuddyVersion,
+    '5.0.0',
+    'WorkBuddy managed Node runtime requires WorkBuddy 5.0.0 or newer'
+  );
   assert.ok(
     (connectorMeta.examples_zh?.length ?? 0) >= 2,
     'WorkBuddy Connector must include at least two Chinese examples'
