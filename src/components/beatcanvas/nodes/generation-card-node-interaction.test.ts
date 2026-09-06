@@ -62,9 +62,12 @@ test('generated videos expose a direct playback entry', () => {
     source,
     /cardMediaType === 'video'[\s\S]*?<button[\s\S]*?handlePreviewLatestOutput/
   );
+  assert.match(source, /function StaticVideoPoster/);
+  assert.match(source, /captureStaticVideoPreview\(video, maxEdge\)/);
+  assert.match(source, /<img[\s\S]*?src=\{poster\}/);
   assert.match(
     source,
-    /<video[\s\S]*?onDoubleClick=\{[\s\S]*?handlePreviewLatestOutput/
+    /<StaticVideoPoster[\s\S]*?onDoubleClick=\{[\s\S]*?handlePreviewLatestOutput/
   );
   assert.match(source, /seekStaticVideoPreview\(event\.currentTarget\)/);
 });

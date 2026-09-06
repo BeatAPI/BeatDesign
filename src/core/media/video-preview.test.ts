@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  getStaticVideoPreviewSize,
   getStaticVideoPreviewTime,
   seekStaticVideoPreview,
   STATIC_VIDEO_PREVIEW_TIME_SECONDS,
@@ -26,4 +27,19 @@ test('static video preview seeking tolerates non-seekable media', () => {
     },
   };
   assert.doesNotThrow(() => seekStaticVideoPreview(video));
+});
+
+test('static video preview frames are downscaled without changing aspect ratio', () => {
+  assert.deepEqual(getStaticVideoPreviewSize(720, 1280), {
+    width: 288,
+    height: 512,
+  });
+  assert.deepEqual(getStaticVideoPreviewSize(1920, 1080, 320), {
+    width: 320,
+    height: 180,
+  });
+  assert.deepEqual(getStaticVideoPreviewSize(240, 180), {
+    width: 240,
+    height: 180,
+  });
 });

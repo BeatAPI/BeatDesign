@@ -6,9 +6,19 @@ import {
   useInternalNode,
 } from '@xyflow/react';
 import { ScanSearch, Sparkles } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type CSSProperties,
+  type MouseEventHandler,
+} from 'react';
 
 import type { GenerationTake } from '@/core/beatcanvas/generation-history';
-import { seekStaticVideoPreview } from '@/core/media/video-preview';
+import {
+  captureStaticVideoPreview,
+  seekStaticVideoPreview,
+} from '@/core/media/video-preview';
 
 import { getBeatCanvasNodeCopy } from './beatcanvas-node-copy';
 import type { BeatCanvasFlowNode } from '../react-flow/beatcanvas-react-flow-types';
@@ -21,6 +31,86 @@ const CARD_BORDER_COLOR = 'var(--beatcanvas-line)';
 const FRAME_BACKGROUND =
   'linear-gradient(180deg, var(--beat-surface-2) 0%, var(--beat-surface) 100%)';
 const PLACEHOLDER_COLOR = 'rgba(255, 255, 255, 0.22)';
+
+function StaticVideoPoster({
+  src,
+  alt,
+  maxEdge = 512,
+  cursor = 'default',
+  onDoubleClick,
+}: {
+  src: string;
+  alt: string;
+  maxEdge?: number;
+  cursor?: CSSProperties['cursor'];
+  onDoubleClick?: MouseEventHandler<HTMLDivElement>;
+}) {
+  const [poster, setPoster] = useState<string | null>(null);
+
+  useEffect(() => setPoster(null), [src]);
+
+  const captureFrame = useCallback(
+    (video: HTMLVideoElement) => {
+      const nextPoster = captureStaticVideoPreview(video, maxEdge);
+      if (nextPoster) setPoster((current) => current ?? nextPoster);
+    },
+    [maxEdge]
+  );
+
+  return (
+    <div
+      className="nowheel"
+      onDoubleClick={onDoubleClick}
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        cursor,
+        background:
+          'linear-gradient(145deg, var(--beat-surface-2), var(--beat-surface))',
+      }}
+    >
+      <video
+        src={src}
+        muted
+        playsInline
+        preload="metadata"
+        className="nowheel"
+        aria-hidden="true"
+        tabIndex={-1}
+        onLoadedMetadata={(event) =>
+          seekStaticVideoPreview(event.currentTarget)
+        }
+        onLoadedData={(event) => captureFrame(event.currentTarget)}
+        onSeeked={(event) => captureFrame(event.currentTarget)}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+      />
+      {poster ? (
+        <img
+          src={poster}
+          alt={alt}
+          draggable={false}
+          className="nowheel"
+          style={{
+            display: 'block',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
 
 export function GenerationCardNode({
   id,
@@ -286,27 +376,15 @@ export function GenerationCardNode({
                   </div>
                 </div>
               ) : cardMediaType === 'video' ? (
-                <video
-                  src={latestOutputUrl ?? undefined}
-                  muted
-                  playsInline
-                  preload="metadata"
-                  onLoadedMetadata={(event) =>
-                    seekStaticVideoPreview(event.currentTarget)
-                  }
-                  draggable={false}
+                <StaticVideoPoster
+                  key={latestOutputUrl}
+                  src={latestOutputUrl ?? ''}
+                  alt={displayLabel}
+                  cursor="zoom-in"
                   onDoubleClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
                     handlePreviewLatestOutput();
-                  }}
-                  className="nowheel"
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    cursor: 'zoom-in',
                   }}
                 />
               ) : (
@@ -491,21 +569,11 @@ export function GenerationCardNode({
                   }}
                 >
                   {take.url && take.type === 'video' ? (
-                    <video
+                    <StaticVideoPoster
+                      key={take.url}
                       src={take.url}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      className="nowheel"
-                      onLoadedMetadata={(event) =>
-                        seekStaticVideoPreview(event.currentTarget)
-                      }
-                      style={{
-                        display: 'block',
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                      }}
+                      alt=""
+                      maxEdge={96}
                     />
                   ) : take.url ? (
                     <img
