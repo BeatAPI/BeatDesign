@@ -144,12 +144,16 @@ returned. The tool creates the local continuation setup only; its returned
 
 Generation tools accept a logical `modelId`, generic `parameters`, and Asset
 references. Call `bdesign_generation_models` or
-`bdesign_generation_model_get` before choosing parameters. Outputs are Assets;
-placing them on Canvas or Editor remains a separate command.
-`bdesign_generation_submit` submits once through the configured generation
-provider. BeatDesign does not duplicate API-key validity, balance, billing, or
-rate-limit policy. BeatAPI (or a fork's selected provider) remains authoritative,
-and its response or error details are returned to the MCP caller.
+`bdesign_generation_model_get` before choosing parameters. Before calling
+`bdesign_generation_submit`, create and review a Canvas `generation` card, then
+pass its ID as `sourceCardId`. The tool rejects missing, busy, or mismatched
+nodes. It persists a visible pending `output` card before contacting the
+provider, then writes the provider task ID and status back to that card. A
+Canvas write failure therefore cannot leave a new paid request without a place
+to appear. Successful outputs are still project Assets and remain reusable in
+Canvas and Editor. BeatDesign does not duplicate API-key validity, balance,
+billing, or rate-limit policy. BeatAPI (or a fork's selected provider) remains
+authoritative, and its response or error details are returned to the MCP caller.
 
 `bdesign_canvas_apply` and `bdesign_editor_edit` advertise every supported
 incremental operation as a concrete JSON Schema. Agents can discover required

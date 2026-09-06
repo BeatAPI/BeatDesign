@@ -15,6 +15,7 @@ import { persistExternalCommandWithConflictRetry } from '@/core/commands/conflic
 import { continueFromTailFrame } from '@/core/projects/continue-from-tail-frame';
 import { extractProjectVideoFrame } from '@/core/projects/extract-project-video-frame';
 import { importLocalProjectAsset } from '@/core/projects/import-local-asset';
+import { parseLocalProjectAssetUrl } from '@/core/projects/local-project-asset-url';
 import { createCommandId } from '@/core/commands/contracts';
 import { listCommandReceipts } from '@/core/commands/receipts';
 import {
@@ -28,8 +29,10 @@ import {
 } from '@/core/editor/render-project-timeline';
 import { loadProjectTimeline } from '@/core/editor/timeline-state';
 import { syncGeneration } from '@/core/effects/generation-sync';
+import { resolveOutputMedia } from '@/core/effects/output-media';
 import { listProjectGenerations } from '@/core/effects/project-generations';
 import { getGenerationById } from '@/core/effects/record-generation';
+import { resolveVideoAnalysisText } from '@/core/effects/video-analysis';
 import {
   getGenerationModelDescriptor,
   listGenerationModelDescriptors,
@@ -50,6 +53,11 @@ import {
   formatBeatDesignWorkspaceHandoff,
   type BeatDesignWorkspaceHandoff,
 } from './workspace-handoff';
+import {
+  buildCanvasGenerationStatusOperations,
+  prepareCanvasGenerationSubmission,
+  runCanvasGenerationSubmissionOnce,
+} from './generation-canvas';
 
 const VERSION = '0.2.3';
 const idSchema = z.string().trim().min(1).max(200);
@@ -299,6 +307,73 @@ export function createBeatDesignMcpServer() {
       focusCardId: options.focusCardId,
       time: options.time,
     });
+
+  const persistGenerationCanvasStatus = async ({
+    projectId,
+    generationId,
+    status,
+    output,
+    error,
+    commandKey,
+    sourceCardId,
+    outputCardId,
+  }: {
+    projectId: string;
+    generationId: string | null;
+    status: 'pending' | 'processing' | 'succeeded' | 'failed';
+    output?: unknown;
+    error?: string | null;
+    commandKey: string;
+    sourceCardId?: string;
+    outputCardId?: string;
+  }) => {
+    const latest = await loadProjectWithLatestSnapshot({ projectId });
+    if (!latest) return null;
+    const cards = toCommandCanvasCards(latest.snapshot.cards);
+    const outputCard = cards.find(
+      (card) =>
+        card.kind === 'output' &&
+        (outputCardId
+          ? card.id === outputCardId
+          : generationId
+            ? card.sourceGenerationId === generationId
+            : false)
+    );
+    const sourceCard = cards.find(
+      (card) =>
+        card.kind === 'generation' &&
+        card.id === (sourceCardId ?? outputCard?.sourceConfigCardId)
+    );
+    if (
+      !sourceCard ||
+      sourceCard.kind !== 'generation' ||
+      !outputCard ||
+      outputCard.kind !== 'output'
+    ) return null;
+    const media = resolveOutputMedia(output);
+    const applied = await executeExternalCommand({
+      projectId,
+      commandId: commandKey,
+      idempotencyKey: commandKey,
+      expectedRevision: latest.snapshotVersion,
+      command: {
+        type: 'canvas.apply',
+        operations: buildCanvasGenerationStatusOperations({
+          sourceCard,
+          outputCard,
+          generationId,
+          status,
+          resultUrl: media.resultUrl,
+          resultText: resolveVideoAnalysisText(output),
+          resultAssetId:
+            parseLocalProjectAssetUrl(media.resultUrl)?.assetId ?? null,
+          error,
+        }),
+      },
+    });
+    if (!applied.ok) throw new Error(applied.message);
+    return applied;
+  };
 
   server.registerTool(
     'bdesign_project_list',
@@ -690,9 +765,10 @@ export function createBeatDesignMcpServer() {
   server.registerTool(
     'bdesign_generation_submit',
     {
-      description: 'Submit an asset-first image, video, or analysis generation. Outputs are recorded as reusable Assets.',
-      inputSchema: z.object({
+      description: 'Submit from a reviewed Canvas generation node. A visible output node is created before the provider request, and successful outputs remain reusable Assets.',
+      inputSchema: commandMetadataSchema.extend({
         projectId: idSchema.optional(),
+        sourceCardId: idSchema,
         mode: z.enum(['image', 'video', 'analysis']),
         modelId: idSchema,
         prompt: z.string().max(20_000),
@@ -703,14 +779,99 @@ export function createBeatDesignMcpServer() {
     },
     withToolErrors(async (input) => {
       const project = await resolveScopedProject(input.projectId);
-      const result = await submitAssetFirstGeneration({
-        origin: 'mcp',
-        generation: { version: 1, ...input, projectId: project.id },
+      const commandId = input.commandId ?? input.idempotencyKey ?? createCommandId();
+      const stableRequestKey = input.idempotencyKey ?? commandId;
+      return runCanvasGenerationSubmissionOnce({
+        key: `${project.id}:${stableRequestKey}`,
+        submit: async () => {
+          const state = await loadProjectWithLatestSnapshot({
+            projectId: project.id,
+          });
+          if (!state) throw new Error('Project not found.');
+          const descriptor = getGenerationModelDescriptor(input.modelId);
+          if (!descriptor) throw new Error('Generation model not found.');
+          const outputCardId = `output:${commandId}`;
+          const plan = prepareCanvasGenerationSubmission({
+            cards: toCommandCanvasCards(state.snapshot.cards),
+            sourceCardId: input.sourceCardId,
+            submitted: {
+              mode: input.mode,
+              modelId: input.modelId,
+              prompt: input.prompt,
+              references: input.references,
+              parameters: input.parameters,
+            },
+            descriptor,
+            outputCardId,
+            generationRunId: `run:${commandId}`,
+            capturedAt: new Date().toISOString(),
+          });
+          const placed = await executeExternalCommand({
+            projectId: project.id,
+            commandId: `${commandId}:place`,
+            idempotencyKey: `${stableRequestKey}:place`,
+            expectedRevision: input.expectedRevision ?? state.snapshotVersion,
+            command: { type: 'canvas.apply', operations: plan.operations },
+          });
+          if (!placed.ok) throw new Error(placed.message);
+
+          let result: Awaited<ReturnType<typeof submitAssetFirstGeneration>>;
+          try {
+            result = await submitAssetFirstGeneration({
+              origin: 'mcp',
+              generation: { ...plan.request, projectId: project.id },
+            });
+          } catch (error) {
+            await persistGenerationCanvasStatus({
+              projectId: project.id,
+              generationId: null,
+              status: 'failed',
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Generation submission failed.',
+              commandKey: `${stableRequestKey}:status:failed`,
+              sourceCardId: input.sourceCardId,
+              outputCardId,
+            }).catch(() => undefined);
+            throw error;
+          }
+          const generationId =
+            typeof result.body.wmTaskId === 'string'
+              ? result.body.wmTaskId
+              : null;
+          const status =
+            result.status >= 400
+              ? 'failed'
+              : result.body.status === 'succeeded'
+                ? 'succeeded'
+                : result.body.status === 'failed'
+                  ? 'failed'
+                  : result.body.status === 'pending'
+                    ? 'pending'
+                    : 'processing';
+          await persistGenerationCanvasStatus({
+            projectId: project.id,
+            generationId,
+            status,
+            output: result.body.output,
+            error:
+              typeof result.body.error === 'string' ? result.body.error : null,
+            commandKey: `${stableRequestKey}:status:${status}`,
+            sourceCardId: input.sourceCardId,
+            outputCardId,
+          });
+          if (result.status >= 400) {
+            throw new BeatDesignMcpToolError(result.status, result.body);
+          }
+          return {
+            ...result.body,
+            sourceCardId: input.sourceCardId,
+            outputCardId,
+            canvasRevision: placed.revision,
+          };
+        },
       });
-      if (result.status >= 400) {
-        throw new BeatDesignMcpToolError(result.status, result.body);
-      }
-      return result.body;
     })
   );
 
@@ -741,7 +902,31 @@ export function createBeatDesignMcpServer() {
         refresh &&
         (generation.status === 'pending' || generation.status === 'processing')
       ) {
-        return syncGeneration({ wmTaskId: generationId, effectId: generation.effectId });
+        const synced = await syncGeneration({
+          wmTaskId: generationId,
+          effectId: generation.effectId,
+        });
+        if (synced.ok && generation.projectId) {
+          await persistGenerationCanvasStatus({
+            projectId: generation.projectId,
+            generationId,
+            status: synced.generation.status,
+            output: synced.generation.output,
+            error: synced.generation.error,
+            commandKey: `generation-status:${generationId}:${synced.generation.status}`,
+          });
+        }
+        return synced;
+      }
+      if (generation.projectId) {
+        await persistGenerationCanvasStatus({
+          projectId: generation.projectId,
+          generationId,
+          status: generation.status,
+          output: generation.output,
+          error: generation.error,
+          commandKey: `generation-status:${generationId}:${generation.status}`,
+        });
       }
       return generation;
     })

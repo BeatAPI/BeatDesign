@@ -213,6 +213,7 @@ async function continueFromTailFrameOnce({
     next: {
       tool: 'bdesign_generation_submit',
       projectId,
+      sourceCardId: generationCardId,
       mode: 'video',
       modelId: resolvedModelId,
       prompt: prompt.trim(),
