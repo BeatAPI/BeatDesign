@@ -17,6 +17,14 @@ test('MCP registers Canvas, Generation, and Editor tool groups', () => {
   }
 });
 
+test('MCP exposes one Skill catalog through Resources and read-only fallback tools', () => {
+  assert.match(source, /server\.registerResource\(/);
+  assert.match(source, /BEATDESIGN_SKILL_CATALOG_URI/);
+  assert.match(source, /BEATDESIGN_SKILL_RESOURCE_TEMPLATE/);
+  assert.match(source, /'bdesign_skill_list'/);
+  assert.match(source, /'bdesign_skill_get'/);
+});
+
 test('MCP writes use a fixed origin and never expose document replacement', () => {
   assert.match(source, /origin: 'mcp'/);
   assert.doesNotMatch(source, /editor\.replace_document/);

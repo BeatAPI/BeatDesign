@@ -42,6 +42,7 @@ const runtimePackage = {
     'bin',
     'drizzle',
     'mcp',
+    'skills',
     'LICENSE',
     'README.md',
   ],
@@ -87,6 +88,9 @@ await Promise.all([
     resolve(outputRoot, 'drizzle', 'sqlite'),
     { recursive: true }
   ),
+  cp(resolve(repositoryRoot, 'skills'), resolve(outputRoot, 'skills'), {
+    recursive: true,
+  }),
   cp(
     resolve(repositoryRoot, 'integrations', 'workbuddy', 'runtime', 'launcher.mjs'),
     resolve(outputRoot, 'bin', 'beatdesign-workbuddy.mjs')

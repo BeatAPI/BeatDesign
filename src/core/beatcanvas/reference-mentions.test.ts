@@ -4,6 +4,8 @@ import test from 'node:test';
 import type { CanvasCard } from './canvas-types';
 import {
   buildCanvasReferenceMentions,
+  CANONICAL_FIRST_FRAME_PROMPT_DIRECTIVE,
+  ensureCanvasFirstFramePromptDirective,
   filterCanvasReferenceMentions,
   findActiveCanvasReferenceMention,
   insertCanvasReferenceMention,
@@ -55,6 +57,23 @@ test('numbers images and videos independently in API order', () => {
       { cardId: 'outfit', alias: '@Image2' },
       { cardId: 'camera', alias: '@Video2' },
     ]
+  );
+});
+
+test('adds one canonical first-frame directive without rewriting the creative prompt', () => {
+  assert.equal(
+    ensureCanvasFirstFramePromptDirective('雪の粒子が舞い始める。'),
+    `${CANONICAL_FIRST_FRAME_PROMPT_DIRECTIVE}\n\n雪の粒子が舞い始める。`
+  );
+  assert.equal(
+    ensureCanvasFirstFramePromptDirective(
+      'Use @Image1 as the first frame while the camera moves forward.'
+    ),
+    'Use @Image1 as the first frame while the camera moves forward.'
+  );
+  assert.equal(
+    ensureCanvasFirstFramePromptDirective('将 @Image1 作为首帧，继续镜头。'),
+    `${CANONICAL_FIRST_FRAME_PROMPT_DIRECTIVE}\n\n将 @Image1 作为首帧，继续镜头。`
   );
 });
 

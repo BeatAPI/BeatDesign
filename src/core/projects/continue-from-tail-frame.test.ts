@@ -128,6 +128,13 @@ test('tail continuation returns a visible review target after a recovered write'
   assert.equal(result.frameAsset.reused, true);
   assert.equal(result.review.tool, 'bdesign_canvas_view');
   assert.equal(result.review.cardId, result.generationCardId);
+  assert.equal(
+    result.next.prompt,
+    'Use @Image1 as the first frame.'
+  );
+  assert.deepEqual(result.next.references, [
+    { assetId: frameAsset.id, role: 'reference' },
+  ]);
 });
 
 test('one command id cannot be reused with different generation settings', async () => {

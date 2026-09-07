@@ -4,17 +4,11 @@ import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect
 import { VIDEO_ANALYSIS_MODEL_ID } from '@/core/effects/video-analysis';
 import { getGenerationModelBindingByEffectId } from '@/core/generation-providers';
 import {
-  getGenerationConcurrencyErrorMessage,
-  resolveGenerationConcurrencyGate,
-} from '@/core/effects/generation-concurrency';
-import {
   resolveGenerationSubmitTransition,
   resolveProviderTaskId,
 } from '@/core/effects/generation-orchestrator';
 import { persistEffectOutputIfNeeded } from '@/core/effects/output-storage';
 import {
-  countRunningGenerationsForProject,
-  findActiveProject,
   recordGeneration,
   updateGenerationById,
 } from '@/core/effects/record-generation';
@@ -213,35 +207,6 @@ export async function submitEffectGeneration({
     | { result: SubmitEffectGenerationResult }
     | { generationId: string; intentId: string }
   >(async () => {
-    const [activeProjectId, runningCount] = await Promise.all([
-      findActiveProject(),
-      countRunningGenerationsForProject(normalizedProjectId),
-    ]);
-    const gate = resolveGenerationConcurrencyGate({
-      requestedProjectId: normalizedProjectId,
-      activeProjectId,
-      runningCountForRequestedProject: runningCount,
-    });
-    if (!gate.ok) {
-      return {
-        result: {
-          status: 429,
-          body: {
-            error: getGenerationConcurrencyErrorMessage(gate),
-            code: gate.code,
-            activeProjectId:
-              gate.code === 'ANOTHER_PROJECT_RUNNING'
-                ? gate.activeProjectId
-                : undefined,
-            limit:
-              gate.code === 'PROJECT_CONCURRENCY_LIMIT'
-                ? gate.limit
-                : undefined,
-          },
-        } satisfies SubmitEffectGenerationResult,
-      };
-    }
-
     const referencedUrls = getReferencedUrls(adapterInput);
     if (
       referencedUrls.some(

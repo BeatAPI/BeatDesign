@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
+import { ensureCanvasFirstFramePromptDirective } from '@/core/beatcanvas/reference-mentions';
 import { persistExternalCommandWithConflictRetry } from '@/core/commands/conflict-retry';
 import { createCommandId } from '@/core/commands/contracts';
 import {
@@ -94,12 +95,13 @@ async function continueFromTailFrameOnce({
     modelId?.trim() ||
     (sourceCard?.type === 'video' && sourceCard.modelId) ||
     DEFAULT_VIDEO_MODEL_ID;
+  const resolvedPrompt = ensureCanvasFirstFramePromptDirective(prompt);
   const existingContinuation = state.snapshot.cards.find(
     (card) => card.id === identity.generationCardId
   );
   if (
     existingContinuation &&
-    (existingContinuation.prompt !== prompt.trim() ||
+    (existingContinuation.prompt !== resolvedPrompt ||
       existingContinuation.modelId !== resolvedModelId)
   ) {
     throw new Error(
@@ -152,7 +154,7 @@ async function continueFromTailFrameOnce({
     type: 'video',
     name: 'Continue shot',
     url: null,
-    prompt: prompt.trim(),
+    prompt: resolvedPrompt,
     referenceCardIds: [tailFrameCardId],
     workflowTemplateId: null,
     status: 'idle',
@@ -216,8 +218,8 @@ async function continueFromTailFrameOnce({
       sourceCardId: generationCardId,
       mode: 'video',
       modelId: resolvedModelId,
-      prompt: prompt.trim(),
-      references: [{ assetId: frameAsset.id, role: 'first_frame' }],
+      prompt: resolvedPrompt,
+      references: [{ assetId: frameAsset.id, role: 'reference' }],
     },
   };
 }

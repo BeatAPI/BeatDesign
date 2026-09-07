@@ -1,4 +1,6 @@
 export const BEATDESIGN_MCP_TOOL_NAMES = [
+  'bdesign_skill_list',
+  'bdesign_skill_get',
   'bdesign_project_list',
   'bdesign_project_get',
   'bdesign_project_create',

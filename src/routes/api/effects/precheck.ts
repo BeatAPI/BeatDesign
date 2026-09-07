@@ -2,14 +2,6 @@ import { createFileRoute } from '@tanstack/react-router';
 import { getEffectById } from '@/core/effects/effects';
 import { getWorkspaceEffectRegistryEntryByEffectId } from '@/core/effects/effect-registry';
 import { isVideoAnalysisEffectId } from '@/core/effects/video-analysis';
-import {
-  getGenerationConcurrencyErrorMessage,
-  resolveGenerationConcurrencyGate,
-} from '@/core/effects/generation-concurrency';
-import {
-  countRunningGenerationsForProject,
-  findActiveProject,
-} from '@/core/effects/record-generation';
 import { getGenerationPromptConstraints, validateGenerationPrompt } from '@/core/effects/validation';
 import { getProject } from '@/core/projects/projects';
 import { getGenerationProvider } from '@/core/generation-providers';
@@ -73,21 +65,6 @@ async function POST({ request }: { request: Request }) {
     includeCookie: false,
   });
   if (rateLimitResponse) return rateLimitResponse;
-  const [activeProjectId, runningCountForRequestedProject] = await Promise.all([
-    findActiveProject(),
-    countRunningGenerationsForProject(projectId),
-  ]);
-  const gate = resolveGenerationConcurrencyGate({
-    requestedProjectId: projectId,
-    activeProjectId,
-    runningCountForRequestedProject,
-  });
-  if (!gate.ok) {
-    return Response.json(
-      { error: getGenerationConcurrencyErrorMessage(gate), code: gate.code },
-      { status: 429 }
-    );
-  }
   const input = payload.input && typeof payload.input === 'object'
     ? (payload.input as Record<string, unknown>)
     : {};

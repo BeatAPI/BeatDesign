@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
 import { generationHistory } from '@/config/db/schema';
 import { deriveGenerationOperationalFields } from '@/core/effects/generation-operational-fields';
@@ -64,31 +64,6 @@ export async function recordGeneration({
     console.error('recordGeneration error:', cause);
     return null;
   }
-}
-
-export async function countRunningGenerationsForProject(projectId: string) {
-  const db = await getDb();
-  const rows = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(generationHistory)
-    .where(
-      and(
-        eq(generationHistory.projectId, projectId),
-        inArray(generationHistory.status, RUNNING_STATUSES)
-      )
-    );
-  return Number(rows[0]?.count ?? 0);
-}
-
-export async function findActiveProject() {
-  const db = await getDb();
-  const rows = await db
-    .select({ projectId: generationHistory.projectId })
-    .from(generationHistory)
-    .where(inArray(generationHistory.status, RUNNING_STATUSES))
-    .orderBy(desc(generationHistory.createdAt))
-    .limit(1);
-  return rows[0]?.projectId ?? null;
 }
 
 export async function updateGenerationById({

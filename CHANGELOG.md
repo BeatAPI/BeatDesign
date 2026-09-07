@@ -4,6 +4,19 @@ All notable changes to BeatDesign are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Added a versioned built-in Skill catalog exposed through MCP Resources and two
+  read-only compatibility tools, with WorkBuddy runtime packaging and probes.
+
+### Changed
+
+- Delegated account-level generation concurrency entirely to the active Provider,
+  removing BeatDesign's cross-Project mutex and per-Project running-task limit.
+- Updated the asset-first generation request to v2: image attachments remain
+  generic references, while canonical `@ImageN` prompt directives express first-
+  and last-frame intent without separate persisted frame roles.
+
 ## [0.2.3] - 2026-09-05
 
 ### Added

@@ -82,7 +82,7 @@ pnpm dev
 
 ## 让 Agent 操作 BeatDesign
 
-BeatDesign 提供 27 个本地 MCP 工具，覆盖 Project、Asset、Canvas、生成和 Editor 操作，包括从权威时间线导出 MP4。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
+BeatDesign 提供 29 个本地 MCP 工具，覆盖 Skill、Project、Asset、Canvas、生成和 Editor 操作，包括发现内置 Skill 目录以及从权威时间线导出 MP4。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
 
 连接 MCP Host 后，可以直接提出这样的要求。
 

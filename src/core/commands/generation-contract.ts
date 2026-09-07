@@ -2,7 +2,7 @@ import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
 import { parseLocalProjectAssetUrl } from '@/core/projects/local-project-asset-url';
 import { z } from 'zod';
 
-export const GENERATION_REQUEST_VERSION = 1 as const;
+export const GENERATION_REQUEST_VERSION = 2 as const;
 
 export const generationReferenceRoleSchema = z.enum([
   'source',
@@ -10,8 +10,6 @@ export const generationReferenceRoleSchema = z.enum([
   'style',
   'subject',
   'pose',
-  'first_frame',
-  'last_frame',
   'audio_track',
 ]);
 
@@ -63,12 +61,10 @@ const resolveCardAssetId = (card: CanvasCard) =>
 export function buildAssetFirstReferencesFromCanvasCards({
   cards,
   referenceCardIds,
-  mode,
   deliveryUrlsByCardId = {},
 }: {
   cards: Record<string, CanvasCard | undefined>;
   referenceCardIds: string[];
-  mode: AssetFirstGenerationRequest['mode'];
   deliveryUrlsByCardId?: Record<string, string>;
 }) {
   const mediaCards = referenceCardIds.flatMap((cardId) => {
@@ -81,9 +77,6 @@ export function buildAssetFirstReferencesFromCanvasCards({
     }
     return [card];
   });
-
-  const imageCount = mediaCards.filter((card) => card.type === 'image').length;
-  let imageIndex = 0;
 
   const references: Array<{
     assetId: string;
@@ -101,15 +94,6 @@ export function buildAssetFirstReferencesFromCanvasCards({
     let role: GenerationReferenceRole = 'reference';
     if (card.type === 'video') role = 'source';
     else if (card.type === 'audio') role = 'audio_track';
-    else if (mode === 'video') {
-      role =
-        imageIndex === 0
-          ? 'first_frame'
-          : imageIndex === imageCount - 1 && imageCount > 1
-            ? 'last_frame'
-            : 'reference';
-      imageIndex += 1;
-    }
     const deliveryUrl = deliveryUrlsByCardId[card.id]?.trim() || card.url?.trim();
     references.push({
       assetId,

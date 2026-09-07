@@ -28,6 +28,7 @@ import {
 } from '@/core/effects/workspace-models';
 import {
   buildAssetFirstReferencesFromCanvasCards,
+  GENERATION_REQUEST_VERSION,
   normalizeAssetFirstGenerationRequest,
 } from '@/core/commands/generation-contract';
 import {
@@ -395,14 +396,6 @@ export const buildGenerationEffectInput = async ({
     input.image_urls = referencePayload.imageUrls;
   }
 
-  if (
-    referencePayload.imageUrls.length > 1 &&
-    hasInputSchemaField(metadata.inputSchema, 'last_frame')
-  ) {
-    input.last_frame =
-      referencePayload.imageUrls[referencePayload.imageUrls.length - 1];
-  }
-
   if (referencePayload.videoUrls.length > 0) {
     if (!hasInputSchemaField(metadata.inputSchema, 'video_urls')) {
       throw new Error(translate('messages.videoContinuationUnsupported'));
@@ -730,7 +723,7 @@ export const runDraftGeneration = async ({
     const generation =
       projectId && isCanvasDraftCard(submittedCard)
         ? normalizeAssetFirstGenerationRequest({
-            version: 1,
+            version: GENERATION_REQUEST_VERSION,
             projectId,
             mode: isCanvasAnalysisCard(submittedCard)
               ? 'analysis'
@@ -745,9 +738,6 @@ export const runDraftGeneration = async ({
                 })
               ),
               referenceCardIds: submittedCard.referenceCardIds,
-              mode: isCanvasAnalysisCard(submittedCard)
-                ? 'analysis'
-                : submittedCard.type,
               deliveryUrlsByCardId: referenceUrlOverrides,
             }),
             parameters: Object.fromEntries(

@@ -19,6 +19,20 @@ export type ActiveCanvasReferenceMention = {
 
 const REFERENCE_MENTION_PATTERN = /@(?:Image|Video)\d+/g;
 
+export const CANONICAL_FIRST_FRAME_PROMPT_DIRECTIVE =
+  'Use @Image1 as the first frame.';
+
+const CANONICAL_FIRST_FRAME_PROMPT_PATTERN =
+  /@Image1\s+as\s+the\s+first\s+frame\b/iu;
+
+export const ensureCanvasFirstFramePromptDirective = (prompt: string) => {
+  const trimmed = prompt.trim();
+  if (CANONICAL_FIRST_FRAME_PROMPT_PATTERN.test(trimmed)) return trimmed;
+  return [CANONICAL_FIRST_FRAME_PROMPT_DIRECTIVE, trimmed]
+    .filter(Boolean)
+    .join('\n\n');
+};
+
 export const getCanvasReferenceAlias = (
   type: CanvasCardMediaType,
   index: number

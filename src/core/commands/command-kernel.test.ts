@@ -168,26 +168,36 @@ test('local import validates file size before reading and accepts audio extensio
 test('generation requests are asset-first and do not accept placement', () => {
   assert.throws(() =>
     normalizeAssetFirstGenerationRequest({
-      version: 1,
+      version: 2,
       projectId: 'project-1',
       mode: 'video',
       modelId: 'model-1',
       prompt: 'Continue the shot',
-      references: [{ assetId: 'asset-frame', role: 'first_frame' }],
+      references: [{ assetId: 'asset-frame', role: 'reference' }],
       parameters: {},
       placement: 'canvas_node',
     })
   );
 
   const request = normalizeAssetFirstGenerationRequest({
-    version: 1,
+    version: 2,
     projectId: 'project-1',
     mode: 'video',
     modelId: 'model-1',
     prompt: 'Continue the shot',
-    references: [{ assetId: 'asset-frame', role: 'first_frame' }],
+    references: [{ assetId: 'asset-frame', role: 'reference' }],
   });
   assert.equal(request.references[0]?.assetId, 'asset-frame');
+  assert.throws(() =>
+    normalizeAssetFirstGenerationRequest({
+      version: 2,
+      projectId: 'project-1',
+      mode: 'video',
+      modelId: 'model-1',
+      prompt: 'Use @Image1 as the first frame.',
+      references: [{ assetId: 'asset-frame', role: 'first_frame' }],
+    })
+  );
 });
 
 test('canvas operations update cards and frames atomically', () => {
