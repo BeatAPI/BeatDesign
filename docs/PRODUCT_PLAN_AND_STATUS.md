@@ -31,6 +31,7 @@ BeatDesign 是一个免费、开源、本地优先的 AI 图片/视频创作工�
 
 - 远程 AI 模型能力。
 - 异步任务、模型路由和服务计费。
+- 账号级并发限制，所有 BeatDesign Project 共享同一 BeatAPI 账号额度。
 - 用户通过自己的 BeatAPI API Key 使用服务。
 
 ### 不属于本仓库
@@ -93,6 +94,7 @@ Codex / Claude Code / Other Agent
 - 生成图片、视频和封面在展示前本地化。
 - 项目 Assets 和生成历史索引。
 - BeatAPI 与存储凭证保留在服务端。
+- BeatDesign 不会因另一个 Project 有运行中任务而拒绝新生成，也不设本地每 Project 并发上限；账号并发由当前 Generation Provider 返回的结果决定。
 
 ### Studio / Canvas
 
@@ -142,9 +144,10 @@ Codex / Claude Code / Other Agent
 - 幂等键会绑定首次 command；复用到另一个 command 会返回 `INVALID_COMMAND`，不会静默冒用旧结果。
 - UI 内部允许 revision-checked `editor.replace_document` 支撑 undo/redo 和本地自动保存；MCP 被明确禁止整份替换，只能调用 `editor.apply`。
 - Generation 的 `AssetFirstGenerationRequest` 已成为服务端权威输入：适配器媒体参数由 Asset ID 和当前 generation intent 编译，旧的客户端 URL 字段不再决定引用事实。
+- `AssetFirstGenerationRequest` v2 不保存首帧或尾帧角色；图片保持普通引用，明确的 `@ImageN` Prompt 指令是首尾帧语义的唯一来源，Adapter 仅负责翻译 Provider 所需字段和校验硬性模型限制。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
-- 本地 stdio MCP Server 提供 27 个工具（Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
+- 本地 stdio MCP Server 提供 29 个工具（Skill / Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_skill_list` / `bdesign_skill_get` 是不显示 MCP Resources 的宿主兼容入口；`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
 - Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 
 ## 6. v0.2 Phase 1 本地已实现
@@ -159,7 +162,8 @@ Codex / Claude Code / Other Agent
 - Canvas -> Timeline Node -> Editor 连续工作流。
 - Editor 自动保存接入命令入口，并补齐冲突三方合并、重复操作保护和稳定播放头时间。
 - 图片 Clip、时间线拖拽调整持续时间与图片/视频统一视觉轨。
-- 本地 MCP Server 提供 27 个 Project、Asset、Canvas、Generation、Editor 工具；支持会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
+- 本地 MCP Server 提供 29 个 Skill、Project、Asset、Canvas、Generation、Editor 工具；支持内置 Skill 目录发现、会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
+- 已加入只读 `beatdesign://skills` MCP Resource、单 Skill Resource Template、schema v1 清单校验和宿主兼容工具；当前官方创作 Skill 目录有意保持为空，待具体 Skill 完成提示词评测和可见工作流联调后再加入，并在那时开放 Showcase 入口。
 - MCP 增量 Canvas/Editor 命令在短暂 revision 竞争时会基于最新权威文档限次自动重放；持续冲突返回最新 revision 和明确重试提示。
 - Canvas 与 Editor 每 2 秒并在页面重新聚焦时检查 MCP 写入的新 revision。
 
@@ -186,7 +190,7 @@ Codex / Claude Code / Other Agent
 
 ### Agent / MCP 后续边界
 
-- MCP Resources 和更完整的 schema versioning。
+- 除内置 Skill 目录之外的更多 MCP Resources，以及 Canvas / Editor 等现有合同更完整的 schema versioning。
 - Agent Activity、命令审计和实时 UI 事件桥。
 - 外部市场正式审核与上架。仓库已提供 Codex 本地插件、可直接添加的 Claude Code 仓库插件市场，以及符合目录结构的 WorkBuddy MCP + Skill Connector；这些本地接入包不等于已通过第三方市场审核。
 - 独立的 headless 像素预览与后台媒体 Worker；当前 MCP MP4 导出在本地 MCP Server 进程中完成。

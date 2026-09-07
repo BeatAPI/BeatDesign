@@ -2,6 +2,8 @@
 
 BeatAPI is the built-in and default generation/analysis provider. The official BeatAPI adapter keeps its upstream URL fixed to `https://api.beatapi.io`; users only provide their own BeatAPI API key.
 
+BeatAPI owns account-level generation concurrency. BeatDesign does not impose a separate cross-Project or per-Project generation limit; it submits each confirmed request and surfaces the provider's admission error when the connected account has no remaining capacity.
+
 Configure it in the Provider dialog in the workspace header. The key is encrypted in the local `config` table with a per-install key stored under `data/`.
 
 The adapter uses:
@@ -13,6 +15,8 @@ The adapter uses:
 - `POST /v1/files` for supported reference files
 
 User-facing model capabilities are defined in `src/core/effects/effect-registry.ts`. Provider bindings live in `src/core/generation-providers/`; MCP and UI use the logical model id and capability schema, not BeatAPI `effectId` or raw upstream fields.
+
+Image attachments remain generic references in the BeatDesign request contract. First-frame and last-frame intent exists only in explicit prompt directives such as `Use @Image1 as the first frame.` and `Use @Image2 as the last frame.`; attachment order alone never assigns a frame role. The BeatAPI adapter recognizes this canonical syntax and still enforces each upstream model's hard media limits.
 
 Kling 2.6 and Kling 3.0 Motion Control are exposed as BeatAPI models. Each run requires exactly one character image and one MP4/MOV motion video uploaded through the connected BeatAPI account. The Workspace never asks users for a KIE key; BeatAPI owns the upstream provider route, billing, polling, and output persistence.
 

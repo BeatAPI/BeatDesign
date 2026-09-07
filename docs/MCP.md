@@ -104,8 +104,10 @@ installation shapes.
 
 ## Tool groups
 
-There are **27** tools:
+There are **29** tools:
 
+- Skill (2): list the bundled official Skill catalog and read one complete
+  versioned Skill definition.
 - Project (5): list, get, create, target the current MCP session, and open a
   workspace review surface.
 - Asset (4): list, get by project membership, import a local file, and extract a
@@ -116,6 +118,14 @@ There are **27** tools:
   asset-first request, refresh status, and list history.
 - Editor (8): get, incremental edit, SRT import, authoritative MP4 render,
   semantic snapshot, diagnostics, deep-link view, and command history.
+
+The same bundled Skill catalog is also available through the read-only MCP
+Resource `beatdesign://skills`. Individual Skill instructions use the resource
+template `beatdesign://skills/{skillId}`. The two Skill tools are compatibility
+fallbacks for Agent hosts that do not surface MCP Resources. Until an official
+creative Skill passes prompt evaluation and a visible MCP workflow test, the
+catalog intentionally returns an empty `skills` array and no Showcase entry is
+published.
 
 MCP writes use `origin=mcp` assigned inside the server. `canvas.apply` and
 `editor.apply` accept stable IDs, revisions, and idempotency keys. The server
@@ -185,9 +195,11 @@ For a newly connected Canvas node, append a `place_card` operation after its
 listed in `sourceCardIds`, or to the right of the card's `referenceCardIds` when
 that field is omitted. This is an explicit initial-layout action, not a live
 auto-layout system: later drag positions and large manually arranged graphs stay
-saved until a caller explicitly places the card again. References are passed to
-generation independently of prompt text; BeatDesign does not insert synthetic
-`@Image1` or `@Image2` tokens into a user's prompt.
+saved until a caller explicitly places the card again. BeatDesign does not infer
+first or last frames from attachment order. Image references remain generic,
+while explicit workflows such as tail-frame continuation may insert canonical
+prompt directives like `Use @Image1 as the first frame.`. The BeatAPI adapter
+translates only those explicit `@ImageN` directives into provider frame fields.
 
 ## Current boundaries
 
@@ -216,6 +228,10 @@ generation independently of prompt text; BeatDesign does not insert synthetic
 
 ## Skill and MCP
 
+- `skills/official/` is the future single source of truth for portable,
+  versioned creative Skills bundled with BeatDesign. The loader validates the
+  manifest schema, directory identity, minimum BeatDesign version, and required
+  MCP tools; it reads instructions as data and never executes Skill scripts.
 - The host Skills are the workflow layer: they tell the Agent when to select a
   project, which MCP tools to combine, where user authorization is required, and
   which Canvas or Editor view must remain open for review.

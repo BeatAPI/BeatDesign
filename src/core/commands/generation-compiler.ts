@@ -48,8 +48,6 @@ export async function compileAssetFirstGenerationInput({
   const imageUrls: string[] = [];
   const videoUrls: string[] = [];
   const audioUrls: string[] = [];
-  let firstFrame: string | null = null;
-  let lastFrame: string | null = null;
 
   for (const reference of generation.references) {
     const asset = await getProjectAssetById({
@@ -86,8 +84,6 @@ export async function compileAssetFirstGenerationInput({
       );
     }
     imageUrls.push(deliveryUrl);
-    if (reference.role === 'first_frame') firstFrame = deliveryUrl;
-    if (reference.role === 'last_frame') lastFrame = deliveryUrl;
   }
 
   const parameters = Object.fromEntries(
@@ -101,8 +97,6 @@ export async function compileAssetFirstGenerationInput({
     ...(imageUrls.length > 0 ? { image_urls: [...new Set(imageUrls)] } : {}),
     ...(videoUrls.length > 0 ? { video_urls: [...new Set(videoUrls)] } : {}),
     ...(audioUrls.length > 0 ? { audio_urls: [...new Set(audioUrls)] } : {}),
-    ...(firstFrame ? { first_frame: firstFrame } : {}),
-    ...(lastFrame ? { last_frame: lastFrame } : {}),
     ...(generation.mode === 'analysis' && videoUrls[0]
       ? { video_url: videoUrls[0] }
       : {}),

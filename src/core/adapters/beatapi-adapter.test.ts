@@ -178,7 +178,7 @@ test('passes image references to every BeatAPI image model', () => {
   assert.deepEqual(request.body.images, ['https://example.com/source.png']);
 });
 
-test('uses reference images by default and frames only when @Image roles are explicit', () => {
+test('uses reference images by default and frames only when @Image directives are explicit', () => {
   const frames = [
     'https://example.com/first.png',
     'https://example.com/last.png',
@@ -225,20 +225,36 @@ test('uses reference images by default and frames only when @Image roles are exp
   assert.deepEqual(request.body.reference_images, images);
 });
 
-test('explicit Chinese @Image roles determine first and last frame order', () => {
+test('canonical @Image directives determine first and last frame order', () => {
   const firstAttached = 'https://example.com/attached-first.png';
   const secondAttached = 'https://example.com/attached-second.png';
   const request = buildBeatApiTaskRequest({
     effectType: 1,
     model: 'minimax-h3',
     input: {
-      prompt: '将 @Image2 作为首帧，@Image1 作为尾帧。',
+      prompt:
+        'Use @Image2 as the first frame and @Image1 as the last frame.',
       image_urls: [firstAttached, secondAttached],
     },
   });
 
   assert.deepEqual(request.body.images, [secondAttached, firstAttached]);
   assert.equal(request.body.reference_images, undefined);
+});
+
+test('non-canonical frame wording remains a generic image reference', () => {
+  const image = 'https://example.com/reference.png';
+  const request = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'minimax-h3',
+    input: {
+      prompt: '将 @Image1 作为首帧，继续镜头。',
+      image_urls: [image],
+    },
+  });
+
+  assert.equal(request.body.images, undefined);
+  assert.deepEqual(request.body.reference_images, [image]);
 });
 
 test('normalizes MiniMax H3 text defaults and Veo reference quality', () => {

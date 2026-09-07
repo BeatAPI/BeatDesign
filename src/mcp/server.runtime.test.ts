@@ -14,12 +14,12 @@ import { listGenerationModelDescriptors } from '@/core/generation-providers';
 
 import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
 
-test('MCP tool catalog is exactly 27 named tools', () => {
+test('MCP tool catalog is exactly 29 named tools', () => {
   const source = readFileSync(new URL('./server.ts', import.meta.url), 'utf8');
   const registered = [...source.matchAll(/server\.registerTool\(\s*'([^']+)'/g)].map(
     (match) => match[1]
   );
-  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 27);
+  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 29);
   assert.deepEqual(registered, [...BEATDESIGN_MCP_TOOL_NAMES]);
 });
 

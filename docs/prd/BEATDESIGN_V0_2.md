@@ -80,7 +80,7 @@ Canvas 对 Asset、Generation 配置或 Timeline 的可视化引用。节点位�
 ### 3.6 两类关系
 
 1. Canvas Edge：用户排列、连接和关注关系。
-2. Generation Lineage：真实的 `derived_from`、`first_frame`、`last_frame`、`continuation_of`、`redo_of`、`timeline_render` 等来源关系。
+2. Generation Lineage：真实的 `derived_from`、`continuation_of`、`redo_of`、`timeline_render` 等来源关系；首尾帧用途只由明确的 `@ImageN` Prompt 指令表达，不作为独立持久化状态。
 
 本轮先在派生 Asset metadata 与 Canvas 引用中记录尾帧和时间线关系；后续升级为独立可查询的 lineage contract。
 
@@ -138,7 +138,7 @@ Editor Clip 必须引用具体 `assetId`，不能动态跟随 Canvas Generation 
 - 本地 MCP Server。`已完成基础版`
 - Project、Canvas、Editor、Assets、Generation 工具组。`已完成基础版`
 - 模型 capability discovery。`已完成`
-- 只读 MCP Resources。`未完成`
+- 只读 MCP Resources。`已完成 Skill 目录基础版；更多资源后续补充`
 - 付费生成确认、幂等键、结构化结果和操作历史。
 - Agent 修改后 UI 实时刷新。
 - Codex 优先接入，Claude Code 和其他宿主使用同一协议。

@@ -58,6 +58,7 @@ test('MCP stdio handshake lists the catalogued tools and can list projects', asy
     const initialized = await readJsonLine(child);
     const initResult = initialized.result as {
       serverInfo?: { name?: string; version?: string };
+      capabilities?: { resources?: object };
     };
     const packageVersion = (
       JSON.parse(readFileSync(resolve('package.json'), 'utf8')) as {
@@ -75,6 +76,7 @@ test('MCP stdio handshake lists the catalogued tools and can list projects', asy
     assert.equal(initResult.serverInfo?.name, 'beatdesign');
     assert.equal(initResult.serverInfo?.version, packageVersion);
     assert.equal(pluginVersion, packageVersion);
+    assert.ok(initResult.capabilities?.resources);
 
     send(child, { jsonrpc: '2.0', method: 'notifications/initialized' });
     send(child, { jsonrpc: '2.0', id: 2, method: 'tools/list' });
@@ -87,6 +89,70 @@ test('MCP stdio handshake lists the catalogued tools and can list projects', asy
     send(child, {
       jsonrpc: '2.0',
       id: 3,
+      method: 'resources/list',
+    });
+    const listedResources = await readJsonLine(child);
+    const resources = (
+      listedResources.result as {
+        resources?: Array<{ uri: string; mimeType?: string }>;
+      }
+    ).resources;
+    assert.ok(
+      resources?.some(
+        (resource) =>
+          resource.uri === 'beatdesign://skills' &&
+          resource.mimeType === 'application/json'
+      )
+    );
+
+    send(child, {
+      jsonrpc: '2.0',
+      id: 4,
+      method: 'resources/templates/list',
+    });
+    const listedTemplates = await readJsonLine(child);
+    const resourceTemplates = (
+      listedTemplates.result as {
+        resourceTemplates?: Array<{ uriTemplate: string }>;
+      }
+    ).resourceTemplates;
+    assert.ok(
+      resourceTemplates?.some(
+        (resource) => resource.uriTemplate === 'beatdesign://skills/{skillId}'
+      )
+    );
+
+    send(child, {
+      jsonrpc: '2.0',
+      id: 5,
+      method: 'resources/read',
+      params: { uri: 'beatdesign://skills' },
+    });
+    const readCatalog = await readJsonLine(child);
+    const catalogText = (
+      readCatalog.result as { contents?: Array<{ text?: string }> }
+    ).contents?.[0]?.text;
+    assert.ok(catalogText);
+    assert.deepEqual(
+      (JSON.parse(catalogText) as { skills?: unknown[] }).skills,
+      []
+    );
+
+    send(child, {
+      jsonrpc: '2.0',
+      id: 6,
+      method: 'tools/call',
+      params: { name: 'bdesign_skill_list', arguments: {} },
+    });
+    const listedSkills = await readJsonLine(child);
+    const skillPayload = listedSkills.result as {
+      structuredContent?: { result?: { skills?: unknown[] } };
+    };
+    assert.deepEqual(skillPayload.structuredContent?.result?.skills, []);
+
+    send(child, {
+      jsonrpc: '2.0',
+      id: 7,
       method: 'tools/call',
       params: { name: 'bdesign_project_list', arguments: { limit: 5 } },
     });

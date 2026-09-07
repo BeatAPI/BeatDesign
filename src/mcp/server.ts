@@ -1,7 +1,12 @@
 import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, resolve as resolvePath } from 'node:path';
 
-import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
+import {
+  createMcpHandler,
+  McpServer,
+  ResourceNotFoundError,
+  ResourceTemplate,
+} from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 import * as z from 'zod/v4';
 
@@ -45,6 +50,13 @@ import {
   loadProjectWithLatestSnapshot,
 } from '@/core/projects/projects';
 import {
+  BEATDESIGN_SKILL_CATALOG_URI,
+  BEATDESIGN_SKILL_RESOURCE_TEMPLATE,
+  beatDesignSkillIdSchema,
+  loadBeatDesignSkillRegistry,
+  type BeatDesignSkill,
+} from '@/core/skills/skill-registry';
+import {
   getProjectAssetById,
   listProjectAssets,
 } from '@/core/workspace-lib/assets/user-assets';
@@ -58,9 +70,37 @@ import {
   prepareCanvasGenerationSubmission,
   runCanvasGenerationSubmissionOnce,
 } from './generation-canvas';
+import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
 
 const VERSION = '0.2.3';
 const idSchema = z.string().trim().min(1).max(200);
+const builtInSkillDirectory = resolvePath(process.cwd(), 'skills', 'official');
+let builtInSkillRegistryPromise: ReturnType<
+  typeof loadBeatDesignSkillRegistry
+> | null = null;
+
+const getBuiltInSkillRegistry = () => {
+  builtInSkillRegistryPromise ??= loadBeatDesignSkillRegistry({
+    directory: builtInSkillDirectory,
+    beatDesignVersion: VERSION,
+    availableMcpTools: BEATDESIGN_MCP_TOOL_NAMES,
+  });
+  return builtInSkillRegistryPromise;
+};
+
+const formatSkillResource = (skill: BeatDesignSkill) =>
+  [
+    `# ${skill.manifest.title}`,
+    '',
+    `Skill ID: ${skill.manifest.id}`,
+    `Skill version: ${skill.manifest.version}`,
+    `BeatDesign compatibility: ${skill.compatible ? 'compatible' : 'incompatible'}`,
+    ...(skill.incompatibilities.length > 0
+      ? [`Compatibility issues: ${skill.incompatibilities.join(' ')}`]
+      : []),
+    '',
+    skill.instructions,
+  ].join('\n');
 
 const toCommandCanvasCards = (cards: unknown[]) =>
   cards.flatMap((card) => {
@@ -81,8 +121,6 @@ const generationReferenceSchema = z.object({
     'style',
     'subject',
     'pose',
-    'first_frame',
-    'last_frame',
     'audio_track',
   ]),
   deliveryUrl: z.string().trim().min(1).max(4096).optional(),
@@ -280,6 +318,80 @@ export function createBeatDesignMcpServer() {
   const server = new McpServer({ name: 'beatdesign', version: VERSION });
   let targetedProjectId: string | null = null;
 
+  server.registerResource(
+    'beatdesign-skill-catalog',
+    BEATDESIGN_SKILL_CATALOG_URI,
+    {
+      title: 'BeatDesign Skill catalog',
+      description:
+        'Versioned catalog of official creative Skills bundled with this BeatDesign installation.',
+      mimeType: 'application/json',
+    },
+    async (uri) => ({
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: 'application/json',
+          text: JSON.stringify(
+            (await getBuiltInSkillRegistry()).catalog(),
+            null,
+            2
+          ),
+        },
+      ],
+    })
+  );
+
+  server.registerResource(
+    'beatdesign-skill',
+    new ResourceTemplate(BEATDESIGN_SKILL_RESOURCE_TEMPLATE, {
+      list: async () => ({
+        resources: (await getBuiltInSkillRegistry()).list().map((skill) => ({
+          uri: skill.resourceUri,
+          name: skill.manifest.id,
+          title: skill.manifest.title,
+          description: skill.manifest.summary,
+          mimeType: 'text/markdown',
+        })),
+      }),
+      complete: {
+        skillId: async (value) =>
+          (await getBuiltInSkillRegistry())
+            .list()
+            .map((skill) => skill.manifest.id)
+            .filter((skillId) => skillId.startsWith(value)),
+      },
+    }),
+    {
+      title: 'BeatDesign Skill',
+      description:
+        'Full model-readable instructions for one bundled BeatDesign creative Skill.',
+      mimeType: 'text/markdown',
+    },
+    async (uri, variables) => {
+      const rawSkillId = Array.isArray(variables.skillId)
+        ? variables.skillId[0]
+        : variables.skillId;
+      const skillId = beatDesignSkillIdSchema.parse(rawSkillId);
+      const skill = (await getBuiltInSkillRegistry()).get(skillId);
+      if (!skill) {
+        throw new ResourceNotFoundError(
+          uri.href,
+          `BeatDesign Skill not found: ${skillId}`
+        );
+      }
+      return {
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: 'text/markdown',
+            text: formatSkillResource(skill),
+          },
+        ],
+      };
+    }
+  );
+
   const resolveScopedProject = async (projectId?: string | null) => {
     const resolvedProjectId = projectId?.trim() || targetedProjectId;
     if (!resolvedProjectId) {
@@ -374,6 +486,32 @@ export function createBeatDesignMcpServer() {
     if (!applied.ok) throw new Error(applied.message);
     return applied;
   };
+
+  server.registerTool(
+    'bdesign_skill_list',
+    {
+      description:
+        'List official creative Skills bundled with this BeatDesign installation, including compatibility and MCP resource URIs.',
+      inputSchema: z.object({}),
+      annotations: { readOnlyHint: true },
+    },
+    withToolErrors(async () => (await getBuiltInSkillRegistry()).catalog())
+  );
+
+  server.registerTool(
+    'bdesign_skill_get',
+    {
+      description:
+        'Read one bundled BeatDesign Skill with its manifest, compatibility result, and full workflow instructions.',
+      inputSchema: z.object({ skillId: beatDesignSkillIdSchema }),
+      annotations: { readOnlyHint: true },
+    },
+    withToolErrors(async ({ skillId }) => {
+      const skill = (await getBuiltInSkillRegistry()).get(skillId);
+      if (!skill) throw new Error(`BeatDesign Skill not found: ${skillId}`);
+      return skill;
+    })
+  );
 
   server.registerTool(
     'bdesign_project_list',
@@ -699,7 +837,7 @@ export function createBeatDesignMcpServer() {
     'bdesign_canvas_continue_from_tail',
     {
       description:
-        'Extract the tail frame of a video, place it on Canvas, and create a continuation generation node. Then call bdesign_generation_submit with the returned first_frame reference.',
+        'Extract the tail frame of a video, place it on Canvas, and create a continuation generation node. The returned prompt explicitly maps @Image1 as the first frame; submit the image as a normal reference.',
       inputSchema: commandMetadataSchema.extend({
         projectId: idSchema.optional(),
         sourceCardId: idSchema.optional(),

@@ -160,34 +160,22 @@ const assertAtMost = (label: string, count: number, max: number) => {
   }
 };
 
-const FRAME_ROLE_PATTERNS = {
-  first: '(?:首帧|起始帧|开始帧|first[\\s-]*frame|start(?:ing)?[\\s-]*frame)',
-  last: '(?:尾帧|末帧|结束帧|last[\\s-]*frame|end(?:ing)?[\\s-]*frame)',
-} as const;
-
 const resolveImageIndexForRole = ({
   prompt,
   role,
   imageCount,
 }: {
   prompt: string;
-  role: keyof typeof FRAME_ROLE_PATTERNS;
+  role: 'first' | 'last';
   imageCount: number;
 }): number | null => {
-  const aliases = [...prompt.matchAll(/@Image(\d+)/giu)].flatMap((match) => {
+  const directivePattern = new RegExp(
+    `@Image(\\d+)\\s+as\\s+the\\s+${role}\\s+frame\\b`,
+    'giu'
+  );
+  for (const match of prompt.matchAll(directivePattern)) {
     const imageIndex = Number.parseInt(match[1] ?? '', 10) - 1;
-    return imageIndex >= 0 && imageIndex < imageCount && match.index !== undefined
-      ? [{ imageIndex, start: match.index, end: match.index + match[0].length }]
-      : [];
-  });
-  const rolePattern = new RegExp(FRAME_ROLE_PATTERNS[role], 'iu');
-  for (const [aliasIndex, alias] of aliases.entries()) {
-    const nextAliasStart = aliases[aliasIndex + 1]?.start ?? prompt.length;
-    const assignedText = prompt.slice(
-      alias.end,
-      Math.min(nextAliasStart, alias.end + 48)
-    );
-    if (rolePattern.test(assignedText)) return alias.imageIndex;
+    if (imageIndex >= 0 && imageIndex < imageCount) return imageIndex;
   }
   return null;
 };

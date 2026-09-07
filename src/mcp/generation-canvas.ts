@@ -6,6 +6,7 @@ import {
 } from '@/core/beatcanvas/canvas-types';
 import {
   buildAssetFirstReferencesFromCanvasCards,
+  GENERATION_REQUEST_VERSION,
   type AssetFirstGenerationRequest,
 } from '@/core/commands/generation-contract';
 import type { CanvasOperation } from '@/core/commands/canvas-commands';
@@ -180,7 +181,6 @@ export function prepareCanvasGenerationSubmission({
   const references = buildAssetFirstReferencesFromCanvasCards({
     cards: cardsById,
     referenceCardIds: sourceCard.referenceCardIds,
-    mode: reviewedMode,
   });
   if (references.length !== sourceCard.referenceCardIds.length) {
     throw new Error(
@@ -247,7 +247,7 @@ export function prepareCanvasGenerationSubmission({
     sourceCard,
     outputCard,
     request: {
-      version: 1 as const,
+      version: GENERATION_REQUEST_VERSION,
       mode: reviewedMode,
       modelId: sourceCard.modelId,
       prompt: sourceCard.prompt,

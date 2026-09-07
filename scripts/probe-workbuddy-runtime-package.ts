@@ -130,6 +130,19 @@ try {
   send({
     jsonrpc: '2.0',
     id: 3,
+    method: 'resources/read',
+    params: { uri: 'beatdesign://skills' },
+  });
+  const skillCatalog = await readJsonLine(15_000);
+  const catalogText = (
+    skillCatalog.result as { contents?: Array<{ text?: string }> }
+  ).contents?.[0]?.text;
+  assert.ok(catalogText);
+  assert.ok(Array.isArray((JSON.parse(catalogText) as { skills?: unknown[] }).skills));
+
+  send({
+    jsonrpc: '2.0',
+    id: 4,
     method: 'tools/call',
     params: { name: 'bdesign_project_list', arguments: { limit: 5 } },
   });
@@ -169,6 +182,17 @@ try {
   assert.match(conflictError, /Port 3020 is already serving another BeatDesign/);
 
   await access(resolve(dataDirectory, 'local.db'));
+  await access(
+    resolve(
+      probeRoot,
+      'node_modules',
+      '@beatapi',
+      'beatdesign-workbuddy',
+      'skills',
+      'official',
+      'README.md'
+    )
+  );
   await assert.rejects(
     access(
       resolve(
