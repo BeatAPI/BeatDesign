@@ -17,7 +17,10 @@ for (const page of pages) {
       new URL(`../../content/pages/${page}`, import.meta.url),
       'utf8'
     );
-    const markdown = source.replace(/^export const meta\s*=\s*\{[\s\S]*?^\}\s*/m, '');
+    const markdown = source.replace(
+      /^export const meta\s*=\s*\{[\s\S]*?^\}\s*/m,
+      ''
+    );
 
     assert.doesNotMatch(markdown, /^#\s+/m);
     assert.doesNotMatch(
