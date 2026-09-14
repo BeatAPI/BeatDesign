@@ -1,10 +1,10 @@
 import { getCanonicalWorkspaceModelId } from '@/core/effects/workspace-models';
 
 const MODEL_ICON_PATHS = {
-  beatapi: '/model-icons/beatapi.svg',
   bytedance: '/model-icons/bytedance-color.svg',
   google: '/model-icons/google-color.svg',
   grok: '/model-icons/grok.svg',
+  happyhorse: '/model-icons/happyhorse.svg',
   kling: '/model-icons/kling-color.svg',
   minimax: '/model-icons/minimax-color.svg',
   nanobanana: '/model-icons/nanobanana-color.svg',
@@ -36,8 +36,8 @@ const MODEL_ICON_PATH_BY_MODEL_ID: Record<string, string> = {
   'veo-3.1': MODEL_ICON_PATHS.google,
   'wan-3.0': MODEL_ICON_PATHS.qwen,
   'wan-3.0-prime': MODEL_ICON_PATHS.qwen,
-  'happyhorse-1.0': MODEL_ICON_PATHS.beatapi,
-  'happyhorse-1.1': MODEL_ICON_PATHS.beatapi,
+  'happyhorse-1.0': MODEL_ICON_PATHS.happyhorse,
+  'happyhorse-1.1': MODEL_ICON_PATHS.happyhorse,
   'video-analysis-standard': MODEL_ICON_PATHS.google,
   'video-analysis-pro': MODEL_ICON_PATHS.google,
 };

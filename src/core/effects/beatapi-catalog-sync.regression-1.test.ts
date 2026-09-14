@@ -133,8 +133,8 @@ test('new models resolve to local SVG icons with visible vector content', () => 
     ['gpt-image-2.5-sunburst', '/model-icons/openai.svg'],
     ['wan-3.0', '/model-icons/qwen-color.svg'],
     ['wan-3.0-prime', '/model-icons/qwen-color.svg'],
-    ['happyhorse-1.0', '/model-icons/beatapi.svg'],
-    ['happyhorse-1.1', '/model-icons/beatapi.svg'],
+    ['happyhorse-1.0', '/model-icons/happyhorse.svg'],
+    ['happyhorse-1.1', '/model-icons/happyhorse.svg'],
     ['minimax-h3-max', '/model-icons/minimax-color.svg'],
     ['minimax-h3-max-turbo', '/model-icons/minimax-color.svg'],
   ]);
