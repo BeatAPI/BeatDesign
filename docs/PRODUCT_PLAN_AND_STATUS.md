@@ -144,9 +144,9 @@ Codex / Claude Code / Other Agent
 - 幂等键会绑定首次 command；复用到另一个 command 会返回 `INVALID_COMMAND`，不会静默冒用旧结果。
 - UI 内部允许 revision-checked `editor.replace_document` 支撑 undo/redo 和本地自动保存；MCP 被明确禁止整份替换，只能调用 `editor.apply`。
 - Generation 的 `AssetFirstGenerationRequest` 已成为服务端权威输入：适配器媒体参数由 Asset ID 和当前 generation intent 编译，旧的客户端 URL 字段不再决定引用事实。
-- `AssetFirstGenerationRequest` v2 不保存首帧或尾帧角色；图片保持普通引用，明确的 `@ImageN` Prompt 指令是首尾帧语义的唯一来源，Adapter 仅负责翻译 Provider 所需字段和校验硬性模型限制。
+- `AssetFirstGenerationRequest` v2 不保存通用首帧或尾帧角色；大多数模型仍由明确的 `@ImageN` Prompt 指令表达首尾帧语义。MiniMax H3 Max / Max Turbo 按其公开契约使用专用双槽位，并将附件顺序映射为首帧、尾帧。Adapter 负责翻译 Provider 字段和校验模型硬限制。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
-- Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
+- Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；当前同步 GPT Image 2.5 Flare/Sunburst、Wan 3.0/Prime、HappyHorse 1.0/1.1、MiniMax H3 Max/Max Turbo 的请求契约和 SVG 品牌标志。BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
 - 本地 stdio MCP Server 提供 29 个工具（Skill / Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_skill_list` / `bdesign_skill_get` 是不显示 MCP Resources 的宿主兼容入口；`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
 - Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 

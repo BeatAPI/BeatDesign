@@ -71,6 +71,8 @@ export type WorkspaceModelOption = {
   supportsFramePair?: boolean;
   supportsSourceVideo?: boolean;
   supportsReferenceAudio?: boolean;
+  requiresImageInput?: boolean;
+  supportsSeed?: boolean;
   maxReferenceImages?: number;
   maxSourceVideos?: number;
   maxReferenceAudios?: number;
@@ -152,6 +154,8 @@ const toWorkspaceModelOption = (
     ),
     supportsSourceVideo: mediaSchema.video.max > 0,
     supportsReferenceAudio: mediaSchema.audio.max > 0,
+    requiresImageInput: entry.requiresImageInput,
+    supportsSeed: entry.supportsSeed,
     maxReferenceImages: mediaSchema.image.max,
     maxSourceVideos: mediaSchema.video.max,
     maxReferenceAudios: mediaSchema.audio.max,

@@ -115,8 +115,13 @@ const buildInputSchema = (entry: WorkspaceEffectRegistryEntry) => {
   if (entry.requiresSourceVideoDuration) {
     schema.sourceVideoDurationSeconds = optionalAnyField;
   }
+  if (entry.supportsSeed) {
+    schema.seed = { type: 'number', required: false };
+  }
   if (mediaSchema && mediaSchema.image.max > 0) {
-    schema.image_urls = optionalAnyField;
+    schema.image_urls = entry.requiresImageInput
+      ? { type: 'any', required: true }
+      : optionalAnyField;
   }
   if (mediaSchema && mediaSchema.video.max > 0) {
     schema.video_urls = optionalAnyField;

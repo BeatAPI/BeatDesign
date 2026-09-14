@@ -11,6 +11,8 @@ export const BEATAPI_IMAGE_REFERENCE_LIMITS = {
   'nano-banana-2-lite': 10,
   'nano-banana-pro': 8,
   'gpt-image-2': 16,
+  'gpt-image-2.5-flare': 16,
+  'gpt-image-2.5-sunburst': 16,
   'seedream-5-pro': 10,
   'grok-imagine-image-2.0': 5,
 } as const;
@@ -54,6 +56,42 @@ export const BEATAPI_VIDEO_REFERENCE_CONTRACTS = {
   },
   'grok-imagine-video-1.5': {
     maxReferenceImages: 7,
+    maxReferenceVideos: 0,
+    maxReferenceAudios: 0,
+    allowsAudioOnly: false,
+  },
+  'wan-3.0': {
+    maxReferenceImages: 10,
+    maxReferenceVideos: 5,
+    maxReferenceAudios: 5,
+    allowsAudioOnly: true,
+  },
+  'wan-3.0-prime': {
+    maxReferenceImages: 10,
+    maxReferenceVideos: 5,
+    maxReferenceAudios: 5,
+    allowsAudioOnly: true,
+  },
+  'happyhorse-1.0': {
+    maxReferenceImages: 9,
+    maxReferenceVideos: 0,
+    maxReferenceAudios: 0,
+    allowsAudioOnly: false,
+  },
+  'happyhorse-1.1': {
+    maxReferenceImages: 9,
+    maxReferenceVideos: 0,
+    maxReferenceAudios: 0,
+    allowsAudioOnly: false,
+  },
+  'minimax-h3-max': {
+    maxReferenceImages: 2,
+    maxReferenceVideos: 0,
+    maxReferenceAudios: 0,
+    allowsAudioOnly: false,
+  },
+  'minimax-h3-max-turbo': {
+    maxReferenceImages: 2,
     maxReferenceVideos: 0,
     maxReferenceAudios: 0,
     allowsAudioOnly: false,

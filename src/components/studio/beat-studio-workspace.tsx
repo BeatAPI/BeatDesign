@@ -150,6 +150,9 @@ export function BeatStudioWorkspace({
       if (promptConstraints.required && !draft.prompt.trim()) {
         throw new Error('Describe what you want to create first.');
       }
+      if (selectedModel?.requiresImageInput && referenceUrls.length === 0) {
+        throw new Error(`${selectedModel.name} requires at least one image.`);
+      }
       if (isAnalysis && !analysisFile) {
         throw new Error('Add an MP4 or MOV video to analyze.');
       }

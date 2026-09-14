@@ -403,6 +403,7 @@ export function StudioComposer({
               disabled={
                 isBusy ||
                 (promptRequired && !draft.prompt.trim()) ||
+                (selectedModel?.requiresImageInput && referenceUrls.length === 0) ||
                 (isAnalysis ? !analysisFileName : !selectedModel)
               }
               className={cn(

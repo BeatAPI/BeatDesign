@@ -130,6 +130,22 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     video: emptySection,
     audio: emptySection,
   },
+  'gpt-image-2.5-flare': {
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('gpt-image-2.5-flare')
+    ),
+    video: emptySection,
+    audio: emptySection,
+  },
+  'gpt-image-2.5-sunburst': {
+    image: createGenericSection(
+      'reference-image',
+      getBeatApiImageReferenceLimit('gpt-image-2.5-sunburst')
+    ),
+    video: emptySection,
+    audio: emptySection,
+  },
   'seedream-5-pro': {
     image: createGenericSection(
       'reference-image',
@@ -170,6 +186,36 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     image: createVideoContractSection('minimax-h3', 'reference-image'),
     video: createVideoContractSection('minimax-h3', 'reference-video'),
     audio: createVideoContractSection('minimax-h3', 'reference-audio'),
+  },
+  'wan-3.0': {
+    image: createVideoContractSection('wan-3.0', 'reference-image'),
+    video: createVideoContractSection('wan-3.0', 'reference-video'),
+    audio: createVideoContractSection('wan-3.0', 'reference-audio'),
+  },
+  'wan-3.0-prime': {
+    image: createVideoContractSection('wan-3.0-prime', 'reference-image'),
+    video: createVideoContractSection('wan-3.0-prime', 'reference-video'),
+    audio: createVideoContractSection('wan-3.0-prime', 'reference-audio'),
+  },
+  'happyhorse-1.0': {
+    image: createVideoContractSection('happyhorse-1.0', 'reference-image'),
+    video: emptySection,
+    audio: emptySection,
+  },
+  'happyhorse-1.1': {
+    image: createVideoContractSection('happyhorse-1.1', 'reference-image'),
+    video: emptySection,
+    audio: emptySection,
+  },
+  'minimax-h3-max': {
+    image: firstLastFrameSection,
+    video: emptySection,
+    audio: emptySection,
+  },
+  'minimax-h3-max-turbo': {
+    image: firstLastFrameSection,
+    video: emptySection,
+    audio: emptySection,
   },
   'veo-3.1': {
     image: createVideoContractSection('veo-3.1', 'reference-image'),

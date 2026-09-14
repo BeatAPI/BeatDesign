@@ -16,7 +16,9 @@ The adapter uses:
 
 User-facing model capabilities are defined in `src/core/effects/effect-registry.ts`. Provider bindings live in `src/core/generation-providers/`; MCP and UI use the logical model id and capability schema, not BeatAPI `effectId` or raw upstream fields.
 
-Image attachments remain generic references in the BeatDesign request contract. First-frame and last-frame intent exists only in explicit prompt directives such as `Use @Image1 as the first frame.` and `Use @Image2 as the last frame.`; attachment order alone never assigns a frame role. The BeatAPI adapter recognizes this canonical syntax and still enforces each upstream model's hard media limits.
+The built-in catalog includes the current BeatAPI GPT Image 2.5 Flare/Sunburst, Wan 3.0/Prime, HappyHorse 1.0/1.1, and MiniMax H3 Max/Max Turbo contracts. Their resolution casing, duration ranges, reference limits, required-image rules, seed support, and upstream request field names are preserved by the adapter.
+
+Image attachments remain generic references in the shared BeatDesign request contract. Most first-frame and last-frame intent uses explicit prompt directives such as `Use @Image1 as the first frame.` and `Use @Image2 as the last frame.` The MiniMax H3 Max pair is an upstream exception: its dedicated two-slot media schema maps attachment order directly to first frame then last frame, matching BeatAPI's published contract.
 
 Kling 2.6 and Kling 3.0 Motion Control are exposed as BeatAPI models. Each run requires exactly one character image and one MP4/MOV motion video uploaded through the connected BeatAPI account. The Workspace never asks users for a KIE key; BeatAPI owns the upstream provider route, billing, polling, and output persistence.
 

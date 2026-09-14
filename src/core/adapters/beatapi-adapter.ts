@@ -20,6 +20,8 @@ const IMAGE_MODELS = new Set([
   'nano-banana-2-lite',
   'nano-banana-pro',
   'gpt-image-2',
+  'gpt-image-2.5-flare',
+  'gpt-image-2.5-sunburst',
   'seedream-5-pro',
   'grok-imagine-image-2.0',
 ]);
@@ -35,6 +37,12 @@ const VIDEO_MODELS = new Set([
   'kling-2.6-motion-control',
   'kling-3-motion-control',
   'grok-imagine-video-1.5',
+  'wan-3.0',
+  'wan-3.0-prime',
+  'happyhorse-1.0',
+  'happyhorse-1.1',
+  'minimax-h3-max',
+  'minimax-h3-max-turbo',
 ]);
 
 const BEATAPI_REQUEST_TIMEOUT_MS = 30_000;
@@ -57,6 +65,7 @@ const inputSchema = z.object({
   sourceVideoDurationSeconds: z.number().positive().optional(),
   characterOrientation: z.enum(['image', 'video']).optional(),
   backgroundSource: z.enum(['input_image', 'input_video']).optional(),
+  seed: z.number().int().min(0).optional(),
 });
 
 export const validateBeatApiTaskInput = ({
@@ -128,6 +137,9 @@ const mapImageResolution = (value: string | undefined) => {
 
 const mapMinimaxResolution = (value: string | undefined) =>
   value?.toLowerCase() === '2k' ? '2K' : '768P';
+
+const mapMinimaxMaxResolution = (value: string | undefined) =>
+  value?.toLowerCase() === '480p' ? '480P' : '768P';
 
 const mapKlingResolution = (value: string | undefined) => {
   const quality = value?.toLowerCase();
@@ -225,6 +237,44 @@ const resolveVideoReferenceFields = ({
   videoUrls: string[];
   audioUrls: string[];
 }) => {
+  if (model === 'wan-3.0' || model === 'wan-3.0-prime') {
+    const contract = getBeatApiVideoReferenceContract(model)!;
+    assertAtMost(`${model} image input`, images.length, contract.maxReferenceImages);
+    assertAtMost(`${model} video references`, videoUrls.length, contract.maxReferenceVideos);
+    assertAtMost(`${model} audio references`, audioUrls.length, contract.maxReferenceAudios);
+    return {
+      mode:
+        images.length || videoUrls.length || audioUrls.length ? 'reference' : 'text',
+      fields: {
+        ...(images.length ? { images } : {}),
+        ...(videoUrls.length ? { reference_videos: videoUrls } : {}),
+        ...(audioUrls.length ? { reference_audios: audioUrls } : {}),
+      },
+    } as const;
+  }
+
+  if (model === 'happyhorse-1.0' || model === 'happyhorse-1.1') {
+    assertAtMost(`${model} image input`, images.length, 9);
+    if (images.length === 0) {
+      throw new Error(`${model} requires at least one image`);
+    }
+    if (videoUrls.length || audioUrls.length) {
+      throw new Error(`${model} does not support reference video or audio`);
+    }
+    return { mode: 'image', fields: { images } } as const;
+  }
+
+  if (model === 'minimax-h3-max' || model === 'minimax-h3-max-turbo') {
+    assertAtMost(`${model} frame input`, images.length, 2);
+    if (videoUrls.length || audioUrls.length) {
+      throw new Error(`${model} does not support reference video or audio`);
+    }
+    return {
+      mode: images.length === 2 ? 'frames' : images.length === 1 ? 'image' : 'text',
+      fields: images.length ? { images } : {},
+    } as const;
+  }
+
   const frameImages = resolveExplicitFrameImages({ prompt, images });
   if (frameImages && (videoUrls.length || audioUrls.length)) {
     throw new Error('Frame input cannot be combined with reference video or audio');
@@ -365,6 +415,8 @@ export const buildBeatApiTaskRequest = ({
         ...(model === 'nano-banana-2' ||
         model === 'nano-banana-pro' ||
         model === 'gpt-image-2' ||
+        model === 'gpt-image-2.5-flare' ||
+        model === 'gpt-image-2.5-sunburst' ||
         model === 'seedream-5-pro'
           ? { resolution: mapImageResolution(input.wmOutputQuality) }
           : {}),
@@ -451,7 +503,9 @@ export const buildBeatApiTaskRequest = ({
       ? '16:9'
       : model === 'grok-imagine-video-1.5' && references.mode === 'image'
         ? undefined
-        : input.aspect_ratio;
+        : model === 'minimax-h3-max' || model === 'minimax-h3-max-turbo'
+          ? undefined
+          : input.aspect_ratio;
   if (
     model === 'seedance-2' &&
     references.mode === 'reference' &&
@@ -483,6 +537,19 @@ export const buildBeatApiTaskRequest = ({
 
   if (model === 'minimax-h3') {
     body.resolution = mapMinimaxResolution(input.wmOutputQuality);
+  } else if (
+    model === 'minimax-h3-max' ||
+    model === 'minimax-h3-max-turbo'
+  ) {
+    body.resolution = mapMinimaxMaxResolution(input.wmOutputQuality);
+    if (input.seed !== undefined) body.seed = input.seed;
+  } else if (
+    model === 'wan-3.0' ||
+    model === 'wan-3.0-prime' ||
+    model === 'happyhorse-1.0' ||
+    model === 'happyhorse-1.1'
+  ) {
+    body.resolution = input.wmOutputQuality || '720p';
   } else if (model === 'seedance-2' || model === 'seedance-2-fast') {
     body.resolution = input.wmOutputQuality || '720p';
     body.generate_audio = input.wmSound ?? true;
