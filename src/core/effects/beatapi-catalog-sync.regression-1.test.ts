@@ -95,6 +95,26 @@ test('HappyHorse requires image input and publishes that requirement to agents',
     { required?: boolean }
   >;
   assert.equal(inputSchema.image_urls?.required, true);
+
+  const request = buildBeatApiTaskRequest({
+    effectType: 1,
+    model: 'happyhorse-1.1',
+    input: {
+      prompt: 'Animate the subject',
+      image_urls: ['https://media.beatapi.io/subject.png'],
+      wmDuration: '15s',
+      aspect_ratio: '3:4',
+      wmOutputQuality: '1080p',
+    },
+  });
+  assert.deepEqual(request.body, {
+    model: 'happyhorse-1.1',
+    prompt: 'Animate the subject',
+    images: ['https://media.beatapi.io/subject.png'],
+    aspect_ratio: '3:4',
+    duration: 15,
+    resolution: '1080p',
+  });
 });
 
 test('MiniMax H3 Max preserves ordered frames, upper-case resolution, and seed', () => {
@@ -148,4 +168,49 @@ test('new models resolve to local SVG icons with visible vector content', () => 
     assert.match(source, /^<svg\b/);
     assert.match(source, /<(?:path|rect)\b/);
   }
+});
+
+test('new model reference limits fail before an upstream request is submitted', () => {
+  assert.throws(
+    () => buildBeatApiTaskRequest({
+      effectType: 2,
+      model: 'gpt-image-2.5-flare',
+      input: {
+        prompt: 'Too many references',
+        image_urls: Array.from(
+          { length: 17 },
+          (_, index) => `https://media.beatapi.io/image-${index}.png`
+        ),
+      },
+    }),
+    /at most 16 references/
+  );
+  assert.throws(
+    () => buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'wan-3.0',
+      input: {
+        prompt: 'Too many videos',
+        video_urls: Array.from(
+          { length: 6 },
+          (_, index) => `https://media.beatapi.io/video-${index}.mp4`
+        ),
+      },
+    }),
+    /at most 5 references/
+  );
+  assert.throws(
+    () => buildBeatApiTaskRequest({
+      effectType: 1,
+      model: 'minimax-h3-max',
+      input: {
+        prompt: 'Too many frames',
+        image_urls: Array.from(
+          { length: 3 },
+          (_, index) => `https://media.beatapi.io/frame-${index}.png`
+        ),
+      },
+    }),
+    /at most 2 references/
+  );
 });
