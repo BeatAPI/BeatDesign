@@ -73,7 +73,7 @@ test('Canvas Motion Control controls reach the BeatAPI provider request', async 
     canvasCards,
     imageModels: [],
     videoModels: [model],
-    metadataMap: { [effect.id]: effect },
+    metadataMap: { [model.id]: { ...effect, id: model.id } },
     runtimeMessages: {
       missingVideoUrl: 'Missing video URL',
       readVideoDurationFailed: 'Unable to read video duration',

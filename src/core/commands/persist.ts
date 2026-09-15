@@ -245,6 +245,7 @@ async function persistBeatDesignCommandOnce({
           typeof expectedRevision === 'number'
             ? expectedRevision
             : state.snapshotVersion,
+        allowEmpty: normalizedCommand.operations.some((operation) => operation.type === 'remove_card'),
       });
       result = { ...executed, revision: saved.version };
     } else {

@@ -11,6 +11,7 @@ import {
   failGenerationUploadIntent,
   issueGenerationUploadIntent,
   releaseGenerationUploadSlot,
+  getGenerationUploadIntentEffectId,
 } from '@/core/effects/generation-upload-intent';
 import { submitEffectGeneration } from '@/core/effects/submit-generation';
 import { resolveLocalProjectAssetPath } from '@/core/projects/local-project-assets';
@@ -19,6 +20,8 @@ import {
   linkGenerationAsset,
 } from '@/core/workspace-lib/assets/user-assets';
 import { uploadManagedGenerationInput } from '@/core/workspace-storage/managed-generation-input';
+import { getProject } from '@/core/projects/projects';
+import { getGenerationPromptConstraints, validateGenerationPrompt } from '@/core/effects/validation';
 
 import {
   getGenerationModelDescriptor,
@@ -144,14 +147,10 @@ async function prepareGenerationReferences({
   };
 }
 
-export async function submitAssetFirstGeneration({
-  generation: source,
-  origin,
-}: {
-  generation: AssetFirstGenerationRequest | unknown;
-  origin: 'ui' | 'mcp' | 'cli' | 'system';
-}) {
+export async function preflightAssetFirstGeneration(source: unknown) {
   const generation = normalizeAssetFirstGenerationRequest(source);
+  const project = await getProject({ projectId: generation.projectId });
+  if (!project || project.status !== 'active') throw new Error('Project not found');
   const provider = getActiveGenerationProvider();
   const binding = getGenerationModelBinding({
     modelId: generation.modelId,
@@ -168,7 +167,8 @@ export async function submitAssetFirstGeneration({
       `Model ${generation.modelId} does not support ${generation.mode} generation.`
     );
   }
-  await provider.assertConfigured?.();
+  const prompt = validateGenerationPrompt(generation.prompt, getGenerationPromptConstraints({ modelId: generation.modelId }));
+  if (!prompt.ok) throw new Error(prompt.code === 'PROMPT_TOO_LONG' ? `Prompt must be ${prompt.maxChars} characters or fewer.` : 'Prompt is required.');
   const uniqueAssets = new Map<
     string,
     Awaited<ReturnType<typeof getProjectAssetById>>
@@ -187,11 +187,59 @@ export async function submitAssetFirstGeneration({
   const expectedUploadCount = [...uniqueAssets.values()].filter(
     (asset) => asset && needsManagedGenerationReferenceUpload(asset)
   ).length;
-  const intentId = await issueGenerationUploadIntent({
+  const validationUrls: string[] = [];
+  for (const [assetId, asset] of uniqueAssets) {
+    if (!asset) throw new Error(`Asset ${assetId} does not belong to this project.`);
+    if (needsManagedGenerationReferenceUpload(asset)) {
+      if (asset.storageProvider !== 'local') throw new Error(`Asset ${assetId} is unavailable.`);
+      const file = await stat(resolveLocalProjectAssetPath({ objectKey: asset.objectKey }));
+      if (!file.isFile()) throw new Error(`Local file for asset ${assetId} is unavailable.`);
+    }
+  }
+  // Validation uses inert URLs; no file leaves the workspace during preflight.
+  const validationRequest = {
+    ...generation,
+    references: generation.references.map((reference, index) => {
+      const asset = uniqueAssets.get(reference.assetId)!;
+      const extension = asset.type === 'video' ? 'mp4' : asset.type === 'audio' ? 'mp3' : 'png';
+      const deliveryUrl = `https://validation.invalid/reference-${index}.${extension}`;
+      validationUrls.push(deliveryUrl);
+      return { ...reference, deliveryUrl };
+    }),
+  };
+  const input = await compileAssetFirstGenerationInput({ generation: validationRequest, generationIntentId: '', authorizedDeliveryUrls: validationUrls });
+  validateGenerationModelInput({ modelId: generation.modelId, input });
+  await provider.assertConfigured?.();
+  return { generation, binding, expectedUploadCount };
+}
+
+export async function createAssetFirstGenerationIntent(source: unknown) {
+  const prepared = await preflightAssetFirstGeneration(source);
+  return issueGenerationUploadIntent({
+    projectId: prepared.generation.projectId,
+    effectId: prepared.binding.effectId,
+    expectedUploadCount: prepared.expectedUploadCount,
+  });
+}
+
+export async function submitAssetFirstGeneration({
+  generation: source,
+  origin,
+  generationIntentId,
+}: {
+  generation: AssetFirstGenerationRequest | unknown;
+  origin: 'ui' | 'mcp' | 'cli' | 'system';
+  generationIntentId?: string;
+}) {
+  const { generation, binding, expectedUploadCount } = await preflightAssetFirstGeneration(source);
+  const intentId = generationIntentId || await issueGenerationUploadIntent({
     projectId: generation.projectId,
     effectId: binding.effectId,
     expectedUploadCount,
   });
+  if (await getGenerationUploadIntentEffectId({ intentId, projectId: generation.projectId }) !== binding.effectId) {
+    throw new Error('Generation authorization does not match this project and model.');
+  }
   try {
     const prepared = await prepareGenerationReferences({
       generation,

@@ -57,13 +57,13 @@ test('canvas external polling rebases pending local edits instead of blocking Ag
     source,
     /if \(pendingProjectSnapshotRef\.current\) \{\s*return;\s*\}/
   );
-  assert.match(source, /const pendingSnapshot = pendingProjectSnapshotRef\.current/);
+  assert.match(source, /const currentSnapshot = buildSnapshotRef\.current\(\)/);
   assert.match(source, /local: pendingSnapshot,/);
   assert.match(source, /remote: payload\.document,/);
   assert.match(source, /restoreProjectSnapshot\(snapshotToRestore\)/);
 });
 
-test('snapshot persistence flushes the complete current document when the page exits or becomes hidden', () => {
+test('snapshot persistence flushes incremental commands when the page exits or becomes hidden', () => {
   const source = readFileSync(
     new URL('./use-project-snapshot-lifecycle.ts', import.meta.url),
     'utf8'
@@ -80,7 +80,7 @@ test('snapshot autosave sends explicit authorization before replacing a populate
     'utf8'
   );
   assert.match(source, /allowEmptyProjectSnapshot/);
-  assert.match(source, /allowEmpty,/);
+  assert.match(source, /buildCanvasOperations\(commandBase, snapshotToSave, allowEmpty\)/);
 });
 
 test('snapshot autosave retries a version conflict without permanently stopping sync', () => {
@@ -90,7 +90,7 @@ test('snapshot autosave retries a version conflict without permanently stopping 
   );
   assert.doesNotMatch(source, /snapshotConflictRef/);
   assert.match(source, /mergeProjectSnapshotsAfterConflict/);
-  assert.match(source, /response = await sendSaveRequest\(latest\.version\)/);
+  assert.match(source, /result = await sendSaveRequest\(latest\.version\)/);
   assert.match(source, /onProjectSnapshotConflict\?\.\(\)/);
 });
 

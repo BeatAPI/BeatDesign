@@ -38,12 +38,12 @@ type EffectMetadataQueryOptions = {
 };
 
 export function getEffectMetadataQueryState(
-  ids: readonly number[],
+  ids: readonly string[],
   options?: EffectMetadataQueryOptions
 ) {
   const normalizedIds = [...new Set(ids)]
-    .filter((id) => Number.isFinite(id))
-    .sort((a, b) => a - b);
+    .filter((id) => Boolean(id.trim()))
+    .sort();
 
   return {
     normalizedIds,
@@ -52,7 +52,7 @@ export function getEffectMetadataQueryState(
 }
 
 export function useEffectMetadata(
-  ids: readonly number[],
+  ids: readonly string[],
   options?: EffectMetadataQueryOptions
 ) {
   const { normalizedIds, enabled } = getEffectMetadataQueryState(ids, options);

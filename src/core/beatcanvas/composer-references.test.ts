@@ -19,7 +19,6 @@ const makeModel = (
 ): WorkspaceModelOption => ({
   id: 'model-1',
   name: 'Model',
-  effectId: 1,
   uploadPath: 'effects/model',
   imageBucketName: 'image',
   maxReferenceImages: 0,

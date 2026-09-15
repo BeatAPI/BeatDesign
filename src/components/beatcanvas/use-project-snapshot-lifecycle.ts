@@ -3,58 +3,19 @@ import {
   type ProjectSnapshotDocument,
 } from '@/core/projects/project-snapshot';
 import type { CanvasCardMediaType } from '@/core/beatcanvas/canvas-types';
+import { buildCanvasOperations } from '@/core/commands/canvas-diff';
+import { executeProjectCommand } from '@/core/commands/client';
+import { createCommandId } from '@/core/commands/contracts';
+import { hasNewProjectRevision } from '@/core/projects/revision-client';
 import {
   WORKSPACE_MUTATION_HEADER,
   WORKSPACE_MUTATION_HEADER_VALUE,
 } from '@/lib/trusted-local-request';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-type SnapshotSaveFailure = {
-  message: string;
-  currentVersion?: number;
-};
-
 export const PROJECT_SNAPSHOT_AUTOSAVE_DELAY_MS = 350;
 export const PROJECT_SNAPSHOT_CHECKPOINT_INTERVAL_MS = 5_000;
 export const PROJECT_SNAPSHOT_EXTERNAL_POLL_INTERVAL_MS = 2_000;
-
-const readSnapshotSaveFailure = async (
-  response: Response
-): Promise<SnapshotSaveFailure> => {
-  const fallback = `Failed to save project snapshot (${response.status} ${response.statusText || 'Unknown error'})`;
-
-  let rawPayload = '';
-  try {
-    rawPayload = await response.text();
-  } catch {
-    return { message: fallback };
-  }
-
-  if (!rawPayload.trim()) {
-    return { message: fallback };
-  }
-
-  try {
-    const parsed = JSON.parse(rawPayload) as {
-      error?: string;
-      detail?: string;
-      currentVersion?: number;
-    };
-    const detail = [parsed.error, parsed.detail].filter(Boolean).join(': ');
-    return {
-      message: detail ? `${fallback}: ${detail}` : fallback,
-      currentVersion:
-        typeof parsed.currentVersion === 'number'
-          ? parsed.currentVersion
-          : undefined,
-    };
-  } catch {
-    return { message: `${fallback}: ${rawPayload.trim().slice(0, 200)}` };
-  }
-};
-
-const resolveSnapshotSaveErrorMessage = async (response: Response) =>
-  (await readSnapshotSaveFailure(response)).message;
 
 export const buildProjectSnapshotRequestHeaders = () => ({
   'content-type': 'application/json',
@@ -78,14 +39,17 @@ const mergeThreeWayValue = (
   base: unknown,
   local: unknown,
   remote: unknown,
-  key?: string
+  key?: string,
+  strict = false
 ): unknown => {
   if (valuesEqual(local, base)) return remote;
   if (valuesEqual(remote, base) || valuesEqual(local, remote)) return local;
-  if (local === undefined) return remote;
-  if (remote === undefined) return local;
+  if (local === undefined || remote === undefined) {
+    if (strict) throw new Error('Canvas deletion conflicts with an edit.');
+    return local ?? remote;
+  }
 
-  if (
+  if (!strict &&
     key === 'referenceCardIds' &&
     Array.isArray(local) &&
     Array.isArray(remote)
@@ -112,15 +76,15 @@ const mergeThreeWayValue = (
         baseRecord[childKey],
         local[childKey],
         remote[childKey],
-        childKey
+        childKey,
+        strict
       );
       if (value !== undefined) merged[childKey] = value;
       return merged;
     }, {});
   }
 
-  // Both sides changed the same scalar or ordered list. Keep the local edit;
-  // remote-only fields are still retained by the object merge above.
+  if (strict) throw new Error(`Canvas edit conflict at ${key ?? 'card'}.`);
   return local;
 };
 
@@ -145,7 +109,9 @@ export const mergeProjectSnapshotsAfterConflict = ({
     const merged = mergeThreeWayValue(
       baseCards.get(cardId),
       localCards.get(cardId),
-      remoteCards.get(cardId)
+      remoteCards.get(cardId),
+      cardId,
+      true
     );
     return isRecord(merged) ? [merged] : [];
   });
@@ -231,6 +197,9 @@ export function useProjectSnapshotLifecycle({
   );
   const saveQueueRef = useRef(Promise.resolve());
   const externalPollInFlightRef = useRef(false);
+  const saveInFlightRef = useRef(false);
+  const buildSnapshotRef = useRef(buildProjectSnapshotDocument);
+  buildSnapshotRef.current = buildProjectSnapshotDocument;
 
   const saveSerializedSnapshot = useCallback(
     async (serializedSnapshot: string, allowEmpty: boolean) => {
@@ -255,64 +224,45 @@ export function useProjectSnapshotLifecycle({
             ) as ProjectSnapshotDocument)
           : null;
 
-        const sendSaveRequest = (baseVersion: number | null) =>
-          fetch(`/api/app/projects/${projectId}/snapshot`, {
-            method: 'PUT',
-            headers: buildProjectSnapshotRequestHeaders(),
-            body: JSON.stringify({
-              document: snapshotToSave,
-              baseVersion,
-              allowEmpty,
-            }),
-          });
-
         let snapshotToSave = localSnapshotDocument;
-        let recoveredFromConflict = false;
-        let response = await sendSaveRequest(
-          lastSavedProjectSnapshotVersionRef.current
-        );
+        let commandBase = baseSnapshotDocument;
+        const sendSaveRequest = async (baseVersion: number | null) => {
+          const operations = buildCanvasOperations(commandBase, snapshotToSave, allowEmpty);
+          if (!operations.length) return null;
+          return executeProjectCommand({
+            projectId,
+            expectedRevision: baseVersion,
+            command: { type: 'canvas.apply', operations },
+          });
+        };
 
-        if (response.status === 409) {
-          const firstFailure = await readSnapshotSaveFailure(response);
+        let recoveredFromConflict = false;
+        let result = await sendSaveRequest(lastSavedProjectSnapshotVersionRef.current);
+        if (result && !result.ok && result.code === 'REVISION_CONFLICT') {
           const latestResponse = await fetch(
             `/api/app/projects/${encodeURIComponent(projectId)}/snapshot`
           );
-          if (!latestResponse.ok) {
-            onProjectSnapshotConflict?.();
-            throw new Error(firstFailure.message);
-          }
-          const latest = (await latestResponse.json()) as {
-            version?: number;
-            document?: ProjectSnapshotDocument;
+          if (!latestResponse.ok) throw new Error(result.message);
+          const latest = await latestResponse.json() as {
+            version: number; document: ProjectSnapshotDocument;
           };
-          if (typeof latest.version !== 'number' || !latest.document) {
-            onProjectSnapshotConflict?.();
-            throw new Error(firstFailure.message);
-          }
-
           snapshotToSave = mergeProjectSnapshotsAfterConflict({
             base: baseSnapshotDocument,
             local: localSnapshotDocument,
             remote: latest.document,
           });
-          response = await sendSaveRequest(latest.version);
-          recoveredFromConflict = response.ok;
-          if (response.status === 409) {
-            const retryFailure = await readSnapshotSaveFailure(response);
-            onProjectSnapshotConflict?.();
-            throw new Error(retryFailure.message);
-          }
+          commandBase = latest.document;
+          lastSavedProjectSnapshotVersionRef.current = latest.version;
+          result = await sendSaveRequest(latest.version);
+          recoveredFromConflict = true;
         }
-
-        if (!response.ok) {
-          throw new Error(await resolveSnapshotSaveErrorMessage(response));
+        if (result && !result.ok) {
+          onProjectSnapshotConflict?.();
+          throw new Error(result.message);
         }
-
-        const result = (await response.json().catch(() => null)) as {
-          version?: number;
-        } | null;
-        if (typeof result?.version === 'number') {
-          lastSavedProjectSnapshotVersionRef.current = result.version;
+        if (result?.ok) {
+          lastSavedProjectSnapshotVersionRef.current = result.revision ?? null;
+          snapshotToSave = result.data.canvas ?? snapshotToSave;
         }
         const savedSerializedSnapshot = JSON.stringify(snapshotToSave);
         lastSavedProjectSnapshotRef.current = savedSerializedSnapshot;
@@ -347,7 +297,13 @@ export function useProjectSnapshotLifecycle({
         }
       };
 
-      const queuedSave = saveQueueRef.current.then(runSave, runSave);
+      const guardedSave = async () => {
+        saveInFlightRef.current = true;
+        try { await runSave(); }
+        catch (error) { onProjectSnapshotConflict?.(); throw error; }
+        finally { saveInFlightRef.current = false; }
+      };
+      const queuedSave = saveQueueRef.current.then(guardedSave, guardedSave);
       saveQueueRef.current = queuedSave.catch(() => {});
       await queuedSave;
     },
@@ -481,9 +437,12 @@ export function useProjectSnapshotLifecycle({
   useEffect(() => {
     if (!isCanvasReady || !isHydratedFromProject) return;
     const pollExternalSnapshot = async () => {
+      if (document.visibilityState === 'hidden') return;
+      if (saveInFlightRef.current) return;
       if (externalPollInFlightRef.current) return;
       externalPollInFlightRef.current = true;
       try {
+        if (!await hasNewProjectRevision(projectId, 'canvas', lastSavedProjectSnapshotVersionRef.current)) return;
         const response = await fetch(
           `/api/app/projects/${encodeURIComponent(projectId)}/snapshot`
         );
@@ -492,6 +451,7 @@ export function useProjectSnapshotLifecycle({
           version?: number;
           document?: ProjectSnapshotDocument;
         };
+        if (saveInFlightRef.current) return;
         if (
           typeof payload.version !== 'number' ||
           !payload.document ||
@@ -505,10 +465,10 @@ export function useProjectSnapshotLifecycle({
               lastSavedProjectSnapshotRef.current
             ) as ProjectSnapshotDocument)
           : null;
-        const pendingSnapshot = pendingProjectSnapshotRef.current
-          ? (JSON.parse(
-              pendingProjectSnapshotRef.current
-            ) as ProjectSnapshotDocument)
+        // Drag gestures can change layout before the autosave signal fires.
+        const currentSnapshot = buildSnapshotRef.current();
+        const pendingSnapshot = JSON.stringify(currentSnapshot) !== lastSavedProjectSnapshotRef.current
+          ? currentSnapshot
           : null;
         const snapshotToRestore = pendingSnapshot
           ? mergeProjectSnapshotsAfterConflict({
@@ -524,7 +484,8 @@ export function useProjectSnapshotLifecycle({
           ? JSON.stringify(snapshotToRestore)
           : null;
         restoreProjectSnapshot(snapshotToRestore);
-      } catch {
+      } catch (error) {
+        if (error instanceof Error && error.message.startsWith('Canvas ')) onProjectSnapshotConflict?.();
         // External refresh is best-effort; the next poll retries automatically.
       } finally {
         externalPollInFlightRef.current = false;
@@ -564,16 +525,24 @@ export function useProjectSnapshotLifecycle({
       }
 
       try {
-        void fetch(`/api/app/projects/${projectId}/snapshot`, {
-          method: 'PUT',
+        const operations = buildCanvasOperations(
+          lastSavedProjectSnapshotRef.current ? JSON.parse(lastSavedProjectSnapshotRef.current) : null,
+          JSON.parse(serializedSnapshot),
+          allowEmptyProjectSnapshot
+        );
+        if (!operations.length) return;
+        const commandId = createCommandId();
+        void fetch(`/api/app/projects/${encodeURIComponent(projectId)}/commands`, {
+          method: 'POST',
           headers: buildProjectSnapshotRequestHeaders(),
           body: JSON.stringify({
-            document: JSON.parse(serializedSnapshot) as ProjectSnapshotDocument,
-            baseVersion: lastSavedProjectSnapshotVersionRef.current,
-            allowEmpty: allowEmptyProjectSnapshot,
+            commandId,
+            idempotencyKey: commandId,
+            expectedRevision: lastSavedProjectSnapshotVersionRef.current,
+            command: { type: 'canvas.apply', operations },
           }),
           keepalive: true,
-        });
+        }).catch(() => onProjectSnapshotConflict?.());
         pendingProjectSnapshotRef.current = serializedSnapshot;
       } catch (error) {
         console.error('flush project snapshot failed:', error);

@@ -68,7 +68,11 @@ data directory through `BEATDESIGN_DATA_DIR`. This packaging changes startup
 and installation only; it does not create a hosted workspace or another data
 model.
 
-Canvas layout persistence is the deliberate exception on the UI side: drag, resize, viewport, and the complete visual arrangement are saved as a revision-checked snapshot. Semantic Canvas operations are also exposed through `canvas.apply`, and external agents must use those operations rather than snapshot replacement.
+Canvas UI persistence now derives incremental `canvas.apply` operations for cards, layout, camera, and workflow state. The layout snapshot endpoint remains a compatibility exception, not the active UI autosave path. CAS retries merge independent local and remote changes, while conflicting semantic edits fail visibly rather than silently overwriting either writer. External agents must use semantic operations rather than snapshot replacement.
+
+Editor persistence selects `editor.apply` when applying supported operations reproduces the requested document exactly. Unsupported edits, imports, and undo may still use the revision-checked UI-only replacement command. The persistence hook owns autosave, conflict handling, and external revision refresh; external agents never receive replacement access.
+
+Canvas and Editor poll the lightweight project revision endpoint before fetching documents and suspend document polling while hidden. Generation status endpoints read local task state; server-side synchronization throttles provider polling across callers using persisted sync timestamps. Local SQLite connections enable WAL and a five-second busy timeout. `src/config/db/schema.ts` is generated from `schema.sqlite.ts` by the database setup script, not a second hand-maintained schema.
 
 ## Persistence
 

@@ -1,19 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { syncGeneration } from '@/core/effects/generation-sync';
+import { getGenerationById } from '@/core/effects/record-generation';
+import { startBackendPollingForGeneration } from '@/core/effects/server-poller';
 
 async function GET({ request }: { request: Request }) {
   const params = new URL(request.url).searchParams;
   const wmTaskId = params.get('wmTaskId');
-  const effectId = Number.parseInt(params.get('effectId') ?? '', 10);
-  if (!wmTaskId || !Number.isFinite(effectId)) {
-    return Response.json({ error: 'Missing wmTaskId or effectId' }, { status: 400 });
+  if (!wmTaskId) {
+    return Response.json({ error: 'Missing wmTaskId' }, { status: 400 });
   }
   try {
-    const result = await syncGeneration({ wmTaskId, effectId });
-    if (!result.ok) {
-      return Response.json({ error: result.error }, { status: result.status });
+    const generation = await getGenerationById({ id: wmTaskId });
+    if (!generation) return Response.json({ error: 'Task not found' }, { status: 404 });
+    if (generation.status === 'pending' || generation.status === 'processing') {
+      startBackendPollingForGeneration({ wmTaskId, effectId: generation.effectId });
     }
-    const generation = result.generation;
     return Response.json({
       success: generation.status === 'succeeded',
       wmTaskId,

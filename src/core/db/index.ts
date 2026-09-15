@@ -4,14 +4,14 @@ import { getBeatDesignDatabaseUrl } from '@/config/data-root';
 
 let dbInstance: any = null;
 
-export function db() {
+export async function db() {
   if (dbInstance) return dbInstance;
 
   const instance = createDb({
     database_url: process.env.BEATDESIGN_DATA_DIR?.trim()
       ? getBeatDesignDatabaseUrl()
       : appConfig.database_url,
-  });
+  }).catch((error) => { dbInstance = null; throw error; });
 
   dbInstance = instance;
 

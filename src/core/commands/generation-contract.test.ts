@@ -84,3 +84,10 @@ test('non-image references retain only their media-level roles', () => {
     ]
   );
 });
+
+test('Canvas never silently drops an attached URL without a project asset', () => {
+  const card = { ...makeAssetCard('external', '', 'image'), assetId: undefined };
+  assert.throws(() => buildAssetFirstReferencesFromCanvasCards({
+    cards: { external: card }, referenceCardIds: ['external'],
+  }), /must be project assets/);
+});

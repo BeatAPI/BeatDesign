@@ -8,9 +8,9 @@ import {
 } from '@/core/effects/client-api';
 import {
   getWorkspaceEffectReferenceInputDefaults,
-  resolveWorkspaceEffectProviderModelVariant,
 } from '@/core/effects/effect-registry';
 import { resolveOutputMedia } from '@/core/effects/output-media';
+import { buildDraftModelParameters } from '@/core/effects/model-parameters';
 import {
   getGenerationPromptConstraints,
   getGenerationPromptMaxChars,
@@ -19,7 +19,6 @@ import {
 import {
   resolveVideoAnalysisText,
   VIDEO_ANALYSIS_DEFAULT_OUTPUT_TOKENS,
-  VIDEO_ANALYSIS_EFFECT_ID,
   VIDEO_ANALYSIS_MODEL_ID,
 } from '@/core/effects/video-analysis';
 import {
@@ -190,7 +189,6 @@ const getVideoAnalysisModel = (
     depth === 'deep'
       ? 'Video Analysis Pro'
       : 'Video Analysis Standard',
-  effectId: VIDEO_ANALYSIS_EFFECT_ID,
   uploadPath: 'effects/video-analysis',
   imageBucketName: 'video',
   supportsSourceVideo: true,
@@ -203,7 +201,7 @@ type BuildGenerationEffectInputParams = {
   referenceUrlOverrides?: Record<string, string>;
   imageModels: WorkspaceModelOption[];
   videoModels: WorkspaceModelOption[];
-  metadataMap: Record<number, EffectMetadata>;
+  metadataMap: Record<string, EffectMetadata>;
   runtimeMessages: RuntimeMessages;
   translate: TranslateFn;
   notify?: (message: string) => void;
@@ -263,7 +261,7 @@ export const buildGenerationEffectInput = async ({
     }
 
     return {
-      effectId: VIDEO_ANALYSIS_EFFECT_ID,
+      modelId: VIDEO_ANALYSIS_MODEL_ID,
       input,
       model: getVideoAnalysisModel(draftCard.analysisDepth),
     };
@@ -275,7 +273,7 @@ export const buildGenerationEffectInput = async ({
     throw new Error(translate('messages.noAvailableModel'));
   }
 
-  const metadata = metadataMap[model.effectId];
+  const metadata = metadataMap[model.id];
   if (!metadata) {
     throw new Error(translate('messages.metadataLoading'));
   }
@@ -330,6 +328,7 @@ export const buildGenerationEffectInput = async ({
 
   const input: Record<string, unknown> = {
     prompt: promptValidation.trimmedPrompt,
+    ...buildDraftModelParameters({ ...draftCard, modelId: model.id }, metadata.inputSchema),
   };
   const hasVideoReference = referenceCards.some(
     (card) => card.type === 'video'
@@ -341,15 +340,6 @@ export const buildGenerationEffectInput = async ({
       : null;
 
   if (draftCard.type === 'image') {
-    if (hasInputSchemaField(metadata.inputSchema, 'aspect_ratio')) {
-      input.aspect_ratio = draftCard.aspectRatio;
-    }
-    if (hasInputSchemaField(metadata.inputSchema, 'wmOutputQuality')) {
-      input.wmOutputQuality = draftCard.outputQuality;
-    }
-    if (hasInputSchemaField(metadata.inputSchema, 'quality')) {
-      input.quality = draftCard.quality;
-    }
     if (referencePayload.imageUrls.length > 0) {
       input.image_urls = referencePayload.imageUrls;
     }
@@ -358,38 +348,10 @@ export const buildGenerationEffectInput = async ({
     }
 
     return {
-      effectId: model.effectId,
+      modelId: model.id,
       input,
       model,
     };
-  }
-
-  if (hasInputSchemaField(metadata.inputSchema, 'aspect_ratio')) {
-    input.aspect_ratio = draftCard.aspectRatio;
-  }
-  if (hasInputSchemaField(metadata.inputSchema, 'wmDuration')) {
-    input.wmDuration = draftCard.duration;
-  }
-  if (
-    draftCard.language &&
-    hasInputSchemaField(metadata.inputSchema, 'language')
-  ) {
-    input.language = draftCard.language;
-  }
-  if (hasInputSchemaField(metadata.inputSchema, 'mode')) {
-    input.mode = draftCard.mode;
-  }
-  if (hasInputSchemaField(metadata.inputSchema, 'modelVariant')) {
-    input.modelVariant = resolveWorkspaceEffectProviderModelVariant({
-      modelId: model.id,
-      variant: draftCard.variant,
-    });
-  }
-  if (hasInputSchemaField(metadata.inputSchema, 'size')) {
-    input.size = draftCard.quality;
-  }
-  if (hasInputSchemaField(metadata.inputSchema, 'wmOutputQuality')) {
-    input.wmOutputQuality = draftCard.outputQuality;
   }
 
   if (referencePayload.imageUrls.length > 0) {
@@ -433,7 +395,7 @@ export const buildGenerationEffectInput = async ({
   }
 
   return {
-    effectId: model.effectId,
+    modelId: model.id,
     input,
     model,
   };
@@ -441,7 +403,7 @@ export const buildGenerationEffectInput = async ({
 
 type PollGenerationUntilCompleteParams = {
   wmTaskId: string;
-  effectId: number;
+  modelId: string;
   statusLabels: Record<StudioJobStatus, string>;
   translate: TranslateFn;
   onStatus?: (status: StudioJobStatus, message: string) => void;
@@ -454,7 +416,7 @@ type PollGenerationUntilCompleteParams = {
 
 export const pollGenerationUntilComplete = async ({
   wmTaskId,
-  effectId,
+  modelId,
   statusLabels,
   translate,
   onStatus,
@@ -468,11 +430,16 @@ export const pollGenerationUntilComplete = async ({
   let consecutiveStatusFailures = 0;
 
   for (let count = 0; count < maxAttempts; count += 1) {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      await sleepImpl(pollIntervalMs);
+      count -= 1;
+      continue;
+    }
     let response: Awaited<ReturnType<typeof defaultGetEffectStatus>>;
     try {
       response = await getEffectStatusImpl({
         wmTaskId,
-        effectId,
+        modelId,
         syncProvider: 1,
       });
     } catch (error) {
@@ -539,7 +506,6 @@ type RunDraftGenerationParams = {
     draftCard: CanvasDraftCard,
     referenceUrlOverrides?: Record<string, string>
   ) => Promise<BuildGenerationEffectInputResult>;
-  getExpectedUploadCount?: (draftCard: CanvasDraftCard) => number;
   updateDraftCard: (draftId: string, patch: Partial<CanvasDraftCard>) => void;
   createGenerationOutput: (params: {
     draftCard: CanvasDraftCard;
@@ -567,13 +533,10 @@ type RunDraftGenerationParams = {
   notifySuccess: (message: string) => void;
   notifyError: (message: string) => void;
   precheckEffectImpl?: typeof defaultPrecheckEffect;
-  prepareAfterPrecheck?: (precheck: {
-    uploadIntentToken?: string;
-  }) => Promise<Record<string, string> | void>;
   generateEffectImpl?: typeof defaultGenerateEffect;
   pollEffectUntilCompleteImpl: (params: {
     wmTaskId: string;
-    effectId: number;
+    modelId: string;
     onStatus?: (status: StudioJobStatus, message: string) => void;
   }) => Promise<unknown>;
 };
@@ -583,7 +546,6 @@ export const runDraftGeneration = async ({
   projectId,
   getCurrentCard,
   buildEffectInput,
-  getExpectedUploadCount,
   updateDraftCard,
   createGenerationOutput,
   updateGenerationOutput,
@@ -596,7 +558,6 @@ export const runDraftGeneration = async ({
   notifySuccess,
   notifyError,
   precheckEffectImpl = defaultPrecheckEffect,
-  prepareAfterPrecheck,
   generateEffectImpl = defaultGenerateEffect,
   pollEffectUntilCompleteImpl,
 }: RunDraftGenerationParams) => {
@@ -612,9 +573,8 @@ export const runDraftGeneration = async ({
 
   try {
     const initialRequest = await buildEffectInput(currentCard);
-    const { effectId, model } = initialRequest;
-    let input = initialRequest.input;
-    const expectedUploadCount = getExpectedUploadCount?.(currentCard) ?? 0;
+    const { modelId, model } = initialRequest;
+    const input = initialRequest.input;
     const outputName = `${model.name} result`;
     outputCardId = createGenerationOutput({
       draftCard: currentCard,
@@ -638,88 +598,7 @@ export const runDraftGeneration = async ({
     setErrorMessage(null);
     setStatusMessage(translate('messages.validatingRequest'));
 
-    const precheckResponse = await precheckEffectImpl({
-      effectId,
-      input,
-      projectId,
-      expectedUploadCount,
-    });
-    if (!precheckResponse.ok) {
-      throw new GenerationFailure(
-        'precheck',
-        precheckResponse.data.error ||
-          translate('messages.requestValidationFailed')
-      );
-    }
-    const generationIntentToken = precheckResponse.data.uploadIntentToken;
-    if (!generationIntentToken) {
-      throw new GenerationFailure(
-        'precheck',
-        translate('messages.requestValidationFailed')
-      );
-    }
-
-    let referenceUrlOverrides: Record<string, string> = {};
-    if (prepareAfterPrecheck) {
-      try {
-        referenceUrlOverrides =
-          (await prepareAfterPrecheck({
-            uploadIntentToken: generationIntentToken,
-          })) ?? {};
-      } catch (error) {
-        throw new GenerationFailure(
-          'storage',
-          error instanceof Error
-            ? error.message
-            : translate('messages.uploadFailed')
-        );
-      }
-      const preparedCard = getCurrentCard(draftId);
-      if (!isCanvasDraftCard(preparedCard)) {
-        throw new GenerationFailure(
-          'storage',
-          translate('messages.generationFailed')
-        );
-      }
-      const preparedRequest = await buildEffectInput(
-        preparedCard,
-        referenceUrlOverrides
-      );
-      if (preparedRequest.effectId !== effectId) {
-        throw new GenerationFailure(
-          'precheck',
-          translate('messages.requestValidationFailed')
-        );
-      }
-      const unresolvedLocalReference = preparedCard.referenceCardIds.some(
-        (cardId) => {
-          const card = getCurrentCard(cardId);
-          return (
-            typeof card?.url === 'string' &&
-            isLocalWorkspaceMediaUrl(card.url) &&
-            (!referenceUrlOverrides[cardId] ||
-              isLocalWorkspaceMediaUrl(referenceUrlOverrides[cardId]))
-          );
-        }
-      );
-      if (unresolvedLocalReference) {
-        throw new GenerationFailure(
-          'storage',
-          translate('messages.localReferenceExpired')
-        );
-      }
-      input = preparedRequest.input;
-    }
-
-    updateDraftCard(draftId, {
-      status: 'processing',
-    });
-    updateGenerationOutput(outputCardId, {
-      status: 'processing',
-    });
-    setStatusMessage(translate('messages.submittingRequest'));
-
-    const submittedCard = getCurrentCard(draftId);
+    const submittedCard = currentCard;
     const generation =
       projectId && isCanvasDraftCard(submittedCard)
         ? normalizeAssetFirstGenerationRequest({
@@ -728,7 +607,7 @@ export const runDraftGeneration = async ({
             mode: isCanvasAnalysisCard(submittedCard)
               ? 'analysis'
               : submittedCard.type,
-            modelId: submittedCard.modelId || model.id,
+            modelId: isCanvasAnalysisCard(submittedCard) ? VIDEO_ANALYSIS_MODEL_ID : model.id,
             prompt: submittedCard.prompt,
             references: buildAssetFirstReferencesFromCanvasCards({
               cards: Object.fromEntries(
@@ -738,7 +617,7 @@ export const runDraftGeneration = async ({
                 })
               ),
               referenceCardIds: submittedCard.referenceCardIds,
-              deliveryUrlsByCardId: referenceUrlOverrides,
+
             }),
             parameters: Object.fromEntries(
               Object.entries(input).filter(
@@ -759,8 +638,37 @@ export const runDraftGeneration = async ({
           })
         : undefined;
 
+    const precheckResponse = await precheckEffectImpl({
+      generation,
+      modelId,
+      input,
+      projectId,
+    });
+    if (!precheckResponse.ok) {
+      throw new GenerationFailure(
+        'precheck',
+        precheckResponse.data.error ||
+          translate('messages.requestValidationFailed')
+      );
+    }
+    const generationIntentToken = precheckResponse.data.uploadIntentToken;
+    if (!generationIntentToken) {
+      throw new GenerationFailure(
+        'precheck',
+        translate('messages.requestValidationFailed')
+      );
+    }
+
+    updateDraftCard(draftId, {
+      status: 'processing',
+    });
+    updateGenerationOutput(outputCardId, {
+      status: 'processing',
+    });
+    setStatusMessage(translate('messages.submittingRequest'));
+
     const response = await generateEffectImpl({
-      effectId,
+      modelId,
       input,
       projectId,
       generationIntentToken,
@@ -811,7 +719,7 @@ export const runDraftGeneration = async ({
       try {
         output = await pollEffectUntilCompleteImpl({
           wmTaskId,
-          effectId,
+          modelId,
           onStatus: (status, message) => {
             updateDraftCard(draftId, {
               status,
