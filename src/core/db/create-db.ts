@@ -61,8 +61,8 @@ function withSqliteCompat<T extends object>(
   return proxied;
 }
 
-export function createDb(config: DbConfig): any {
-  return withSqliteCompat(createSqliteDb(config) as any);
+export async function createDb(config: DbConfig): Promise<any> {
+  return withSqliteCompat(await createSqliteDb(config) as any);
 }
 
 export async function closeDb(_config: DbConfig) {}

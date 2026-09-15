@@ -41,7 +41,6 @@ export type {
 export type WorkspaceModelOption = {
   id: string;
   name: string;
-  effectId: number;
   mediaSchema?: WorkspaceMediaSchema;
   mode?: WorkspaceModelMode;
   defaultMode?: WorkspaceModelMode;
@@ -104,7 +103,6 @@ const toWorkspaceModelOption = (
   return {
     id: entry.id,
     name: entry.name,
-    effectId: binding.effectId,
     mediaSchema,
     uploadPath: binding.uploadPath,
     imageBucketName: binding.imageBucketName,

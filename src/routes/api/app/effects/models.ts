@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { resolveWorkspaceEffectProviderModelVariant } from '@/core/effects/effect-registry';
-import { getRegisteredEffectById } from '@/core/effects/registered-effects';
+import { getGenerationModelDescriptor } from '@/core/generation-providers/model-catalog';
 import {
   type WorkspaceType,
   getWorkspaceModelsByType,
@@ -23,11 +23,11 @@ async function GET({ request }: { request: Request }) {
     }))
   );
   const models = registryModels.map((model) => {
-    const effect = getRegisteredEffectById(model.effectId);
+    const descriptor = getGenerationModelDescriptor(model.id);
 
     return {
       ...model,
-      inputSchema: effect?.inputSchema ?? null,
+      inputSchema: descriptor?.parameterSchema ?? null,
       defaultProviderModelVariant: model.defaultVariant
         ? resolveWorkspaceEffectProviderModelVariant({
             modelId: model.id,

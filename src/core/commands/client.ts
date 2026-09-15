@@ -22,12 +22,14 @@ export async function executeProjectCommand({
   expectedRevision,
   commandId = createCommandId(),
   idempotencyKey = commandId,
+  keepalive = false,
 }: {
   projectId: string;
   command: BeatDesignCommand;
   expectedRevision?: number | null;
   commandId?: string;
   idempotencyKey?: string;
+  keepalive?: boolean;
 }): Promise<BeatDesignCommandResult<BeatDesignCommandData>> {
   try {
     return await apiJsonPost<BeatDesignCommandResult<BeatDesignCommandData>>(
@@ -37,7 +39,8 @@ export async function executeProjectCommand({
         expectedRevision,
         idempotencyKey,
         command,
-      }
+      },
+      { keepalive }
     );
   } catch (error) {
     if (error instanceof ApiError && isCommandResult(error.data)) {

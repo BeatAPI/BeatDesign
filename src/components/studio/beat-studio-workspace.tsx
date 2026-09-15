@@ -13,7 +13,6 @@ import {
 } from '@/core/effects/validation';
 import {
   resolveVideoAnalysisText,
-  VIDEO_ANALYSIS_EFFECT_ID,
   VIDEO_ANALYSIS_MODEL_ID,
   type VideoAnalysisDepth,
 } from '@/core/effects/video-analysis';
@@ -27,7 +26,6 @@ import {
   createStudioDraftCard,
 } from '@/core/studio/studio-draft';
 import {
-  buildStudioEffectInput,
   getStudioModels,
   type StudioMedia,
 } from '@/core/studio/studio-runtime';
@@ -35,7 +33,12 @@ import {
   fetchProjectGenerations,
 } from '@/core/workspace-lib/app/workspace-client-api';
 import { uploadLocalProjectAsset } from '@/core/workspace-lib/app/local-project-asset-client';
-import { uploadFileFromBrowser } from '@/core/workspace-storage/client';
+import { parseLocalProjectAssetUrl } from '@/core/projects/local-project-asset-url';
+import { GENERATION_REQUEST_VERSION } from '@/core/commands/generation-contract';
+import { precheckEffect, generateEffect } from '@/core/effects/client-api';
+import { fetchRecentAssets } from '@/core/workspace-lib/app/workspace-client-api';
+import { getEffectsMetadata } from '@/core/effects/client-api';
+import { buildDraftModelParameters } from '@/core/effects/model-parameters';
 import { invalidateWorkspaceAfterGeneration } from '@/core/workspace-lib/app/workspace-query-invalidation';
 import { projectGenerationsKeys } from '@/core/workspace-lib/app/workspace-query-keys';
 import { apiJsonGet, apiJsonPost } from '@/lib/api-client';
@@ -53,14 +56,17 @@ const wait = (ms: number) =>
 
 async function waitForGeneration({
   wmTaskId,
-  effectId,
 }: {
   wmTaskId: string;
-  effectId: number;
 }) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (document.visibilityState === 'hidden') {
+      await wait(2500);
+      attempt -= 1;
+      continue;
+    }
     const result = await apiJsonGet<GenerationResponse>(
-      `/api/effects/status?wmTaskId=${encodeURIComponent(wmTaskId)}&effectId=${effectId}&syncProvider=1`
+      `/api/effects/status?wmTaskId=${encodeURIComponent(wmTaskId)}`
     );
     if (result.status === 'succeeded') return result.output;
     if (result.status === 'failed') {
@@ -156,58 +162,45 @@ export function BeatStudioWorkspace({
       if (isAnalysis && !analysisFile) {
         throw new Error('Add an MP4 or MOV video to analyze.');
       }
-      const effectId = isAnalysis
-        ? VIDEO_ANALYSIS_EFFECT_ID
-        : selectedModel!.effectId;
       const initialInput = isAnalysis
         ? {
             prompt: draft.prompt.trim(),
             analysis_depth: analysisDepth,
           }
-        : buildStudioEffectInput({
-            media: draft.type,
-            model: selectedModel!,
-            prompt: draft.prompt,
-            aspectRatio: draft.aspectRatio,
-            duration: draft.duration,
-            outputQuality: draft.outputQuality,
-            mode: draft.mode,
-            quality: draft.quality,
-            language: draft.language,
-            imageUrls: referenceUrls,
-          });
-      const payload = {
-        effectId,
-        input: initialInput,
-        projectId,
-      };
-      const precheck = await apiJsonPost<GenerationResponse>(
-        '/api/effects/precheck',
-        { ...payload, expectedUploadCount: isAnalysis ? 1 : 0 }
-      );
-      if (precheck.error) throw new Error(precheck.error);
-      if (!precheck.uploadIntentToken) {
-        throw new Error('Generation validation did not return an intent.');
+        : {
+            prompt: draft.prompt.trim(),
+            ...buildDraftModelParameters(draft, (await getEffectsMetadata([selectedModel!.id])).data.effects?.[selectedModel!.id]?.inputSchema),
+          };
+      const assets = referenceUrls.length ? await fetchRecentAssets(projectId) : null;
+      const references = referenceUrls.map((url) => {
+        const local = parseLocalProjectAssetUrl(url);
+        const asset = [...(assets?.images ?? []), ...(assets?.videos ?? []), ...(assets?.audios ?? [])]
+          .find((item) => item.publicUrl === url ||
+            (item.metadata as { providerUrl?: string } | null)?.providerUrl === url);
+        const assetId = local?.assetId ?? asset?.id;
+        if (!assetId) throw new Error('Reference media must belong to this project. Import it again.');
+        return { assetId, role: 'reference' as const };
+      });
+      if (isAnalysis) {
+        const asset = await uploadLocalProjectAsset({ projectId, file: analysisFile! });
+        references.push({ assetId: asset.id, role: 'reference' });
       }
-      const input = isAnalysis
-        ? {
-            ...initialInput,
-            video_url: (
-              await uploadFileFromBrowser(analysisFile!, undefined, {
-                projectId,
-                generationIntentToken: precheck.uploadIntentToken,
-              })
-            ).url,
-          }
-        : initialInput;
-      const created = await apiJsonPost<GenerationResponse>(
-        '/api/effects/generate',
-        {
-          ...payload,
-          input,
-          generationIntentToken: precheck.uploadIntentToken,
-        }
-      );
+      const request = {
+        version: GENERATION_REQUEST_VERSION,
+        projectId,
+        mode: isAnalysis ? 'analysis' : draft.type,
+        modelId: isAnalysis ? VIDEO_ANALYSIS_MODEL_ID : selectedModel!.id,
+        prompt: draft.prompt,
+        references,
+        parameters: initialInput,
+      };
+      const precheck = await precheckEffect({ generation: request });
+      if (!precheck.ok) throw new Error(precheck.data.error || 'Generation validation failed.');
+      const response = await generateEffect({
+        generation: request, generationIntentToken: precheck.data.uploadIntentToken,
+      });
+      if (!response.ok) throw new Error(response.data.error || 'Generation failed.');
+      const created = response.data;
       if (created.status === 'failed') {
         throw new Error(created.error || 'Generation failed');
       }
@@ -217,7 +210,6 @@ export function BeatStudioWorkspace({
       if (wmTaskId && created.status !== 'succeeded') {
         output = await waitForGeneration({
           wmTaskId,
-          effectId,
         });
       }
       if (isAnalysis) {
@@ -329,11 +321,6 @@ export function BeatStudioWorkspace({
           }
           setError('');
           setAnalysisFile(file);
-          void uploadLocalProjectAsset({ projectId, file }).catch(
-            (uploadError: Error) => {
-              console.warn('Could not persist the analysis source locally:', uploadError);
-            }
-          );
         }}
         onClearAnalysisFile={() => setAnalysisFile(null)}
         referenceUrls={referenceUrls}

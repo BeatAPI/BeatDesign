@@ -32,4 +32,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm i18n:check
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
       - run: pnpm audit --prod --audit-level high

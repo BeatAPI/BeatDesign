@@ -21,8 +21,8 @@ export type EffectClientResponse<T extends Record<string, unknown>> = {
 };
 
 type BaseEffectPayload = {
-  effectId: number;
-  input: Record<string, unknown>;
+  modelId?: string;
+  input?: Record<string, unknown>;
   projectId?: string;
   expectedUploadCount?: number;
   generationIntentToken?: string;
@@ -48,7 +48,7 @@ type StatusResponse = {
 };
 
 export type EffectMetadata = {
-  id: number;
+  id: string;
   name: string;
   provider?: string | null;
   inputSchema?: unknown;
@@ -75,7 +75,7 @@ export const precheckEffect = async (
   const response = await fetch('/api/effects/precheck', {
     method: 'POST',
     headers: mutationHeaders,
-    body: JSON.stringify(payload),
+    body: JSON.stringify(payload.generation ? { generation: payload.generation } : payload),
   });
 
   return {
@@ -91,7 +91,7 @@ export const generateEffect = async (
   const response = await fetch('/api/effects/generate', {
     method: 'POST',
     headers: mutationHeaders,
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ generation: payload.generation, generationIntentToken: payload.generationIntentToken }),
   });
 
   return {
@@ -103,13 +103,11 @@ export const generateEffect = async (
 
 export const getEffectStatus = async (params: {
   wmTaskId: string;
-  effectId: number;
+  modelId?: string;
   syncProvider?: 0 | 1;
 }): Promise<EffectClientResponse<StatusResponse>> => {
   const query = new URLSearchParams({
     wmTaskId: params.wmTaskId,
-    effectId: String(params.effectId),
-    syncProvider: String(params.syncProvider ?? 1),
   });
 
   const response = await fetch(`/api/effects/status?${query.toString()}`);
@@ -122,9 +120,9 @@ export const getEffectStatus = async (params: {
 };
 
 export const getEffectsMetadata = async (
-  ids: number[]
+  ids: string[]
 ): Promise<EffectClientResponse<EffectsMetadataResponse>> => {
-  const uniqueIds = [...new Set(ids)].filter((id) => Number.isFinite(id));
+  const uniqueIds = [...new Set(ids)].filter((id) => Boolean(id.trim()));
   const query = new URLSearchParams({
     ids: uniqueIds.join(','),
   });

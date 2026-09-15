@@ -13,7 +13,7 @@ import {
 import { resolveOutputMedia } from '@/core/effects/output-media';
 import {
   resolveVideoAnalysisText,
-  VIDEO_ANALYSIS_EFFECT_ID,
+  VIDEO_ANALYSIS_MODEL_ID,
 } from '@/core/effects/video-analysis';
 import {
   type StudioJobStatus,
@@ -25,7 +25,6 @@ import {
 } from '@/core/beatcanvas/generation-controller';
 import {
   buildEffectMetadataMap,
-  getDraftUploadFailureMessage,
 } from '@/core/beatcanvas/studio/generation-runtime';
 import type { MutableRefObject } from 'react';
 import { useCallback, useMemo, useRef } from 'react';
@@ -47,8 +46,6 @@ export function useBeatCanvasGenerationRuntime({
   imageModels,
   isCanvasReady = true,
   videoModels,
-  getPendingUploadCountForDraft,
-  promotePendingUploadsForDraft,
   createGenerationOutput,
   updateGenerationOutput,
   completeGenerationOutput,
@@ -63,11 +60,6 @@ export function useBeatCanvasGenerationRuntime({
   imageModels: WorkspaceModelOption[];
   isCanvasReady?: boolean;
   videoModels: WorkspaceModelOption[];
-  getPendingUploadCountForDraft: (draftId: string) => number;
-  promotePendingUploadsForDraft: (
-    draftId: string,
-    generationIntentToken: string
-  ) => Promise<Record<string, string>>;
   createGenerationOutput: (params: {
     draftCard: CanvasDraftCard;
     name: string;
@@ -116,12 +108,12 @@ export function useBeatCanvasGenerationRuntime({
     [studioT]
   );
 
-  const effectIds = useMemo(() => {
+  const modelIds = useMemo(() => {
     return [
-      ...new Set([...imageModels, ...videoModels].map((item) => item.effectId)),
+      ...new Set([...imageModels, ...videoModels].map((item) => item.id)),
     ];
   }, [imageModels, videoModels]);
-  const { data: effectMetadata } = useEffectMetadata(effectIds, {
+  const { data: effectMetadata } = useEffectMetadata(modelIds, {
     enabled: isCanvasReady,
   });
   const metadataMap = useMemo(
@@ -160,16 +152,16 @@ export function useBeatCanvasGenerationRuntime({
   const pollEffectUntilComplete = useCallback(
     ({
       wmTaskId,
-      effectId,
+      modelId,
       onStatus,
     }: {
       wmTaskId: string;
-      effectId: number;
+      modelId: string;
       onStatus?: (status: StudioJobStatus, message: string) => void;
     }) =>
       pollGenerationUntilComplete({
         wmTaskId,
-        effectId,
+        modelId,
         onStatus,
         statusLabels,
         translate: studioT,
@@ -194,7 +186,6 @@ export function useBeatCanvasGenerationRuntime({
           }
           return result;
         },
-        getExpectedUploadCount: () => getPendingUploadCountForDraft(draftId),
         updateDraftCard,
         createGenerationOutput,
         updateGenerationOutput,
@@ -214,25 +205,6 @@ export function useBeatCanvasGenerationRuntime({
         notifyError: (message) => {
           toast.error(message);
         },
-        prepareAfterPrecheck: async ({ uploadIntentToken }) => {
-          if (!uploadIntentToken) {
-            throw new Error(studioT('messages.requestValidationFailed'));
-          }
-          setStatusMessage(studioT('messages.preparingAssets'));
-          try {
-            return await promotePendingUploadsForDraft(
-              draftId,
-              uploadIntentToken
-            );
-          } catch (error) {
-            throw new Error(
-              getDraftUploadFailureMessage({
-                error,
-                fallbackMessage: studioT('messages.uploadFailed'),
-              })
-            );
-          }
-        },
         pollEffectUntilCompleteImpl: pollEffectUntilComplete,
       });
       onGenerationComplete?.();
@@ -241,11 +213,9 @@ export function useBeatCanvasGenerationRuntime({
     [
       buildEffectInput,
       canvasCardsRef,
-      getPendingUploadCountForDraft,
       onGenerationComplete,
       pollEffectUntilComplete,
       projectId,
-      promotePendingUploadsForDraft,
       createGenerationOutput,
       updateGenerationOutput,
       completeGenerationOutput,
@@ -314,7 +284,7 @@ export function useBeatCanvasGenerationRuntime({
         try {
           const output = await pollEffectUntilComplete({
             wmTaskId,
-            effectId: isAnalysis ? VIDEO_ANALYSIS_EFFECT_ID : model!.effectId,
+            modelId: isAnalysis ? VIDEO_ANALYSIS_MODEL_ID : model!.id,
             onStatus: (status, message) => {
               updateGenerationOutput(outputCard.id, { status });
               const latestDraft = canvasCardsRef.current[draftCard.id];

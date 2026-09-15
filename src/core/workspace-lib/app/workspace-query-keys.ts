@@ -18,11 +18,11 @@ export const workspaceModelsKeys = {
 
 export const effectMetadataKeys = {
   all: ['effect-metadata'] as const,
-  byIds: (ids: readonly number[]) =>
+  byIds: (ids: readonly string[]) =>
     [
       ...effectMetadataKeys.all,
       'ids',
-      [...ids].sort((a, b) => a - b).join(','),
+      [...ids].sort().join(','),
     ] as const,
 };
 

@@ -72,7 +72,7 @@ import {
 } from './generation-canvas';
 import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
 
-const VERSION = '0.2.3';
+import { version as VERSION } from '../../package.json';
 const idSchema = z.string().trim().min(1).max(200);
 const builtInSkillDirectory = resolvePath(process.cwd(), 'skills', 'official');
 let builtInSkillRegistryPromise: ReturnType<

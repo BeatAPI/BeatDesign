@@ -86,10 +86,7 @@ export function buildAssetFirstReferencesFromCanvasCards({
   for (const card of mediaCards) {
     const assetId = resolveCardAssetId(card);
     if (!assetId) {
-      if (parseLocalProjectAssetUrl(card.url)) {
-        throw new Error('Canvas generation references must be project assets.');
-      }
-      continue;
+      throw new Error('Canvas generation references must be project assets.');
     }
     let role: GenerationReferenceRole = 'reference';
     if (card.type === 'video') role = 'source';

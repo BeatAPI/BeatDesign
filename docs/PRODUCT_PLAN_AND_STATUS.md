@@ -2,9 +2,17 @@
 
 - 文档用途：给新加入的开发者、Codex、Claude Code 和其他 AI Agent 提供统一产品上下文
 - 当前基线：BeatDesign v0.2 Phase 1 本地实现
-- 最后核对：2026-09-05
+- 最后核对：2026-09-15
 - 事实边界：只有代码、测试和本文“已完成”栏目共同证明的能力才算完成；规划项不等于已发布
-- 发布状态：v0.2.2 已发布；v0.2.3 是面向 WorkBuddy 一键安装的候选版本，尚未发布到 npm、GitHub Release 或 WorkBuddy 市场。第三方市场审核仍按各自状态单独记录
+- 发布状态：GitHub 最新正式 Release 为 v0.2.2；npm `@beatapi/beatdesign-workbuddy@0.2.3` 已于 2026-09-05 发布，2026-09-15 核验公共 registry 可访问。WorkBuddy 提交、审核和市场上架状态未在本轮独立核验，不标为完成。当前工作区的优化属于 Unreleased，不代表已进入 npm 包。
+
+### 当前未发布优化
+
+- Canvas UI 通过 `canvas.apply` 保存增量操作；并发修改按三方合并处理，同字段语义冲突保留本地编辑并报错，不静默覆盖。
+- Editor 已提取持久化 hook、命令选择器和轨道片段组件；可精确表达的编辑使用 `editor.apply`，导入、undo 等不支持的变化仍使用 UI 专属 revision-checked replacement。
+- Canvas / Editor 先查询轻量 revision，发生变化才读取文档，隐藏页面暂停文档轮询。
+- Studio / Canvas / Editor redo 与 MCP 共用 asset-first 服务端预检及提交；浏览器接口使用逻辑 model ID，Provider 状态同步集中到服务端。
+- 本地 SQLite 启用 WAL 和 busy timeout；MCP 版本读取根 package 元数据。浏览器与 MCP 联动测试使用独立临时数据库，不调用付费 Provider。
 
 ## 1. BeatDesign 是什么
 

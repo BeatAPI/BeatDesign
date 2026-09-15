@@ -14,7 +14,7 @@ Release verification requires a clean install, schema creation, production build
 - [x] The WorkBuddy Connector archive passes deterministic structure validation.
 - [x] The packaged WorkBuddy runtime installs in an empty directory, starts the local workspace, completes an MCP handshake, exposes all 29 tools plus the bundled Skill catalog Resource, and keeps data outside the package directory.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm i18n:check`, and `pnpm build` on the release candidate.
-- [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.3` to npm and verify the public registry artifact.
+- [x] Public registry lists `@beatapi/beatdesign-workbuddy@0.2.3`, published `2026-09-05T10:15:33.475Z` (registry rechecked 2026-09-15). This does not establish that the package contains the current working-tree changes.
 - [ ] Upload the Connector archive to the WorkBuddy Open Platform and submit it for review.
 - [ ] Record WorkBuddy approval and public marketplace availability only after each state is independently verified.
 - [ ] Push the verified commit, tag `v0.2.3`, and publish the GitHub Release.

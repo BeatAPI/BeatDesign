@@ -22,20 +22,23 @@ export function WorkspaceProjectRoutePage({
     >
       {data.workspaceMode === 'studio' ? (
         <BeatStudioWorkspace
+          key={data.project.id}
           projectId={data.project.id}
           initialTarget={data.target}
           initialModelId={data.modelId}
           initialPrompt={data.prompt}
         />
       ) : data.workspaceMode === 'assets' ? (
-        <ProjectAssetsWorkspace projectId={data.project.id} />
+        <ProjectAssetsWorkspace key={data.project.id} projectId={data.project.id} />
       ) : data.workspaceMode === 'editor' ? (
         <VideoEditorWorkspace
+          key={data.project.id}
           projectId={data.project.id}
           projectName={data.project.name}
         />
       ) : (
         <BeatCanvasShell
+          key={data.project.id}
           projectId={data.project.id}
           projectPath={data.projectPath}
           initialProjectSnapshot={data.snapshot}

@@ -15,7 +15,6 @@ test('default canvas model picker follows the selected model label width', () =>
         {
           id: 'seedance-2',
           name: 'Seedance 2.0',
-          effectId: 1,
           uploadPath: '/api/generate',
           imageBucketName: 'test',
         },

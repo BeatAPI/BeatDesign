@@ -16,6 +16,13 @@ The adapter uses:
 
 User-facing model capabilities are defined in `src/core/effects/effect-registry.ts`. Provider bindings live in `src/core/generation-providers/`; MCP and UI use the logical model id and capability schema, not BeatAPI `effectId` or raw upstream fields.
 
+UI precheck and submission accept the asset-first generation contract. Studio,
+Canvas, Editor redo, and MCP share the server-side preflight and submission
+service. Preflight validates project ownership, readable references, model
+parameters, and provider configuration without uploading files. Only the
+subsequent confirmed submission prepares remote delivery URLs. Browser status
+requests read local task state; provider synchronization runs server-side.
+
 The built-in catalog includes the current BeatAPI GPT Image 2.5 Flare/Sunburst, Wan 3.0/Prime, HappyHorse 1.0/1.1, and MiniMax H3 Max/Max Turbo contracts. Their resolution casing, duration ranges, reference limits, required-image rules, seed support, and upstream request field names are preserved by the adapter.
 
 Image attachments remain generic references in the shared BeatDesign request contract. Most first-frame and last-frame intent uses explicit prompt directives such as `Use @Image1 as the first frame.` and `Use @Image2 as the last frame.` The MiniMax H3 Max pair is an upstream exception: its dedicated two-slot media schema maps attachment order directly to first frame then last frame, matching BeatAPI's published contract.

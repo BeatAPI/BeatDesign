@@ -30,6 +30,8 @@ src/paraglide/
 .idea
 .vscode
 .playwright-mcp/
+/test-results/
+/playwright-report/
 
 # misc
 .DS_Store
