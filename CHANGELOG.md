@@ -11,6 +11,22 @@ All notable changes to BeatDesign are documented in this file.
 
 ### Changed
 
+- First-time visitors to unprefixed workspace links now see the browser's
+  preferred supported language; an explicit `/zh` or `/ja` link and a saved
+  language choice take precedence.
+- Simplified Chinese first-run navigation and project setup copy to use
+  “创作台、画布、素材库” instead of unexplained English surface names.
+- Canvas UI autosave now uses revision-checked incremental commands with explicit
+  semantic conflict detection. Editor persistence uses incremental commands for
+  supported edits and retains guarded replacement for unsupported operations.
+- Shared asset-first preflight, reference preparation, and submission across UI
+  and MCP; browser model metadata and requests now use logical model IDs.
+- Added lightweight document revision polling, hidden-page suspension, local
+  generation status reads, SQLite WAL/busy timeout, and MCP version derivation.
+- Added isolated browser/MCP integration coverage to CI and extracted Editor
+  persistence and timeline clip components.
+- Corrected release status: npm WorkBuddy 0.2.3 exists; GitHub release and market
+  approval are separate gates. These Unreleased changes are not in that package.
 - Delegated account-level generation concurrency entirely to the active Provider,
   removing BeatDesign's cross-Project mutex and per-Project running-task limit.
 - Updated the asset-first generation request to v2: image attachments remain

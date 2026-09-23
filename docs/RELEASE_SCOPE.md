@@ -8,15 +8,26 @@ Excluded: authentication, login, accounts, payments, subscriptions, credits, API
 
 Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. A real paid BeatAPI generation is a separate credentialed end-to-end check.
 
+## v0.2.4 WorkBuddy update candidate
+
+- [x] Merge the current `origin/main` baseline into the local update branch.
+- [x] Align application and integration metadata on `0.2.4`.
+- [x] Run `pnpm typecheck`, `pnpm test` (417 passing), `pnpm i18n:check`, and `pnpm build`.
+- [x] Validate the connector archive and install the runtime package in a clean directory; the package probe completed an MCP handshake, listed 29 tools, and checked the local `/api/ping` route. A production route smoke check confirmed Chinese first visit redirects to `/zh`, an explicit `/zh` link stays Chinese, and a saved English choice remains English.
+- [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.4` to npm and verify the public registry.
+- [ ] Update the existing WorkBuddy Connector with the `0.2.4` archive and submit it for review.
+- [ ] Record WorkBuddy approval and public marketplace availability separately.
+
 ## v0.2.3 release gate
 
 - [x] Application, Codex, Claude Code, WorkBuddy, Claude marketplace, and LobeHub metadata agree on `0.2.3`.
 - [x] The WorkBuddy Connector archive passes deterministic structure validation.
 - [x] The packaged WorkBuddy runtime installs in an empty directory, starts the local workspace, completes an MCP handshake, exposes all 29 tools plus the bundled Skill catalog Resource, and keeps data outside the package directory.
 - [x] Run `pnpm typecheck`, `pnpm test`, `pnpm i18n:check`, and `pnpm build` on the release candidate.
-- [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.3` to npm and verify the public registry artifact.
-- [ ] Upload the Connector archive to the WorkBuddy Open Platform and submit it for review.
-- [ ] Record WorkBuddy approval and public marketplace availability only after each state is independently verified.
+- [x] Public registry lists `@beatapi/beatdesign-workbuddy@0.2.3`, published `2026-09-05T10:15:33.475Z` (registry rechecked 2026-09-15). This does not establish that the package contains the current working-tree changes.
+- [x] Submit the Connector archive to the WorkBuddy Open Platform; the user's 2026-09-23 approval email identifies the 2026-09-05 submission.
+- [x] WorkBuddy approved that submission, per the user's approval email.
+- [ ] Independently verify public marketplace availability. The approval email says the Connector can now be published.
 - [ ] Push the verified commit, tag `v0.2.3`, and publish the GitHub Release.
 
 ## v0.2.2 release gate

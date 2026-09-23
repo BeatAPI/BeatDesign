@@ -2,8 +2,8 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "product.shell.home": "首页",
   "product.shell.create": "创作",
-  "product.shell.studio": "Studio",
-  "product.shell.canvas": "Canvas",
+  "product.shell.studio": "创作台",
+  "product.shell.canvas": "画布",
   "product.shell.projects": "项目",
   "product.shell.openNavigation": "打开导航",
   "product.shell.closeNavigation": "关闭导航",
@@ -19,23 +19,23 @@
   "product.home.titleLine1": "化繁为简，",
   "product.home.titleLine2": "自由创作。",
   "product.home.prompt": "描述你想创作的图片或视频...",
-  "product.home.createInStudio": "在 Studio 中创作",
+  "product.home.createInStudio": "进入创作台",
   "product.home.sectionTitle": "选择你的工作空间",
   "product.home.viewProjects": "查看项目",
   "product.home.studioDescription": "在专注工作区生成图片和视频。",
   "product.home.canvasDescription": "把素材连成可视化工作流。",
   "product.home.projectsTitle": "项目",
-  "product.home.projectsDescription": "继续最近的 Studio 与 Canvas 创作。",
+  "product.home.projectsDescription": "继续最近的创作台与画布项目。",
   "product.home.openWorkspace": "打开工作空间",
   "product.home.mediaImage": "图片",
   "product.home.mediaVideo": "视频",
   "product.history.eyebrow": "你的创作空间",
   "product.history.title": "从上次停下的地方继续。",
   "product.history.subtitle": "打开最近项目，或选择适合当前灵感的工作空间开始创作。",
-  "product.history.newStudio": "从 Studio 开始",
-  "product.history.newCanvas": "从 Canvas 开始",
+  "product.history.newStudio": "从创作台开始",
+  "product.history.newCanvas": "从画布开始",
   "product.history.createTitle": "选择开始方式",
-  "product.history.createDescription": "两种方式都会创建同一个共享项目，之后可以随时在 Studio 与 Canvas 之间切换。",
+  "product.history.createDescription": "两种方式都会创建同一个项目，之后可以随时在创作台与画布之间切换。",
   "product.history.studioDescription": "在专注的工作区里生成和比较图片或视频。",
   "product.history.canvasDescription": "排列共享素材，并把它们连接成可视化工作流。",
   "product.history.allProjects": "全部项目",
@@ -49,7 +49,7 @@
   "product.history.deleteProject": "删除项目",
   "product.history.noMatching": "没有匹配的项目",
   "product.history.startFirst": "开始你的第一个项目",
-  "product.history.emptyDescription": "一个项目同时保存 Studio 生成结果和 Canvas 工作流。",
+  "product.history.emptyDescription": "一个项目同时保存创作台生成结果和画布工作流。",
   "product.history.newProject": "新建项目",
   "common.pages.back_to_home": "返回首页",
   "common.pages.last_updated": "最近更新",
@@ -65,7 +65,7 @@
         "generationNode": "生成节点",
         "uploadNode": "上传素材",
         "upload": "上传",
-        "assets": "资产库",
+        "assets": "素材库",
         "batchScenes": "批量场景"
       },
       "sidebar": {
@@ -96,7 +96,7 @@
       },
       "console": {
         "eyebrow": "生成控制台",
-        "title": "BeatAPI Studio",
+        "title": "BeatAPI 创作台",
         "referenceBound": "已绑定参考素材",
         "nodeBound": "已选中节点"
       },
@@ -445,7 +445,7 @@
         "reading": "正在读取素材…",
         "saving": "保存中…",
         "saved": "已保存到本地",
-        "canvasAdded": "时间线已加入 Canvas"
+        "canvasAdded": "时间线已加入画布"
       },
       "actions": {
         "import": "导入图片或视频",
@@ -460,7 +460,7 @@
         "redo": "AI 重做",
         "redoHint": "使用 BeatAPI 重做当前选区",
         "extract": "截取为素材",
-        "addTimelineToCanvas": "时间线加入 Canvas",
+        "addTimelineToCanvas": "时间线加入画布",
         "export": "导出 MP4",
         "exporting": "导出 {progress}%",
         "cancelExport": "取消 {progress}%"
@@ -569,11 +569,11 @@
         "welcomeDescription": "选择时间线片段后，可在这里编辑参数；任何支持 MCP 的通用 Agent 也能修改同一条时间线。除非某个操作明确需要 BeatAPI，否则源素材始终保留在本地。",
         "workflow": {
           "studio": {
-            "title": "从 Studio 开始",
+            "title": "从创作台开始",
             "description": "生成或导入剪辑需要的图片、视频和音频。"
           },
           "canvas": {
-            "title": "在 Canvas 编排",
+            "title": "在画布编排",
             "description": "先探索创意、连接生成结果，再进入精剪。"
           },
           "edit": {
@@ -581,7 +581,7 @@
             "description": "裁剪、排序、混音、预览并导出最终成片。"
           },
           "assets": {
-            "title": "从 Assets 复用",
+            "title": "从素材库复用",
             "description": "让保存过的项目素材在整个工作台持续可用。"
           }
         }
@@ -611,7 +611,7 @@
         "loadFailed": "无法加载已保存的时间线。",
         "saveFailed": "时间线保存失败。",
         "sourceUnavailable": "源视频已无法访问。",
-        "canvasNodeFailed": "无法将时间线加入 Canvas。",
+        "canvasNodeFailed": "无法将时间线加入画布。",
         "redoAssetMissing": "生成结果没有保存到项目素材。",
         "redoFailed": "BeatAPI 无法重做这个选区。",
         "srtImportFailed": "无法导入这个 SRT 字幕文件。",
@@ -628,16 +628,16 @@
       "githubRepository": "在 GitHub 打开 BeatDesign",
       "workspaceView": "工作区视图",
       "create": "创作",
-      "studio": "Studio",
+      "studio": "创作台",
       "studioDescription": "专注生成与分析",
-      "canvas": "Canvas",
+      "canvas": "画布",
       "canvasDescription": "可视化多步骤工作流",
       "editor": "剪辑",
       "assets": "素材",
       "projectAssets": {
         "triggerLabel": "项目素材",
         "title": "项目素材",
-        "description": "Studio、Canvas 和 Edit 共用这组素材。上传、生成结果、尾帧和时间线成片都会出现在这里。",
+        "description": "创作台、画布和剪辑页面共用这组素材。上传、生成结果、尾帧和时间线成片都会出现在这里。",
         "canvasHint": "点击素材即可加入，或直接拖到画布上的任意位置。",
         "addToCanvas": "加入画布",
         "addToTimeline": "加入时间线",
@@ -745,9 +745,9 @@
       "retry": "重试",
       "backToHistory": "返回历史",
       "startTitle": "开始新项目",
-      "startDescription": "选择 Studio 或 Canvas 来创建这个项目。",
-      "startStudio": "Studio",
-      "startCanvas": "Canvas",
+      "startDescription": "选择创作台或画布来创建这个项目。",
+      "startStudio": "创作台",
+      "startCanvas": "画布",
       "defaultName": "未命名项目"
     }
   },

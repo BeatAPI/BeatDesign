@@ -18,7 +18,7 @@ test('retries transient status failures and returns the eventual output', async 
 
   const result = await pollGenerationUntilComplete({
     wmTaskId: 'generation-1',
-    effectId: 17,
+    modelId: 'seedance-2',
     statusLabels,
     translate: (key) => key,
     pollIntervalMs: 1,
@@ -54,7 +54,7 @@ test('does not retry a permanent status request error', async () => {
     () =>
       pollGenerationUntilComplete({
         wmTaskId: 'missing-generation',
-        effectId: 17,
+        modelId: 'seedance-2',
         statusLabels,
         translate: (key) => key,
         sleepImpl: async () => undefined,

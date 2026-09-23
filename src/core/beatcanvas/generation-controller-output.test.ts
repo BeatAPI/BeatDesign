@@ -61,17 +61,16 @@ test('keeps the generation configuration and completes a separate output card', 
         });
       }
       return ({
-        effectId: 1,
+        modelId: 'model:1',
         input: {
           prompt: draft.prompt,
           ...(referenceUrlOverrides
             ? { image_urls: [referenceUrlOverrides['asset:1']] }
             : {}),
         },
-        model: { name: 'Test model' },
+        model: { id: 'model:1', name: 'Test model' },
       }) as never;
     },
-    getExpectedUploadCount: () => 1,
     updateDraftCard: (_draftId, patch) => {
       draft = { ...draft, ...patch };
     },
@@ -90,24 +89,17 @@ test('keeps the generation configuration and completes a separate output card', 
     notifySuccess: () => undefined,
     notifyError: () => undefined,
     precheckEffectImpl: async (payload) => {
-      assert.equal(payload.expectedUploadCount, 1);
+      assert.equal((payload.generation as { projectId: string }).projectId, 'project:1');
       callOrder.push('precheck');
       return ({
         ok: true,
         data: { uploadIntentToken: 'signed-upload-intent' },
       }) as never;
     },
-    prepareAfterPrecheck: async ({ uploadIntentToken }) => {
-      assert.equal(uploadIntentToken, 'signed-upload-intent');
-      callOrder.push('upload');
-      return {
-        'asset:1': 'https://media.beatapi.io/inputs/asset-1.png',
-      };
-    },
     generateEffectImpl: async (payload) => {
       assert.equal(payload.generationIntentToken, 'signed-upload-intent');
-      assert.deepEqual(payload.input.image_urls, [
-        'https://media.beatapi.io/inputs/asset-1.png',
+      assert.deepEqual((payload.generation as { references: unknown[] }).references, [
+        { assetId: 'asset-1', role: 'reference', deliveryUrl: '/api/app/projects/project-1/assets/asset-1' },
       ]);
       assert.equal(localAsset.url, '/api/app/projects/project-1/assets/asset-1');
       callOrder.push('generate');
@@ -129,8 +121,6 @@ test('keeps the generation configuration and completes a separate output card', 
   assert.deepEqual(callOrder, [
     'build:1',
     'precheck',
-    'upload',
-    'build:2',
     'generate',
   ]);
   assert.deepEqual(
@@ -148,9 +138,9 @@ test('records a failed run on the output while returning the configuration to id
     getCurrentCard: () => draft,
     buildEffectInput: async () =>
       ({
-        effectId: 1,
+        modelId: 'model:1',
         input: { prompt: draft.prompt },
-        model: { name: 'Test model' },
+        model: { id: 'model:1', name: 'Test model' },
       }) as never,
     updateDraftCard: (_draftId, patch) => {
       draft = { ...draft, ...patch };

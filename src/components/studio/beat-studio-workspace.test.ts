@@ -44,7 +44,7 @@ test('studio keeps the original wide composer and a project generation feed', ()
   assert.match(studioSource, /justify-end/);
   assert.match(startHereSource, /Create Here/);
   assert.match(studioSource, /fetchProjectGenerations/);
-  assert.match(studioSource, /VIDEO_ANALYSIS_EFFECT_ID/);
+  assert.match(studioSource, /VIDEO_ANALYSIS_MODEL_ID/);
   assert.match(composerSource, /value: 'analysis'/);
   assert.match(composerSource, /accept="\.mp4,\.mov,video\/mp4,video\/quicktime"/);
   assert.match(composerSource, /standardModel/);

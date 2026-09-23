@@ -9,7 +9,6 @@ import { buildGenerationEffectInput } from './generation-controller';
 const languageVideoModel: WorkspaceModelOption = {
   id: 'beatdesign-language-video',
   name: 'AI Language Video',
-  effectId: 15,
   uploadPath: 'effects/beatdesign-language-video',
   imageBucketName: 'image',
   defaultDuration: '15s',
@@ -21,7 +20,7 @@ const languageVideoModel: WorkspaceModelOption = {
 };
 
 const languageVideoMetadata: EffectMetadata = {
-  id: 15,
+  id: 'beatdesign-language-video',
   name: 'AI Language Video',
   inputSchema: {
     prompt: { type: 'string' },
@@ -61,7 +60,7 @@ test('passes video language to provider input when supported', async () => {
     canvasCards: {},
     imageModels: [],
     videoModels: [languageVideoModel],
-    metadataMap: { 15: languageVideoMetadata },
+    metadataMap: { 'beatdesign-language-video': languageVideoMetadata },
     runtimeMessages: {
       missingVideoUrl: 'Missing video URL',
       readVideoDurationFailed: 'Unable to read video duration',
@@ -80,12 +79,11 @@ test('passes every connected upstream image even before model limits are configu
   const imageModel: WorkspaceModelOption = {
     id: 'image-model',
     name: 'Image model',
-    effectId: 21,
     uploadPath: 'effects/image-model',
     imageBucketName: 'image',
   };
   const imageMetadata: EffectMetadata = {
-    id: 21,
+    id: 'image-model',
     name: 'Image model',
     inputSchema: {
       prompt: { type: 'string' },
@@ -115,7 +113,7 @@ test('passes every connected upstream image even before model limits are configu
     canvasCards: references,
     imageModels: [imageModel],
     videoModels: [],
-    metadataMap: { 21: imageMetadata },
+    metadataMap: { 'image-model': imageMetadata },
     runtimeMessages: {
       missingVideoUrl: 'Missing video URL',
       readVideoDurationFailed: 'Unable to read video duration',
@@ -168,7 +166,7 @@ test('passes every connected reference video in @Video order', async () => {
     },
     imageModels: [],
     videoModels: [videoModel],
-    metadataMap: { 15: videoMetadata },
+    metadataMap: { [videoModel.id]: videoMetadata },
     runtimeMessages: {
       missingVideoUrl: 'Missing video URL',
       readVideoDurationFailed: 'Unable to read video duration',
@@ -196,7 +194,7 @@ test('blocks downstream generation until a connected upstream image is ready', a
       },
       imageModels: [],
       videoModels: [languageVideoModel],
-      metadataMap: { 15: languageVideoMetadata },
+      metadataMap: { [languageVideoModel.id]: languageVideoMetadata },
       runtimeMessages: {
         missingVideoUrl: 'Missing video URL',
         readVideoDurationFailed: 'Unable to read video duration',

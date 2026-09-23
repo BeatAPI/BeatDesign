@@ -189,6 +189,20 @@ const timelineDocumentSchema = z.unknown().transform((value, context) => {
 });
 
 export const canvasOperationSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('set_camera'),
+    camera: z.object({ x: z.number().finite(), y: z.number().finite(), z: z.number().finite().positive() }).strict().nullable(),
+  }).strict(),
+  z.object({
+    type: z.literal('set_workflow'),
+    activeTemplate: z.object({
+      slug: commandIdSchema,
+      title: z.string().max(500),
+      source: z.string().max(4096),
+      taskType: z.enum(['image', 'video', 'audio', 'timeline']),
+      enteredAt: z.string().max(80),
+    }).strict().nullable(),
+  }).strict(),
   z
     .object({
       type: z.literal('upsert_card'),

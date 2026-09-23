@@ -20,7 +20,7 @@ export async function getDbConfigs(): Promise<ConfigMap> {
   }
 
   try {
-    const rows = await db().select().from(config);
+    const rows = await (await db()).select().from(config);
     const result: ConfigMap = {};
     for (const row of rows) {
       if (!row.name || !row.value) continue;
@@ -35,7 +35,7 @@ export async function getDbConfigs(): Promise<ConfigMap> {
         result[row.name] = plain;
       } else if (isSecretConfigKey(row.name)) {
         const encrypted = await encryptSecret(row.value);
-        await db()
+        await (await db())
           .update(config)
           .set({ value: encrypted })
           .where(eq(config.name, row.name));
@@ -113,7 +113,7 @@ export async function saveConfigs(configs: ConfigMap) {
     return;
   }
 
-  await db().transaction(async (tx: any) => {
+  await (await db()).transaction(async (tx: any) => {
     for (const [name, value] of entries) {
       const [existing] = await tx
         .select()

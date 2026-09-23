@@ -123,7 +123,7 @@ export type BeatCanvasFrontLayerValue = {
   activeComposerCardId: string | null;
   imageModels: WorkspaceModelOption[];
   videoModels: WorkspaceModelOption[];
-  effectMetadataMap: Record<number, EffectMetadata>;
+  effectMetadataMap: Record<string, EffectMetadata>;
   labels: CanvasLabels;
   composerPresentation: BeatCanvasComposerPresentation | null;
 

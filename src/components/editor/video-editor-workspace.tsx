@@ -36,7 +36,10 @@ import {
 
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { uploadLocalProjectAsset } from '@/core/workspace-lib/app/local-project-asset-client';
-import { executeProjectCommand } from '@/core/commands/client';
+import { TimelineClipBlock } from './timeline-clip-block';
+import { useTimelinePersistence } from './use-timeline-persistence';
+import { saveTimelineThroughCommand } from '@/core/editor/timeline-persistence';
+export { shouldPersistTimelineDocument, timelineDocumentsEqualForPersistence } from '@/core/editor/timeline-persistence';
 import { createCommandId } from '@/core/commands/contracts';
 import {
   applyEditorOperations,
@@ -131,31 +134,6 @@ export function moveOverlayInPreview({
   };
 }
 
-export function shouldPersistTimelineDocument({
-  isHydrated,
-  document,
-  lastSavedDocument,
-}: {
-  isHydrated: boolean;
-  document: TimelineDocument;
-  lastSavedDocument: TimelineDocument | null;
-}) {
-  return (
-    isHydrated &&
-    (!lastSavedDocument ||
-      !timelineDocumentsEqualForPersistence(document, lastSavedDocument))
-  );
-}
-
-export function timelineDocumentsEqualForPersistence(
-  left: TimelineDocument,
-  right: TimelineDocument
-) {
-  const { updatedAt: _leftUpdatedAt, ...leftContent } = left;
-  const { updatedAt: _rightUpdatedAt, ...rightContent } = right;
-  return JSON.stringify(leftContent) === JSON.stringify(rightContent);
-}
-
 export function findVisualClipAtTimelineTime(
   document: TimelineDocument,
   timelineTime: number
@@ -196,167 +174,6 @@ const safeFilename = (name: string) =>
     .replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'beatdesign-clip';
 
-const saveTimelineThroughCommand = async ({
-  projectId,
-  document,
-  expectedRevision,
-  commandId = createCommandId(),
-}: {
-  projectId: string;
-  document: TimelineDocument;
-  expectedRevision: number | null;
-  commandId?: string;
-}) => {
-  const result = await executeProjectCommand({
-    projectId,
-    commandId,
-    idempotencyKey: commandId,
-    expectedRevision,
-    command: { type: 'editor.replace_document', document },
-  });
-  if (!result.ok) {
-    const error = new Error(result.message) as Error & { code?: string };
-    error.code = result.code;
-    throw error;
-  }
-  if (!result.data.timeline || typeof result.revision !== 'number') {
-    throw new Error('Timeline command returned no saved document.');
-  }
-  return { document: result.data.timeline, version: result.revision };
-};
-
-function TimelineClipBlock({
-  clip,
-  totalDuration,
-  selected,
-  onSelect,
-  onPointerAction,
-  trimStartLabel,
-  trimEndLabel,
-}: {
-  clip: TimelineClip;
-  totalDuration: number;
-  selected: boolean;
-  onSelect: () => void;
-  onPointerAction: (
-    mode: TimelineDragMode,
-    event: ReactPointerEvent<HTMLElement>
-  ) => void;
-  trimStartLabel: string;
-  trimEndLabel: string;
-}) {
-  const left = totalDuration > 0 ? (clip.startTime / totalDuration) * 100 : 0;
-  const width = totalDuration > 0 ? (clip.duration / totalDuration) * 100 : 100;
-
-  return (
-    <div
-      className={`group absolute inset-y-1 touch-none overflow-hidden rounded-[9px] border text-left transition ${
-        selected
-          ? 'cursor-grab border-[var(--beat-accent)] bg-[#2a1a12] shadow-[0_0_0_1px_rgba(255,103,0,0.3),0_8px_24px_rgba(0,0,0,0.2)] active:cursor-grabbing'
-          : clip.sourceType === 'audio'
-            ? 'cursor-grab border-[var(--beat-graph)]/30 bg-[var(--beat-graph)]/12 hover:border-[var(--beat-graph)]/50 hover:bg-[var(--beat-graph)]/18 active:cursor-grabbing'
-            : clip.sourceType === 'caption'
-              ? 'cursor-grab border-white/16 bg-[#1d2430] hover:border-white/28 hover:bg-[#232b38] active:cursor-grabbing'
-            : 'cursor-grab border-white/12 bg-[#202124] hover:border-white/24 hover:bg-[#242529] active:cursor-grabbing'
-      }`}
-      style={{ left: `${left}%`, width: `${Math.max(width, 1.2)}%` }}
-      title={
-        clip.sourceType === 'caption'
-          ? clip.text || clip.name
-          : clip.sourceType === 'image'
-          ? `${clip.name} · ${clip.duration.toFixed(2)}s`
-          : `${clip.name} · ${formatTime(clip.inPoint)}–${formatTime(clip.outPoint)}`
-      }
-    >
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onSelect();
-        }}
-        onPointerDown={(event) => onPointerAction('move', event)}
-        className="absolute inset-0 z-10 cursor-grab touch-none overflow-hidden text-left active:cursor-grabbing"
-        aria-label={`${clip.name} ${clip.duration.toFixed(2)}s`}
-      >
-        {clip.sourceType === 'image' ? (
-          <img
-            src={clip.sourceUrl}
-            alt=""
-            className="absolute inset-0 size-full object-cover opacity-48 transition group-hover:opacity-58"
-          />
-        ) : clip.sourceType === 'video' ? (
-          <video
-            src={clip.sourceUrl}
-            muted
-            playsInline
-            preload="metadata"
-            aria-hidden="true"
-            onLoadedMetadata={(event) => {
-              const video = event.currentTarget;
-              const previewOffset = Math.min(
-                1,
-                Math.max(0, clip.outPoint - clip.inPoint - 0.05)
-              );
-              video.currentTime = clip.inPoint + previewOffset;
-            }}
-            className="absolute inset-0 size-full object-cover opacity-28 transition group-hover:opacity-38"
-          />
-        ) : null}
-        <span className="absolute inset-0 bg-gradient-to-r from-black/72 via-black/38 to-black/10" />
-        <span className="relative flex h-full min-w-0 flex-col justify-between px-2.5 py-2">
-          <span className="block truncate text-[11px] font-[560] tracking-[-0.01em] text-white/95">
-            {clip.sourceType === 'caption' ? clip.text || clip.name : clip.name}
-          </span>
-          <span className="flex items-center gap-1.5 text-[10px] font-[500] tabular-nums text-white/62">
-            {clip.sourceType === 'image' ? (
-              <ImageIcon className="size-3" />
-            ) : clip.sourceType === 'video' ? (
-              <FileVideo2 className="size-3" />
-            ) : (
-              <Volume2 className="size-3" />
-            )}
-            {clip.duration.toFixed(2)}s
-          </span>
-        </span>
-      </button>
-      <button
-        type="button"
-        aria-label={trimStartLabel}
-        title={trimStartLabel}
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          onPointerAction('trim-start', event);
-        }}
-        className={`absolute inset-y-0 left-0 z-30 w-2.5 cursor-ew-resize touch-none transition ${
-          selected
-            ? 'bg-gradient-to-r from-[var(--beat-accent)]/80 to-transparent opacity-100'
-            : 'opacity-0 group-hover:opacity-70'
-        }`}
-      >
-        <span className="absolute bottom-2 left-1 top-2 w-px rounded-full bg-white/80" />
-      </button>
-      <button
-        type="button"
-        aria-label={trimEndLabel}
-        title={trimEndLabel}
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          onPointerAction('trim-end', event);
-        }}
-        className={`absolute inset-y-0 right-0 z-30 w-2.5 cursor-ew-resize touch-none transition ${
-          selected
-            ? 'bg-gradient-to-l from-[var(--beat-accent)]/80 to-transparent opacity-100'
-            : 'opacity-0 group-hover:opacity-70'
-        }`}
-      >
-        <span className="absolute bottom-2 right-1 top-2 w-px rounded-full bg-white/80" />
-      </button>
-    </div>
-  );
-}
-
 export function VideoEditorWorkspace({
   projectId,
   projectName,
@@ -381,8 +198,6 @@ export function VideoEditorWorkspace({
   const timelineLoadedRef = useRef(false);
   const timelineVersionRef = useRef<number | null>(null);
   const lastSavedDocumentRef = useRef<TimelineDocument | null>(null);
-  const saveQueueRef = useRef(Promise.resolve());
-  const externalPollInFlightRef = useRef(false);
   const exportControllerRef = useRef<AbortController | null>(null);
   const documentRef = useRef<TimelineDocument | null>(null);
   const pastDocumentsRef = useRef<TimelineDocument[]>([]);
@@ -742,123 +557,16 @@ export function VideoEditorWorkspace({
     };
   }, [loadFailedMessage, projectId, projectName]);
 
-  useEffect(() => {
-    if (
-      !shouldPersistTimelineDocument({
-        isHydrated: isTimelineHydrated,
-        document,
-        lastSavedDocument: lastSavedDocumentRef.current,
-      })
-    ) {
-      setSaveStatus('saved');
-      return;
-    }
-    setSaveStatus('saving');
-    const timer = window.setTimeout(() => {
-      const saveCandidate = async () => {
-        try {
-          const saved = await saveTimelineThroughCommand({
-            projectId,
-            document,
-            expectedRevision: timelineVersionRef.current,
-          });
-          timelineVersionRef.current = saved.version;
-          lastSavedDocumentRef.current = saved.document;
-          if (documentRef.current === document) {
-            documentRef.current = saved.document;
-            setDocument(saved.document);
-          }
-          setSaveStatus('saved');
-        } catch (cause) {
-          if (
-            cause instanceof Error &&
-            (cause as Error & { code?: string }).code === 'REVISION_CONFLICT'
-          ) {
-            const latest = await apiJsonGet<{
-              timeline: { document: TimelineDocument; version: number } | null;
-            }>(`/api/app/projects/${encodeURIComponent(projectId)}/timeline`);
-            const base = lastSavedDocumentRef.current;
-            if (base && latest.timeline) {
-              const merged = mergeTimelineDocuments({
-                base,
-                local: document,
-                remote: latest.timeline.document,
-              });
-              if (merged.conflicts.length === 0) {
-                const saved = await saveTimelineThroughCommand({
-                  projectId,
-                  document: merged.document,
-                  expectedRevision: latest.timeline.version,
-                });
-                timelineVersionRef.current = saved.version;
-                lastSavedDocumentRef.current = saved.document;
-                if (
-                  documentRef.current &&
-                  timelineDocumentsEqualForPersistence(
-                    documentRef.current,
-                    document
-                  )
-                ) {
-                  documentRef.current = saved.document;
-                  setDocument(saved.document);
-                }
-                setSaveStatus('saved');
-                return;
-              }
-              timelineVersionRef.current = latest.timeline.version;
-              lastSavedDocumentRef.current = latest.timeline.document;
-              throw new Error(
-                `Timeline edit conflict at ${merged.conflicts[0].path}. Your local edit is still open.`
-              );
-            }
-          }
-          setSaveStatus('idle');
-          setError(cause instanceof Error ? cause.message : saveFailedMessage);
-        }
-      };
-      const queued = saveQueueRef.current.then(saveCandidate, saveCandidate);
-      saveQueueRef.current = queued.catch(() => undefined);
-    }, 700);
-    return () => window.clearTimeout(timer);
-  }, [clips.length, document, isTimelineHydrated, projectId, saveFailedMessage]);
-
-  useEffect(() => {
-    if (!isTimelineHydrated) return;
-    const pollExternalTimeline = async () => {
-      if (saveStatus === 'saving') return;
-      const current = documentRef.current;
-      const saved = lastSavedDocumentRef.current;
-      if (
-        current &&
-        saved &&
-        !timelineDocumentsEqualForPersistence(current, saved)
-      ) {
-        return;
-      }
-      if (externalPollInFlightRef.current) return;
-      externalPollInFlightRef.current = true;
-      try {
-        const payload = await apiJsonGet<{
-          timeline: { document: TimelineDocument; version: number } | null;
-        }>(`/api/app/projects/${encodeURIComponent(projectId)}/timeline`);
-        const remote = payload.timeline;
-        if (!remote) return;
-        const localVersion = timelineVersionRef.current;
-        if (
-          typeof localVersion === 'number' &&
-          remote.version <= localVersion
-        ) {
-          return;
-        }
-        timelineVersionRef.current = remote.version;
-        lastSavedDocumentRef.current = remote.document;
-        documentRef.current = remote.document;
-        resetDocument(remote.document);
-
-        const remoteVisualClips = remote.document.tracks
+  useTimelinePersistence({
+    projectId, document, hydrated: isTimelineHydrated,
+    documentRef, versionRef: timelineVersionRef, savedRef: lastSavedDocumentRef,
+    onDocument: setDocument, onStatus: setSaveStatus, onError: setError,
+    onRemote: (remoteDocument) => {
+      resetDocument(remoteDocument);
+        const remoteVisualClips = remoteDocument.tracks
           .filter((track) => track.kind === 'video')
           .flatMap((track) => track.clips);
-        const remoteClips = remote.document.tracks.flatMap(
+        const remoteClips = remoteDocument.tracks.flatMap(
           (track) => track.clips
         );
         const nextSelectedClip =
@@ -870,7 +578,7 @@ export function VideoEditorWorkspace({
           remoteVisualClips.some((clip) => clip.id === nextSelectedClip.id)
             ? nextSelectedClip
             : findVisualClipAtTimelineTime(
-                remote.document,
+                remoteDocument,
                 nextSelectedClip?.startTime ?? timelineCurrentTime
               ) ?? remoteVisualClips[0];
         const nextSource = nextPreviewClip
@@ -879,7 +587,7 @@ export function VideoEditorWorkspace({
         setSelectedClipId(nextSelectedClip?.id ?? null);
         setSourceUrl(nextSource?.sourceUrl ?? null);
         setTimelineCursorTime((time) =>
-          Math.max(0, Math.min(time, remote.document.duration))
+          Math.max(0, Math.min(time, remoteDocument.duration))
         );
         setCurrentTime((time) =>
           nextPreviewClip
@@ -902,74 +610,9 @@ export function VideoEditorWorkspace({
               }
             : null
         );
-      } catch {
-        // External refresh is best-effort; the next poll retries automatically.
-      } finally {
-        externalPollInFlightRef.current = false;
-      }
-    };
 
-    const pollWhenVisible = () => {
-      if (globalThis.document.visibilityState === 'visible') {
-        void pollExternalTimeline();
-      }
-    };
-
-    void pollExternalTimeline();
-    const timer = window.setInterval(
-      () => void pollExternalTimeline(),
-      PROJECT_TIMELINE_EXTERNAL_POLL_INTERVAL_MS
-    );
-    window.addEventListener('focus', pollWhenVisible);
-    globalThis.document.addEventListener('visibilitychange', pollWhenVisible);
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener('focus', pollWhenVisible);
-      globalThis.document.removeEventListener(
-        'visibilitychange',
-        pollWhenVisible
-      );
-    };
-  }, [isTimelineHydrated, projectId, saveStatus, selectedClipId]);
-
-  useEffect(() => {
-    const flushTimeline = () => {
-      const current = documentRef.current;
-      if (!timelineLoadedRef.current || !current) {
-        return;
-      }
-      const commandId = createCommandId();
-      void fetch(
-        `/api/app/projects/${encodeURIComponent(projectId)}/commands`,
-        {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json',
-            [WORKSPACE_MUTATION_HEADER]: WORKSPACE_MUTATION_HEADER_VALUE,
-          },
-          body: JSON.stringify({
-            commandId,
-            idempotencyKey: commandId,
-            expectedRevision: timelineVersionRef.current,
-            command: { type: 'editor.replace_document', document: current },
-          }),
-          keepalive: true,
-        }
-      ).catch(() => undefined);
-    };
-    const onVisibilityChange = () => {
-      if (globalThis.document.visibilityState === 'hidden') flushTimeline();
-    };
-    window.addEventListener('pagehide', flushTimeline);
-    globalThis.document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('pagehide', flushTimeline);
-      globalThis.document.removeEventListener(
-        'visibilitychange',
-        onVisibilityChange
-      );
-    };
-  }, [projectId]);
+    },
+  });
 
   useEffect(
     () => () => {

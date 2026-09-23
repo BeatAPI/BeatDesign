@@ -22,5 +22,6 @@ test('Drizzle and the runtime use the same default local SQLite database', () =>
   assert.match(drizzleConfig, /file:data\/local\.db/);
   assert.doesNotMatch(runtimeConfig, /DATABASE_PROVIDER|process\.env/);
   assert.doesNotMatch(dataRoot, /DATABASE_PROVIDER/);
-  assert.doesNotMatch(drizzleConfig, /DATABASE_PROVIDER|process\.env/);
+  assert.doesNotMatch(drizzleConfig, /DATABASE_PROVIDER/);
+  assert.match(drizzleConfig, /BEATDESIGN_DATA_DIR/);
 });

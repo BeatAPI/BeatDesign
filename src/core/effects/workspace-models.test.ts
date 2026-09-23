@@ -145,7 +145,8 @@ test('Grok Composer metadata matches the public BeatAPI contracts', () => {
     'grok-imagine-video-1.5'
   );
 
-  assert.equal(image?.effectId, 23);
+  assert.equal(image?.id, 'grok-imagine-image-2.0');
+  assert.equal('effectId' in image!, false);
   assert.equal(image?.maxReferenceImages, 5);
   assert.deepEqual(
     getWorkspaceAspectRatioOptions({
@@ -161,7 +162,7 @@ test('Grok Composer metadata matches the public BeatAPI contracts', () => {
     }),
     ['1:1', '2:3', '3:2', '16:9', '9:16', 'auto']
   );
-  assert.equal(video?.effectId, 24);
+  assert.equal(video?.id, 'grok-imagine-video-1.5');
   assert.equal(video?.defaultDuration, '8s');
   assert.equal(video?.supportedDurations?.length, 15);
   assert.deepEqual(video?.supportedOutputQualities, [

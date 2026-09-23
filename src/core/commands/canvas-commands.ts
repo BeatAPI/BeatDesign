@@ -7,6 +7,8 @@ import {
 } from '@/core/projects/project-snapshot';
 
 export type CanvasOperation =
+  | { type: 'set_camera'; camera: ProjectSnapshotDocument['camera'] | null }
+  | { type: 'set_workflow'; activeTemplate: NonNullable<ProjectSnapshotDocument['workflows']>['activeTemplate'] }
   | {
       type: 'upsert_card';
       card: CanvasCard;
@@ -116,14 +118,23 @@ export function applyCanvasOperations(
 ): CanvasCommandApplication {
   let cards = [...source.cards];
   let frames = { ...source.frames };
+  let camera = source.camera;
+  let workflows = source.workflows;
   const changedIds: string[] = [];
 
   for (const operation of operations) {
+    if (operation.type === 'set_camera') {
+      camera = operation.camera ?? undefined;
+      continue;
+    }
+    if (operation.type === 'set_workflow') {
+      workflows = { activeTemplate: operation.activeTemplate ?? null };
+      continue;
+    }
     if (operation.type === 'upsert_card') {
-      cards = [
-        ...cards.filter((card) => card.id !== operation.card.id),
-        operation.card,
-      ];
+      const index = cards.findIndex((card) => card.id === operation.card.id);
+      if (index < 0) cards.push(operation.card);
+      else cards[index] = operation.card;
       if (operation.frame) {
         frames[operation.card.id] = operation.frame;
       }
@@ -232,6 +243,8 @@ export function applyCanvasOperations(
       ...source,
       cards,
       frames,
+      camera,
+      workflows,
     }),
     changedIds: Array.from(new Set(changedIds)),
   };

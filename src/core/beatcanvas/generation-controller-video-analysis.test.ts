@@ -5,7 +5,7 @@ import type { CanvasCard, CanvasDraftCard } from './canvas-types';
 import { buildGenerationEffectInput } from './generation-controller';
 import {
   VIDEO_ANALYSIS_DEFAULT_OUTPUT_TOKENS,
-  VIDEO_ANALYSIS_EFFECT_ID,
+  VIDEO_ANALYSIS_MODEL_ID,
 } from '@/core/effects/video-analysis';
 
 const makeCard = (overrides: Partial<CanvasCard>): CanvasCard => ({
@@ -59,7 +59,7 @@ test('Canvas video analysis uses the same BeatAPI contract as Studio', async () 
     translate: (key) => key,
   });
 
-  assert.equal(built.effectId, VIDEO_ANALYSIS_EFFECT_ID);
+  assert.equal(built.modelId, VIDEO_ANALYSIS_MODEL_ID);
   assert.equal(built.model.name, 'Video Analysis Pro');
   assert.deepEqual(built.input, {
     prompt: 'Return timestamps for every action change.',

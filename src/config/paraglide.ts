@@ -5,7 +5,19 @@ export const paraglideCompilerOptions = {
   outdir: './src/paraglide',
   outputStructure: 'message-modules',
   cookieName: 'PARAGLIDE_LOCALE',
-  strategy: ['url', 'cookie', 'baseLocale'],
+  // On unprefixed links, honor a saved choice first, then the browser's
+  // preferred language. Explicit /zh and /ja links always win below.
+  strategy: ['cookie', 'preferredLanguage', 'url', 'baseLocale'],
+  routeStrategies: [
+    {
+      match: '/zh/:path(.*)?',
+      strategy: ['url', 'cookie', 'preferredLanguage', 'baseLocale'],
+    },
+    {
+      match: '/ja/:path(.*)?',
+      strategy: ['url', 'cookie', 'preferredLanguage', 'baseLocale'],
+    },
+  ],
   urlPatterns: [
     // API endpoints are never locale-prefixed.
     {
