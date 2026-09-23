@@ -14,6 +14,8 @@ All notable changes to BeatDesign are documented in this file.
 - First-time visitors to unprefixed workspace links now see the browser's
   preferred supported language; an explicit `/zh` or `/ja` link and a saved
   language choice take precedence.
+- Simplified Chinese first-run navigation and project setup copy to use
+  “创作台、画布、素材库” instead of unexplained English surface names.
 - Canvas UI autosave now uses revision-checked incremental commands with explicit
   semantic conflict detection. Editor persistence uses incremental commands for
   supported edits and retains guarded replacement for unsupported operations.
