@@ -1,6 +1,6 @@
 {
   "name": "beatdesign",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "private": true,
   "description": "The open-source, local-first AI canvas for image and video creation and analysis",
   "license": "Apache-2.0",

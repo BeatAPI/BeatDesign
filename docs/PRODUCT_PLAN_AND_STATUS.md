@@ -2,12 +2,13 @@
 
 - 文档用途：给新加入的开发者、Codex、Claude Code 和其他 AI Agent 提供统一产品上下文
 - 当前基线：BeatDesign v0.2 Phase 1 本地实现
-- 最后核对：2026-09-15
+- 最后核对：2026-09-23
 - 事实边界：只有代码、测试和本文“已完成”栏目共同证明的能力才算完成；规划项不等于已发布
-- 发布状态：GitHub 最新正式 Release 为 v0.2.2；npm `@beatapi/beatdesign-workbuddy@0.2.3` 已于 2026-09-05 发布，2026-09-15 核验公共 registry 可访问。WorkBuddy 提交、审核和市场上架状态未在本轮独立核验，不标为完成。当前工作区的优化属于 Unreleased，不代表已进入 npm 包。
+- 发布状态：GitHub 最新正式 Release 为 v0.2.2；npm 最新版本仍为 `@beatapi/beatdesign-workbuddy@0.2.3`（2026-09-23 核验）。用户提供的 WorkBuddy 邮件显示 2026-09-05 提交的连接器已通过审核，并提示可前往平台发布；市场是否已上架尚未核验。当前工作区已标记为 v0.2.4 候选版，代码和连接器元信息尚未发布到 npm 或提交 WorkBuddy 新版审核。
 
 ### 当前未发布优化
 
+- 中文或日文浏览器首次打开无语言前缀的本地工作台链接时，自动进入对应语言；显式语言链接和已保存的语言偏好优先。
 - Canvas UI 通过 `canvas.apply` 保存增量操作；并发修改按三方合并处理，同字段语义冲突保留本地编辑并报错，不静默覆盖。
 - Editor 已提取持久化 hook、命令选择器和轨道片段组件；可精确表达的编辑使用 `editor.apply`，导入、undo 等不支持的变化仍使用 UI 专属 revision-checked replacement。
 - Canvas / Editor 先查询轻量 revision，发生变化才读取文档，隐藏页面暂停文档轮询。
