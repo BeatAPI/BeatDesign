@@ -4,9 +4,9 @@
 - 当前基线：BeatDesign v0.2 Phase 1 本地实现
 - 最后核对：2026-09-23
 - 事实边界：只有代码、测试和本文“已完成”栏目共同证明的能力才算完成；规划项不等于已发布
-- 发布状态：GitHub 最新正式 Release 为 v0.2.2；npm 最新版本仍为 `@beatapi/beatdesign-workbuddy@0.2.3`（2026-09-23 核验）。用户提供的 WorkBuddy 邮件显示 2026-09-05 提交的连接器已通过审核，并提示可前往平台发布；市场是否已上架尚未核验。当前工作区已标记为 v0.2.4 候选版，代码和连接器元信息尚未发布到 npm 或提交 WorkBuddy 新版审核。
+- 发布状态：GitHub 最新正式 Release 为 [v0.2.4](https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.4)；npm 最新版本为 `@beatapi/beatdesign-workbuddy@0.2.4`（2026-09-23 核验）。WorkBuddy 开放平台中，原有连接器 `oc_321d021032343aea` 的 v0.2.3 已发布，v0.2.4 已提交更新并显示“审核中”；新版通过审核和公开市场可检索性均未核验。
 
-### 当前未发布优化
+### v0.2.4 已发布改进
 
 - 中文或日文浏览器首次打开无语言前缀的本地工作台链接时，自动进入对应语言；显式语言链接和已保存的语言偏好优先。中文首屏与项目创建入口使用“创作台、画布、素材库”等常用名称。
 - Canvas UI 通过 `canvas.apply` 保存增量操作；并发修改按三方合并处理，同字段语义冲突保留本地编辑并报错，不静默覆盖。
@@ -201,7 +201,7 @@ Codex / Claude Code / Other Agent
 
 - 除内置 Skill 目录之外的更多 MCP Resources，以及 Canvas / Editor 等现有合同更完整的 schema versioning。
 - Agent Activity、命令审计和实时 UI 事件桥。
-- 外部市场正式审核与上架。仓库已提供 Codex 本地插件、可直接添加的 Claude Code 仓库插件市场，以及符合目录结构的 WorkBuddy MCP + Skill Connector；这些本地接入包不等于已通过第三方市场审核。
+- 外部市场新版正式审核与上架。仓库已提供 Codex 本地插件、可直接添加的 Claude Code 仓库插件市场，以及 WorkBuddy MCP + Skill Connector；WorkBuddy v0.2.4 已提交审核，不能据此推断已获批或可在公开市场检索。
 - 独立的 headless 像素预览与后台媒体 Worker；当前 MCP MP4 导出在本地 MCP Server 进程中完成。
 
 当前可以称为“已支持本地 MCP 基础版”，但不能称为完整 Agent 编辑环境：像素级 Snapshot、独立后台媒体 Worker、实时 UI 事件和永久审计仍未实现。本地文件导入桥和 MCP 权威时间线 MP4 导出已完成；UI 当前使用 2 秒 revision 轮询和聚焦检查，而不是实时事件推送。

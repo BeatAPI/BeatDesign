@@ -4,6 +4,8 @@ All notable changes to BeatDesign are documented in this file.
 
 ## Unreleased
 
+## [0.2.4] - 2026-09-23
+
 ### Added
 
 - Added a versioned built-in Skill catalog exposed through MCP Resources and two
@@ -25,8 +27,8 @@ All notable changes to BeatDesign are documented in this file.
   generation status reads, SQLite WAL/busy timeout, and MCP version derivation.
 - Added isolated browser/MCP integration coverage to CI and extracted Editor
   persistence and timeline clip components.
-- Corrected release status: npm WorkBuddy 0.2.3 exists; GitHub release and market
-  approval are separate gates. These Unreleased changes are not in that package.
+- Kept npm publication, WorkBuddy review, and marketplace availability as
+  separate release states.
 - Delegated account-level generation concurrency entirely to the active Provider,
   removing BeatDesign's cross-Project mutex and per-Project running-task limit.
 - Updated the asset-first generation request to v2: image attachments remain
@@ -120,7 +122,7 @@ All notable changes to BeatDesign are documented in this file.
 - MP4 export remains browser-driven and is not yet available as a headless MCP tool.
 - Caption style presets, transitions, speed controls, multiple named timelines, and native desktop packaging remain follow-up work.
 
-[0.2.3]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.3
+[0.2.4]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.4
 [0.2.2]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.2
 [0.2.1]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.1
 [0.2.0]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.0
