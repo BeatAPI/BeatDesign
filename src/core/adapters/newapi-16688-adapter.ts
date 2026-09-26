@@ -4,6 +4,12 @@ import { getConfig } from '@/modules/config/service';
 import { BaseAdapter, type GenerationResult } from './base-adapter';
 
 export const DEFAULT_16688_API_BASE_URL = 'https://api.16688.org';
+export const DEFAULT_16688_MEDIA_GATEWAY_BASE_URL = 'http://127.0.0.1:8000';
+
+const GEMINI_IMAGE_MODELS = new Set([
+  'gemini-3.1-flash-image',
+  'gemini-3.0-pro-image',
+]);
 
 const REQUEST_TIMEOUT_MS = 180_000;
 const MAX_RESPONSE_BYTES = 40 * 1024 * 1024;
@@ -63,6 +69,45 @@ export const build16688ImageRequest = ({
   };
 };
 
+const mapAspectRatioToGemini = (aspectRatio?: string) => {
+  const supported = new Set(['1:1', '4:3', '3:4', '16:9', '9:16']);
+  return supported.has(aspectRatio || '') ? aspectRatio : '1:1';
+};
+
+const mapGeminiImageSize = (quality?: string) => {
+  const normalized = quality?.trim().toUpperCase();
+  return normalized === '2K' || normalized === '4K' ? normalized : '1K';
+};
+
+export const build16688GeminiImageRequest = ({
+  input,
+}: {
+  input: z.infer<typeof inputSchema>;
+}) => {
+  const references = input.image_urls?.length
+    ? input.image_urls
+    : input.image_url
+      ? [input.image_url]
+      : [];
+  if (references.length > 0) {
+    throw new Error(
+      '16688 Studio currently supports Gemini text-to-image only. Remove image references and try again.'
+    );
+  }
+
+  return {
+    systemInstruction: { parts: [{ text: 'Return an image only.' }] },
+    contents: [{ role: 'user', parts: [{ text: input.prompt.trim() }] }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        aspectRatio: mapAspectRatioToGemini(input.aspect_ratio),
+        imageSize: mapGeminiImageSize(input.wmOutputQuality),
+      },
+    },
+  };
+};
+
 export const normalize16688ImageResponse = (
   payload: unknown
 ): GenerationResult => {
@@ -88,6 +133,46 @@ export const normalize16688ImageResponse = (
       resultUrls: images,
       image_urls: images,
       ...(root?.usage !== undefined ? { usage: root.usage } : {}),
+    },
+  };
+};
+
+export const normalize16688GeminiImageResponse = (
+  payload: unknown
+): GenerationResult => {
+  const root = asRecord(payload);
+  const candidates = Array.isArray(root?.candidates) ? root.candidates : [];
+  const images = candidates.flatMap((candidate) => {
+    const content = asRecord(asRecord(candidate)?.content);
+    const parts = Array.isArray(content?.parts) ? content.parts : [];
+    return parts.flatMap((part) => {
+      const inline = asRecord(asRecord(part)?.inlineData);
+      const base64 = readString(inline?.data);
+      if (!base64) return [];
+      const mimeType = readString(inline?.mimeType) ?? 'image/png';
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(mimeType)) {
+        return [];
+      }
+      return [`data:${mimeType};base64,${base64}`];
+    });
+  });
+  if (images.length === 0) {
+    return {
+      status: 'failed',
+      error: '16688 Gemini media gateway did not return an inline image.',
+    };
+  }
+
+  return {
+    status: 'succeeded',
+    output: {
+      provider: '16688',
+      result_url: images[0],
+      resultUrls: images,
+      image_urls: images,
+      ...(root?.usageMetadata !== undefined
+        ? { usage: root.usageMetadata }
+        : {}),
     },
   };
 };
@@ -158,24 +243,43 @@ export class NewApi16688Adapter extends BaseAdapter {
     }
 
     try {
-      const apiKey = await getConfig('NEWAPI_API_KEY');
-      if (!apiKey) throw new Error('Connect a 16688 AI API key before generating.');
-      const body = build16688ImageRequest({
-        model: this.effect.model,
-        input: parsed.data,
-      });
-      const response = await fetch(
-        `${DEFAULT_16688_API_BASE_URL}/v1/images/generations`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-        }
+      const isGemini = GEMINI_IMAGE_MODELS.has(this.effect.model);
+      const apiKey = await getConfig(
+        isGemini ? 'MEDIA_GATEWAY_API_KEY' : 'NEWAPI_API_KEY'
       );
+      if (!apiKey) {
+        throw new Error(
+          isGemini
+            ? 'Connect the Gemini media gateway before generating.'
+            : 'Connect a 16688 AI API key before generating.'
+        );
+      }
+      const mediaBaseUrl =
+        (await getConfig('MEDIA_GATEWAY_BASE_URL')) ||
+        DEFAULT_16688_MEDIA_GATEWAY_BASE_URL;
+      const url = isGemini
+        ? `${mediaBaseUrl.replace(/\/+$/, '')}/models/${encodeURIComponent(this.effect.model)}:generateContent`
+        : `${DEFAULT_16688_API_BASE_URL}/v1/images/generations`;
+      const body = isGemini
+        ? build16688GeminiImageRequest({ input: parsed.data })
+        : build16688ImageRequest({
+            model: this.effect.model,
+            input: parsed.data,
+          });
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: isGemini
+          ? {
+              'x-goog-api-key': apiKey,
+              'Content-Type': 'application/json',
+            }
+          : {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
       const payload = await readBoundedJson(response);
       if (!response.ok) {
         const root = asRecord(payload);
@@ -186,7 +290,9 @@ export class NewApi16688Adapter extends BaseAdapter {
             `16688 AI request failed with status ${response.status}`
         );
       }
-      return normalize16688ImageResponse(payload);
+      return isGemini
+        ? normalize16688GeminiImageResponse(payload)
+        : normalize16688ImageResponse(payload);
     } catch (cause) {
       return {
         status: 'failed',

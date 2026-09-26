@@ -25,7 +25,13 @@ test('the fork registers the restricted 16688 AI image provider', () => {
   assert.deepEqual(provider?.supports, ['image']);
   assert.deepEqual(
     provider?.modelBindings.map((binding) => binding.modelId),
-    ['gpt-image-2', 'gpt-image-2.5-flare', 'gpt-image-2.5-sunburst']
+    [
+      'nano-banana-2',
+      'nano-banana-pro',
+      'gpt-image-2',
+      'gpt-image-2.5-flare',
+      'gpt-image-2.5-sunburst',
+    ]
   );
 });
 

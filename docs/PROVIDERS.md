@@ -40,17 +40,26 @@ A custom provider definition owns adapter construction, readiness checks, parame
 The `feat/16688-provider-poc` fork registers `16688 AI` as an opt-in provider.
 Use the `16688` Vite mode (`pnpm dev:16688` or `pnpm build:16688`) to make it
 active while leaving the upstream BeatAPI development and test mode intact.
-The prototype calls the fixed `https://api.16688.org/v1/images/generations`
-endpoint with a user-owned New API key stored encrypted in local SQLite. It
-binds only `gpt-image-2`, `gpt-image-2.5-flare`, and
-`gpt-image-2.5-sunburst`.
+The provider has two explicit image transports. GPT Image calls the fixed
+`https://api.16688.org/v1/images/generations` endpoint with a user-owned New
+API key. Nano Banana calls an independently configured Flow2API-compatible
+Gemini media gateway with its own key. Both credentials are encrypted in local
+SQLite. The provider binds `nano-banana-2` to
+`gemini-3.1-flash-image`, `nano-banana-pro` to
+`gemini-3.0-pro-image`, and also exposes `gpt-image-2`,
+`gpt-image-2.5-flare`, and `gpt-image-2.5-sunburst`.
 
-This first stage is deliberately text-to-image only. It requests inline Base64
-output, validates the response size and MIME type, and persists the result into
-the local Project before exposing it as an Asset. Reference-image editing,
+The media gateway URL must use HTTPS. Plain HTTP is accepted only for
+`localhost`, `127.0.0.1`, or `::1`, so configuring a remote gateway cannot
+silently turn the local server into a clear-text credential forwarder. The
+Provider dialog tests `GET /v1/models` before saving a changed channel.
+
+This stage remains deliberately text-to-image only. Both transports request
+inline Base64 output, validate response size and MIME type, and persist results
+into the local Project before exposing them as Assets. Reference-image editing,
 video, hosted accounts, payments, and shared balances are not claimed by this
 prototype. Those capabilities require separate provider contracts and server
-work; they must not silently fall back to BeatAPI.
+work; they must not silently fall back to another model family.
 
 ## Storage
 

@@ -52,6 +52,11 @@ type ProviderConfigState = {
   baseUrl: string;
   apiKeyConfigured: boolean;
   apiKeyPreview: string;
+  mediaGateway?: {
+    baseUrl: string;
+    apiKeyConfigured: boolean;
+    apiKeyPreview: string;
+  };
 };
 
 type StorageConfigState = {
@@ -87,24 +92,69 @@ function ApiConfigForm({
   const [apiKey, setApiKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [mediaBaseUrl, setMediaBaseUrl] = useState('http://127.0.0.1:8000');
+  const [mediaApiKey, setMediaApiKey] = useState('');
   const configured = Boolean(state?.apiKeyConfigured && state.apiKeyPreview);
+  const mediaGatewayEnabled = provider.id === '16688';
+  const mediaConfigured = Boolean(
+    state?.mediaGateway?.apiKeyConfigured && state.mediaGateway.apiKeyPreview
+  );
+  const mediaBaseUrlChanged = Boolean(
+    mediaGatewayEnabled &&
+      state?.mediaGateway &&
+      mediaBaseUrl.trim() !== state.mediaGateway.baseUrl
+  );
+
+  useEffect(() => {
+    if (state?.mediaGateway?.baseUrl) {
+      setMediaBaseUrl(state.mediaGateway.baseUrl);
+    }
+  }, [state?.mediaGateway?.baseUrl]);
 
   async function save() {
     const nextKey = apiKey.trim();
-    if (!nextKey) return;
+    const nextMediaKey = mediaApiKey.trim();
+    if (!nextKey && !nextMediaKey && !mediaBaseUrlChanged) return;
     setSaving(true);
     try {
-      const result = await apiPost<{ apiKeyPreview?: string }>(
+      const result = await apiPost<{
+        apiKeyPreview?: string;
+        mediaApiKeyPreview?: string;
+      }>(
         provider.configPath,
-        { apiKey: nextKey }
+        {
+          ...(nextKey ? { apiKey: nextKey } : {}),
+          ...(mediaGatewayEnabled && (nextMediaKey || mediaBaseUrlChanged)
+            ? {
+                mediaBaseUrl: mediaBaseUrl.trim(),
+                ...(nextMediaKey ? { mediaApiKey: nextMediaKey } : {}),
+              }
+            : {}),
+        }
       );
       toast.success(t('saved'));
       setApiKey('');
+      setMediaApiKey('');
       setEditing(false);
       onSaved({
         baseUrl: provider.baseUrl,
-        apiKeyConfigured: true,
-        apiKeyPreview: result?.apiKeyPreview || maskApiKeyPreview(nextKey),
+        apiKeyConfigured: configured || Boolean(nextKey),
+        apiKeyPreview:
+          result?.apiKeyPreview ||
+          state?.apiKeyPreview ||
+          (nextKey ? maskApiKeyPreview(nextKey) : ''),
+        ...(mediaGatewayEnabled
+          ? {
+              mediaGateway: {
+                baseUrl: mediaBaseUrl.trim(),
+                apiKeyConfigured: mediaConfigured || Boolean(nextMediaKey),
+                apiKeyPreview:
+                  result?.mediaApiKeyPreview ||
+                  state?.mediaGateway?.apiKeyPreview ||
+                  (nextMediaKey ? maskApiKeyPreview(nextMediaKey) : ''),
+              },
+            }
+          : {}),
       });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : String(error));
@@ -161,9 +211,48 @@ function ApiConfigForm({
         )}
       </div>
 
+      {mediaGatewayEnabled ? (
+        <div className="space-y-3 border-t border-white/[0.08] pt-4">
+          <div>
+            <p className="text-[13px] font-medium text-white">
+              {t('mediaGatewayTitle')}
+            </p>
+            <p className="mt-1 text-[12px] leading-5 text-white/40">
+              {t('mediaGatewayHint')}
+            </p>
+          </div>
+          <input
+            type="url"
+            value={mediaBaseUrl}
+            onChange={(event) => setMediaBaseUrl(event.target.value)}
+            placeholder={t('mediaGatewayUrlPlaceholder')}
+            aria-label={t('mediaGatewayUrlLabel')}
+            autoComplete="off"
+            className={inputClassName}
+          />
+          <input
+            type="password"
+            value={mediaApiKey}
+            onChange={(event) => setMediaApiKey(event.target.value)}
+            placeholder={
+              mediaConfigured
+                ? t('configuredPlaceholder')
+                : t('mediaGatewayKeyPlaceholder')
+            }
+            aria-label={t('mediaGatewayKeyLabel')}
+            autoComplete="off"
+            className={inputClassName}
+          />
+        </div>
+      ) : null}
+
       <button
         type="button"
-        disabled={!loaded || saving || !apiKey.trim()}
+        disabled={
+          !loaded ||
+          saving ||
+          (!apiKey.trim() && !mediaApiKey.trim() && !mediaBaseUrlChanged)
+        }
         onClick={() => void save()}
         className={saveButtonClassName}
       >
@@ -399,7 +488,9 @@ export function WorkspaceApiConfigDialog({
     useState<ProviderConfigState | null>(null);
   const [providerStateLoaded, setProviderStateLoaded] = useState(false);
   const providerConfigured = Boolean(
-    providerState?.apiKeyConfigured && providerState.apiKeyPreview
+    (providerState?.apiKeyConfigured && providerState.apiKeyPreview) ||
+      (providerState?.mediaGateway?.apiKeyConfigured &&
+        providerState.mediaGateway.apiKeyPreview)
   );
 
   useEffect(() => {

@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  build16688GeminiImageRequest,
   build16688ImageRequest,
+  normalize16688GeminiImageResponse,
   normalize16688ImageResponse,
   validate16688ImageInput,
 } from './newapi-16688-adapter';
@@ -30,6 +32,31 @@ test('maps wide and portrait canvas requests to OpenAI image sizes', () => {
   );
 });
 
+test('maps Gemini image requests to the native generateContent shape', () => {
+  assert.deepEqual(
+    build16688GeminiImageRequest({
+      input: {
+        prompt: '  Product photo on a marble table  ',
+        aspect_ratio: '4:3',
+        wmOutputQuality: '2k',
+      },
+    }),
+    {
+      systemInstruction: { parts: [{ text: 'Return an image only.' }] },
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: 'Product photo on a marble table' }],
+        },
+      ],
+      generationConfig: {
+        responseModalities: ['IMAGE'],
+        imageConfig: { aspectRatio: '4:3', imageSize: '2K' },
+      },
+    }
+  );
+});
+
 test('normalizes only inline images from 16688 AI', () => {
   assert.deepEqual(
     normalize16688ImageResponse({
@@ -54,6 +81,57 @@ test('normalizes only inline images from 16688 AI', () => {
   );
 });
 
+test('normalizes only bounded inline Gemini image media', () => {
+  assert.deepEqual(
+    normalize16688GeminiImageResponse({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/webp',
+                  data: 'aGVsbG8=',
+                },
+              },
+            ],
+          },
+        },
+      ],
+      usageMetadata: { totalTokenCount: 12 },
+    }),
+    {
+      status: 'succeeded',
+      output: {
+        provider: '16688',
+        result_url: 'data:image/webp;base64,aGVsbG8=',
+        resultUrls: ['data:image/webp;base64,aGVsbG8='],
+        image_urls: ['data:image/webp;base64,aGVsbG8='],
+        usage: { totalTokenCount: 12 },
+      },
+    }
+  );
+  assert.equal(
+    normalize16688GeminiImageResponse({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'application/octet-stream',
+                  data: 'aGVsbG8=',
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }).status,
+    'failed'
+  );
+});
+
 test('prototype rejects references and non-image effects before submission', () => {
   assert.throws(
     () =>
@@ -65,6 +143,16 @@ test('prototype rejects references and non-image effects before submission', () 
         },
       }),
     /text-to-image only/
+  );
+  assert.throws(
+    () =>
+      build16688GeminiImageRequest({
+        input: {
+          prompt: 'Restyle',
+          image_urls: ['https://example.com/input.png'],
+        },
+      }),
+    /Gemini text-to-image only/
   );
   assert.throws(
     () => validate16688ImageInput({ effectType: 1, input: { prompt: 'Video' } }),

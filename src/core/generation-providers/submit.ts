@@ -209,7 +209,7 @@ export async function preflightAssetFirstGeneration(source: unknown) {
   };
   const input = await compileAssetFirstGenerationInput({ generation: validationRequest, generationIntentId: '', authorizedDeliveryUrls: validationUrls });
   validateGenerationModelInput({ modelId: generation.modelId, input });
-  await provider.assertConfigured?.();
+  await provider.assertConfigured?.(binding);
   return { generation, binding, expectedUploadCount };
 }
 
