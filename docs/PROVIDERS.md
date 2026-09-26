@@ -35,6 +35,23 @@ An API with a different request or polling contract needs its own adapter. Forks
 
 A custom provider definition owns adapter construction, readiness checks, parameter validation, model bindings, upstream model names, and upload paths. Provider credentials must stay server-side. Switching providers does not change Canvas nodes, Editor clips, Asset IDs, or MCP requests; each submitted task also records its provider/model identity so polling does not silently follow a later default-provider change.
 
+## 16688 Studio fork prototype
+
+The `feat/16688-provider-poc` fork registers `16688 AI` as an opt-in provider.
+Use the `16688` Vite mode (`pnpm dev:16688` or `pnpm build:16688`) to make it
+active while leaving the upstream BeatAPI development and test mode intact.
+The prototype calls the fixed `https://api.16688.org/v1/images/generations`
+endpoint with a user-owned New API key stored encrypted in local SQLite. It
+binds only `gpt-image-2`, `gpt-image-2.5-flare`, and
+`gpt-image-2.5-sunburst`.
+
+This first stage is deliberately text-to-image only. It requests inline Base64
+output, validates the response size and MIME type, and persists the result into
+the local Project before exposing it as an Asset. Reference-image editing,
+video, hosted accounts, payments, and shared balances are not claimed by this
+prototype. Those capabilities require separate provider contracts and server
+work; they must not silently fall back to BeatAPI.
+
 ## Storage
 
 Storage is independently configurable from generation:

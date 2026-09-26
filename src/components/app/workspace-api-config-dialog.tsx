@@ -11,8 +11,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
-  DEFAULT_BEATAPI_BASE_URL,
   getBeatCanvasProviderPublicConfig,
+  type BeatCanvasProviderPublicConfig,
 } from '@/core/beatcanvas/providers/provider-config';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { apiGet, apiPost } from '@/lib/api-client';
@@ -48,7 +48,7 @@ const saveButtonClassName =
 
 const configuredKeyMask = '••••••••••••••••••••••••';
 
-type BeatApiConfigState = {
+type ProviderConfigState = {
   baseUrl: string;
   apiKeyConfigured: boolean;
   apiKeyPreview: string;
@@ -70,16 +70,18 @@ type StorageConfigState = {
 
 function ApiConfigForm({
   providerLabel,
+  provider,
   isDefault,
   state,
   loaded,
   onSaved,
 }: {
   providerLabel: string;
+  provider: BeatCanvasProviderPublicConfig;
   isDefault: boolean;
-  state: BeatApiConfigState | null;
+  state: ProviderConfigState | null;
   loaded: boolean;
-  onSaved: (state: BeatApiConfigState) => void;
+  onSaved: (state: ProviderConfigState) => void;
 }) {
   const t = useTranslations('AppShell.header.apiConfig');
   const [apiKey, setApiKey] = useState('');
@@ -93,14 +95,14 @@ function ApiConfigForm({
     setSaving(true);
     try {
       const result = await apiPost<{ apiKeyPreview?: string }>(
-        '/api/config/beatapi',
+        provider.configPath,
         { apiKey: nextKey }
       );
       toast.success(t('saved'));
       setApiKey('');
       setEditing(false);
       onSaved({
-        baseUrl: DEFAULT_BEATAPI_BASE_URL,
+        baseUrl: provider.baseUrl,
         apiKeyConfigured: true,
         apiKeyPreview: result?.apiKeyPreview || maskApiKeyPreview(nextKey),
       });
@@ -124,7 +126,7 @@ function ApiConfigForm({
 
       <div>
         <label
-          htmlFor="beatapi-key"
+          htmlFor={`${provider.id}-key`}
           className="mb-2 block text-[12px] font-medium text-white/45"
         >
           {t('keyLabel')}
@@ -136,7 +138,7 @@ function ApiConfigForm({
           />
         ) : (
           <input
-            id="beatapi-key"
+            id={`${provider.id}-key`}
             type={configured && !editing ? 'text' : 'password'}
             value={configured && !editing ? configuredKeyMask : apiKey}
             onFocus={() => {
@@ -169,7 +171,7 @@ function ApiConfigForm({
       </button>
 
       <a
-        href="https://beatapi.io/dashboard/apikeys"
+        href={provider.apiKeyUrl}
         target="_blank"
         rel="noreferrer"
         className="inline-flex text-[12px] font-semibold text-[#ff8b4d] transition hover:text-[#ffa26b]"
@@ -394,7 +396,7 @@ export function WorkspaceApiConfigDialog({
   const [saveSignal, setSaveSignal] = useState(0);
   const [section, setSection] = useState<'provider' | 'storage'>('provider');
   const [providerState, setProviderState] =
-    useState<BeatApiConfigState | null>(null);
+    useState<ProviderConfigState | null>(null);
   const [providerStateLoaded, setProviderStateLoaded] = useState(false);
   const providerConfigured = Boolean(
     providerState?.apiKeyConfigured && providerState.apiKeyPreview
@@ -402,7 +404,7 @@ export function WorkspaceApiConfigDialog({
 
   useEffect(() => {
     let cancelled = false;
-    void apiGet<BeatApiConfigState>('/api/config/beatapi')
+    void apiGet<ProviderConfigState>(provider.configPath)
       .then((config) => {
         if (!cancelled) setProviderState(config);
       })
@@ -415,7 +417,7 @@ export function WorkspaceApiConfigDialog({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [provider.configPath]);
 
   return (
     <Dialog>
@@ -479,6 +481,7 @@ export function WorkspaceApiConfigDialog({
           <ApiConfigForm
             key={`provider-${saveSignal}`}
             providerLabel={provider.label}
+            provider={provider}
             isDefault={provider.isDefault}
             state={providerState}
             loaded={providerStateLoaded}

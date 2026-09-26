@@ -20,6 +20,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx scripts/prepare-paraglide.ts && vite dev --host 127.0.0.1 --port 3020 --strictPort",
+    "dev:16688": "tsx scripts/prepare-paraglide.ts && vite dev --mode 16688 --host 127.0.0.1 --port 3020 --strictPort",
     "dev:agent": "node scripts/dev-with-mcp.mjs",
     "test": "node scripts/run-tests.mjs",
     "test:e2e": "playwright test",
@@ -35,6 +36,7 @@
     "mcp:http": "tsx scripts/mcp-server.ts --http",
     "prebuild": "node scripts/db-setup.mjs",
     "build": "tsx scripts/prepare-paraglide.ts && vite build && node scripts/sanitize-output.mjs",
+    "build:16688": "tsx scripts/prepare-paraglide.ts && vite build --mode 16688 && node scripts/sanitize-output.mjs",
     "start": "node .output/server/index.mjs",
     "postinstall": "mkdir -p data && (test -f src/config/db/schema.ts || node scripts/db-setup.mjs)",
     "db:setup": "node scripts/db-setup.mjs",

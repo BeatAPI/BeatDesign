@@ -46,15 +46,15 @@ test('workspace header keeps mode switching, shared assets, and API configuratio
   assert.doesNotMatch(shellSource, /getUserInitial/);
 });
 
-test('API configuration presets the BeatAPI endpoint and saves key + host', () => {
+test('API configuration follows the active provider and saves storage settings', () => {
   assert.match(apiConfigSource, /getBeatCanvasProviderPublicConfig/);
-  assert.match(apiConfigSource, /DEFAULT_BEATAPI_BASE_URL/);
-  assert.match(apiConfigSource, /\/api\/config\/beatapi/);
+  assert.match(apiConfigSource, /provider\.configPath/);
+  assert.match(apiConfigSource, /provider\.baseUrl/);
+  assert.match(apiConfigSource, /provider\.apiKeyUrl/);
   assert.match(apiConfigSource, /\/api\/config\/storage/);
   assert.match(apiConfigSource, /'beatapi' \| 's3'/);
   assert.match(apiConfigSource, /apiGet<StorageConfigState>\('\/api\/config\/storage'\)/);
   assert.match(apiConfigSource, /apiPost\('\/api\/config\/storage'/);
-  assert.match(apiConfigSource, /https:\/\/beatapi\.io\/dashboard\/apikeys/);
   assert.doesNotMatch(apiConfigSource, /apiJson(?:Get|Post).*\/api\/config\/storage/);
 });
 

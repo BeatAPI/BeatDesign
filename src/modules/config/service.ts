@@ -62,6 +62,8 @@ export async function getAllConfigs(): Promise<ConfigMap> {
 const WRITABLE_CONFIG_KEYS: ReadonlySet<string> = new Set([
   'BEATAPI_API_BASE_URL',
   'BEATAPI_API_KEY',
+  'NEWAPI_API_BASE_URL',
+  'NEWAPI_API_KEY',
   'WORKSPACE_STORAGE_MODE',
   'R2_REGION',
   'R2_ENDPOINT',
