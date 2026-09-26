@@ -14,7 +14,7 @@
   "product.shell.terms": "服务条款",
   "product.shell.privacy": "隐私政策",
   "product.home.eyebrow": "开源 · 本地优先",
-  "product.home.metaTitle": "BeatDesign — 开源 AI 图像与视频创作画布",
+  "product.home.metaTitle": "16688 Studio — AI 图像、视频与智能体创作工作台",
   "product.home.metaDescription": "开源、本地优先的 AI 图像与视频创作画布。",
   "product.home.titleLine1": "化繁为简，",
   "product.home.titleLine2": "自由创作。",
@@ -57,7 +57,7 @@
   "AppShell": {
     "studio": {
       "intro": {
-        "title": "以画布为中心的 BeatDesign 工作区",
+        "title": "以画布为中心的 16688 Studio 工作区",
         "description": "选中图片、视频或提示节点后，就能直接从画布继续分支生成。"
       },
       "toolbar": {

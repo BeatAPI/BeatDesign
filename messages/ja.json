@@ -14,7 +14,7 @@
   "product.shell.terms": "利用規約",
   "product.shell.privacy": "プライバシー",
   "product.home.eyebrow": "オープンソース · ローカルファースト",
-  "product.home.metaTitle": "BeatDesign — 画像・動画制作のためのオープンソースAI Canvas",
+  "product.home.metaTitle": "16688 Studio — 画像・動画・エージェント制作のAIワークスペース",
   "product.home.metaDescription": "画像・動画制作のための、オープンソースでローカルファーストなAI Canvas。",
   "product.home.titleLine1": "複雑さを打ち破り、",
   "product.home.titleLine2": "自由にデザイン。",
@@ -57,7 +57,7 @@
   "AppShell": {
     "studio": {
       "intro": {
-        "title": "Canvas中心のBeatDesignワークスペース",
+        "title": "Canvas中心の16688 Studioワークスペース",
         "description": "画像、動画、またはプロンプトノードを選択し、Canvasから次の生成へ直接分岐します。"
       },
       "toolbar": {

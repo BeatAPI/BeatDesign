@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">16688 Studio</title>
+  <desc id="desc">Four light routing brackets surrounding a gateway, with a copper signal node.</desc>
+  <g fill="none" stroke="#F5F5F4" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M112 236V168Q112 150 128 141L214 91"/>
+    <path d="M400 236V168Q400 150 384 141L298 91"/>
+    <path d="M400 276V344Q400 362 384 371L298 421"/>
+    <path d="M112 276V344Q112 362 128 371L214 421"/>
+  </g>
+  <circle cx="256" cy="70" r="23" fill="#C98B62"/>
+</svg>
