@@ -4,7 +4,9 @@ import { getConfig } from '@/modules/config/service';
 import { BaseAdapter, type GenerationResult } from './base-adapter';
 
 export const DEFAULT_16688_API_BASE_URL = 'https://api.16688.org';
-export const DEFAULT_16688_MEDIA_GATEWAY_BASE_URL = 'http://127.0.0.1:8000';
+export const DEFAULT_16688_MEDIA_GATEWAY_BASE_URL =
+  import.meta.env?.VITE_16688_MEDIA_GATEWAY_BASE_URL?.trim() ||
+  'http://127.0.0.1:8000';
 
 const GEMINI_IMAGE_MODELS = new Set([
   'gemini-3.1-flash-image',

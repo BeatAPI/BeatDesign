@@ -35,7 +35,9 @@ async function GET() {
 
 async function POST({ request }: { request: Request }) {
   try {
-    const trust = validateTrustedLocalJsonMutation(request);
+    const trust = validateTrustedLocalJsonMutation(request, {
+      allowRemote: process.env.BEATDESIGN_ALLOW_REMOTE_SETTINGS === '1',
+    });
     if (!trust.ok) return respErr(trust.message, trust.status);
 
     const body = await readRequestJsonWithLimit<{
@@ -65,7 +67,13 @@ async function POST({ request }: { request: Request }) {
       (await getConfig('MEDIA_GATEWAY_BASE_URL')) ||
       DEFAULT_16688_MEDIA_GATEWAY_BASE_URL;
     try {
-      mediaBaseUrl = normalizeMediaGatewayBaseUrl(mediaBaseUrl);
+      mediaBaseUrl = normalizeMediaGatewayBaseUrl(mediaBaseUrl, {
+        allowedHttpHosts: (
+          process.env.BEATDESIGN_MEDIA_GATEWAY_HTTP_HOSTS || ''
+        )
+          .split(',')
+          .filter(Boolean),
+      });
     } catch (error) {
       return respErr(
         error instanceof Error ? error.message : 'Invalid media gateway URL',

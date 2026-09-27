@@ -1,0 +1,36 @@
+services:
+  studio:
+    build:
+      context: .
+      dockerfile: Dockerfile.16688
+    image: 16688-studio:local
+    container_name: 16688-studio
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3020
+      BEATDESIGN_ALLOW_REMOTE_SETTINGS: "1"
+      BEATDESIGN_MEDIA_GATEWAY_HTTP_HOSTS: flow2api-media
+    ports:
+      - "127.0.0.1:3020:3020"
+    volumes:
+      - ./data:/app/data
+    networks:
+      - studio
+      - flow2api
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3020/zh').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+networks:
+  studio:
+  flow2api:
+    external: true
+    name: flow2api-media_default

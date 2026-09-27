@@ -60,10 +60,11 @@ export function validateTrustedWorkspaceJsonMutation(
 }
 
 export function validateTrustedLocalJsonMutation(
-  request: Request
+  request: Request,
+  { allowRemote = false }: { allowRemote?: boolean } = {}
 ): TrustedLocalRequestResult {
   const requestUrl = new URL(request.url);
-  if (!LOCAL_SETTINGS_HOSTS.has(requestUrl.hostname)) {
+  if (!allowRemote && !LOCAL_SETTINGS_HOSTS.has(requestUrl.hostname)) {
     return {
       ok: false,
       status: 403,

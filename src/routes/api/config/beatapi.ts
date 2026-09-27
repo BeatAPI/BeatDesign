@@ -30,7 +30,9 @@ async function GET({ request }: { request: Request }) {
 
 async function POST({ request }: { request: Request }) {
   try {
-    const trust = validateTrustedLocalJsonMutation(request);
+    const trust = validateTrustedLocalJsonMutation(request, {
+      allowRemote: process.env.BEATDESIGN_ALLOW_REMOTE_SETTINGS === '1',
+    });
     if (!trust.ok) {
       return respErr(trust.message, trust.status);
     }
