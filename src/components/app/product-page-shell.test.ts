@@ -34,6 +34,8 @@ test('workspace header keeps mode switching, shared assets, and API configuratio
   assert.doesNotMatch(shellSource, /ChevronDown/);
   assert.doesNotMatch(shellSource, /header\.create/);
   assert.match(shellSource, /GitHubIcon/);
+  assert.match(shellSource, /VITE_BANANA_STUDIO_URL/);
+  assert.match(shellSource, /header\.bananaStudio/);
   assert.match(
     shellSource,
     /https:\/\/github\.com\/BeatAPI\/BeatDesign/

@@ -626,6 +626,8 @@
       "projects": "プロジェクト",
       "projectsLabel": "プロジェクトを開く",
       "githubRepository": "GitHubでBeatDesignを開く",
+      "bananaStudio": "Banana AI",
+      "bananaStudioLabel": "Banana AIを開く",
       "workspaceView": "ワークスペース表示",
       "create": "作成",
       "studio": "Studio",

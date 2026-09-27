@@ -626,6 +626,8 @@
       "projects": "项目",
       "projectsLabel": "打开项目列表",
       "githubRepository": "在 GitHub 打开 BeatDesign",
+      "bananaStudio": "蕉点 AI",
+      "bananaStudioLabel": "打开蕉点 AI",
       "workspaceView": "工作区视图",
       "create": "创作",
       "studio": "创作台",

@@ -626,6 +626,8 @@
       "projects": "Projects",
       "projectsLabel": "Open projects",
       "githubRepository": "Open BeatDesign on GitHub",
+      "bananaStudio": "Banana AI",
+      "bananaStudioLabel": "Open Banana AI",
       "workspaceView": "Workspace view",
       "create": "Create",
       "studio": "Studio",
