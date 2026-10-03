@@ -14,7 +14,7 @@
   "product.shell.terms": "服务条款",
   "product.shell.privacy": "隐私政策",
   "product.home.eyebrow": "开源 · 本地优先",
-  "product.home.metaTitle": "BeatDesign — 开源 AI 图像与视频创作画布",
+  "product.home.metaTitle": "16688 Studio — AI 图像、视频与智能体创作工作台",
   "product.home.metaDescription": "开源、本地优先的 AI 图像与视频创作画布。",
   "product.home.titleLine1": "化繁为简，",
   "product.home.titleLine2": "自由创作。",
@@ -56,8 +56,20 @@
   "common.pages.not_found": "页面不存在",
   "AppShell": {
     "studio": {
+      "startHere": {
+        "ideasLabel": "创作灵感",
+        "title": "从这里开始创作",
+        "description": "想象画面，塑造氛围，让灵感成为作品。",
+        "selectIdea": "选择{title}",
+        "ideas": {
+          "cinematicLandscape": "电影感风景",
+          "editorialCharacter": "杂志人像",
+          "materialStudy": "材质探索",
+          "surrealFashionFilm": "超现实时尚短片"
+        }
+      },
       "intro": {
-        "title": "以画布为中心的 BeatDesign 工作区",
+        "title": "以画布为中心的 16688 Studio 工作区",
         "description": "选中图片、视频或提示节点后，就能直接从画布继续分支生成。"
       },
       "toolbar": {
@@ -626,6 +638,8 @@
       "projects": "项目",
       "projectsLabel": "打开项目列表",
       "githubRepository": "在 GitHub 打开 BeatDesign",
+      "bananaStudio": "蕉点 AI",
+      "bananaStudioLabel": "打开蕉点 AI",
       "workspaceView": "工作区视图",
       "create": "创作",
       "studio": "创作台",
@@ -669,24 +683,31 @@
       },
       "apiConfig": {
         "triggerLabel": "API 配置",
-        "triggerConfiguredLabel": "API 配置 — BeatAPI 已连接",
-        "loadingConnection": "正在读取 BeatAPI 连接",
+        "triggerConfiguredLabel": "API 配置 — 服务已连接",
+        "loadingConnection": "正在读取 API 连接",
         "title": "连接配置",
-        "description": "需要使用远程生成模型时，连接你的 BeatAPI API Key。",
+        "description": "需要使用远程生成模型时，连接你的 16688 AI API 密钥。",
         "providerTab": "AI Provider",
         "storageTab": "存储",
         "activeProvider": "当前提供商",
         "defaultBadge": "默认",
-        "providerDescription": "BeatAPI 是这套开源工作台默认使用的生成后端。",
+        "providerDescription": "16688 AI 是当前工作台的默认生成后端。",
         "endpointLabel": "接口地址",
         "mediaLabel": "支持类型",
         "mediaValue": "图片 + 视频",
         "keyLabel": "API Key",
-        "keyPlaceholder": "请输入 BeatAPI API Key",
+        "keyPlaceholder": "请输入 16688 AI API 密钥",
+        "configuredPlaceholder": "已配置，留空保持不变",
+        "mediaGatewayTitle": "Gemini 媒体网关",
+        "mediaGatewayHint": "Nano Banana 2 / Pro 使用独立的 Flow2API 通道，不会冒充文本 Gemini 模型。",
+        "mediaGatewayUrlLabel": "媒体网关地址",
+        "mediaGatewayUrlPlaceholder": "https://media.example.com",
+        "mediaGatewayKeyLabel": "媒体网关 API Key",
+        "mediaGatewayKeyPlaceholder": "输入媒体网关 API Key",
         "save": "保存设置",
         "saving": "保存中…",
         "saved": "API Key 已保存",
-        "getKey": "获取 BeatAPI API Key →",
+        "getKey": "前往 16688 AI 获取 API 密钥 →",
         "storage": {
           "intro": "默认使用 BeatAPI Files，也可以接入你自己的公网存储桶。",
           "managedTitle": "BeatAPI Files",

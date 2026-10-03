@@ -257,7 +257,9 @@ export function useProjectSnapshotLifecycle({
           recoveredFromConflict = true;
         }
         if (result && !result.ok) {
-          onProjectSnapshotConflict?.();
+          if (result.code === 'REVISION_CONFLICT') {
+            onProjectSnapshotConflict?.();
+          }
           throw new Error(result.message);
         }
         if (result?.ok) {
@@ -299,9 +301,16 @@ export function useProjectSnapshotLifecycle({
 
       const guardedSave = async () => {
         saveInFlightRef.current = true;
-        try { await runSave(); }
-        catch (error) { onProjectSnapshotConflict?.(); throw error; }
-        finally { saveInFlightRef.current = false; }
+        try {
+          await runSave();
+        } catch (error) {
+          if (error instanceof Error && error.message.startsWith('Canvas ')) {
+            onProjectSnapshotConflict?.();
+          }
+          throw error;
+        } finally {
+          saveInFlightRef.current = false;
+        }
       };
       const queuedSave = saveQueueRef.current.then(guardedSave, guardedSave);
       saveQueueRef.current = queuedSave.catch(() => {});

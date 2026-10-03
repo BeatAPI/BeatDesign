@@ -276,6 +276,16 @@ export function BeatCanvasShell({
   const [canvasDocumentRevision, setCanvasDocumentRevision] = useState(0);
   const [allowEmptyProjectSnapshot, setAllowEmptyProjectSnapshot] =
     useState(false);
+  const handleUndoCanvas = useCallback(() => {
+    const restoredDocument = undoCanvas();
+    if (!restoredDocument) return;
+    setAllowEmptyProjectSnapshot(restoredDocument.cards.length === 0);
+  }, [undoCanvas]);
+  const handleRedoCanvas = useCallback(() => {
+    const restoredDocument = redoCanvas();
+    if (!restoredDocument) return;
+    setAllowEmptyProjectSnapshot(restoredDocument.cards.length === 0);
+  }, [redoCanvas]);
   const [previewMedia, setPreviewMedia] = useState<BeatCanvasPreviewMedia | null>(
     null
   );
@@ -752,8 +762,8 @@ export function BeatCanvasShell({
       promptCharacterLimit: generationValidationConstraints.maxPromptChars,
       canUndoCanvas,
       canRedoCanvas,
-      onUndoCanvas: undoCanvas,
-      onRedoCanvas: redoCanvas,
+      onUndoCanvas: handleUndoCanvas,
+      onRedoCanvas: handleRedoCanvas,
       onCreateImageDraft: () => handleCreatePromptDraft('image'),
       onUploadImage: () =>
         openUploadPicker({ intent: 'image', mode: 'global' }),
@@ -819,8 +829,8 @@ export function BeatCanvasShell({
       selectedShapeIds,
       selectedCanvasCardIds,
       setActiveComposerCardId,
-      undoCanvas,
-      redoCanvas,
+      handleUndoCanvas,
+      handleRedoCanvas,
       videoModels,
     ]
   );
@@ -1488,17 +1498,17 @@ export function BeatCanvasShell({
       ) {
         if (key === 'z' && event.shiftKey) {
           event.preventDefault();
-          redoCanvas();
+          handleRedoCanvas();
           return;
         }
         if (key === 'z') {
           event.preventDefault();
-          undoCanvas();
+          handleUndoCanvas();
           return;
         }
         if (key === 'y') {
           event.preventDefault();
-          redoCanvas();
+          handleRedoCanvas();
           return;
         }
         if (key === 'c') {
@@ -1567,8 +1577,8 @@ export function BeatCanvasShell({
     handleCreatePromptDraft,
     openUploadPicker,
     pasteCanvasCards,
-    redoCanvas,
-    undoCanvas,
+    handleRedoCanvas,
+    handleUndoCanvas,
   ]);
 
   // Register card connector "+" button handler

@@ -1,4 +1,4 @@
-export const BEATCANVAS_PROVIDER_IDS = ['beatapi'] as const;
+export const BEATCANVAS_PROVIDER_IDS = ['beatapi', '16688'] as const;
 
 export type BeatCanvasProviderId =
   (typeof BEATCANVAS_PROVIDER_IDS)[number];
@@ -7,7 +7,10 @@ export type BeatCanvasProviderPublicConfig = {
   id: BeatCanvasProviderId;
   label: string;
   isDefault: boolean;
-  supports: readonly ['image', 'video', 'analysis'];
+  supports: readonly ('image' | 'video' | 'analysis')[];
+  baseUrl: string;
+  configPath: '/api/config/beatapi' | '/api/config/16688';
+  apiKeyUrl: string;
 };
 
 export type BeatCanvasProviderServerConfig =
@@ -17,6 +20,7 @@ export type BeatCanvasProviderServerConfig =
   };
 
 export const DEFAULT_BEATAPI_BASE_URL = 'https://api.beatapi.io';
+export const DEFAULT_16688_BASE_URL = 'https://api.16688.org';
 
 export const isOfficialBeatApiBaseUrl = (
   baseUrl: string | null | undefined
@@ -42,20 +46,33 @@ export const isOfficialBeatApiBaseUrl = (
 };
 
 export const resolveBeatCanvasProviderId = (
-  _value: string | null | undefined
-): BeatCanvasProviderId => 'beatapi';
+  value: string | null | undefined
+): BeatCanvasProviderId =>
+  value === 'beatapi' || value === '16688' ? value : 'beatapi';
 
 export const getBeatCanvasProviderPublicConfig = (
   providerId: string | null | undefined
 ): BeatCanvasProviderPublicConfig => {
   const id = resolveBeatCanvasProviderId(providerId);
-
-  return {
-    id,
-    label: 'BeatAPI',
-    isDefault: true,
-    supports: ['image', 'video', 'analysis'],
-  };
+  return id === '16688'
+    ? {
+        id,
+        label: '16688 AI',
+        isDefault: true,
+        supports: ['image'],
+        baseUrl: DEFAULT_16688_BASE_URL,
+        configPath: '/api/config/16688',
+        apiKeyUrl: 'https://api.16688.org/token',
+      }
+    : {
+        id,
+        label: 'BeatAPI',
+        isDefault: true,
+        supports: ['image', 'video', 'analysis'],
+        baseUrl: DEFAULT_BEATAPI_BASE_URL,
+        configPath: '/api/config/beatapi',
+        apiKeyUrl: 'https://beatapi.io/dashboard/apikeys',
+      };
 };
 
 export const getBeatCanvasProviderServerConfig = ({
@@ -71,7 +88,7 @@ export const getBeatCanvasProviderServerConfig = ({
 
   return {
     ...publicConfig,
-    baseUrl: DEFAULT_BEATAPI_BASE_URL,
+    baseUrl: publicConfig.baseUrl,
     apiKey: apiKey || '',
   };
 };

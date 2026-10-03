@@ -12,6 +12,8 @@ import { appConfig } from '@/config';
 import { ACTIVE_GENERATION_PROVIDER_ID } from '@/config/generation-providers';
 import type { WorkspaceMode } from '@/config/workspace-modes';
 
+const bananaStudioUrl = import.meta.env?.VITE_BANANA_STUDIO_URL?.trim();
+
 export function ProductPageShell({
   children,
   workspaceName,
@@ -178,6 +180,19 @@ export function ProductPageShell({
                     <span className="hidden sm:inline">{t('header.assets')}</span>
                   </Link>
                 </nav>
+              ) : null}
+              {bananaStudioUrl ? (
+                <a
+                  href={bananaStudioUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={t('header.bananaStudioLabel')}
+                  title={t('header.bananaStudioLabel')}
+                  className="hidden h-9 shrink-0 items-center gap-2 rounded-xl border border-[#f2d756]/20 bg-[#f2d756]/[0.07] px-3 text-xs font-semibold text-[#f2d756] transition hover:border-[#f2d756]/35 hover:bg-[#f2d756]/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f2d756]/50 md:inline-flex"
+                >
+                  <Images className="size-3.5" aria-hidden="true" />
+                  {t('header.bananaStudio')}
+                </a>
               ) : null}
               <LanguageSwitcher variant="workspace" />
               <WorkspaceApiConfigDialog

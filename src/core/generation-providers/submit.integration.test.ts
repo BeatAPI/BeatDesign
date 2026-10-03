@@ -2,13 +2,26 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { after, test } from 'node:test';
 
 const directory = await mkdtemp(join(tmpdir(), 'beatdesign-generation-test-'));
 process.env.BEATDESIGN_DATA_DIR = directory;
-execFileSync('pnpm', ['exec', 'drizzle-kit', 'push', '--force'], { env: process.env, stdio: 'pipe' });
-after(async () => { await rm(directory, { recursive: true, force: true }); });
+execFileSync(
+  process.execPath,
+  [resolve('node_modules/drizzle-kit/bin.cjs'), 'push', '--force'],
+  { env: process.env, stdio: 'pipe' }
+);
+const { closeSqliteDb } = await import('@/core/db/sqlite');
+after(async () => {
+  await closeSqliteDb();
+  await rm(directory, {
+    recursive: true,
+    force: true,
+    maxRetries: 20,
+    retryDelay: 100,
+  });
+});
 
 const { createProject } = await import('@/core/projects/projects');
 const { createAssetFirstGenerationIntent, preflightAssetFirstGeneration, submitAssetFirstGeneration } = await import('./submit');

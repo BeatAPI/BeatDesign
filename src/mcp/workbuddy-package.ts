@@ -143,10 +143,11 @@ export const validateWorkBuddyConnector = async (
     resolve(connectorDirectory, 'skills/beatdesign-workspace/SKILL.md'),
     'utf8'
   );
-  assert.match(skill, /^---\n[\s\S]*?\n---\n/);
-  assert.match(skill, /\nname: beatdesign-workspace\n/);
+  const normalizedSkill = skill.replace(/\r\n?/g, '\n');
+  assert.match(normalizedSkill, /^---\n[\s\S]*?\n---\n/);
+  assert.match(normalizedSkill, /\nname: beatdesign-workspace\n/);
   assert.doesNotMatch(
-    skill,
+    normalizedSkill,
     /\[(?:TODO|PLACEHOLDER)(?::|\])/i,
     'WorkBuddy Skill must not contain unfinished placeholders'
   );

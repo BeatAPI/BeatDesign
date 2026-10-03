@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   buildOutputStoragePlan,
+  decodeInlineImageDataUrl,
   shouldRetryOutputStorageSync,
 } from './output-storage';
 
@@ -51,5 +52,17 @@ test('stores video covers as thumbnails without replacing the main output asset'
         role: 'thumbnail',
       },
     ]
+  );
+});
+
+test('accepts bounded inline images for local provider persistence', () => {
+  const decoded = decodeInlineImageDataUrl(
+    'data:image/png;base64,aGVsbG8='
+  );
+  assert.equal(decoded?.mimeType, 'image/png');
+  assert.equal(decoded?.bytes.toString(), 'hello');
+  assert.equal(
+    decodeInlineImageDataUrl('data:text/html;base64,aGVsbG8='),
+    null
   );
 });

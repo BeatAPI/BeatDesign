@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { Buffer } from 'node:buffer';
 
 import { resolveOutputMedia } from './output-media';
 import { isOfficialBeatApiMediaUrl } from './beatapi-media-url';
@@ -25,6 +26,29 @@ export const LOCAL_MEDIA_DOWNLOAD_TIMEOUT_MS = 180_000;
 
 const isLocalProjectAssetUrl = (url: string) =>
   url.startsWith('/api/app/projects/') && url.includes('/assets/');
+
+const INLINE_IMAGE_DATA_URL =
+  /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$/;
+
+export const decodeInlineImageDataUrl = (url: string) => {
+  const match = INLINE_IMAGE_DATA_URL.exec(url);
+  if (!match) return null;
+  const mimeType = match[1];
+  const encoded = match[2];
+  if (encoded.length > Math.ceil((MAX_LOCAL_IMAGE_ASSET_BYTES * 4) / 3) + 4) {
+    throw new Error('Generated media is too large to save locally');
+  }
+  const bytes = Buffer.from(encoded, 'base64');
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_LOCAL_IMAGE_ASSET_BYTES) {
+    throw new Error('Generated media is too large to save locally');
+  }
+  return { bytes, mimeType };
+};
+
+const outputProviderId = (output: unknown) =>
+  output && typeof output === 'object'
+    ? (output as Record<string, unknown>).provider
+    : null;
 
 export const createLocalProviderAssetId = (
   projectId: string,
@@ -135,33 +159,44 @@ export async function persistEffectOutputIfNeeded({
 
   const assetIds: string[] = [];
   const localUrlByProviderUrl = new Map<string, string>();
+  const providerId = outputProviderId(output);
 
   for (const { url, type, role } of providerEntries) {
-    if (!isOfficialBeatApiMediaUrl(url)) {
-      throw new Error('Generated media URL is not an approved BeatAPI asset');
-    }
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(LOCAL_MEDIA_DOWNLOAD_TIMEOUT_MS),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to save generated media locally (${response.status})`);
-    }
-
     const maxBytes =
       type === 'video'
         ? MAX_LOCAL_VIDEO_ASSET_BYTES
         : MAX_LOCAL_IMAGE_ASSET_BYTES;
-    const declaredLength = Number(response.headers.get('content-length'));
-    if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
-      throw new Error('Generated media is too large to save locally');
+    const inlineImage = type === 'image' ? decodeInlineImageDataUrl(url) : null;
+    let bytes: Uint8Array;
+    let mimeType: string;
+    if (inlineImage) {
+      if (providerId !== '16688') {
+        throw new Error('Inline generated media is not from an approved provider');
+      }
+      bytes = inlineImage.bytes;
+      mimeType = inlineImage.mimeType;
+    } else {
+      if (!isOfficialBeatApiMediaUrl(url)) {
+        throw new Error('Generated media URL is not an approved provider asset');
+      }
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(LOCAL_MEDIA_DOWNLOAD_TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to save generated media locally (${response.status})`);
+      }
+      const declaredLength = Number(response.headers.get('content-length'));
+      if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+        throw new Error('Generated media is too large to save locally');
+      }
+      bytes = await readResponseBodyWithLimit(response, maxBytes);
+      const fallbackMimeType = type === 'video' ? 'video/mp4' : 'image/png';
+      const responseMimeType =
+        response.headers.get('content-type')?.split(';')[0]?.trim() || '';
+      mimeType = responseMimeType.startsWith(`${type}/`)
+        ? responseMimeType
+        : fallbackMimeType;
     }
-    const bytes = await readResponseBodyWithLimit(response, maxBytes);
-    const fallbackMimeType = type === 'video' ? 'video/mp4' : 'image/png';
-    const responseMimeType =
-      response.headers.get('content-type')?.split(';')[0]?.trim() || '';
-    const mimeType = responseMimeType.startsWith(`${type}/`)
-      ? responseMimeType
-      : fallbackMimeType;
     const persisted = await persistLocalProjectAsset({
       projectId: generation.projectId,
       assetId: createLocalProviderAssetId(generation.projectId, url),
@@ -185,7 +220,8 @@ export async function persistEffectOutputIfNeeded({
       metadata: {
         effectId,
         generationId: wmTaskId,
-        providerUrl: url,
+        provider: providerId ?? 'beatapi',
+        ...(inlineImage ? { inline: true } : { providerUrl: url }),
       },
     });
     await linkGenerationAsset({ generationId: wmTaskId, assetId, role });
@@ -201,16 +237,19 @@ export async function persistEffectOutputIfNeeded({
     localUrlByProviderUrl
   ) as Record<string, unknown>;
   const providerResultUrl = media.resultUrl;
+  const remoteProviderEntries = providerEntries.filter(
+    ({ url }) => !url.startsWith('data:')
+  );
   return {
     ...localizedOutput,
-    ...(providerResultUrl
+    ...(providerResultUrl && !providerResultUrl.startsWith('data:')
       ? {
           provider_result_url: providerResultUrl,
           stored_result_url:
             localUrlByProviderUrl.get(providerResultUrl) ?? providerResultUrl,
         }
       : {}),
-    provider_result_urls: providerEntries.map(({ url }) => url),
+    provider_result_urls: remoteProviderEntries.map(({ url }) => url),
     assetIds,
     storage_sync_failed: false,
   };

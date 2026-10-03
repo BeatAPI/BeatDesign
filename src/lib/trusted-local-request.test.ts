@@ -69,6 +69,10 @@ test('accepts same-origin workspace mutations on an access-controlled deployment
     ok: true,
   });
   assert.equal(validateTrustedLocalJsonMutation(hostedRequest).ok, false);
+  assert.deepEqual(
+    validateTrustedLocalJsonMutation(hostedRequest, { allowRemote: true }),
+    { ok: true }
+  );
 });
 
 test('accepts trusted same-origin multipart workspace mutations without weakening JSON routes', () => {

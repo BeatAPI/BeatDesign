@@ -110,7 +110,7 @@ button[aria-disabled="true"] {
   z-index: -1;
   top: -5rem;
   left: 50%;
-  width: min(64rem, 100vw);
+  width: min(64rem, calc(100% + 2.5rem));
   height: 34rem;
   content: "";
   pointer-events: none;
@@ -122,6 +122,12 @@ button[aria-disabled="true"] {
   background-size: auto, 8px 8px;
   mask-image: radial-gradient(ellipse 58% 52% at center, black 8%, transparent 76%);
   opacity: 0.72;
+}
+
+@media (min-width: 640px) {
+  .beat-product-hero::before {
+    width: min(64rem, calc(100% + 3rem));
+  }
 }
 
 @media (max-width: 640px) {

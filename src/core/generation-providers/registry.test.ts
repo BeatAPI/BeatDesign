@@ -4,18 +4,35 @@ import test from 'node:test';
 
 import {
   getActiveGenerationProvider,
+  getGenerationProvider,
   getGenerationModelBinding,
   getGenerationModelDescriptor,
   listGenerationModelDescriptors,
 } from './index';
 
-test('BeatAPI is the default provider behind stable logical model ids', () => {
+test('BeatAPI remains the test default behind stable logical model ids', () => {
   const provider = getActiveGenerationProvider();
   const binding = getGenerationModelBinding({ modelId: 'seedance-2' });
 
   assert.equal(provider.id, 'beatapi');
   assert.equal(binding?.effectId, 9);
   assert.equal(binding?.upstreamModelId, 'seedance-2');
+});
+
+test('the fork registers the restricted 16688 AI image provider', () => {
+  const provider = getGenerationProvider('16688');
+  assert.equal(provider?.label, '16688 AI');
+  assert.deepEqual(provider?.supports, ['image']);
+  assert.deepEqual(
+    provider?.modelBindings.map((binding) => binding.modelId),
+    [
+      'nano-banana-2',
+      'nano-banana-pro',
+      'gpt-image-2',
+      'gpt-image-2.5-flare',
+      'gpt-image-2.5-sunburst',
+    ]
+  );
 });
 
 test('model discovery exposes parameters and references without upstream URLs', () => {

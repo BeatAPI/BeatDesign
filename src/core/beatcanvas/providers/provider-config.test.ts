@@ -3,20 +3,25 @@ import test from 'node:test';
 
 import {
   DEFAULT_BEATAPI_BASE_URL,
+  DEFAULT_16688_BASE_URL,
   getBeatCanvasProviderPublicConfig,
   getBeatCanvasProviderServerConfig,
   isOfficialBeatApiBaseUrl,
   resolveBeatCanvasProviderId,
 } from './provider-config';
 
-test('BeatAPI is the default BeatCanvas generation provider', () => {
+test('BeatAPI remains the upstream default while the fork exposes 16688 AI', () => {
   assert.equal(resolveBeatCanvasProviderId(undefined), 'beatapi');
   assert.deepEqual(getBeatCanvasProviderPublicConfig(undefined), {
     id: 'beatapi',
     label: 'BeatAPI',
     isDefault: true,
     supports: ['image', 'video', 'analysis'],
+    baseUrl: DEFAULT_BEATAPI_BASE_URL,
+    configPath: '/api/config/beatapi',
+    apiKeyUrl: 'https://beatapi.io/dashboard/apikeys',
   });
+  assert.equal(getBeatCanvasProviderPublicConfig('16688').baseUrl, DEFAULT_16688_BASE_URL);
 });
 
 test('default server config points to the production BeatAPI endpoint', () => {
@@ -29,6 +34,10 @@ test('default server config points to the production BeatAPI endpoint', () => {
       baseUrl: 'https://attacker.example',
       apiKey: 'sk-test',
     }).baseUrl,
+    DEFAULT_BEATAPI_BASE_URL
+  );
+  assert.equal(
+    getBeatCanvasProviderServerConfig({ providerId: 'beatapi' }).baseUrl,
     DEFAULT_BEATAPI_BASE_URL
   );
 });

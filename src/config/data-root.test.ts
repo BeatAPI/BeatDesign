@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import test from 'node:test';
 
 import {
@@ -7,23 +8,25 @@ import {
 } from './data-root';
 
 test('uses the repository data directory by default', () => {
+  const repositoryRoot = resolve('fixtures/beatdesign-repository');
   assert.equal(
-    getBeatDesignDataRoot('/tmp/beatdesign-repository', undefined),
-    '/tmp/beatdesign-repository/data'
+    getBeatDesignDataRoot(repositoryRoot, undefined),
+    resolve(repositoryRoot, 'data')
   );
   assert.equal(
-    getBeatDesignDatabaseUrl('/tmp/beatdesign-repository', undefined),
+    getBeatDesignDatabaseUrl(repositoryRoot, undefined),
     'file:data/local.db'
   );
 });
 
 test('uses an explicit application-data directory for packaged runtimes', () => {
+  const configuredRoot = resolve('fixtures/beatdesign-user-data');
   assert.equal(
-    getBeatDesignDataRoot('/tmp/ignored', '/tmp/beatdesign-user-data'),
-    '/tmp/beatdesign-user-data'
+    getBeatDesignDataRoot(resolve('fixtures/ignored'), configuredRoot),
+    configuredRoot
   );
   assert.equal(
-    getBeatDesignDatabaseUrl('/tmp/ignored', '/tmp/beatdesign-user-data'),
-    'file:/tmp/beatdesign-user-data/local.db'
+    getBeatDesignDatabaseUrl(resolve('fixtures/ignored'), configuredRoot),
+    `file:${resolve(configuredRoot, 'local.db')}`
   );
 });

@@ -35,6 +35,32 @@ An API with a different request or polling contract needs its own adapter. Forks
 
 A custom provider definition owns adapter construction, readiness checks, parameter validation, model bindings, upstream model names, and upload paths. Provider credentials must stay server-side. Switching providers does not change Canvas nodes, Editor clips, Asset IDs, or MCP requests; each submitted task also records its provider/model identity so polling does not silently follow a later default-provider change.
 
+## 16688 Studio fork prototype
+
+The `feat/16688-provider-poc` fork registers `16688 AI` as an opt-in provider.
+Use the `16688` Vite mode (`pnpm dev:16688` or `pnpm build:16688`) to make it
+active while leaving the upstream BeatAPI development and test mode intact.
+The provider has two explicit image transports. GPT Image calls the fixed
+`https://api.16688.org/v1/images/generations` endpoint with a user-owned New
+API key. Nano Banana calls an independently configured Flow2API-compatible
+Gemini media gateway with its own key. Both credentials are encrypted in local
+SQLite. The provider binds `nano-banana-2` to
+`gemini-3.1-flash-image`, `nano-banana-pro` to
+`gemini-3.0-pro-image`, and also exposes `gpt-image-2`,
+`gpt-image-2.5-flare`, and `gpt-image-2.5-sunburst`.
+
+The media gateway URL must use HTTPS. Plain HTTP is accepted only for
+`localhost`, `127.0.0.1`, or `::1`, so configuring a remote gateway cannot
+silently turn the local server into a clear-text credential forwarder. The
+Provider dialog tests `GET /v1/models` before saving a changed channel.
+
+This stage remains deliberately text-to-image only. Both transports request
+inline Base64 output, validate response size and MIME type, and persist results
+into the local Project before exposing them as Assets. Reference-image editing,
+video, hosted accounts, payments, and shared balances are not claimed by this
+prototype. Those capabilities require separate provider contracts and server
+work; they must not silently fall back to another model family.
+
 ## Storage
 
 Storage is independently configurable from generation:
