@@ -49,8 +49,12 @@ test('MCP server starts and answers when spawned from a foreign working director
   const env = { ...process.env };
   delete env.TSX_TSCONFIG_PATH;
   const child = spawn(
-    resolve(repositoryRoot, 'node_modules/.bin/tsx'),
-    [resolve(repositoryRoot, 'scripts/mcp-server.ts')],
+    process.execPath,
+    [
+      '--import',
+      import.meta.resolve('tsx'),
+      resolve(repositoryRoot, 'scripts/mcp-server.ts'),
+    ],
     {
       cwd: foreignRoot,
       env,
@@ -104,8 +108,13 @@ test('MCP server starts and answers when spawned from a foreign working director
     });
     child.kill('SIGTERM');
     const exitResult = await exited;
-    assert.equal(exitResult.signal, null);
-    assert.equal(exitResult.code, 143);
+    if (process.platform === 'win32') {
+      assert.equal(exitResult.signal, 'SIGTERM');
+      assert.equal(exitResult.code, null);
+    } else {
+      assert.equal(exitResult.signal, null);
+      assert.equal(exitResult.code, 143);
+    }
   } finally {
     if (!child.killed) child.kill();
     rmSync(foreignRoot, { recursive: true, force: true });

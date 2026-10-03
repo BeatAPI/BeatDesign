@@ -56,6 +56,18 @@
   "common.pages.not_found": "页面不存在",
   "AppShell": {
     "studio": {
+      "startHere": {
+        "ideasLabel": "创作灵感",
+        "title": "从这里开始创作",
+        "description": "想象画面，塑造氛围，让灵感成为作品。",
+        "selectIdea": "选择{title}",
+        "ideas": {
+          "cinematicLandscape": "电影感风景",
+          "editorialCharacter": "杂志人像",
+          "materialStudy": "材质探索",
+          "surrealFashionFilm": "超现实时尚短片"
+        }
+      },
       "intro": {
         "title": "以画布为中心的 16688 Studio 工作区",
         "description": "选中图片、视频或提示节点后，就能直接从画布继续分支生成。"

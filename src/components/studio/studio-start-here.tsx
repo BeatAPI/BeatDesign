@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
+import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { cn } from '@/lib/utils';
 
 type StudioStartHereIdea = {
   className: string;
   src: string;
-  title: string;
+  titleKey: string;
 };
 
 const STUDIO_START_HERE_IDEAS: StudioStartHereIdea[] = [
@@ -13,35 +14,36 @@ const STUDIO_START_HERE_IDEAS: StudioStartHereIdea[] = [
     className:
       'left-0 top-[18px] size-[90px] rotate-[-8deg] rounded-[14px] sm:left-[22px] sm:top-[14px] sm:size-[132px]',
     src: '/app/create-thumb-forest.webp',
-    title: 'Cinematic landscape',
+    titleKey: 'ideas.cinematicLandscape',
   },
   {
     className:
       'left-[82px] top-[2px] size-[102px] rotate-[3deg] rounded-[17px] sm:left-[134px] sm:top-0 sm:size-[132px]',
     src: '/app/create-thumb-character.webp',
-    title: 'Editorial character',
+    titleKey: 'ideas.editorialCharacter',
   },
   {
     className:
       'left-[172px] top-[10px] size-[96px] rounded-full sm:left-[250px] sm:top-[4px] sm:size-[126px]',
     src: '/app/create-thumb-texture.webp',
-    title: 'Material study',
+    titleKey: 'ideas.materialStudy',
   },
   {
     className:
       'right-0 top-[16px] size-[98px] rotate-[6deg] rounded-[14px] sm:right-[6px] sm:top-[12px] sm:size-[128px]',
     src: '/app/create-thumb-mask.webp',
-    title: 'Surreal fashion film',
+    titleKey: 'ideas.surrealFashionFilm',
   },
 ];
 
 export function StudioStartHere() {
+  const t = useTranslations('AppShell.studio.startHere');
   const [selectedSrc, setSelectedSrc] = useState<string | null>(null);
 
   return (
     <div className="pointer-events-auto w-[min(94vw,620px)] text-center">
       <div
-        aria-label="Starting ideas"
+        aria-label={t('ideasLabel')}
         className="relative mx-auto h-[122px] w-[min(88vw,350px)] sm:h-[148px] sm:w-[500px]"
       >
         <div className="pointer-events-none absolute inset-0 opacity-45 blur-[42px]">
@@ -58,13 +60,14 @@ export function StudioStartHere() {
         {STUDIO_START_HERE_IDEAS.map((idea) => {
           const isSelected = selectedSrc === idea.src;
           const hasSelection = selectedSrc !== null;
+          const title = t(idea.titleKey);
 
           return (
             <button
               key={idea.src}
               type="button"
-              title={idea.title}
-              aria-label={`Select ${idea.title}`}
+              title={title}
+              aria-label={t('selectIdea', { title })}
               aria-pressed={isSelected}
               onClick={() => setSelectedSrc(idea.src)}
               className={cn(
@@ -88,10 +91,10 @@ export function StudioStartHere() {
         })}
       </div>
       <h1 className="mt-7 text-[1.7rem] font-semibold leading-none tracking-[-0.035em] text-white sm:text-[2.15rem]">
-        Create Here
+        {t('title')}
       </h1>
       <p className="mx-auto mt-3 max-w-[390px] text-[13px] leading-6 text-white/35 sm:text-sm">
-        Imagine the scene. Shape the mood. Bring it to life.
+        {t('description')}
       </p>
     </div>
   );

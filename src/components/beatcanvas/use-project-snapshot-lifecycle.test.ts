@@ -92,6 +92,32 @@ test('snapshot autosave retries a version conflict without permanently stopping 
   assert.match(source, /mergeProjectSnapshotsAfterConflict/);
   assert.match(source, /result = await sendSaveRequest\(latest\.version\)/);
   assert.match(source, /onProjectSnapshotConflict\?\.\(\)/);
+  assert.match(source, /result\.code === 'REVISION_CONFLICT'/);
+  assert.match(source, /error\.message\.startsWith\('Canvas '\)/);
+  assert.doesNotMatch(
+    source,
+    /catch \(error\) \{ onProjectSnapshotConflict\?\.\(\); throw error; \}/
+  );
+});
+
+test('canvas undo and redo authorize persisting an explicitly restored empty document', () => {
+  const shellSource = readFileSync(
+    new URL('./beatcanvas-shell.tsx', import.meta.url),
+    'utf8'
+  );
+  const adapterSource = readFileSync(
+    new URL('./use-beatcanvas-react-flow-adapter.ts', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(adapterSource, /return previous;/);
+  assert.match(adapterSource, /return next;/);
+  assert.match(shellSource, /const restoredDocument = undoCanvas\(\)/);
+  assert.match(shellSource, /const restoredDocument = redoCanvas\(\)/);
+  assert.match(
+    shellSource,
+    /setAllowEmptyProjectSnapshot\(restoredDocument\.cards\.length === 0\)/
+  );
 });
 
 test('snapshot conflict recovery preserves independent local and Agent edits', () => {

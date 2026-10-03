@@ -56,6 +56,18 @@
   "common.pages.not_found": "Page not found",
   "AppShell": {
     "studio": {
+      "startHere": {
+        "ideasLabel": "Starting ideas",
+        "title": "Create Here",
+        "description": "Imagine the scene. Shape the mood. Bring it to life.",
+        "selectIdea": "Select {title}",
+        "ideas": {
+          "cinematicLandscape": "Cinematic landscape",
+          "editorialCharacter": "Editorial character",
+          "materialStudy": "Material study",
+          "surrealFashionFilm": "Surreal fashion film"
+        }
+      },
       "intro": {
         "title": "Canvas-first 16688 Studio workspace",
         "description": "Select an image, video, or prompt node, then branch the next generation directly from the canvas."
