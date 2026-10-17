@@ -745,7 +745,9 @@
       "retry": "Try again",
       "backToHistory": "Back to history",
       "startTitle": "Start a new project",
-      "startDescription": "Choose Studio or Canvas to create this project.",
+      "startDescription": "Create your project here. You can switch between Studio and Canvas at any time.",
+      "createStudio": "Create in Studio",
+      "createCanvas": "Create in Canvas",
       "startStudio": "Studio",
       "startCanvas": "Canvas",
       "defaultName": "Untitled project"

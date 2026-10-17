@@ -1,6 +1,6 @@
 import type { WorkspaceMode } from '@/config/workspace-modes';
 import type { ProjectGenerationItem } from '@/core/effects/project-generations';
-import { apiJsonDelete, apiJsonGet } from '@/lib/api-client';
+import { apiJsonDelete, apiJsonGet, apiJsonPost } from '@/lib/api-client';
 
 export type WorkspaceProjectCardItem = {
   id: string;
@@ -49,6 +49,16 @@ export async function fetchWorkspaceProjects(): Promise<{
 
 export async function deleteWorkspaceProjects(projectIds: string[]) {
   return apiJsonDelete<{ success: true }>('/api/app/projects', { projectIds });
+}
+
+export async function createWorkspaceProject(input: {
+  name: string;
+  workspaceMode: WorkspaceMode;
+}) {
+  return apiJsonPost<{ id?: string; name?: string; error?: string }>(
+    '/api/app/projects',
+    input
+  );
 }
 
 export async function fetchProjectGenerations(projectId: string) {
