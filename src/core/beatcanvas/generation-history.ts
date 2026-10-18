@@ -40,21 +40,26 @@ export const resolvePinnedGenerationOutputId = ({
   outputs: CanvasOutputCard[];
   pinnedOutputId?: string | null;
 }) => {
+  const newestFirst = [...outputs]
+    .filter((output) => output.status !== 'failed')
+    .sort(
+      (left, right) =>
+        right.generationSnapshot.capturedAt.localeCompare(
+          left.generationSnapshot.capturedAt
+        ) || right.id.localeCompare(left.id)
+    );
+  const hasResult = (output: CanvasOutputCard) =>
+    output.status === 'succeeded' && Boolean(output.url || output.resultText);
   if (
     pinnedOutputId &&
-    outputs.some((output) => output.id === pinnedOutputId)
+    newestFirst.some((output) => output.id === pinnedOutputId && hasResult(output))
   ) {
     return pinnedOutputId;
   }
 
   return (
-    outputs.find(
-      (output) =>
-        output.status === 'succeeded' &&
-        Boolean(output.url || output.resultText)
-    )
-      ?.id ??
-    outputs[0]?.id ??
+    newestFirst.find(hasResult)?.id ??
+    newestFirst[0]?.id ??
     null
   );
 };

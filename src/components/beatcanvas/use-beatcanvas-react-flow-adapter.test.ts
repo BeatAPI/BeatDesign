@@ -52,6 +52,33 @@ const makeDraft = (
   sourceGenerationId: null,
 });
 
+for (const type of ['image', 'video'] as const) {
+  test(`${type} preview and selected thumbnail agree before and after restoring manual selection`, () => {
+    const draft = makeDraft(type, '16:9');
+    const outputs: CanvasOutputCard[] = [0, 1, 2].map((index) => ({
+      ...draft,
+      id: `take-${index}`,
+      kind: 'output',
+      url: index === 2 ? null : `https://example.com/${index}.${type === 'image' ? 'png' : 'mp4'}`,
+      status: index === 2 ? 'processing' : 'succeeded',
+      sourceConfigCardId: draft.id,
+      generationRunId: `run-${index}`,
+      generationSnapshot: {
+        ...draft,
+        capturedAt: `2026-10-18T00:0${index}:00.000Z`,
+      },
+    }));
+    for (const pinnedOutputId of [null, outputs[0].id, 'missing']) {
+      const restored = JSON.parse(JSON.stringify({ ...draft, pinnedOutputId }));
+      const presentation = buildGenerationCardPresentation({ card: restored, outputs });
+      const selected = presentation.takes.find((take) => take.isPinned);
+      assert.equal(selected?.id, pinnedOutputId === outputs[0].id ? outputs[0].id : outputs[1].id);
+      assert.equal(presentation.latestOutputUrl, selected?.url);
+      assert.equal(presentation.status, 'processing');
+    }
+  });
+}
+
 test('draft frame size follows portrait and landscape ratios', () => {
   assert.deepEqual(resolveDraftShapeSize(null, makeDraft('video', '9:16')), {
     w: 236,

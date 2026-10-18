@@ -50,6 +50,42 @@ const makeOutput = (
   },
 });
 
+for (const type of ['image', 'video'] as const) {
+  test(`${type} defaults to the newest usable take regardless of input order`, () => {
+    const older = { ...makeOutput('old', '2026-10-18T00:00:00.000Z'), type };
+    const newer = { ...makeOutput('new', '2026-10-18T00:01:00.000Z'), type };
+    const pending = { ...makeOutput('pending', '2026-10-18T00:02:00.000Z', 'processing'), type };
+    const empty = { ...makeOutput('empty', '2026-10-18T00:03:00.000Z'), type, url: null };
+    const failed = { ...makeOutput('failed', '2026-10-18T00:04:00.000Z', 'failed'), type };
+    for (const outputs of [[older, pending, newer, empty, failed], [failed, empty, newer, pending, older]]) {
+      const originalOrder = outputs.map((output) => output.id);
+      for (const pinnedOutputId of [null, 'missing', failed.id, empty.id, pending.id]) {
+        assert.equal(resolvePinnedGenerationOutputId({ outputs, pinnedOutputId }), newer.id);
+        const takes = buildGenerationTakes({ outputs, pinnedOutputId });
+        assert.equal(takes.find((take) => take.isPinned)?.id, newer.id);
+        assert.equal(takes.find((take) => take.id === newer.id)?.takeNumber, 2);
+      }
+      assert.equal(resolvePinnedGenerationOutputId({ outputs, pinnedOutputId: older.id }), older.id);
+      assert.deepEqual(outputs.map((output) => output.id), originalOrder);
+    }
+    const draft = { ...older, id: 'draft-1', kind: 'generation' as const, pinnedOutputId: null };
+    const cards = Object.fromEntries([draft, older, newer, pending, failed].map((card) => [card.id, card]));
+    assert.equal(resolveConcreteCanvasMediaCard({ cards, card: draft })?.id, newer.id);
+  });
+}
+
+test('fallback handles empty histories, only failed outputs and equal timestamps deterministically', () => {
+  const time = '2026-10-18T00:00:00.000Z';
+  assert.equal(resolvePinnedGenerationOutputId({ outputs: [] }), null);
+  assert.equal(resolvePinnedGenerationOutputId({ outputs: [makeOutput('failed', time, 'failed')] }), null);
+  for (const status of ['succeeded', 'pending'] as const) {
+    const a = makeOutput('a', time, status);
+    const b = makeOutput('b', time, status);
+    assert.equal(resolvePinnedGenerationOutputId({ outputs: [a, b] }), 'b');
+    assert.equal(resolvePinnedGenerationOutputId({ outputs: [b, a] }), 'b');
+  }
+});
+
 test('resolves a generation node to its pinned concrete output asset', () => {
   const older = makeOutput('output-old', '2026-08-16T00:00:00.000Z');
   const newer = makeOutput('output-new', '2026-08-16T00:02:00.000Z');
