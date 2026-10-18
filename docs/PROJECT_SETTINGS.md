@@ -23,6 +23,12 @@ Image tiles in the project Asset library also offer **Set as cover**.
   The schema default also preserves legacy covers when applying `db:push` first;
   new projects explicitly start in automatic mode. Upgrade tests use isolated data.
 
+Video fallback uses the optional server `ffmpeg` decoder from `PATH` or
+`BEATDESIGN_FFMPEG`. A membership-checked endpoint caches bounded 512px JPEG
+posters under the data directory, with at most two concurrent decodes. Missing
+decoders or failed decoding return a placeholder; they do not prevent ordinary
+browser playback or require downloading the original video in Projects.
+
 ## Shared UI/MCP command
 
 `GET /api/app/projects/:id` returns `{ settings }`, including effective cover,
