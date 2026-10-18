@@ -94,6 +94,13 @@ Codex / Claude Code / Other Agent
 
 ## 5. 已完成并有代码支撑的能力
 
+### 项目设置（2026-10-18）
+
+- Projects 卡片和工作空间顶部提供项目设置，可修改名称、140 字简介、手动封面或恢复自动封面；展示只读 ID、创建日期和本地存储信息，项目链接保持稳定。
+- 手动封面不会被后续上传或生成覆盖；自动封面按首张导入/生成图片、首个本地视频缩略图、占位图回退。旧项目已有封面在升级时保留为手动选择。
+- UI 和 `bdesign_project_update` MCP 使用相同 `project.update` 命令、项目素材归属检查和独立设置版本；旧版本写入返回冲突。详见 `docs/PROJECT_SETTINGS.md`。
+
+
 ### Project / Local-first
 
 - 项目创建、打开、重命名和本地 SQLite 持久化。

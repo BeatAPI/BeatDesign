@@ -26,6 +26,10 @@ export const project = sqliteTable(
   {
     id: text('id').primaryKey(),
     name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    // Legacy rows with covers also remain manual when upgraded via db:push.
+    coverMode: text('cover_mode').notNull().default('manual'),
+    settingsRevision: integer('settings_revision').notNull().default(1),
     coverAssetId: text('cover_asset_id'),
     status: text('status').notNull().default('active'),
     currentStateVersion: integer('current_state_version').notNull().default(1),

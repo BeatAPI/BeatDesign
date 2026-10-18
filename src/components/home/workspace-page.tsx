@@ -9,6 +9,8 @@ import { useState } from 'react';
 
 import { BeatApiProductShell } from '@/components/marketing/beatapi-product-shell';
 import { normalizeLocale } from '@/config/locale';
+import { ProjectSettingsDialog } from '@/components/app/project-settings-dialog';
+import { ProjectCoverPreview } from '@/components/app/project-cover-preview';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
   Dialog,
@@ -219,24 +221,17 @@ export function WorkspacePage({
                       aria-label={copy.openProject(name)}
                       className="block"
                     >
-                      <div className="relative aspect-[16/10] overflow-hidden rounded-[var(--beat-radius)] border border-white/[0.08] bg-[radial-gradient(circle_at_72%_18%,rgba(255,122,51,0.10),transparent_40%),#111113] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-white/[0.18]">
-                        {project.coverImageUrl ? (
-                          <img
-                            src={project.coverImageUrl}
-                            alt=""
-                            className="size-full object-cover transition duration-500 group-hover:scale-[1.025]"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-white/14">
-                            <FolderClock className="size-11" strokeWidth={1.15} />
-                          </div>
-                        )}
+                      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-[var(--beat-radius)] border border-white/[0.08] bg-[radial-gradient(circle_at_72%_18%,rgba(255,122,51,0.10),transparent_40%),#111113] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-white/[0.18]">
+                        <ProjectCoverPreview url={project.coverImageUrl} />
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent" />
                       </div>
                       <h2 className="beat-product-display mt-3 truncate px-1 text-[15px] font-semibold tracking-[-0.02em] text-[var(--beat-text-1)]">
                         {name}
                       </h2>
+                      {project.description && <p className="mt-1 line-clamp-2 px-1 text-xs leading-5 text-white/45">{project.description}</p>}
                     </Link>
+
+                    <div className="absolute left-3 top-3 rounded-xl bg-black/70 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 max-sm:opacity-100"><ProjectSettingsDialog projectId={project.id} /></div>
 
                     <button
                       type="button"

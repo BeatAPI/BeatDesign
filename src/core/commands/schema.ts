@@ -4,6 +4,7 @@ import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
 import { normalizeTimelineDocument } from '@/core/editor/timeline-document';
 
 import { repairCanvasCardInput } from './canvas-card-repair';
+import { projectSettingsPatchSchema } from '@/core/projects/project-settings-contract';
 import type { BeatDesignCommand } from './executor';
 
 const commandIdSchema = z.string().trim().min(1).max(200);
@@ -443,6 +444,7 @@ export const editorOperationSchema = z.discriminatedUnion('type', [
 
 export const beatDesignCommandSchema: z.ZodType<BeatDesignCommand> =
   z.discriminatedUnion('type', [
+    z.object({ type: z.literal('project.update'), patch: projectSettingsPatchSchema }).strict(),
     z
       .object({
         type: z.literal('canvas.apply'),

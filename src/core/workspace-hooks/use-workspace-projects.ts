@@ -30,6 +30,8 @@ export function workspaceProjectsQueryOptions({
     enabled,
     initialData: initialProjects,
     staleTime: 30 * 1000,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
   });
 }
 

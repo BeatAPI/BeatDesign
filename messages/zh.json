@@ -753,5 +753,37 @@
   },
   "Common": {
     "loading": "加载中"
+  },
+  "ProjectSettings": {
+    "title": "项目设置",
+    "subtitle": "管理项目列表中的基本信息和封面。",
+    "details": "基本信息",
+    "name": "项目名称",
+    "description": "简介",
+    "descriptionHint": "显示在项目卡片上的简短说明。",
+    "descriptionPlaceholder": "描述这个项目",
+    "cover": "封面图片",
+    "coverHint": "选择项目图片或上传封面，推荐 16:9。上传的图片会保留在素材库。",
+    "automatic": "自动选择 · 优先首张图片，其次视频缩略图",
+    "manual": "自定义封面 · 后续新增素材不会覆盖",
+    "upload": "上传封面",
+    "reset": "恢复自动封面",
+    "choose": "从项目图片中选择",
+    "info": "项目信息",
+    "id": "项目 ID",
+    "created": "创建日期",
+    "storage": "存储位置",
+    "local": "本地工作空间",
+    "cancel": "取消",
+    "save": "保存更改",
+    "saving": "保存中…",
+    "loading": "正在加载设置…",
+    "loadError": "无法加载设置。",
+    "saveError": "无法保存设置。",
+    "imageOnly": "请选择 PNG、JPEG、WebP 或 GIF 图片。",
+    "closeReload": "关闭后重新打开以刷新",
+    "setAsCover": "设为项目封面",
+    "coverSaved": "项目封面已更新",
+    "conflict": "项目设置已在其他位置更新。请关闭后重新打开，再保存更改。"
   }
 }

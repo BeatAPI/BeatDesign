@@ -1,7 +1,8 @@
 
 import { randomUUID } from 'crypto';
+import { resolveProjectCover } from './project-settings';
 import { getDb } from '@/core/workspace-lib/db-adapter';
-import { project, projectCanvasState, userAsset } from '@/config/db/schema';
+import { project, projectCanvasState } from '@/config/db/schema';
 import {
   type ProjectSnapshotDocument,
   createEmptyProjectSnapshot,
@@ -9,7 +10,7 @@ import {
   isDestructiveEmptyProjectSnapshot,
   normalizeProjectSnapshotDocument,
 } from '@/core/projects/project-snapshot';
-import { and, desc, eq, getTableColumns } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import {
   defaultWorkspaceMode,
   resolveWorkspaceMode,
@@ -41,6 +42,7 @@ export const createProject = async ({
     id,
     name: trimProjectName(name),
     coverAssetId: null,
+    coverMode: 'auto',
     status: 'active',
     currentStateVersion: 1,
     lastWorkspaceMode: resolveWorkspaceMode(workspaceMode),
@@ -70,12 +72,8 @@ export const loadProjects = async ({
 }) => {
   const db = await getDb();
   const projects = await db
-    .select({
-      ...getTableColumns(project),
-      coverImageUrl: userAsset.publicUrl,
-    })
+    .select()
     .from(project)
-    .leftJoin(userAsset, eq(project.coverAssetId, userAsset.id))
     .where(eq(project.status, 'active'))
     .orderBy(
       desc(project.lastOpenedAt),
@@ -84,10 +82,10 @@ export const loadProjects = async ({
     )
     .limit(limit);
 
-  return projects.map((entry: any) => ({
+  return Promise.all(projects.map(async (entry: any) => ({
     ...entry,
-    coverImageUrl: entry.coverImageUrl?.trim() || null,
-  }));
+    coverImageUrl: (await resolveProjectCover(db, entry))?.publicUrl ?? null,
+  })));
 };
 
 export const getProject = async ({

@@ -9,6 +9,7 @@ export type WorkspaceProjectCardItem = {
   activityAt: string;
   activityLabel: string;
   coverImageUrl?: string | null;
+  description?: string;
 };
 
 export type RecentAsset = {
