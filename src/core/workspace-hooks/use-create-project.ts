@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { WorkspaceMode } from '@/config/workspace-modes';
 import {
@@ -23,10 +23,12 @@ export function useCreateProject({
   const lastMode = useRef<WorkspaceMode | null>(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
 
   async function createProject(workspaceMode: WorkspaceMode) {
     // State updates may not render before a second click arrives.
-    if (inFlight.current) return;
+    if (!ready || inFlight.current) return;
     inFlight.current = true;
     lastMode.current = workspaceMode;
     setCreating(true);
@@ -55,6 +57,7 @@ export function useCreateProject({
   }
 
   return {
+    ready,
     creating,
     error,
     createProject,

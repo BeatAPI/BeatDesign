@@ -12,14 +12,6 @@ const source = readFileSync(
 
 test('visiting Studio or Canvas does not create a project automatically', () => {
   assert.doesNotMatch(source, /useEffect/);
-  const hook = readFileSync(
-    new URL(
-      '../../core/workspace-hooks/use-create-project.ts',
-      import.meta.url
-    ),
-    'utf8'
-  );
-  assert.doesNotMatch(hook, /useEffect/);
   assert.match(
     source,
     /onClick=\{\(\) => void createProject\(workspaceMode\)\}/
@@ -42,6 +34,7 @@ test('direct entry only offers the workspace selected by its route', () => {
       })
     );
     assert.equal((html.match(/<button\b/g) ?? []).length, 1);
+    assert.match(html, /<button\b[^>]*disabled=""/);
     assert.ok(
       html.includes(
         workspaceMode === 'canvas' ? 'Create in Canvas' : 'Create in Studio'

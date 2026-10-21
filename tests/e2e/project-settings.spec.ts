@@ -87,6 +87,18 @@ test('stale settings saves keep local edits and leave the MCP change intact', as
   await expect(dialog.getByLabel('Description', { exact: false })).toHaveValue('Keep this draft');
   expect((await settings(request, id)).name).toBe('Concurrent agent edit');
   await page.screenshot({ path: 'test-results/project-settings-conflict.png' });
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+  const title = page.getByRole('textbox', { name: 'Workspace name', exact: true });
+  await expect(title).toHaveValue('Concurrent agent edit');
+  await title.fill('Unsubmitted local title');
+  const current = await settings(request, id);
+  const refreshed = page.waitForResponse(async (response) => {
+    if (response.request().method() !== 'GET' || !response.url().endsWith(`/api/app/projects/${id}`)) return false;
+    return (await response.json()).settings.name === 'Another agent edit';
+  });
+  await updateViaMcp(request, id, current.settingsRevision, 'Another agent edit');
+  await refreshed;
+  await expect(title).toHaveValue('Unsubmitted local title');
 });
 
 test('home does not overflow narrow screens', async ({ page }) => {

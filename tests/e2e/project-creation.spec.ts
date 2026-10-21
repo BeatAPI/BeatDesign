@@ -64,7 +64,10 @@ test('direct Canvas entry requires one explicit create action and retains entry 
   page,
 }) => {
   let creations = 0;
+  let openedProjectUrl: URL | undefined;
   page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (request.isNavigationRequest() && /^\/canvas\/[^/]+$/.test(url.pathname)) openedProjectUrl = url;
     if (
       request.method() === 'POST' &&
       new URL(request.url()).pathname === '/api/app/projects'
@@ -84,10 +87,18 @@ test('direct Canvas entry requires one explicit create action and retains entry 
   ).toHaveCount(0);
   expect(creations).toBe(0);
   await create.click();
-  await expect(page).toHaveURL(/\/canvas\/[^/?]+\?/);
-  const url = new URL(page.url());
+  await expect(page).toHaveURL(/\/canvas\/[^/?]+/);
+  // Entry prompts are deliberately removed after hydration; inspect the actual
+  // navigation and the saved draft, rather than racing that cleanup effect.
+  expect(openedProjectUrl).toBeDefined();
+  const url = openedProjectUrl!;
   expect(url.searchParams.get('target')).toBe('image');
   expect(url.searchParams.get('model')).toBe('nano-banana-pro');
   expect(url.searchParams.get('prompt')).toBe('Entry test');
+  const id = url.pathname.split('/').at(-1)!;
+  await expect.poll(async () => {
+    const snapshot = await (await page.request.get(`/api/app/projects/${id}/snapshot`)).json();
+    return snapshot.document.cards.some((card: { prompt?: string }) => card.prompt === 'Entry test');
+  }).toBe(true);
   expect(creations).toBe(1);
 });

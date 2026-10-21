@@ -50,7 +50,9 @@ export function ProductPageShell({
   useEffect(() => {
     const name = projectSettings.data?.name;
     if (!name) return;
-    setDraftWorkspaceName((draft) => draft === lastPersistedWorkspaceNameRef.current ? name : draft);
+    // React may defer the updater until after this effect mutates the ref.
+    const previousName = lastPersistedWorkspaceNameRef.current;
+    setDraftWorkspaceName((draft) => draft === previousName ? name : draft);
     lastPersistedWorkspaceNameRef.current = name;
   }, [projectSettings.data?.name]);
 

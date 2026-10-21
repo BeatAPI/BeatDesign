@@ -52,7 +52,7 @@ export function CreateProjectRoutePage({
 }) {
   const { locale, target, model, prompt, projectName, workspaceMode } = data;
   const copy = getCopy(locale);
-  const { creating, error, createProject, retryProject } = useCreateProject({
+  const { ready, creating, error, createProject, retryProject } = useCreateProject({
     locale,
     projectName,
     errorMessage: copy.errorTitle,
@@ -103,6 +103,7 @@ export function CreateProjectRoutePage({
                 type="button"
                 className="h-11 rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-5 text-[var(--beat-accent-ink)] hover:bg-[var(--beat-accent-hover)]"
                 onClick={() => void createProject(workspaceMode)}
+                disabled={!ready}
               >
                 {workspaceMode === 'studio'
                   ? copy.startStudio

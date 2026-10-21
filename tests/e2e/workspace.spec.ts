@@ -114,8 +114,10 @@ test('Canvas UI commands and MCP edits share durable state; unchanged polling is
   await expect.poll(() => writes.some((body) => JSON.parse(body).command.type === 'canvas.apply')).toBe(true);
   await expect.poll(async () => (await (await request.get(`/api/app/projects/${id}/snapshot`)).json()).document.cards[0].prompt).toBe('Agent revised prompt');
   await expect.poll(async () => (await (await request.get(`/api/app/projects/${id}/snapshot`)).json()).document.frames['qa-draft'].x).not.toBe(200);
+  // Dragging can leave the pointer inside the card without a fresh pointerenter.
+  // Re-enter it to exercise the actual hover composer interaction.
+  await page.mouse.move(10, 80);
   await node.hover();
-  await node.dblclick();
   await expect(page.locator('textarea').first()).toHaveValue('Agent revised prompt');
   reads.length = 0;
   await page.waitForTimeout(4500);
