@@ -22,6 +22,71 @@ async function project(request: APIRequestContext, name: string) {
   return (await response.json()).id as string;
 }
 
+for (const type of ['image', 'video'] as const) {
+  test(`Canvas ${type} defaults to latest take and persists manual history selection`, async ({ page, request }) => {
+    const projectId = await project(request, `Latest ${type} take QA`);
+    const fixture = await readFile(type === 'image' ? 'public/logo.png' : 'tests/fixtures/tiny-black.mp4');
+    const urls: string[] = [];
+    const assetIds: string[] = [];
+    for (const index of [1, 2]) {
+      const uploaded = await request.post(`/api/app/projects/${projectId}/assets`, {
+        headers,
+        multipart: { file: {
+          name: `take-${index}.${type === 'image' ? 'png' : 'mp4'}`,
+          mimeType: type === 'image' ? 'image/png' : 'video/mp4',
+          buffer: Buffer.concat([fixture, Buffer.from(`take-${index}`)]),
+        } },
+      });
+      expect(uploaded.ok()).toBeTruthy();
+      const { asset } = await uploaded.json();
+      urls.push(asset.publicUrl);
+      assetIds.push(asset.id);
+    }
+    const draft = {
+      id: 'qa-latest-draft', kind: 'generation', type, name: 'Latest take QA', url: null,
+      prompt: 'Local version selection test', referenceCardIds: [], workflowTemplateId: null,
+      status: 'idle', error: null, modelId: type === 'image' ? 'gpt-image-2.5-flare' : 'seedance-2.0',
+      aspectRatio: '16:9', outputQuality: '720p', duration: '8s', mode: 'quality',
+      variant: 'standard', quality: 'standard', sourceGenerationId: null,
+    };
+    const outputs = [0, 1, 2].map((index) => ({
+      ...draft, id: `qa-take-${index}`, kind: 'output',
+      assetId: assetIds[index] ?? null,
+      status: index === 2 ? 'processing' : 'succeeded', url: urls[index] ?? null,
+      sourceConfigCardId: draft.id, generationRunId: `qa-run-${index}`,
+      generationSnapshot: { ...draft, capturedAt: `2026-10-18T00:0${index}:00.000Z` },
+    }));
+    const applied = await mcp(request, 'bdesign_canvas_apply', { projectId, operations: [draft, ...outputs].map((card) => ({
+      type: 'upsert_card', card, frame: { x: 200, y: 160, w: 420, h: 236 },
+    })) });
+    expect(applied.structuredContent.result.ok, JSON.stringify(applied)).toBe(true);
+    const snapshot = await (await request.get(`/api/app/projects/${projectId}/snapshot`)).json();
+    expect(snapshot.document.cards).toHaveLength(4);
+    await page.goto(`/canvas/${projectId}`);
+    const node = page.locator(`[data-card-id="${draft.id}"]`);
+    await expect(node).toBeVisible();
+    await expect(node.getByRole('button', { name: 'Take 2', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(node.getByRole('button', { name: 'Take 1', exact: true })).toHaveAttribute('aria-pressed', 'false');
+    if (type === 'image') {
+      await expect(node.locator('img').first()).toHaveAttribute('src', urls[1]);
+    } else {
+      await node.getByRole('button', { name: /^View result:/ }).click();
+      await expect(page.locator('video').first()).toHaveAttribute('src', urls[1]);
+      await page.getByRole('dialog').getByRole('button').click();
+    }
+    await node.getByRole('button', { name: 'Take 1', exact: true }).click();
+    await expect(node.getByRole('button', { name: 'Take 1', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('dialog').getByRole('button').click();
+    await expect.poll(async () => {
+      const state = await (await request.get(`/api/app/projects/${projectId}/snapshot`)).json();
+      return state.document.cards.find((card: { id: string }) => card.id === draft.id)?.pinnedOutputId;
+    }).toBe(outputs[0].id);
+    await page.reload();
+    await expect(node.getByRole('button', { name: 'Take 1', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await page.screenshot({ path: `test-results/latest-${type}-take.png` });
+  });
+}
+
 test('Canvas UI commands and MCP edits share durable state; unchanged polling is lightweight', async ({ page, request }) => {
   const id = await project(request, 'Canvas concurrency QA');
   const initial = { id: 'qa-draft', kind: 'generation', type: 'image', name: 'QA draft', prompt: 'Original prompt', modelId: 'gpt-image-2.5-flare' };
