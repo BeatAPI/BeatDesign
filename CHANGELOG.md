@@ -2,7 +2,7 @@
 
 All notable changes to BeatDesign are documented in this file.
 
-## Unreleased — v0.2.5 candidate
+## [0.2.5] - 2026-10-22
 
 ### Added
 
@@ -24,7 +24,7 @@ All notable changes to BeatDesign are documented in this file.
 
 ### Maintenance
 
-- Prepare v0.2.5 application and integration metadata; publication remains pending.
+- Align v0.2.5 application and integration metadata.
 - Replace Unix-only postinstall commands with a Node.js setup script. Verify clean installation, schema setup, build, types, tests and translations on Linux and Windows in CI.
 - Run browser/MCP checks against the production build so development reloads and Vite error overlays cannot interrupt release validation.
 - Pin Node.js 24-compatible GitHub Actions and explicit runner images; adopt the current server-function validator API and explicit Vite config import extensions.
@@ -33,7 +33,7 @@ All notable changes to BeatDesign are documented in this file.
 ### Documentation
 
 - Document source upgrade steps and project-setting revision/cover handling in Codex, Claude Code and WorkBuddy Skills.
-- Highlight current source updates in English, Chinese and Japanese READMEs, while distinguishing them from the v0.2.4 release and package. Update the MCP catalog and current product status.
+- Highlight v0.2.5 features and source upgrade steps in English, Chinese and Japanese READMEs. Update the MCP catalog and current product status.
 
 ## [0.2.4] - 2026-09-23
 
@@ -153,6 +153,7 @@ All notable changes to BeatDesign are documented in this file.
 - MP4 export remains browser-driven and is not yet available as a headless MCP tool.
 - Caption style presets, transitions, speed controls, multiple named timelines, and native desktop packaging remain follow-up work.
 
+[0.2.5]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.5
 [0.2.4]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.4
 [0.2.2]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.2
 [0.2.1]: https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.1
