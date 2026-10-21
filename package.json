@@ -1,10 +1,10 @@
 {
   "name": "beatdesign",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "description": "The open-source, local-first AI canvas for image and video creation and analysis",
   "license": "Apache-2.0",
-  "homepage": "https://design.beatapi.io",
+  "homepage": "https://beatapi.io/design",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BeatAPI/BeatDesign.git"
@@ -36,7 +36,7 @@
     "prebuild": "node scripts/db-setup.mjs",
     "build": "tsx scripts/prepare-paraglide.ts && vite build && node scripts/sanitize-output.mjs",
     "start": "node .output/server/index.mjs",
-    "postinstall": "mkdir -p data && (test -f src/config/db/schema.ts || node scripts/db-setup.mjs)",
+    "postinstall": "node scripts/postinstall.mjs",
     "db:setup": "node scripts/db-setup.mjs",
     "db:push": "drizzle-kit push --config=drizzle.config.ts",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",

@@ -2,7 +2,7 @@
 
 All notable changes to BeatDesign are documented in this file.
 
-## Unreleased
+## Unreleased — v0.2.5 candidate
 
 ### Added
 
@@ -21,8 +21,16 @@ All notable changes to BeatDesign are documented in this file.
 - Isolate BeatAPI adapter construction, readiness checks and input validation with TanStack server-only functions so browser model discovery never imports local configuration or SQLite.
 - Update TanStack Start/Router, the MCP SDK, Vite, Seroval and source-map-js to patched versions; production dependency audit reports no known vulnerabilities.
 
+### Maintenance
+
+- Prepare v0.2.5 application and integration metadata; publication remains pending.
+- Replace Unix-only postinstall commands with a Node.js setup script. Verify clean installation, schema setup, build, types, tests and translations on Linux and Windows in CI.
+- Pin Node.js 24-compatible GitHub Actions and explicit runner images; adopt the current server-function validator API and explicit Vite config import extensions.
+- Correct product website links in application, package, plugin and policy-page metadata.
+
 ### Documentation
 
+- Document source upgrade steps and project-setting revision/cover handling in Codex, Claude Code and WorkBuddy Skills.
 - Highlight current source updates in English, Chinese and Japanese READMEs, while distinguishing them from the v0.2.4 release and package. Update the MCP catalog and current product status.
 
 ## [0.2.4] - 2026-09-23

@@ -34,6 +34,8 @@ BeatDesign is an independent, open-source, local-first workspace for AI image an
 
 Available on `main`; the latest tagged release and npm package remain **v0.2.4**. Pull the source to use these updates; existing packaged installations do not receive them automatically.
 
+The repository and integration manifests are prepared for **v0.2.5**; publication is pending. For an existing source checkout, stop BeatDesign, run `git pull --ff-only`, `pnpm install --frozen-lockfile`, `pnpm db:push`, then restart `pnpm dev:agent` (or your usual UI/MCP commands). Keep your local data directory; no reinstall or project reset is needed.
+
 - **Project settings:** edit names and descriptions, upload or select a cover, and reset to an automatic image or local video poster. A manual cover stays selected after later imports and generations. Open the settings icon on a project card or workspace header.
 - **Consistent generation versions:** Canvas previews and Take selection agree on the latest successful output; manual selections and concrete timeline Assets are preserved.
 - **Faster project entry:** choosing Canvas or Studio creates one project and opens it directly, with retry protection.
