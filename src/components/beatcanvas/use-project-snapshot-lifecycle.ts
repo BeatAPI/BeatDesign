@@ -574,4 +574,6 @@ export function useProjectSnapshotLifecycle({
     isHydratedFromProject,
     projectId,
   ]);
+
+  return isCanvasReady && isHydratedFromProject && isHydratedFromQuery;
 }

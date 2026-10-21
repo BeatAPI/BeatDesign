@@ -14,6 +14,7 @@ All notable changes to BeatDesign are documented in this file.
 - Align Canvas previews and Take selection with the latest usable successful generation, while preserving explicit selections and pinned timeline Assets (#26).
 - Preserve timeline clip gains in MCP audio exports and limit overlapping peaks without makeup gain (#24).
 - Commit project settings and idempotency receipts atomically; retain edits and show errors when header renames conflict.
+- Keep Canvas creation, upload/history controls and keyboard shortcuts inactive until the editor and saved project are ready, preserving the first user action even when the editor chunk loads slowly.
 - Persist undo/redo back to an intentionally empty Canvas. Extract Windows test portability, Studio empty-state translations, and narrow-screen hero layout improvements from #18 without its branding, Provider, or hosted deployment profile.
 
 ### Security

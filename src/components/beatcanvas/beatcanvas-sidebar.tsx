@@ -22,6 +22,7 @@ const HistoryPanel = lazy(() =>
 
 export type BeatCanvasSidebarProps = {
   projectId?: string | null;
+  disabled?: boolean;
   onUploadMedia: () => void;
   onCreateImageDraft: () => void;
   onInsertHistoryAsset: (
@@ -32,6 +33,7 @@ export type BeatCanvasSidebarProps = {
 
 export default function BeatCanvasSidebar({
   projectId,
+  disabled = false,
   onUploadMedia,
   onCreateImageDraft,
   onInsertHistoryAsset,
@@ -62,13 +64,14 @@ export default function BeatCanvasSidebar({
           icon={<Plus size={18} />}
           title={t('toolbar.generationNode')}
           active={false}
+          disabled={disabled}
           onClick={handleCreateGenerationNode}
         />
         <ToolBtn
           icon={<ImagePlus size={17} />}
           title={t('toolbar.uploadNode')}
           active={uploadIntent !== null}
-          disabled={uploadIntent !== null}
+          disabled={disabled || uploadIntent !== null}
           onClick={onUploadMedia}
         />
         <ToolSeparator />
@@ -76,6 +79,7 @@ export default function BeatCanvasSidebar({
           icon={<Clock3 size={17} />}
           title={t('sidebar.historyAssets')}
           active={activePanel === 'history'}
+          disabled={disabled}
           onClick={() => handleTogglePanel('history')}
         />
       </div>

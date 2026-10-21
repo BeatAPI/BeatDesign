@@ -1383,7 +1383,7 @@ export function BeatCanvasShell({
     toast.error(studioT('messages.snapshotConflict'));
   }, [studioT]);
 
-  useProjectSnapshotLifecycle({
+  const isWorkspaceReady = useProjectSnapshotLifecycle({
     projectId,
     projectPath,
     initialProjectSnapshot,
@@ -1484,6 +1484,7 @@ export function BeatCanvasShell({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isWorkspaceReady) return;
       const targetContext = getCanvasShortcutTargetContext(event.target);
       const key = event.key.toLowerCase();
       const hasModifier = event.metaKey || event.ctrlKey;
@@ -1573,6 +1574,7 @@ export function BeatCanvasShell({
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
   }, [
+    isWorkspaceReady,
     copySelectedCanvasCards,
     handleCreatePromptDraft,
     openUploadPicker,
@@ -1677,6 +1679,7 @@ export function BeatCanvasShell({
           {/* Floating Left Toolbar */}
           <BeatCanvasSidebar
             projectId={projectId}
+            disabled={!isWorkspaceReady}
             onUploadMedia={openMediaUploadPicker}
             onCreateImageDraft={() => handleCreatePromptDraft('image')}
             onInsertHistoryAsset={(asset) =>
