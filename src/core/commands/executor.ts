@@ -4,12 +4,17 @@ import {
   type TimelineDocument,
 } from '@/core/editor/timeline-document';
 import type { ProjectSnapshotDocument } from '@/core/projects/project-snapshot';
-import type { ProjectSettings, ProjectSettingsPatch } from '@/core/projects/project-settings-contract';
+import type {
+  ProjectSettings,
+  ProjectSettingsPatch,
+} from '@/core/projects/project-settings-contract';
+import type {
+  OrganizationCommand,
+  WorkflowCommand,
+} from '@/core/organization/command-contract';
+import type { ProjectOrganizationDocument } from '@/core/organization/organization-document';
 
-import {
-  applyCanvasOperations,
-  type CanvasOperation,
-} from './canvas-commands';
+import { applyCanvasOperations, type CanvasOperation } from './canvas-commands';
 import {
   applyEditorOperations,
   invalidateTimelineRenderIfSourceChanged,
@@ -24,6 +29,8 @@ import {
 } from './contracts';
 
 export type BeatDesignCommand =
+  | OrganizationCommand
+  | WorkflowCommand
   | { type: 'project.update'; patch: ProjectSettingsPatch }
   | { type: 'canvas.apply'; operations: CanvasOperation[] }
   | { type: 'editor.apply'; operations: EditorOperation[] }
@@ -36,6 +43,11 @@ export type BeatDesignCommandDocuments = {
 };
 
 export type BeatDesignCommandData = BeatDesignCommandDocuments & {
+  organization?: ProjectOrganizationDocument;
+  organizationRevision?: number;
+  templateSummary?: { id: string; name: string; revision: number };
+  instanceIds?: string[];
+  blockers?: string[];
   projectSettings?: ProjectSettings;
   diagnostics?: ReturnType<typeof diagnoseTimeline>;
 };
@@ -50,8 +62,15 @@ export function executeBeatDesignCommand({
   const { commandId, projectId, origin, command } = envelope;
 
   try {
-    if (command.type === 'project.update') {
-      throw new BeatDesignCommandError('INVALID_COMMAND', 'Project settings commands require the persistence boundary.');
+    if (
+      command.type === 'project.update' ||
+      command.type === 'organization.apply' ||
+      command.type.startsWith('workflow.template.')
+    ) {
+      throw new BeatDesignCommandError(
+        'INVALID_COMMAND',
+        'Project settings commands require the persistence boundary.'
+      );
     }
     if (command.type === 'canvas.apply') {
       if (!documents.canvas) {
@@ -60,7 +79,10 @@ export function executeBeatDesignCommand({
           'Canvas document was not found.'
         );
       }
-      const applied = applyCanvasOperations(documents.canvas, command.operations);
+      const applied = applyCanvasOperations(
+        documents.canvas,
+        command.operations
+      );
       return createCommandSuccess({
         commandId,
         projectId,
@@ -135,7 +157,9 @@ export function executeBeatDesignCommand({
       origin,
       code: 'COMMAND_FAILED',
       message:
-        error instanceof Error ? error.message : 'The command could not be applied.',
+        error instanceof Error
+          ? error.message
+          : 'The command could not be applied.',
     });
   }
 }

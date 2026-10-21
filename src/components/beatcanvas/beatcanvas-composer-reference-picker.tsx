@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import type { CanvasGenerationCard } from '@/core/beatcanvas/canvas-types';
-import { ChevronDown, GripVertical, ImagePlus, Video, X } from 'lucide-react';
+import { ChevronDown, GripVertical, ImagePlus, FileText, Music, Video, X } from 'lucide-react';
 import { useState, type RefObject } from 'react';
 
 import {
@@ -19,7 +19,7 @@ type ReferenceOption = {
 export type CanvasReferenceCardOption = {
   id: string;
   name: string;
-  type: CanvasGenerationCard['type'];
+  type: 'image' | 'video' | 'audio' | 'text';
   thumbnailUrl: string | null;
   alias?: string;
 };
@@ -140,7 +140,7 @@ export function BeatCanvasComposerReferencePicker({
                       draggable={false}
                       className="size-full object-cover"
                     />
-                  ) : card.type === 'video' ? (
+                  ) : card.type === 'text' ? (<FileText className="m-auto size-3 text-white/70" />) : card.type === 'audio' ? (<Music className="m-auto size-3 text-white/70" />) : card.type === 'video' ? (
                     <Video className="m-auto size-3 text-white/70" />
                   ) : (
                     <ImagePlus className="m-auto size-3 text-white/70" />

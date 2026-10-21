@@ -1,4 +1,5 @@
-const LOCAL_SETTINGS_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+import { isTrustedWorkspaceHost } from './trusted-workspace-host';
+const LOCAL_SETTINGS_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
 export const WORKSPACE_MUTATION_HEADER = 'x-beatapi-workspace-request';
 export const WORKSPACE_MUTATION_HEADER_VALUE = '1';
@@ -10,6 +11,7 @@ export type TrustedLocalRequestResult =
 export function validateTrustedWorkspaceMutation(
   request: Request
 ): TrustedLocalRequestResult {
+  if (!isTrustedWorkspaceHost(request)) return {ok:false,status:403,message:'Untrusted workspace host.'};
   if (
     request.headers.get(WORKSPACE_MUTATION_HEADER) !==
     WORKSPACE_MUTATION_HEADER_VALUE
@@ -68,7 +70,7 @@ export function validateTrustedLocalJsonMutation(
       ok: false,
       status: 403,
       message:
-        'Settings can only be changed locally; use deployment secrets on hosted instances.',
+        'Settings can only be changed from the local workspace.',
     };
   }
 

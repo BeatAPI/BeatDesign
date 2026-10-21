@@ -1,7 +1,8 @@
 import type { ProjectSnapshotDocument } from '@/core/projects/project-snapshot';
 import type { CanvasOperation } from './canvas-commands';
 
-const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const equal = (a: unknown, b: unknown) =>
+  JSON.stringify(a) === JSON.stringify(b);
 
 /** Layout changes never carry stale card content into a command. */
 export function buildCanvasOperations(
@@ -15,13 +16,24 @@ export function buildCanvasOperations(
   const previous = new Map(base?.cards.map((card) => [card.id, card]));
   const ids = new Set(next.cards.map((card) => card.id));
   const operations: CanvasOperation[] = [];
+  if (!equal(base?.organization, next.organization)) {
+    operations.push({
+      type: 'set_canvas_organization',
+      organization: next.organization ?? null,
+    });
+  }
   for (const card of base?.cards ?? []) {
-    if (!ids.has(card.id)) operations.push({ type: 'remove_card', cardId: card.id });
+    if (!ids.has(card.id))
+      operations.push({ type: 'remove_card', cardId: card.id });
   }
   for (const card of next.cards) {
     const frame = next.frames[card.id];
     if (!equal(previous.get(card.id), card)) {
-      operations.push({ type: 'upsert_card', card, ...(frame ? { frame } : {}) });
+      operations.push({
+        type: 'upsert_card',
+        card,
+        ...(frame ? { frame } : {}),
+      });
     } else if (frame && !equal(base?.frames[card.id], frame)) {
       operations.push({ type: 'move_card', cardId: card.id, frame });
     }
@@ -30,7 +42,10 @@ export function buildCanvasOperations(
     operations.push({ type: 'set_camera', camera: next.camera ?? null });
   }
   if (!equal(base?.workflows?.activeTemplate, next.workflows?.activeTemplate)) {
-    operations.push({ type: 'set_workflow', activeTemplate: next.workflows?.activeTemplate ?? null });
+    operations.push({
+      type: 'set_workflow',
+      activeTemplate: next.workflows?.activeTemplate ?? null,
+    });
   }
   return operations;
 }

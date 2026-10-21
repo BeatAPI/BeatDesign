@@ -1,3 +1,4 @@
+import { ProjectOrganizationWorkspace } from './project-organization-workspace';
 import { ProjectAssetsLibrary } from '@/components/app/project-assets-dialog';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 
@@ -15,6 +16,7 @@ export function ProjectAssetsWorkspace({ projectId }: { projectId: string }) {
           <p className="mt-2 whitespace-nowrap text-[13px] leading-6 text-[var(--beat-text-3)]">
             {t('description')}
           </p>
+          <ProjectOrganizationWorkspace key={projectId} projectId={projectId} />
           <div className="mt-8">
             <ProjectAssetsLibrary projectId={projectId} />
           </div>

@@ -1,11 +1,8 @@
-import type {
-  CanvasCard,
-  CanvasCardMediaType,
-} from './canvas-types';
+import type { CanvasCard, CanvasReferenceMediaType } from './canvas-types';
 
 export type CanvasReferenceMention = {
   cardId: string;
-  type: CanvasCardMediaType;
+  type: CanvasReferenceMediaType | 'text';
   index: number;
   alias: string;
   name: string;
@@ -17,7 +14,7 @@ export type ActiveCanvasReferenceMention = {
   query: string;
 };
 
-const REFERENCE_MENTION_PATTERN = /@(?:Image|Video)\d+/g;
+const REFERENCE_MENTION_PATTERN = /@(?:Image|Video|Audio|Text)\d+\b/g;
 
 export const CANONICAL_FIRST_FRAME_PROMPT_DIRECTIVE =
   'Use @Image1 as the first frame.';
@@ -34,9 +31,10 @@ export const ensureCanvasFirstFramePromptDirective = (prompt: string) => {
 };
 
 export const getCanvasReferenceAlias = (
-  type: CanvasCardMediaType,
+  type: CanvasReferenceMediaType | 'text',
   index: number
-) => `@${type === 'video' ? 'Video' : 'Image'}${index}`;
+) =>
+  `@${type === 'text' ? 'Text' : type === 'video' ? 'Video' : type === 'audio' ? 'Audio' : 'Image'}${index}`;
 
 export const buildCanvasReferenceMentions = ({
   referenceCardIds,
@@ -45,14 +43,20 @@ export const buildCanvasReferenceMentions = ({
   referenceCardIds: string[];
   cards: Record<string, CanvasCard | undefined>;
 }): CanvasReferenceMention[] => {
-  const counts: Record<CanvasCardMediaType, number> = {
+  const counts: Record<CanvasReferenceMediaType | 'text', number> = {
+    text: 0,
     image: 0,
     video: 0,
+    audio: 0,
   };
 
   return referenceCardIds.flatMap((cardId) => {
     const card = cards[cardId];
-    if (!card || (card.type !== 'image' && card.type !== 'video')) return [];
+    if (
+      !card ||
+      (card.type !== 'image' && card.type !== 'video' && card.type !== 'audio' && card.type !== 'text')
+    )
+      return [];
 
     counts[card.type] += 1;
     const index = counts[card.type];
@@ -123,8 +127,10 @@ export const insertCanvasReferenceMention = ({
   const end = activeMention?.end ?? selectionEnd;
   const before = prompt.slice(0, start);
   const after = prompt.slice(end);
-  const leadingSpace = before && !/[\s([{，。,:;；：]$/u.test(before) ? ' ' : '';
-  const trailingSpace = after && !/^[\s)\]}，。,:;；：]/u.test(after) ? ' ' : '';
+  const leadingSpace =
+    before && !/[\s([{，。,:;；：]$/u.test(before) ? ' ' : '';
+  const trailingSpace =
+    after && !/^[\s)\]}，。,:;；：]/u.test(after) ? ' ' : '';
   const insertion = `${leadingSpace}${alias}${trailingSpace}`;
 
   return {
@@ -167,9 +173,12 @@ export const rewriteCanvasReferenceAliases = ({
       (mention) => mention.cardId === cardId
     );
     const next = nextByCardId.get(cardId);
-    nextPrompt = nextPrompt.split(placeholder).join(
-      next?.alias ?? `@Removed${previous?.type === 'video' ? 'Video' : 'Image'}`
-    );
+    nextPrompt = nextPrompt
+      .split(placeholder)
+      .join(
+        next?.alias ??
+          `@Removed${previous?.type === 'text' ? 'Text' : previous?.type === 'video' ? 'Video' : previous?.type === 'audio' ? 'Audio' : 'Image'}`
+      );
   }
 
   return nextPrompt;

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { applyRuntimeMigration } from './migrations.mjs';
 import { spawn } from 'node:child_process';
 import { mkdir, readFile, readdir } from 'node:fs/promises';
 import { homedir } from 'node:os';
@@ -57,12 +58,7 @@ const migrateDatabase = async () => {
     for (const name of migrationFiles) {
       if (applied.has(name)) continue;
       const source = await readFile(resolve(migrationsDirectory, name), 'utf8');
-      const sql = source.replaceAll('--> statement-breakpoint', '');
-      await client.executeMultiple(sql);
-      await client.execute({
-        sql: 'INSERT INTO __beatdesign_runtime_migrations (name, applied_at) VALUES (?, ?)',
-        args: [name, Date.now()],
-      });
+      await applyRuntimeMigration(client, name, source);
     }
   } finally {
     client.close();
@@ -144,6 +140,8 @@ try {
     env: {
       ...runtimeEnv,
       HOST: '127.0.0.1',
+      NITRO_HOST: '127.0.0.1',
+      NITRO_PORT: '3020',
       PORT: '3020',
     },
     stdio: ['ignore', 'pipe', 'pipe'],

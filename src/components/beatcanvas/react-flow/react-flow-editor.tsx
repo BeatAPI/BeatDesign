@@ -2,6 +2,9 @@ import {
   Background,
   BackgroundVariant,
   MiniMap,
+  Handle,
+  NodeResizer,
+  Position,
   ReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -11,6 +14,8 @@ import {
   type NodeChange,
   type ReactFlowInstance,
   type Viewport,
+  type NodeProps,
+  type EdgeProps,
 } from '@xyflow/react';
 import {
   useCallback,
@@ -27,15 +32,40 @@ import {
   getUnionBounds,
 } from '../canvas-engine/canvas-projection';
 import { AssetCardNode } from '../nodes/asset-card-node';
+import { TextCardNode } from '../nodes/text-card-node';
 import { GenerationCardNode } from '../nodes/generation-card-node';
 import { WorkflowGroupNode } from '../nodes/workflow-group-node';
+import { getBeatCanvasNodeCopy } from '../nodes/beatcanvas-node-copy';
 import { BeatCanvasReferenceEdge } from './beatcanvas-reference-edge';
+import { projectCanvasOrganization } from '@/core/organization/canvas-projection';
+import {
+  applyCanvasOrganizationOperations,
+  cleanupCanvasOrganizationForRemovedCards,
+  type CanvasOrganization,
+  type CanvasOrganizationOperation,
+} from '@/core/organization/canvas-organization';
+import { toast } from 'sonner';
+import type {
+  CanvasCard,
+  CanvasOutputCard,
+} from '@/core/beatcanvas/canvas-types';
+import {
+  resolveConcreteCanvasMediaCard,
+  resolvePinnedGenerationOutputId,
+} from '@/core/beatcanvas/generation-history';
+import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
+import type {
+  ProjectSnapshotDocument,
+  ProjectSnapshotShapeFrame,
+} from '@/core/projects/project-snapshot';
 import {
   ASSET_CARD_NODE_TYPE,
+  TEXT_CARD_NODE_TYPE,
   GENERATION_CARD_NODE_TYPE,
   WORKFLOW_GROUP_NODE_TYPE,
   readNodeSize,
   sortParentsBeforeChildren,
+  countGroupTimelineUses,
   type CanvasBounds,
   type CanvasShapeInput,
   type CanvasShapeRecord,
@@ -53,6 +83,14 @@ type CanvasComponents = {
 };
 
 interface BeatCanvasReactFlowEditorProps {
+  organization?: CanvasOrganization;
+  canvasCards?: Record<string, CanvasCard>;
+  timelineUsage?: Array<{ assetId: string | null }>;
+  getCanvasDocument?: () => ProjectSnapshotDocument;
+  onOrganizationChange?: (
+    organization: CanvasOrganization,
+    frames?: Record<string, ProjectSnapshotShapeFrame>
+  ) => void;
   onMount?: (editor: unknown) => void;
   onDocumentChange?: () => void;
   onHistoryCheckpoint?: () => void;
@@ -63,20 +101,176 @@ interface BeatCanvasReactFlowEditorProps {
   components?: Record<string, unknown>;
 }
 
+function OrganizationGroupNode(props: NodeProps<BeatCanvasFlowNode>) {
+  const t = useTranslations('Organization');
+  if (!props.data.meta.beatdesignOrganizationGroup)
+    return <WorkflowGroupNode {...props} />;
+  const meta = props.data.meta;
+  const collapsed = Boolean(meta.collapsed);
+  const counts = meta.statuses as Record<string, number> | undefined;
+  const copy = getBeatCanvasNodeCopy();
+  return (
+    <>
+      <NodeResizer
+        isVisible={Boolean(props.selected)}
+        minWidth={120}
+        minHeight={72}
+        onResizeStart={() =>
+          (meta.onCheckpoint as (() => void) | undefined)?.()
+        }
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={false}
+        className="!opacity-0"
+      />
+      <div
+        data-organization-group={props.id}
+        style={{
+          width: props.data.props.w,
+          height: props.data.props.h,
+          border: `1px ${collapsed ? 'solid' : 'dashed'} ${props.selected ? 'var(--beat-graph)' : 'rgba(220,226,235,.25)'}`,
+          borderRadius: 12,
+          background: collapsed
+            ? 'var(--beat-surface)'
+            : 'rgba(127,176,242,.025)',
+          padding: 12,
+          boxSizing: 'border-box',
+        }}
+      >
+        <button
+          data-group-header
+          className="nodrag nopan flex min-h-11 w-full items-center gap-2 text-left text-sm font-semibold text-[var(--beat-text-1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--beat-graph)]"
+          aria-expanded={!collapsed}
+          onClick={() => (meta.onToggle as (() => void) | undefined)?.()}
+        >
+          <span aria-hidden>{collapsed ? '▸' : '▾'}</span>
+          <span className="min-w-0 flex-1 truncate">
+            {String(meta.name ?? '')}
+          </span>
+          <span className="text-xs opacity-60">
+            {Number(meta.memberCount ?? 0)}
+          </span>
+        </button>
+        {!collapsed ? (
+          <div
+            className="nodrag nopan mt-1 flex gap-1"
+            role="group"
+            aria-label={t('groupLayout')}
+          >
+            {(['tidy', 'row', 'column', 'fit'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className="min-h-11 flex-1 rounded border border-white/10 px-1 text-xs hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--beat-graph)]"
+                onClick={() =>
+                  (meta.onLayout as ((mode: string) => void) | undefined)?.(
+                    mode
+                  )
+                }
+              >
+                {t(`layout_${mode}`)}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="mt-3 flex gap-3 text-xs text-[var(--beat-text-2)]">
+              <span aria-label={copy.processing}>
+                ◌{' '}
+                {Number(counts?.pending ?? 0) + Number(counts?.processing ?? 0)}
+              </span>
+              <span aria-label={copy.generationFailed}>
+                ⚠ {Number(counts?.failed ?? 0)}
+              </span>
+            </div>
+            {meta.resultName ? (
+              <div className="mt-2 text-xs">
+                <p className="text-[var(--beat-text-2)]">
+                  {t('displayedResult')}
+                </p>
+                <button
+                  className="nodrag nopan block min-h-11 w-full truncate text-left text-[var(--beat-text-1)] underline underline-offset-2"
+                  onClick={() =>
+                    (meta.onResult as (() => void) | undefined)?.()
+                  }
+                >
+                  {String(meta.resultName)}
+                </button>
+              </div>
+            ) : null}
+            <p className="mt-1 text-xs text-[var(--beat-text-2)]">
+              {t('timelineUses', {
+                count:
+                  meta.timelineUseCount == null
+                    ? '—'
+                    : Number(meta.timelineUseCount),
+              })}
+            </p>
+            <p className="mt-1 text-xs text-[var(--beat-text-2)]">
+              {t('reviewNotRecorded')}
+            </p>
+          </>
+        )}
+      </div>
+      <Handle
+        type="source"
+        position={Position.Right}
+        isConnectable={false}
+        className="!opacity-0"
+      />
+    </>
+  );
+}
+
+function OrganizationReferenceEdge(props: EdgeProps<BeatCanvasFlowEdge>) {
+  const count = Number(props.data?.referenceCount ?? 0);
+  const references = props.data?.organizationReferences as
+    | Array<{ sourceCardId: string; targetCardId: string }>
+    | undefined;
+  return (
+    <>
+      <BeatCanvasReferenceEdge {...props} />
+      {count > 1 ? (
+        <text
+          x={(props.sourceX + props.targetX) / 2}
+          y={(props.sourceY + props.targetY) / 2 - 6}
+          fill="var(--beat-text-1)"
+          fontSize={12}
+          textAnchor="middle"
+        >
+          <title>
+            {references
+              ?.map(
+                (reference) =>
+                  `${reference.sourceCardId} → ${reference.targetCardId}`
+              )
+              .join('\n')}
+          </title>
+          {count}
+        </text>
+      ) : null}
+    </>
+  );
+}
+
 const nodeTypes = {
+  [TEXT_CARD_NODE_TYPE]: TextCardNode,
   [ASSET_CARD_NODE_TYPE]: AssetCardNode,
   [GENERATION_CARD_NODE_TYPE]: GenerationCardNode,
-  [WORKFLOW_GROUP_NODE_TYPE]: WorkflowGroupNode,
+  [WORKFLOW_GROUP_NODE_TYPE]: OrganizationGroupNode,
 };
 
 const edgeTypes = {
-  'beatdesign-reference': BeatCanvasReferenceEdge,
+  'beatdesign-reference': OrganizationReferenceEdge,
 };
 
 const DEFAULT_VIEWPORT = { x: 0, y: 0, zoom: 1 };
 const DEFAULT_ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 const normalizeNodeType = (type: string): BeatCanvasNodeType | null => {
+  if (type === TEXT_CARD_NODE_TYPE) return TEXT_CARD_NODE_TYPE;
   if (type === ASSET_CARD_NODE_TYPE) return ASSET_CARD_NODE_TYPE;
   if (type === GENERATION_CARD_NODE_TYPE) return GENERATION_CARD_NODE_TYPE;
   if (type === WORKFLOW_GROUP_NODE_TYPE || type === 'group') {
@@ -99,6 +293,11 @@ const shapeRecordFromNode = (node: BeatCanvasFlowNode): CanvasShapeRecord => ({
 });
 
 function BeatCanvasReactFlowCanvas({
+  organization,
+  canvasCards,
+  timelineUsage,
+  getCanvasDocument,
+  onOrganizationChange,
   onMount,
   onDocumentChange,
   onHistoryCheckpoint,
@@ -106,6 +305,7 @@ function BeatCanvasReactFlowCanvas({
   onReferenceEdgesRemoved,
   components,
 }: BeatCanvasReactFlowEditorProps) {
+  const organizationT = useTranslations('Organization');
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<
     ReactFlowInstance<BeatCanvasFlowNode, BeatCanvasFlowEdge> | null
@@ -117,6 +317,18 @@ function BeatCanvasReactFlowCanvas({
   const mountedRef = useRef(false);
   const lastDeleteCheckpointAtRef = useRef(0);
   const isSnapToGridRef = useRef(false);
+  const organizationRef = useRef(organization);
+  const displayedGroupFramesRef = useRef<
+    Record<string, { x: number; y: number; w: number; h: number }>
+  >({});
+  organizationRef.current = organization;
+  const cardsRef = useRef(canvasCards);
+  cardsRef.current = canvasCards;
+  const getCanvasDocumentRef = useRef(getCanvasDocument);
+  getCanvasDocumentRef.current = getCanvasDocument;
+  const onOrganizationChangeRef = useRef(onOrganizationChange);
+  onOrganizationChangeRef.current = onOrganizationChange;
+  const selectedGroupIdsRef = useRef<Set<string>>(new Set());
   const [nodes, setNodes] = useState<BeatCanvasFlowNode[]>([]);
   const [edges, setEdges] = useState<BeatCanvasFlowEdge[]>([]);
   const [interactionMode, setInteractionMode] = useState<'select' | 'pan'>(
@@ -151,6 +363,11 @@ function BeatCanvasReactFlowCanvas({
       const next =
         typeof updater === 'function' ? updater(nodesRef.current) : updater;
       const sorted = sortParentsBeforeChildren(next);
+      if (
+        sorted.length === nodesRef.current.length &&
+        sorted.every((node, index) => node === nodesRef.current[index])
+      )
+        return;
       nodesRef.current = sorted;
       setNodes(sorted);
       notify();
@@ -166,11 +383,67 @@ function BeatCanvasReactFlowCanvas({
     ) => {
       const next =
         typeof updater === 'function' ? updater(edgesRef.current) : updater;
+      if (
+        next.length === edgesRef.current.length &&
+        next.every((edge, index) => edge === edgesRef.current[index])
+      )
+        return;
       edgesRef.current = next;
       setEdges(next);
       notify();
     },
     [notify]
+  );
+
+  const applyOrganizationChange = useCallback(
+    (operations: CanvasOrganizationOperation[]) => {
+      const byId = new Map(nodesRef.current.map((node) => [node.id, node]));
+      const fallbackFrames = Object.fromEntries(
+        nodesRef.current.map((node) => {
+          const bounds = getNodeBounds(node, byId);
+          return [
+            node.id,
+            { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h },
+          ];
+        })
+      );
+      const source = getCanvasDocumentRef.current?.() ?? {
+        version: 4 as const,
+        cards: Object.values(cardsRef.current ?? {}),
+        frames: fallbackFrames,
+      };
+      let result: ReturnType<typeof applyCanvasOrganizationOperations>;
+      try {
+        result = applyCanvasOrganizationOperations(
+          { ...source, organization: organizationRef.current },
+          operations
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : String(error));
+        notify();
+        return;
+      }
+      organizationRef.current = result.document.organization;
+      onOrganizationChangeRef.current?.(
+        result.document.organization,
+        result.document.frames
+      );
+      commitNodes((current) =>
+        current.map((node) => {
+          const frame = result.document.frames[node.id];
+          return frame
+            ? {
+                ...node,
+                parentId: undefined,
+                extent: undefined,
+                position: { x: frame.x, y: frame.y },
+              }
+            : node;
+        })
+      );
+      onDocumentChange?.();
+    },
+    [commitNodes, notify, onDocumentChange]
   );
 
   const editor = useMemo<BeatCanvasEditor>(() => {
@@ -179,7 +452,21 @@ function BeatCanvasReactFlowCanvas({
 
     const getBounds = (shapeId: string): CanvasBounds | null => {
       const node = getNode(shapeId);
-      if (!node) return null;
+      if (!node) {
+        const group = organizationRef.current?.groups[shapeId];
+        if (!group) return null;
+        const frame =
+          displayedGroupFramesRef.current[shapeId] ??
+          (group.collapsed ? group.summaryFrame : group.expandedFrame);
+        return {
+          ...frame,
+          minX: frame.x,
+          minY: frame.y,
+          maxX: frame.x + frame.w,
+          maxY: frame.y + frame.h,
+          center: { x: frame.x + frame.w / 2, y: frame.y + frame.h / 2 },
+        };
+      }
       return getNodeBounds(
         node,
         new Map(nodesRef.current.map((current) => [current.id, current]))
@@ -229,7 +516,14 @@ function BeatCanvasReactFlowCanvas({
     };
 
     const deleteIds = (shapeIds: string[]) => {
-      const pending = new Set(shapeIds);
+      const groupIds = shapeIds.filter((id) =>
+        Boolean(organizationRef.current?.groups[id])
+      );
+      if (groupIds.length)
+        applyOrganizationChange(
+          groupIds.map((groupId) => ({ type: 'remove_group', groupId }))
+        );
+      const pending = new Set(shapeIds.filter((id) => !groupIds.includes(id)));
       let changed = true;
       while (changed) {
         changed = false;
@@ -262,17 +556,37 @@ function BeatCanvasReactFlowCanvas({
       getEdges: () => edgesRef.current,
       getShape(shapeId) {
         const node = getNode(shapeId);
-        return node ? shapeRecordFromNode(node) : null;
+        if (node) return shapeRecordFromNode(node);
+        const group = organizationRef.current?.groups[shapeId];
+        const frame =
+          group &&
+          (displayedGroupFramesRef.current[shapeId] ??
+            (group.collapsed ? group.summaryFrame : group.expandedFrame));
+        return group && frame
+          ? {
+              id: group.id,
+              type: 'group',
+              x: frame.x,
+              y: frame.y,
+              meta: { beatdesignOrganizationGroup: true },
+              props: { w: frame.w, h: frame.h },
+            }
+          : null;
       },
       getCurrentPageShapes() {
         return nodesRef.current.map(shapeRecordFromNode);
       },
       getSelectedShapeIds() {
-        return nodesRef.current
-          .filter((node) => node.selected)
-          .map((node) => node.id);
+        return [
+          ...nodesRef.current
+            .filter((node) => node.selected)
+            .map((node) => node.id),
+          ...selectedGroupIdsRef.current,
+        ];
       },
       getSortedChildIdsForParent(parentId) {
+        const group = organizationRef.current?.groups[parentId];
+        if (group) return [...group.memberCardIds];
         return nodesRef.current
           .filter((node) => node.parentId === parentId)
           .sort((left, right) => (left.zIndex ?? 0) - (right.zIndex ?? 0))
@@ -285,10 +599,10 @@ function BeatCanvasReactFlowCanvas({
             const bounds = getBounds(node.id);
             return Boolean(
               bounds &&
-                point.x >= bounds.minX &&
-                point.x <= bounds.maxX &&
-                point.y >= bounds.minY &&
-                point.y <= bounds.maxY
+              point.x >= bounds.minX &&
+              point.x <= bounds.maxX &&
+              point.y >= bounds.minY &&
+              point.y <= bounds.maxY
             );
           })
           .sort((left, right) => (right.zIndex ?? 0) - (left.zIndex ?? 0))
@@ -381,6 +695,9 @@ function BeatCanvasReactFlowCanvas({
       },
       setSelectedShapes(shapeIds) {
         const selected = new Set(shapeIds);
+        selectedGroupIdsRef.current = new Set(
+          shapeIds.filter((id) => Boolean(organizationRef.current?.groups[id]))
+        );
         commitNodes((current) =>
           current.map((node) => ({
             ...node,
@@ -537,16 +854,120 @@ function BeatCanvasReactFlowCanvas({
         instanceRef.current = instance;
       },
       setViewportState(viewport) {
+        const previous = viewportRef.current;
+        if (
+          previous.x === viewport.x &&
+          previous.y === viewport.y &&
+          previous.zoom === viewport.zoom
+        )
+          return;
         viewportRef.current = viewport;
         notify();
       },
     };
 
     return api;
-  }, [commitEdges, commitNodes, notify]);
+  }, [applyOrganizationChange, commitEdges, commitNodes, notify]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<BeatCanvasFlowNode>[]) => {
+      let groupSelectionChanged = false;
+      const groupChanges = changes.filter(
+        (change) =>
+          'id' in change && Boolean(organizationRef.current?.groups[change.id])
+      );
+      for (const change of groupChanges) {
+        if (!('id' in change)) continue;
+        const group = organizationRef.current?.groups[change.id];
+        if (!group) continue;
+        if (change.type === 'select') {
+          if (selectedGroupIdsRef.current.has(change.id) === change.selected)
+            continue;
+          groupSelectionChanged = true;
+          if (change.selected) selectedGroupIdsRef.current.add(change.id);
+          else selectedGroupIdsRef.current.delete(change.id);
+        } else if (change.type === 'remove') {
+          checkpointForDelete();
+          applyOrganizationChange([
+            { type: 'remove_group', groupId: group.id },
+          ]);
+          selectedGroupIdsRef.current.delete(group.id);
+        } else if (
+          change.type === 'position' &&
+          change.position &&
+          change.dragging !== undefined
+        ) {
+          const frame =
+            displayedGroupFramesRef.current[group.id] ??
+            (group.collapsed ? group.summaryFrame : group.expandedFrame);
+          const deltaX = change.position.x - frame.x;
+          const deltaY = change.position.y - frame.y;
+          if (Math.abs(deltaX) > 0.001 || Math.abs(deltaY) > 0.001)
+            applyOrganizationChange([
+              { type: 'move_group', groupId: group.id, deltaX, deltaY },
+            ]);
+        } else if (
+          change.type === 'dimensions' &&
+          change.dimensions &&
+          change.resizing !== undefined
+        ) {
+          const frame =
+            displayedGroupFramesRef.current[group.id] ??
+            (group.collapsed ? group.summaryFrame : group.expandedFrame);
+          const resizePosition = groupChanges.find(
+            (candidate) =>
+              candidate.type === 'position' &&
+              candidate.id === group.id &&
+              candidate.dragging === undefined
+          );
+          const position =
+            resizePosition?.type === 'position'
+              ? resizePosition.position
+              : undefined;
+          if (
+            Math.abs(frame.w - change.dimensions.width) > 0.001 ||
+            Math.abs(frame.h - change.dimensions.height) > 0.001 ||
+            (position &&
+              (Math.abs(frame.x - position.x) > 0.001 ||
+                Math.abs(frame.y - position.y) > 0.001))
+          )
+            applyOrganizationChange([
+              {
+                type: 'resize_group',
+                groupId: group.id,
+                target: group.collapsed ? 'summary' : 'expanded',
+                frame: {
+                  ...frame,
+                  ...(position ? { x: position.x, y: position.y } : {}),
+                  w: change.dimensions.width,
+                  h: change.dimensions.height,
+                },
+              },
+            ]);
+        }
+      }
+      changes = changes.filter((change) => !groupChanges.includes(change));
+      // React Flow measures synthetic groups too. Their initial measurement is
+      // presentation only: publishing an unchanged canonical graph here creates
+      // a render → ResizeObserver → revision → render feedback loop.
+      changes = changes.filter((change) => {
+        if (!('id' in change)) return true;
+        const node = nodesRef.current.find((node) => node.id === change.id);
+        if (!node) return change.type === 'replace';
+        if (change.type === 'select')
+          return Boolean(node.selected) !== change.selected;
+        if (change.type === 'dimensions' && change.dimensions)
+          return (
+            !node.measured?.width ||
+            !node.measured?.height ||
+            Math.abs(node.data.props.w - change.dimensions.width) > 0.001 ||
+            Math.abs(node.data.props.h - change.dimensions.height) > 0.001 ||
+            Boolean(change.resizing) !== Boolean(node.resizing)
+          );
+        return true;
+      });
+      if (groupSelectionChanged) notify();
+      if (!changes.length) return;
       const hasRemovals = changes.some((change) => change.type === 'remove');
       if (hasRemovals) {
         checkpointForDelete();
@@ -634,7 +1055,14 @@ function BeatCanvasReactFlowCanvas({
         )
       );
     },
-    [checkpointForDelete, commitEdges, commitNodes, onShapeIdsRemoved]
+    [
+      applyOrganizationChange,
+      checkpointForDelete,
+      commitEdges,
+      commitNodes,
+      notify,
+      onShapeIdsRemoved,
+    ]
   );
 
   const onEdgesChange = useCallback(
@@ -702,7 +1130,214 @@ function BeatCanvasReactFlowCanvas({
   const FrontLayer = (components as CanvasComponents | undefined)
     ?.InFrontOfTheCanvas;
 
+  const displayGraph = useMemo(() => {
+    if (!organization || !canvasCards)
+      return {
+        nodes,
+        edges,
+        historyGroups: [] as Array<{
+          generationCardId: string;
+          outputCardIds: string[];
+        }>,
+      };
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+    const frames = Object.fromEntries(
+      nodes.map((node) => {
+        const bounds = getNodeBounds(node, byId);
+        return [
+          node.id,
+          { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h },
+        ];
+      })
+    );
+    const selectedCardId = nodes.find((node) => node.selected)?.id;
+    const selectedGroupId =
+      [...selectedGroupIdsRef.current][0] ??
+      Object.values(organization.groups).find(
+        (group) =>
+          selectedCardId && group.memberCardIds.includes(selectedCardId)
+      )?.id ??
+      null;
+    const known = new Set(Object.keys(canvasCards));
+    const metadataIds = [
+      ...Object.values(organization.groups).flatMap(
+        (group) => group.memberCardIds
+      ),
+      ...Object.values(organization.elementBindings).flatMap((binding) => [
+        binding.consumerCardId,
+        binding.referenceCardId,
+      ]),
+      ...Object.values(organization.templateInstances).flatMap((instance) => [
+        ...Object.values(instance.stepCardIds),
+        ...Object.values(instance.slotBindings).map(
+          (binding) => binding.referenceCardId
+        ),
+      ]),
+    ];
+    const cleanDocument = cleanupCanvasOrganizationForRemovedCards(
+      { cards: Object.values(canvasCards), frames, organization },
+      metadataIds.filter((id) => !known.has(id))
+    );
+    const projection = projectCanvasOrganization(cleanDocument, {
+      selectedGroupId,
+    });
+    displayedGroupFramesRef.current = Object.fromEntries(
+      projection.nodes
+        .filter((node) => node.kind === 'group')
+        .map((node) => [node.id, node.frame!])
+    );
+    const visible = new Set(
+      projection.nodes
+        .filter((node) => node.kind === 'card')
+        .map((node) => node.id)
+    );
+    const real = nodes
+      .filter((node) => visible.has(node.id))
+      .map((node) => ({ ...node, zIndex: Math.max(1, node.zIndex ?? 0) }));
+    const groups: BeatCanvasFlowNode[] = projection.nodes
+      .filter((node) => node.kind === 'group')
+      .map((node) => {
+        const group = cleanDocument.organization.groups[node.id];
+        const frame = node.frame!;
+        const result = group.resultCardId
+          ? canvasCards[group.resultCardId]
+          : undefined;
+        return {
+          id: node.id,
+          type: WORKFLOW_GROUP_NODE_TYPE,
+          position: { x: frame.x, y: frame.y },
+          selected: selectedGroupIdsRef.current.has(node.id),
+          zIndex: 0,
+          width: frame.w,
+          height: frame.h,
+          measured: { width: frame.w, height: frame.h },
+          style: { width: frame.w, height: frame.h },
+          data: {
+            props: { w: frame.w, h: frame.h },
+            meta: {
+              beatdesignOrganizationGroup: true,
+              name: group.name,
+              collapsed: group.collapsed,
+              memberCount: node.memberCount,
+              statuses: node.statuses,
+              resultName: result?.name,
+              timelineUseCount: timelineUsage
+                ? countGroupTimelineUses(
+                    Object.values(canvasCards),
+                    group.memberCardIds,
+                    timelineUsage
+                  )
+                : null,
+              onResult: () => {
+                onHistoryCheckpoint?.();
+                applyOrganizationChange([
+                  {
+                    type: 'set_group_collapsed',
+                    groupId: node.id,
+                    collapsed: false,
+                  },
+                ]);
+                const concrete = resolveConcreteCanvasMediaCard({
+                  cards: canvasCards,
+                  card: result,
+                });
+                if (
+                  concrete?.url &&
+                  (concrete.type === 'image' || concrete.type === 'video')
+                ) {
+                  window.dispatchEvent(
+                    new CustomEvent('beatcanvas:preview-media', {
+                      detail: {
+                        type: concrete.type,
+                        url: concrete.url,
+                        title: concrete.name,
+                      },
+                    })
+                  );
+                } else if (result) {
+                  requestAnimationFrame(() =>
+                    editor.select(
+                      result.kind === 'output'
+                        ? result.sourceConfigCardId
+                        : result.id
+                    )
+                  );
+                }
+              },
+              onCheckpoint: onHistoryCheckpoint,
+              onLayout: (mode: 'tidy' | 'row' | 'column' | 'fit') => {
+                onHistoryCheckpoint?.();
+                applyOrganizationChange([
+                  mode === 'fit'
+                    ? { type: 'fit_group', groupId: node.id }
+                    : { type: 'layout_group', groupId: node.id, mode },
+                ]);
+              },
+              onToggle: () => {
+                onHistoryCheckpoint?.();
+                applyOrganizationChange([
+                  {
+                    type: 'set_group_collapsed',
+                    groupId: node.id,
+                    collapsed: !group.collapsed,
+                  },
+                ]);
+              },
+            },
+          },
+        };
+      });
+    const originalEdges = new Map(
+      edges.map((edge) => [JSON.stringify([edge.source, edge.target]), edge])
+    );
+    const projectedEdges: BeatCanvasFlowEdge[] = projection.edges.map(
+      (edge) => {
+        const original = originalEdges.get(
+          JSON.stringify([edge.source, edge.target])
+        );
+        const direct =
+          edge.count === 1 &&
+          edge.references[0].sourceCardId === edge.source &&
+          edge.references[0].targetCardId === edge.target;
+        return {
+          ...(direct && original
+            ? original
+            : {
+                id: edge.id,
+                source: edge.source,
+                target: edge.target,
+                type: 'beatdesign-reference' as const,
+                selectable: true,
+                deletable: false,
+              }),
+          label: edge.count > 1 ? String(edge.count) : undefined,
+          data: {
+            organizationReferences: edge.references,
+            referenceCount: edge.count,
+          },
+        };
+      }
+    );
+    return {
+      nodes: [...groups, ...real],
+      edges: projectedEdges,
+      historyGroups: projection.historyGroups,
+    };
+  }, [
+    applyOrganizationChange,
+    canvasCards,
+    edges,
+    editor,
+    nodes,
+    onHistoryCheckpoint,
+    organization,
+    revision,
+    timelineUsage,
+  ]);
+
   const lineagePresentation = useMemo(() => {
+    const nodes = displayGraph.nodes;
+    const edges = displayGraph.edges;
     const selectedIds = nodes
       .filter((node) => node.selected)
       .map((node) => node.id);
@@ -799,7 +1434,7 @@ function BeatCanvasReactFlowCanvas({
           })
         : [],
     };
-  }, [edges, edgesVisible, nodes]);
+  }, [displayGraph, edgesVisible]);
 
   return (
     <CanvasEngineProvider editor={editor} revision={revision}>
@@ -865,6 +1500,150 @@ function BeatCanvasReactFlowCanvas({
             />
           ) : null}
         </ReactFlow>
+        {organization?.view.historyMode === 'all' ? (
+          <section
+            aria-label={organizationT('historyInspector')}
+            className="absolute left-20 top-20 z-30 max-h-[min(55vh,520px)] w-[min(320px,calc(100vw-112px))] overflow-y-auto rounded-xl border border-white/15 bg-[var(--beat-surface)] p-3 text-[var(--beat-text-1)] shadow-xl"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-semibold">
+                {organizationT('historyInspector')}
+              </h2>
+              <button
+                type="button"
+                className="min-h-11 px-2 text-xs underline"
+                onClick={() =>
+                  applyOrganizationChange([
+                    { type: 'set_organization_view', historyMode: 'current' },
+                  ])
+                }
+              >
+                {organizationT('collapse')}
+              </button>
+            </div>
+            <p className="mb-3 text-xs leading-relaxed text-[var(--beat-text-2)]">
+              {organizationT('historyReadOnly')}
+            </p>
+            {!displayGraph.historyGroups.length ? (
+              <p className="text-sm text-[var(--beat-text-2)]">
+                {organizationT('historyEmpty')}
+              </p>
+            ) : null}
+            {displayGraph.historyGroups.map((history) => {
+              const generation = canvasCards?.[history.generationCardId];
+              const outputs = history.outputCardIds
+                .map((id) => canvasCards?.[id])
+                .filter(
+                  (card): card is CanvasOutputCard => card?.kind === 'output'
+                )
+                .sort(
+                  (a, b) =>
+                    b.generationSnapshot.capturedAt.localeCompare(
+                      a.generationSnapshot.capturedAt
+                    ) || a.id.localeCompare(b.id)
+                );
+              const pinned = resolvePinnedGenerationOutputId({
+                outputs,
+                pinnedOutputId: generation?.pinnedOutputId,
+              });
+              const copy = getBeatCanvasNodeCopy();
+              return (
+                <details
+                  key={history.generationCardId}
+                  open
+                  className="mb-2 rounded-lg border border-white/10 p-2"
+                >
+                  <summary className="min-h-11 cursor-pointer text-sm font-medium">
+                    {generation?.name ?? history.generationCardId} ·{' '}
+                    {outputs.length}
+                  </summary>
+                  <button
+                    type="button"
+                    className="mb-2 min-h-11 text-xs underline"
+                    onClick={() => {
+                      const group = Object.values(organization.groups).find(
+                        (group) =>
+                          group.memberCardIds.includes(history.generationCardId)
+                      );
+                      if (group?.collapsed)
+                        applyOrganizationChange([
+                          {
+                            type: 'set_group_collapsed',
+                            groupId: group.id,
+                            collapsed: false,
+                          },
+                        ]);
+                      requestAnimationFrame(() => {
+                        editor.select(history.generationCardId);
+                        const bounds = editor.getShapePageBounds(
+                          history.generationCardId
+                        );
+                        if (bounds) editor.centerOnPoint(bounds.center);
+                      });
+                    }}
+                  >
+                    {organizationT('locate')}
+                  </button>
+                  {outputs.map((output) => (
+                    <div
+                      key={output.id}
+                      className="mb-2 rounded-md border border-white/10 p-2 text-xs"
+                    >
+                      <p className="break-words font-medium">{output.name}</p>
+                      <p
+                        className={
+                          output.status === 'failed'
+                            ? 'mt-1 text-red-300'
+                            : 'mt-1 text-[var(--beat-text-2)]'
+                        }
+                      >
+                        {output.status === 'failed'
+                          ? copy.generationFailed
+                          : output.status === 'succeeded'
+                            ? organizationT('ready')
+                            : copy.processing}
+                      </p>
+                      {output.id === pinned ? (
+                        <p className="mt-1 text-[var(--beat-graph)]">
+                          {organizationT('displayedResult')}
+                        </p>
+                      ) : null}
+                      {output.error ? (
+                        <p className="mt-1 break-words text-red-300">
+                          {output.error}
+                        </p>
+                      ) : null}
+                      {output.resultText ? (
+                        <p className="mt-1 max-h-24 overflow-auto whitespace-pre-wrap">
+                          {output.resultText}
+                        </p>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={!output.url}
+                        className="min-h-11 underline disabled:opacity-40"
+                        onClick={() => {
+                          if (output.url)
+                            window.dispatchEvent(
+                              new CustomEvent('beatcanvas:preview-media', {
+                                detail: {
+                                  type: output.type,
+                                  url: output.url,
+                                  title: output.name,
+                                },
+                              })
+                            );
+                        }}
+                      >
+                        {copy.viewResult}
+                      </button>
+                    </div>
+                  ))}
+                </details>
+              );
+            })}
+          </section>
+        ) : null}
         {FrontLayer ? <FrontLayer /> : null}
       </div>
     </CanvasEngineProvider>

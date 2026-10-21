@@ -118,6 +118,7 @@ export type BeatCanvasComposerPresentation = {
 
 export type BeatCanvasFrontLayerValue = {
   cards: Record<string, CanvasCard>;
+  generationBlockersByCard?: Record<string, string[]>;
   selectedShapeIds: string[];
   selectedCanvasCardIds: string[];
   activeComposerCardId: string | null;
@@ -133,6 +134,15 @@ export type BeatCanvasFrontLayerValue = {
   onUndoCanvas: () => void;
   onRedoCanvas: () => void;
   onCreateImageDraft: () => void;
+  onTextNodeChange: (
+    id: string,
+    patch: {
+      name?: string;
+      textContent?: string;
+      textRole?: import('@/core/beatcanvas/canvas-types').CanvasTextRole;
+    }
+  ) => void;
+  onTextNodeEditStart: () => void;
   onUploadImage: () => void;
   onCreateGenerationFromConnector: (input: {
     sourceCardId: string;

@@ -14,13 +14,16 @@ import { listGenerationModelDescriptors } from '@/core/generation-providers';
 
 import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
 
-test('MCP tool catalog is exactly 30 named tools', () => {
-  const source = readFileSync(new URL('./server.ts', import.meta.url), 'utf8');
-  const registered = [...source.matchAll(/server\.registerTool\(\s*'([^']+)'/g)].map(
-    (match) => match[1]
-  );
-  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 30);
-  assert.deepEqual(registered, [...BEATDESIGN_MCP_TOOL_NAMES]);
+test('MCP tool catalog contains exactly 38 uniquely registered tools', () => {
+  const source =
+    readFileSync(new URL('./server.ts', import.meta.url), 'utf8') +
+    readFileSync(new URL('./organization-tools.ts', import.meta.url), 'utf8');
+  const registered = [
+    ...source.matchAll(/server\.registerTool\(\s*'([^']+)'/g),
+  ].map((match) => match[1]);
+  assert.equal(BEATDESIGN_MCP_TOOL_NAMES.length, 38);
+  assert.equal(new Set(registered).size, 38);
+  assert.deepEqual(registered.sort(), [...BEATDESIGN_MCP_TOOL_NAMES].sort());
 });
 
 test('timeline edits invalidate an older render before MCP re-renders', () => {
@@ -180,5 +183,319 @@ test('Canvas get cards can be applied back through upsert_card', () => {
 test('model discovery used by MCP returns a live catalog', () => {
   const models = listGenerationModelDescriptors();
   assert.ok(models.length >= 10);
-  assert.ok(models.every((model) => typeof model.id === 'string' && model.id.length > 0));
+  assert.ok(
+    models.every((model) => typeof model.id === 'string' && model.id.length > 0)
+  );
+});
+
+test('organization MCP round trip persists folders, de-duplicates Assets and creates a blocked template without provider calls', async () => {
+  const { mkdtemp, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join, resolve, dirname } = await import('node:path');
+  const { execFileSync } = await import('node:child_process');
+  const directory = await mkdtemp(join(tmpdir(), 'beatdesign-org-mcp-'));
+  process.env.BEATDESIGN_DATA_DIR = directory;
+  execFileSync(
+    process.execPath,
+    ['node_modules/drizzle-kit/bin.cjs', 'push', '--force'],
+    { env: process.env, stdio: 'pipe', windowsHide: true }
+  );
+  const { createProject, loadProjectWithLatestSnapshot } =
+    await import('@/core/projects/projects');
+  const { recordUserAsset, linkProjectAsset } =
+    await import('@/core/workspace-lib/assets/user-assets');
+  const { getDb } = await import('@/core/workspace-lib/db-adapter');
+  const { getActiveGenerationProvider } =
+    await import('@/core/generation-providers/registry');
+  const { startBeatDesignMcpHttpServer } = await import('./http-server');
+  const { generationHistory, generationUploadIntent } =
+    await import('@/config/db/schema');
+  const provider = getActiveGenerationProvider();
+  const originalConfigured = provider.assertConfigured;
+  const originalAdapter = provider.createAdapter;
+  let providerCalls = 0;
+  provider.assertConfigured = async () => {
+    providerCalls++;
+    throw new Error('Organization must stay local');
+  };
+  provider.createAdapter = () => {
+    providerCalls++;
+    throw new Error('Organization must not create adapters');
+  };
+  const server = await startBeatDesignMcpHttpServer({
+    host: '127.0.0.1',
+    port: 0,
+    token: 'test-organization',
+  });
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  const port = address.port;
+  let rpcId = 0;
+  async function call(name: string, args: Record<string, unknown>) {
+    const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer test-organization',
+        accept: 'application/json, text/event-stream',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: ++rpcId,
+        method: 'tools/call',
+        params: { name, arguments: args },
+      }),
+    });
+    const text = await response.text();
+    const body = JSON.parse(
+      text.startsWith('{')
+        ? text
+        : text
+            .split('\n')
+            .find((line) => line.startsWith('data: '))!
+            .slice(6)
+    );
+    assert.equal(body.error, undefined, JSON.stringify(body));
+    return body.result;
+  }
+  function result(value: any) {
+    assert.notEqual(value.isError, true, JSON.stringify(value));
+    return value.structuredContent.result;
+  }
+  try {
+    const project = await createProject({ name: 'MCP organization isolation' });
+    const assetId = await recordUserAsset({
+      id: 'org-reference',
+      type: 'image',
+      source: 'upload',
+      bucket: 'fixture',
+      objectKey: 'org-reference.png',
+      publicUrl: '/fixture.png',
+      filename: 'Reference.png',
+    });
+    await linkProjectAsset({ projectId: project.id, assetId, role: 'upload' });
+    await linkProjectAsset({
+      projectId: project.id,
+      assetId,
+      role: 'reference',
+    });
+    const initial = result(
+      await call('bdesign_organization_get', { projectId: project.id })
+    );
+    assert.equal(initial.revision, 0);
+    const operation = {
+      type: 'create_folder',
+      folderId: 'characters',
+      name: 'Characters',
+      parentId: null,
+    };
+    const saved = result(
+      await call('bdesign_organization_apply', {
+        projectId: project.id,
+        expectedRevision: 0,
+        commandId: 'folder-create',
+        idempotencyKey: 'folder-create',
+        operations: [
+          operation,
+          {
+            type: 'assign_assets',
+            assetIds: [assetId],
+            folderId: 'characters',
+          },
+        ],
+      })
+    );
+    assert.equal(saved.ok, true, JSON.stringify(saved));
+    const same = result(
+      await call('bdesign_organization_apply', {
+        projectId: project.id,
+        expectedRevision: 0,
+        commandId: 'folder-create',
+        idempotencyKey: 'folder-create',
+        operations: [
+          operation,
+          {
+            type: 'assign_assets',
+            assetIds: [assetId],
+            folderId: 'characters',
+          },
+        ],
+      })
+    );
+    assert.deepEqual(same, saved);
+    const page = result(
+      await call('bdesign_asset_query', {
+        projectId: project.id,
+        scope: 'current',
+        folderId: 'characters',
+      })
+    );
+    assert.equal(page.assets.length, 1);
+    assert.equal(page.assets[0].id, assetId);
+    assert.equal(
+      result(await call('bdesign_asset_list', { projectId: project.id }))
+        .length,
+      1
+    );
+    const seeded = result(
+      await call('bdesign_canvas_apply', {
+        projectId: project.id,
+        expectedRevision: 1,
+        commandId: 'seed-canvas',
+        idempotencyKey: 'seed-canvas',
+        operations: [
+          {
+            type: 'upsert_card',
+            card: {
+              id: 'reference',
+              kind: 'asset',
+              type: 'image',
+              name: 'Reference',
+              assetId,
+            },
+            frame: { x: 0, y: 0, w: 320, h: 180 },
+          },
+          {
+            type: 'upsert_card',
+            card: {
+              id: 'generation',
+              kind: 'generation',
+              type: 'image',
+              name: 'Candidate',
+              modelId: 'gpt-image-2.5-flare',
+              prompt: 'Local template fixture',
+              referenceCardIds: ['reference'],
+            },
+            frame: { x: 0, y: 0, w: 320, h: 180 },
+          },
+        ],
+      })
+    );
+    assert.equal(seeded.ok, true, JSON.stringify(seeded));
+    const laidOut = result(
+      await call('bdesign_canvas_apply', {
+        projectId: project.id,
+        expectedRevision: seeded.revision,
+        commandId: 'layout-shared',
+        idempotencyKey: 'layout-shared',
+        operations: [
+          {
+            type: 'create_group',
+            groupId: 'layout-group',
+            name: 'Layout',
+            role: 'shot',
+            memberCardIds: ['reference', 'generation'],
+            summaryFrame: { x: 0, y: 0, w: 340, h: 210 },
+            expandedFrame: { x: 0, y: 0, w: 1000, h: 1000 },
+          },
+          { type: 'layout_group', groupId: 'layout-group', mode: 'row' },
+          { type: 'fit_group', groupId: 'layout-group' },
+          { type: 'arrange_groups', groupIds: ['layout-group'], mode: 'tidy' },
+        ],
+      })
+    );
+    assert.equal(laidOut.ok, true, JSON.stringify(laidOut));
+    const layoutSnapshot = (await loadProjectWithLatestSnapshot({
+      projectId: project.id,
+    }))!;
+    assert.ok(
+      layoutSnapshot.snapshot.frames.generation.x >
+        layoutSnapshot.snapshot.frames.reference.x + 320
+    );
+    assert.ok(
+      layoutSnapshot.snapshot.organization!.groups['layout-group'].expandedFrame
+        .h < 1000
+    );
+    const missingEnvelope = await call('bdesign_canvas_apply', {
+      projectId: project.id,
+      operations: [
+        {
+          type: 'create_group',
+          groupId: 'blocked',
+          name: 'Needs stable envelope',
+          role: 'shot',
+          memberCardIds: ['generation'],
+          summaryFrame: { x: 0, y: 0, w: 300, h: 200 },
+          expandedFrame: { x: 0, y: 0, w: 600, h: 400 },
+        },
+      ],
+    });
+    assert.equal(missingEnvelope.isError, true);
+    const preview = result(
+      await call('bdesign_workflow_template_preview', {
+        projectId: project.id,
+        preview: { selectedCardIds: ['generation'] },
+      })
+    );
+    const captured = result(
+      await call('bdesign_workflow_template_apply', {
+        projectId: project.id,
+        expectedRevision: 0,
+        commandId: 'capture',
+        idempotencyKey: 'capture',
+        command: {
+          type: 'workflow.template.capture',
+          templateId: 'template',
+          name: 'Local candidate',
+          selectedCardIds: ['generation'],
+          sourceCanvasRevision: preview.sourceCanvasRevision,
+          definitionDigest: preview.definitionDigest,
+        },
+      })
+    );
+    assert.equal(captured.ok, true, JSON.stringify(captured));
+    const before = (await loadProjectWithLatestSnapshot({
+      projectId: project.id,
+    }))!;
+    const instantiated = result(
+      await call('bdesign_workflow_template_apply', {
+        projectId: project.id,
+        expectedRevision: before.snapshotVersion,
+        commandId: 'instantiate',
+        idempotencyKey: 'instantiate',
+        command: {
+          type: 'workflow.template.instantiate',
+          templateId: 'template',
+          templateRevision: 1,
+          instanceId: 'draft',
+          bindings: {},
+          placement: { x: 500, y: 300 },
+        },
+      })
+    );
+    assert.equal(instantiated.ok, true, JSON.stringify(instantiated));
+    assert.ok(instantiated.data.blockers.length > 0);
+    assert.equal(
+      result(await call('bdesign_workflow_template_list', {})).length,
+      1
+    );
+    const usage = result(
+      await call('bdesign_timeline_usage', { projectId: project.id })
+    );
+    assert.equal(usage.timelineRevision, null);
+    assert.deepEqual(usage.clips, []);
+    assert.equal(providerCalls, 0);
+    assert.equal(
+      (await (await getDb()).select().from(generationHistory)).length,
+      0
+    );
+    assert.equal(
+      (await (await getDb()).select().from(generationUploadIntent)).length,
+      0
+    );
+  } finally {
+    provider.assertConfigured = originalConfigured;
+    provider.createAdapter = originalAdapter;
+    await new Promise<void>((done, reject) =>
+      server.close((error) => (error ? reject(error) : done()))
+    );
+    (await getDb()).$client.close();
+    assert.equal(dirname(resolve(directory)), resolve(tmpdir()));
+    await rm(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
+  }
 });

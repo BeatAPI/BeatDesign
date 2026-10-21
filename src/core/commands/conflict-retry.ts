@@ -3,6 +3,7 @@ import type {
   BeatDesignCommandSuccess,
 } from './contracts';
 import { persistBeatDesignCommand } from './persist';
+import { requiresExplicitEnvelope } from '@/core/organization/command-contract';
 
 type PersistCommandInput = Parameters<typeof persistBeatDesignCommand>[0];
 type PersistCommand = typeof persistBeatDesignCommand;
@@ -45,7 +46,9 @@ export async function persistExternalCommandWithConflictRetry<TData>({
   maxAttempts?: number;
   persist?: PersistCommand;
 }): Promise<ExternalCommandResult<TData>> {
-  const boundedAttempts = Math.max(1, Math.min(3, Math.floor(maxAttempts)));
+  const boundedAttempts = requiresExplicitEnvelope(input.command)
+    ? 1
+    : Math.max(1, Math.min(3, Math.floor(maxAttempts)));
   const initialExpectedRevision = asRevision(input.expectedRevision);
   let expectedRevision = input.expectedRevision;
   let attempts = 0;

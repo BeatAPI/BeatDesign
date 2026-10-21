@@ -18,7 +18,9 @@ test('snapshot restore replaces stale Canvas shapes before rebuilding the docume
     new URL('./use-beatcanvas-react-flow-adapter.ts', import.meta.url),
     'utf8'
   );
-  const restoreStart = source.indexOf('const restoreProjectSnapshot = useCallback');
+  const restoreStart = source.indexOf(
+    'const restoreProjectSnapshot = useCallback'
+  );
   const restoreEnd = source.indexOf('const applyHistoryDocument', restoreStart);
   const restoreSource = source.slice(restoreStart, restoreEnd);
 
@@ -59,7 +61,10 @@ for (const type of ['image', 'video'] as const) {
       ...draft,
       id: `take-${index}`,
       kind: 'output',
-      url: index === 2 ? null : `https://example.com/${index}.${type === 'image' ? 'png' : 'mp4'}`,
+      url:
+        index === 2
+          ? null
+          : `https://example.com/${index}.${type === 'image' ? 'png' : 'mp4'}`,
       status: index === 2 ? 'processing' : 'succeeded',
       sourceConfigCardId: draft.id,
       generationRunId: `run-${index}`,
@@ -70,9 +75,15 @@ for (const type of ['image', 'video'] as const) {
     }));
     for (const pinnedOutputId of [null, outputs[0].id, 'missing']) {
       const restored = JSON.parse(JSON.stringify({ ...draft, pinnedOutputId }));
-      const presentation = buildGenerationCardPresentation({ card: restored, outputs });
+      const presentation = buildGenerationCardPresentation({
+        card: restored,
+        outputs,
+      });
       const selected = presentation.takes.find((take) => take.isPinned);
-      assert.equal(selected?.id, pinnedOutputId === outputs[0].id ? outputs[0].id : outputs[1].id);
+      assert.equal(
+        selected?.id,
+        pinnedOutputId === outputs[0].id ? outputs[0].id : outputs[1].id
+      );
       assert.equal(presentation.latestOutputUrl, selected?.url);
       assert.equal(presentation.status, 'processing');
     }
@@ -96,6 +107,75 @@ test('draft frame size follows portrait and landscape ratios', () => {
     w: 420,
     h: 180,
   });
+});
+
+test('ordinary generation restore and runtime updates preserve valid canonical layout', () => {
+  const editor = {
+    getShape: (id: string) => ({
+      id,
+      type: 'generation',
+      props: { w: 320, h: 180 },
+    }),
+  };
+  for (const type of ['image', 'video'] as const) {
+    const draft = makeDraft(type, '1:1');
+    for (const status of [
+      'idle',
+      'processing',
+      'succeeded',
+      'failed',
+    ] as const) {
+      assert.deepEqual(
+        resolveDraftShapeSize(editor, {
+          ...draft,
+          status,
+          pinnedOutputId: 'an-old-chosen-take',
+        }),
+        { w: 320, h: 180 }
+      );
+    }
+  }
+});
+
+test('aspect configuration changes do not silently resize cards; explicit frame resize is retained', () => {
+  const portrait = makeDraft('video', '9:16');
+  const originalFrame = {
+    getShape: (id: string) => ({
+      id,
+      type: 'generation',
+      props: { w: 320, h: 180 },
+    }),
+  };
+  assert.deepEqual(resolveDraftShapeSize(originalFrame, portrait), {
+    w: 320,
+    h: 180,
+  });
+  const userResized = {
+    getShape: (id: string) => ({
+      id,
+      type: 'generation',
+      props: { w: 236, h: 420 },
+    }),
+  };
+  assert.deepEqual(resolveDraftShapeSize(userResized, portrait), {
+    w: 236,
+    h: 420,
+  });
+  for (const invalid of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.deepEqual(
+      resolveDraftShapeSize(
+        {
+          getShape: (id: string) => ({
+            id,
+            type: 'generation',
+            props: { w: invalid, h: 180 },
+          }),
+        },
+        portrait
+      ),
+      { w: 236, h: 420 }
+    );
+  }
 });
 
 test('keeps the latest successful media on one generation node', () => {

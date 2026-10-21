@@ -8,7 +8,7 @@ const sqliteCompatProxyCache = new WeakMap<object, any>();
  * It keeps the service layer dialect-neutral without advertising another
  * production database.
  */
-function withSqliteCompat<T extends object>(
+export function withSqliteCompat<T extends object>(
   dbInstance: T,
 ): T {
   if (dbInstance && typeof dbInstance === 'object') {

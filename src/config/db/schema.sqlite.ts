@@ -14,7 +14,8 @@ import {
 } from 'drizzle-orm/sqlite-core';
 
 const sqliteNowMs = sql`(cast((julianday('now') - 2440587.5)*86400000 as integer))`;
-const jsonText = (name: string) => text(name, { mode: 'json' }).$type<unknown>();
+const jsonText = (name: string) =>
+  text(name, { mode: 'json' }).$type<unknown>();
 
 export const config = sqliteTable('config', {
   name: text('name').primaryKey(),
@@ -91,7 +92,10 @@ export const userAsset = sqliteTable(
     index('asset_class_idx').on(table.assetClass),
     index('asset_origin_project_idx').on(table.originProjectId),
     index('asset_created_at_idx').on(table.createdAt),
-    uniqueIndex('asset_bucket_object_key_unique').on(table.bucket, table.objectKey),
+    uniqueIndex('asset_bucket_object_key_unique').on(
+      table.bucket,
+      table.objectKey
+    ),
   ]
 );
 
@@ -139,6 +143,8 @@ export const generationHistory = sqliteTable(
 export const generationUploadIntent = sqliteTable(
   'generation_upload_intent',
   {
+    sourceCardId: text('source_card_id'),
+    sourceContextDigest: text('source_context_digest'),
     id: text('id').primaryKey(),
     projectId: text('project_id')
       .notNull()
@@ -147,7 +153,9 @@ export const generationUploadIntent = sqliteTable(
     status: text('status').notNull().default('pending'),
     expectedUploadCount: integer('expected_upload_count').notNull().default(0),
     reservedUploadCount: integer('reserved_upload_count').notNull().default(0),
-    completedUploadCount: integer('completed_upload_count').notNull().default(0),
+    completedUploadCount: integer('completed_upload_count')
+      .notNull()
+      .default(0),
     generationId: text('generation_id').references(() => generationHistory.id, {
       onDelete: 'set null',
     }),
@@ -249,7 +257,9 @@ export const projectTimelineState = sqliteTable(
       .default(sqliteNowMs)
       .notNull(),
   },
-  (table) => [index('project_timeline_state_updated_at_idx').on(table.updatedAt)]
+  (table) => [
+    index('project_timeline_state_updated_at_idx').on(table.updatedAt),
+  ]
 );
 
 export const projectCommandReceipt = sqliteTable(
@@ -263,6 +273,7 @@ export const projectCommandReceipt = sqliteTable(
     commandId: text('command_id').notNull(),
     origin: text('origin').notNull(),
     commandType: text('command_type').notNull(),
+    requestHash: text('request_hash'),
     resultJson: jsonText('result_json').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sqliteNowMs)
@@ -309,6 +320,35 @@ export const projectWorkflowState = sqliteTable(
     ),
   ]
 );
+
+export const projectOrganizationState = sqliteTable(
+  'project_organization_state',
+  {
+    projectId: text('project_id')
+      .primaryKey()
+      .references(() => project.id, { onDelete: 'cascade' }),
+    schemaVersion: integer('schema_version').notNull().default(1),
+    documentJson: jsonText('document_json').notNull(),
+    version: integer('version').notNull().default(1),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .default(sqliteNowMs)
+      .notNull(),
+  }
+);
+
+export const workflowTemplate = sqliteTable('workflow_template', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  schemaVersion: integer('schema_version').notNull().default(1),
+  definitionJson: jsonText('definition_json').notNull(),
+  revision: integer('revision').notNull().default(1),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .default(sqliteNowMs)
+    .notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+    .default(sqliteNowMs)
+    .notNull(),
+});
 
 export const projectAssetMembership = sqliteTable(
   'project_asset_membership',

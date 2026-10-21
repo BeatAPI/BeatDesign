@@ -1,17 +1,41 @@
 import type { GenerationTake } from '@/core/beatcanvas/generation-history';
-import type { CanvasAssetMediaType } from '@/core/beatcanvas/canvas-types';
 import type {
-  Edge,
-  Node,
-  ReactFlowInstance,
-  Viewport,
-} from '@xyflow/react';
+  CanvasAssetMediaType,
+  CanvasCard,
+} from '@/core/beatcanvas/canvas-types';
+import type { Edge, Node, ReactFlowInstance, Viewport } from '@xyflow/react';
 
 export const ASSET_CARD_NODE_TYPE = 'beatdesign-asset-card' as const;
+export const TEXT_CARD_NODE_TYPE = 'beatdesign-text-card' as const;
 export const GENERATION_CARD_NODE_TYPE = 'beatdesign-generation-card' as const;
 export const WORKFLOW_GROUP_NODE_TYPE = 'beatdesign-workflow-group' as const;
 
+/** Count concrete clip sources, including older adopted outputs of member steps. */
+export function countGroupTimelineUses(
+  cards: ReadonlyArray<
+    Pick<CanvasCard, 'id' | 'kind' | 'assetId' | 'sourceConfigCardId'>
+  >,
+  memberCardIds: readonly string[],
+  usage: ReadonlyArray<{ assetId: string | null }>
+): number {
+  const members = new Set(memberCardIds);
+  const assets = new Set(
+    cards
+      .filter(
+        (card) =>
+          members.has(card.id) ||
+          (card.kind === 'output' &&
+            card.sourceConfigCardId &&
+            members.has(card.sourceConfigCardId))
+      )
+      .flatMap((card) => (card.assetId ? [card.assetId] : []))
+  );
+  return usage.filter((clip) => clip.assetId && assets.has(clip.assetId))
+    .length;
+}
+
 export type BeatCanvasNodeType =
+  | typeof TEXT_CARD_NODE_TYPE
   | typeof ASSET_CARD_NODE_TYPE
   | typeof GENERATION_CARD_NODE_TYPE
   | typeof WORKFLOW_GROUP_NODE_TYPE;
@@ -53,13 +77,17 @@ export type WorkflowGroupNodeProps = {
 export type BeatCanvasNodeData = Record<string, unknown> & {
   meta: BeatCanvasNodeMeta;
   props:
+    | { w: number; h: number; textNode: true }
     | AssetCardNodeProps
     | GenerationCardNodeProps
     | WorkflowGroupNodeProps;
 };
 
 export type BeatCanvasFlowNode = Node<BeatCanvasNodeData, BeatCanvasNodeType>;
-export type BeatCanvasFlowEdge = Edge<Record<string, unknown>, 'beatdesign-reference'>;
+export type BeatCanvasFlowEdge = Edge<
+  Record<string, unknown>,
+  'beatdesign-reference'
+>;
 
 export type CanvasPoint = { x: number; y: number };
 export type CanvasBounds = {
@@ -146,7 +174,9 @@ export type BeatCanvasEditor = {
   bringToFront(shapeIds: string[]): void;
   createConnection(sourceId: string, targetId: string): void;
   deleteConnection(sourceId: string, targetId: string): void;
-  setReactFlowInstance(instance: ReactFlowInstance<BeatCanvasFlowNode, BeatCanvasFlowEdge>): void;
+  setReactFlowInstance(
+    instance: ReactFlowInstance<BeatCanvasFlowNode, BeatCanvasFlowEdge>
+  ): void;
   setViewportState(viewport: Viewport): void;
 };
 

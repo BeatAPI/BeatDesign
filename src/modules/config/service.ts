@@ -1,3 +1,4 @@
+import { withDatabaseTransaction } from '@/core/db/transaction-context';
 import { eq } from 'drizzle-orm';
 import { db } from '@/core/db';
 import { config } from '@/config/db/schema';
@@ -113,7 +114,7 @@ export async function saveConfigs(configs: ConfigMap) {
     return;
   }
 
-  await (await db()).transaction(async (tx: any) => {
+  await withDatabaseTransaction(async (tx) => {
     for (const [name, value] of entries) {
       const [existing] = await tx
         .select()

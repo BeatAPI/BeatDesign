@@ -15,7 +15,7 @@ import {
 
 const makeCard = (
   id: string,
-  type: CanvasCard['type'],
+  type: Extract<CanvasCard, {kind: 'asset'}>['type'],
   name: string
 ): CanvasCard => ({
   id,

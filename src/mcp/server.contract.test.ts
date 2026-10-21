@@ -9,7 +9,13 @@ import {
   runCanvasGenerationSubmissionOnce,
 } from './generation-canvas';
 
-const source = readFileSync(new URL('./server.ts', import.meta.url), 'utf8');
+const serverSource = readFileSync(
+  new URL('./server.ts', import.meta.url),
+  'utf8'
+);
+const source =
+  serverSource +
+  readFileSync(new URL('./organization-tools.ts', import.meta.url), 'utf8');
 
 test('MCP registers Canvas, Generation, and Editor tool groups', () => {
   for (const tool of BEATDESIGN_MCP_TOOL_NAMES) {
@@ -243,7 +249,11 @@ test('generation completion writes the result onto its existing output node', ()
     capturedAt: '2026-09-06T00:00:00.000Z',
   });
   const operations = buildCanvasGenerationStatusOperations({
-    sourceCard: reviewedGenerationCard,
+    sourceCard: {
+      ...reviewedGenerationCard,
+      url: '/api/app/projects/project/assets/asset-video',
+      assetId: null,
+    },
     outputCard: plan.outputCard,
     generationId: 'generation-task',
     status: 'succeeded',

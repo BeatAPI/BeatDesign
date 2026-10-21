@@ -80,7 +80,7 @@ test('snapshot autosave sends explicit authorization before replacing a populate
     'utf8'
   );
   assert.match(source, /allowEmptyProjectSnapshot/);
-  assert.match(source, /buildCanvasOperations\(commandBase, snapshotToSave, allowEmpty\)/);
+  assert.match(source, /buildCanvasOperations\(\s*commandBase,\s*snapshotToSave,\s*allowEmpty\s*\)/);
 });
 
 test('snapshot autosave retries a version conflict without permanently stopping sync', () => {

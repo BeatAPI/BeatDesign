@@ -1,3 +1,4 @@
+import { withDatabaseTransaction } from '@/core/db/transaction-context';
 
 import { randomUUID } from 'crypto';
 import { resolveProjectCover } from './project-settings';
@@ -65,11 +66,7 @@ export const createProject = async ({
   };
 };
 
-export const loadProjects = async ({
-  limit = 24,
-}: {
-  limit?: number;
-}) => {
+export const loadProjects = async ({ limit = 24 }: { limit?: number }) => {
   const db = await getDb();
   const projects = await db
     .select()
@@ -82,17 +79,15 @@ export const loadProjects = async ({
     )
     .limit(limit);
 
-  return Promise.all(projects.map(async (entry: any) => ({
-    ...entry,
-    coverImageUrl: (await resolveProjectCover(db, entry))?.publicUrl ?? null,
-  })));
+  return Promise.all(
+    projects.map(async (entry: any) => ({
+      ...entry,
+      coverImageUrl: (await resolveProjectCover(db, entry))?.publicUrl ?? null,
+    }))
+  );
 };
 
-export const getProject = async ({
-  projectId,
-}: {
-  projectId: string;
-}) => {
+export const getProject = async ({ projectId }: { projectId: string }) => {
   const db = await getDb();
   const rows = await db
     .select()
@@ -200,7 +195,7 @@ export const deleteProjects = async ({
   }
 };
 
-export const saveProjectSnapshot = async ({
+const saveProjectSnapshotInsideTransaction = async ({
   projectId,
   document,
   baseVersion,
@@ -225,6 +220,16 @@ export const saveProjectSnapshot = async ({
     .limit(1);
 
   const currentState = stateRows[0] ?? null;
+  if (
+    document.version !== 4 &&
+    (currentState?.documentJson as ProjectSnapshotDocument)?.organization
+  )
+    throw new Error(
+      'This Canvas uses organization metadata. Reload with the current client before saving.'
+    );
+  const { validateOrganizationBindings } =
+    await import('@/core/organization/service');
+  await validateOrganizationBindings(projectId, normalizedDocument);
   const previousDocument = currentState
     ? normalizeProjectSnapshotDocument(currentState.documentJson)
     : null;
@@ -338,3 +343,7 @@ export const saveProjectSnapshot = async ({
         : nextVersion,
   };
 };
+
+export const saveProjectSnapshot = (
+  input: Parameters<typeof saveProjectSnapshotInsideTransaction>[0]
+) => withDatabaseTransaction(() => saveProjectSnapshotInsideTransaction(input));
