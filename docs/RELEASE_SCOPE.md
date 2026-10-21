@@ -6,7 +6,7 @@ Included: homepage, projects, Studio, Canvas, provider and upload-storage config
 
 Excluded: authentication, login, accounts, payments, subscriptions, credits, API-key issuing, invitations, RBAC, admin, support tickets, CMS, email delivery, and unrelated AI-provider adapters.
 
-Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. A real paid BeatAPI generation is a separate credentialed end-to-end check.
+Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. Browser/MCP checks run against that production build; run `pnpm build` before `pnpm test:e2e`. A real paid BeatAPI generation is a separate credentialed end-to-end check.
 
 ## v0.2.5 candidate (not published)
 

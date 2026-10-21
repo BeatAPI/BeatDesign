@@ -25,6 +25,7 @@ All notable changes to BeatDesign are documented in this file.
 
 - Prepare v0.2.5 application and integration metadata; publication remains pending.
 - Replace Unix-only postinstall commands with a Node.js setup script. Verify clean installation, schema setup, build, types, tests and translations on Linux and Windows in CI.
+- Run browser/MCP checks against the production build so development reloads and Vite error overlays cannot interrupt release validation.
 - Pin Node.js 24-compatible GitHub Actions and explicit runner images; adopt the current server-function validator API and explicit Vite config import extensions.
 - Correct product website links in application, package, plugin and policy-page metadata.
 
