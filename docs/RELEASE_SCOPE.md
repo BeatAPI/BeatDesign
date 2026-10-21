@@ -11,10 +11,10 @@ Release verification requires a clean install, schema creation, production build
 ## v0.2.5 candidate (not published)
 
 - [x] Align application, Codex, Claude Code, Claude marketplace, LobeHub and WorkBuddy metadata on `0.2.5`.
-- [ ] Verify clean installation and schema setup on Linux and Windows in CI.
+- [x] Verify clean installation and schema setup on Linux and Windows in CI ([candidate run](https://github.com/BeatAPI/BeatDesign/actions/runs/39647018659), source commit `cbc6951`).
 - [x] Run typecheck, tests (432 passing), i18n validation, production build and focused UI/MCP checks (14 passing).
 - [x] Build and inspect the Connector ZIP and npm runtime tarball; install the tarball in a clean temporary directory, complete MCP handshake (30 tools), and smoke-test the production workspace.
-- [ ] Merge the maintenance PR and confirm both main-branch CI jobs pass.
+- Merge and main-branch CI status: [maintenance PR #31](https://github.com/BeatAPI/BeatDesign/pull/31) and its linked Quality checks. Recheck the exact merge commit before publishing.
 - [ ] Publish GitHub Release `v0.2.5` with verified assets.
 - [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.5`; independently verify npm `latest`.
 - [ ] Submit the updated Connector to WorkBuddy, then record review and public availability separately.
