@@ -52,6 +52,9 @@ input snapshots. Per-project folders and Elements live in
 New semantic writes require explicit revisions and stable IDs. An asynchronous
 transaction context keeps service reads, CAS updates and request-fingerprinted
 receipts on the same SQLite transaction, including legacy snapshot save paths.
+Each transaction owns a dedicated client, commits or rolls back explicitly, then
+closes it in `finally`; unrelated readers keep their separate connection. This
+avoids detached native handles remaining open until garbage collection.
 Canvas generation intents additionally pin the reviewed source card/configuration
 digest. See [Project organization](PROJECT_ORGANIZATION.md).
 

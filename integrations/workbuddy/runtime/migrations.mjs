@@ -1,7 +1,8 @@
 /** Apply trusted packaged DDL and its receipt atomically. Runtime upgrades may
  * already have added columns/tables before their first versioned migration. */
 export async function applyRuntimeMigration(client, name, source) {
-  const tx = await client.transaction('write');
+  await client.execute('BEGIN IMMEDIATE');
+  const tx = client;
   try {
     for (const statement of source.split('--> statement-breakpoint').map((s) => s.trim()).filter(Boolean)) {
       const addedColumn = /^ALTER TABLE\s+`(\w+)`\s+ADD\s+`(\w+)`\s/i.exec(statement);
@@ -15,9 +16,9 @@ export async function applyRuntimeMigration(client, name, source) {
       await tx.execute(sql);
     }
     await tx.execute({sql:'INSERT INTO __beatdesign_runtime_migrations (name, applied_at) VALUES (?, ?)',args:[name, Date.now()]});
-    await tx.commit();
+    await tx.executeMultiple('COMMIT');
   } catch (error) {
-    await tx.rollback();
+    await tx.executeMultiple('ROLLBACK');
     throw error;
   }
 }

@@ -1,3 +1,4 @@
+import { withDatabaseTransaction } from '@/core/db/transaction-context';
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import { project, projectAssetMembership, userAsset } from '@/config/db/schema';
 import { getDb } from '@/core/workspace-lib/db-adapter';
@@ -133,7 +134,6 @@ export async function updateProjectSettings({
       'INVALID_COMMAND',
       'Project settings require an expectedRevision from the latest settings.',
     );
-  const db = database ?? await getDb();
   const update = async (tx: any) => {
     const current = await getProjectSettings(projectId, tx);
     if (!current)
@@ -200,5 +200,5 @@ export async function updateProjectSettings({
       );
     return (await getProjectSettings(projectId, tx))!;
   };
-  return database ? update(database) : db.transaction(update);
+  return database ? update(database) : withDatabaseTransaction(update);
 }

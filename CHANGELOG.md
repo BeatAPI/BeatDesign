@@ -4,6 +4,8 @@ All notable changes to BeatDesign are documented in this file.
 
 ## [Unreleased]
 
+- Close dedicated SQLite command connections explicitly after commit/rollback, keeping unrelated reads isolated. Startup and packaged migrations use owned connections, avoiding Windows file locks retained by detached driver transactions.
+
 - Remove the unused shadcn generator CLI and its obsolete dependency tree; full dependency audit reports zero advisories. CI now checks development dependencies as well as production dependencies. Existing UI components and their configuration are unchanged.
 
 - Adapt Issue #29 organization work from JaysonAlbert/BeatDesign PR #16: persistent Canvas groups and arrangement, logical Asset folders, exact-version Elements, text steps, and reusable local workflow templates. UI and MCP share atomic revision-checked commands; eight added tools bring source MCP to 38.
