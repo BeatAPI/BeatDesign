@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve, join, dirname } from 'node:path';
 import test from 'node:test';
 
 import { BEATDESIGN_MCP_TOOL_NAMES } from './tools';
@@ -28,12 +30,25 @@ const readJsonLine = async (
       if (newline < 0) return;
       child.stdout?.off('data', onData);
       clearTimeout(timer);
-      resolveLine(JSON.parse(buffer.slice(0, newline)) as Record<string, unknown>);
+      resolveLine(
+        JSON.parse(buffer.slice(0, newline)) as Record<string, unknown>
+      );
     };
     child.stdout?.on('data', onData);
   });
 
 test('MCP stdio handshake lists the catalogued tools and can list projects', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'beatdesign-stdio-probe-'));
+  const env = {
+    ...process.env,
+    BEATDESIGN_DATA_DIR: directory,
+    NODE_ENV: 'development',
+  };
+  execFileSync(
+    process.execPath,
+    ['node_modules/drizzle-kit/bin.cjs', 'push', '--force'],
+    { env, stdio: 'pipe', windowsHide: true }
+  );
   const child = spawn(
     process.execPath,
     [
@@ -43,7 +58,8 @@ test('MCP stdio handshake lists the catalogued tools and can list projects', asy
     ],
     {
       cwd: resolve('.'),
-      env: { ...process.env, NODE_ENV: 'development' },
+      env,
+      windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'],
     }
   );
@@ -167,5 +183,14 @@ test('MCP stdio handshake lists the catalogued tools and can list projects', asy
     assert.ok(Array.isArray(payload.structuredContent?.result));
   } finally {
     child.kill();
+    if (child.exitCode === null)
+      await new Promise<void>((done) => child.once('exit', () => done()));
+    assert.equal(dirname(resolve(directory)), resolve(tmpdir()));
+    await rm(directory, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 100,
+    });
   }
 });

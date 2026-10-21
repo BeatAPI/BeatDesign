@@ -18,7 +18,7 @@ const draftCard: CanvasGenerationCard = {
   workflowTemplateId: null,
   status: 'idle',
   error: null,
-    modelId: 'nano-banana-pro',
+  modelId: 'nano-banana-pro',
   aspectRatio: '1:1',
   outputQuality: '1k',
   duration: '5s',
@@ -138,7 +138,7 @@ test('default composer renders the prompt input inline with the character count 
 
   assert.match(
     html,
-    /<div class="flex min-w-0 flex-1 items-start gap-3">[\s\S]*min-h-\[56px\][\s\S]*pl-2 pr-0 py-0[\s\S]*placeholder="今天我们要创作什么"[\s\S]*0\/1000[\s\S]*aria-label="Close generator"/
+    /<div class="grid min-w-0 grid-cols-\[minmax\(0,1fr\)_auto\] items-start gap-x-3 gap-y-2">[\s\S]*min-h-\[56px\][\s\S]*pl-2 pr-0 py-0[\s\S]*placeholder="今天我们要创作什么"[\s\S]*0\/1000[\s\S]*aria-label="Close generator"/
   );
   assert.match(html, /w-\[min\(560px,calc\(100vw-32px\)\)\]/);
   assert.doesNotMatch(
@@ -230,4 +230,38 @@ test('composer keeps the generate arrow after the first take exists', () => {
   assert.match(html, /aria-label="Generate"/);
   assert.match(html, /lucide-arrow-up/);
   assert.doesNotMatch(html, /lucide-rotate-cw/);
+});
+
+test('unbound workflow inputs disable generation and explain the blocker accessibly without invoking actions', () => {
+  let submissions = 0;
+  const html = renderToStaticMarkup(
+    <BeatCanvasComposerShell
+      activeDraftCard={draftCard}
+      composerRef={{ current: null }}
+      isDraftBusy={false}
+      isPromptComposing={false}
+      labels={labels}
+      generationBlockers={['请先绑定角色参考。']}
+      onActiveComposerCardIdChange={() => {}}
+      onPromptChange={() => {}}
+      onPromptCommit={() => {}}
+      onGenerateDraft={() => {
+        submissions++;
+      }}
+      onPromptCompositionChange={() => {}}
+      promptCharacterCount={0}
+      promptCharacterLimit={1000}
+      promptInputValue=""
+      promptPlaceholder="Prompt"
+    >
+      <div>controls</div>
+    </BeatCanvasComposerShell>
+  );
+  assert.match(html, /<button[^>]*disabled=""[^>]*aria-label="Generate"/);
+  const description = html.match(/aria-describedby="([^"]+)"/)?.[1];
+  assert.ok(description);
+  assert.ok(html.includes(`id="${description}"`));
+  assert.match(html, /role="status"/);
+  assert.match(html, /请先绑定角色参考。/);
+  assert.equal(submissions, 0);
 });

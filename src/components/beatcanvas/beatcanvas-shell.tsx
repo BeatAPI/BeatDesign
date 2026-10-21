@@ -1,4 +1,6 @@
-
+import { VIDEO_ANALYSIS_MODEL_ID } from '@/core/effects/video-analysis';
+import { getTemplateGenerationBlockers } from '@/core/workflows/workflow-template';
+import { CanvasOrganizationPanel } from './organization-panel';
 import {
   invalidateWorkspaceAfterAssetMutation,
   invalidateWorkspaceAfterGeneration,
@@ -39,7 +41,7 @@ import {
   type ProjectAssetInsertDetail,
   type ProjectAssetTransfer,
 } from '@/core/beatcanvas/project-asset-transfer';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import {
   Suspense,
@@ -183,6 +185,7 @@ export function BeatCanvasShell({
   initialFocusCardId: string | null;
 }) {
   const rawStudioT = useTranslations('AppShell.studio');
+  const organizationT = useTranslations('Organization');
   const projectAssetsT = useTranslations('AppShell.header.projectAssets');
   const handledInitialFocusCardIdRef = useRef<string | null>(null);
   const queryClient = useQueryClient();
@@ -233,6 +236,8 @@ export function BeatCanvasShell({
   const {
     activeComposerCardId,
     canvasCards,
+    canvasOrganization,
+    handleCanvasOrganizationChange,
     canvasCardsRef,
     copySelectedCanvasCards,
     createConnectorBetweenCards,
@@ -270,6 +275,7 @@ export function BeatCanvasShell({
     initialVideoModelId: initialVideoModel?.id ?? null,
   });
 
+  const snapshotFlushRef = useRef<() => Promise<void>>(async () => {});
   const [statusMessage, setStatusMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
@@ -485,20 +491,21 @@ export function BeatCanvasShell({
     resumeInFlightGenerations,
     runGenerateDraft,
   } = useBeatCanvasGenerationRuntime({
-      projectId,
-      studioT,
-      canvasCardsRef,
-      imageModels,
-      isCanvasReady,
-      videoModels,
-      createGenerationOutput,
-      updateGenerationOutput,
-      completeGenerationOutput,
-      setErrorMessage,
-      setStatusMessage,
-      updateDraftCard,
-      onGenerationComplete: refreshWorkspaceAfterGeneration,
-    });
+    beforeGenerate: () => snapshotFlushRef.current(),
+    projectId,
+    studioT,
+    canvasCardsRef,
+    imageModels,
+    isCanvasReady,
+    videoModels,
+    createGenerationOutput,
+    updateGenerationOutput,
+    completeGenerationOutput,
+    setErrorMessage,
+    setStatusMessage,
+    updateDraftCard,
+    onGenerationComplete: refreshWorkspaceAfterGeneration,
+  });
 
   const handleCreateGenerationFromConnector = useCallback(
     ({
@@ -748,9 +755,55 @@ export function BeatCanvasShell({
     []
   );
 
+  const canvasTimelineUsage = useQuery({
+    queryKey: ['timeline-usage', projectId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/app/projects/${encodeURIComponent(projectId)}/timeline-usage`
+      );
+      if (!response.ok) throw new Error('Timeline usage unavailable');
+      return response.json() as Promise<{
+        clips: Array<{ assetId: string | null }>;
+      }>;
+    },
+    enabled: isCanvasReady,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: false,
+  });
+  const generationBlockersByCard = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.values(canvasCards)
+          .filter((card) => card.kind === 'generation')
+          .map((card) => {
+            const blockers = getTemplateGenerationBlockers(
+              {
+                cards: Object.values(canvasCards),
+                organization: canvasOrganization,
+              },
+              card.id
+            );
+            const knownModels = [...imageModels, ...videoModels];
+            return [
+              card.id,
+              [
+                ...(blockers.length
+                  ? [organizationT('templateDraftUnbound')]
+                  : []),
+                ...(card.modelId !== VIDEO_ANALYSIS_MODEL_ID &&
+                !knownModels.some((model) => model.id === card.modelId)
+                  ? [organizationT('unavailableModel')]
+                  : []),
+              ],
+            ];
+          })
+      ),
+    [canvasCards, canvasOrganization, imageModels, videoModels, organizationT]
+  );
   const frontLayerValue = useMemo<BeatCanvasFrontLayerValue>(
     () => ({
       cards: canvasCards,
+      generationBlockersByCard,
       selectedShapeIds,
       selectedCanvasCardIds,
       activeComposerCardId,
@@ -765,6 +818,10 @@ export function BeatCanvasShell({
       onUndoCanvas: handleUndoCanvas,
       onRedoCanvas: handleRedoCanvas,
       onCreateImageDraft: () => handleCreatePromptDraft('image'),
+      onTextNodeEditStart: recordCanvasHistory,
+      onTextNodeChange: (id, patch) => {
+        if (canvasCardsRef.current[id]?.kind === 'text') updateCanvasCard(id, patch);
+      },
       onUploadImage: () =>
         openUploadPicker({ intent: 'image', mode: 'global' }),
       onCreateGenerationFromConnector: handleCreateGenerationFromConnector,
@@ -796,6 +853,7 @@ export function BeatCanvasShell({
     }),
     [
       activeComposerCardId,
+      generationBlockersByCard,
       canUndoCanvas,
       canRedoCanvas,
       canvasCards,
@@ -832,6 +890,9 @@ export function BeatCanvasShell({
       handleUndoCanvas,
       handleRedoCanvas,
       videoModels,
+      canvasCardsRef,
+      recordCanvasHistory,
+      updateCanvasCard,
     ]
   );
 
@@ -1328,16 +1389,17 @@ export function BeatCanvasShell({
       : null;
   const showContextToolbar = Boolean(
     canPreviewSelection ||
-      isSingleDownloadable ||
-      isGroupSelected ||
-      canAddSelectionToTimeline
+    isSingleDownloadable ||
+    isGroupSelected ||
+    canAddSelectionToTimeline
   );
   const snapshotChangeSignal = useMemo(
     () => ({
       cards: canvasCards,
+      canvasOrganization,
       canvasDocumentRevision,
     }),
-    [canvasDocumentRevision, canvasCards]
+    [canvasDocumentRevision, canvasCards, canvasOrganization]
   );
 
   const activeTemplateProjectWorkflowSnapshot =
@@ -1383,7 +1445,7 @@ export function BeatCanvasShell({
     toast.error(studioT('messages.snapshotConflict'));
   }, [studioT]);
 
-  const isWorkspaceReady = useProjectSnapshotLifecycle({
+  const snapshotLifecycle = useProjectSnapshotLifecycle({
     projectId,
     projectPath,
     initialProjectSnapshot,
@@ -1399,6 +1461,9 @@ export function BeatCanvasShell({
     onEmptyProjectSnapshotSaved: handleEmptyProjectSnapshotSaved,
     onProjectSnapshotConflict: handleProjectSnapshotConflict,
   });
+  snapshotFlushRef.current = snapshotLifecycle.flush;
+
+  const isWorkspaceReady = snapshotLifecycle.isWorkspaceReady;
 
   useEffect(() => {
     const focusCardId = initialFocusCardId?.trim();
@@ -1411,6 +1476,19 @@ export function BeatCanvasShell({
       return;
     }
 
+    const group = Object.values(canvasOrganization?.groups ?? {}).find(
+      (group) => group.memberCardIds.includes(focusCardId)
+    );
+    if (group?.collapsed && canvasOrganization) {
+      handleCanvasOrganizationChange({
+        ...canvasOrganization,
+        groups: {
+          ...canvasOrganization.groups,
+          [group.id]: { ...group, collapsed: false },
+        },
+      });
+      return;
+    }
     handledInitialFocusCardIdRef.current = focusCardId;
     handleSelectShape(focusCardId);
     focusShape(focusCardId);
@@ -1422,6 +1500,8 @@ export function BeatCanvasShell({
     focusShape,
     handleSelectShape,
     initialFocusCardId,
+    canvasOrganization,
+    handleCanvasOrganizationChange,
     isCanvasReady,
     setActiveComposerCardId,
   ]);
@@ -1665,6 +1745,11 @@ export function BeatCanvasShell({
         <BeatCanvasFrontLayerProvider value={frontLayerValue}>
           <Suspense fallback={<BeatCanvasLoading />}>
             <BeatCanvasReactFlowEditor
+              timelineUsage={canvasTimelineUsage.data?.clips}
+              canvasCards={canvasCards}
+              organization={canvasOrganization}
+              onOrganizationChange={handleCanvasOrganizationChange}
+              getCanvasDocument={buildProjectSnapshotDocument}
               onMount={handleEditorMount}
               onDocumentChange={handleCanvasDocumentChange}
               onHistoryCheckpoint={recordCanvasHistory}
@@ -1675,6 +1760,20 @@ export function BeatCanvasShell({
           </Suspense>
         </BeatCanvasFrontLayerProvider>
 
+        {isWorkspaceReady && <CanvasOrganizationPanel
+          projectId={projectId}
+          selectedCardIds={selectedCanvasCardIds}
+          getDocument={buildProjectSnapshotDocument}
+          flush={snapshotLifecycle.flush}
+          acceptSnapshot={(document, revision) => {
+            recordCanvasHistory();
+            snapshotLifecycle.acceptExternalSnapshot(document, revision);
+          }}
+          onLocate={(id) => {
+            handleSelectShape(id);
+            focusShape(id);
+          }}
+        />}
         <div className="pointer-events-none absolute inset-0">
           {/* Floating Left Toolbar */}
           <BeatCanvasSidebar

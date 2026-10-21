@@ -12,9 +12,17 @@ import type {
 import type { VideoAnalysisDepth } from '@/core/effects/video-analysis';
 
 export type CanvasCardMediaType = 'image' | 'video';
+export type CanvasReferenceMediaType = CanvasCardMediaType | 'audio';
 export type CanvasAssetMediaType = CanvasCardMediaType | 'audio' | 'timeline';
 export type CanvasGenerationMode = CanvasCardMediaType | 'analysis';
-export type CanvasCardKind = 'asset' | 'generation' | 'output';
+export type CanvasCardKind = 'asset' | 'generation' | 'output' | 'text';
+export type CanvasTextRole = 'note' | 'script' | 'character' | 'storyboard';
+export type CanvasTextReference = {
+  cardId: string;
+  name: string;
+  textRole: CanvasTextRole;
+  textContent: string;
+};
 export type CanvasCardStatus =
   | 'idle'
   | 'pending'
@@ -26,7 +34,9 @@ type CanvasCardBase = {
   id: string;
   assetId?: string | null;
   kind: CanvasCardKind;
-  type: CanvasAssetMediaType;
+  type: CanvasAssetMediaType | 'text';
+  textContent?: string;
+  textRole?: CanvasTextRole;
   generationMode?: CanvasGenerationMode;
   analysisDepth?: VideoAnalysisDepth;
   name: string;
@@ -83,6 +93,15 @@ export type CanvasGenerationSnapshot = Pick<
 > & {
   type: CanvasCardMediaType;
   capturedAt: string;
+  resolvedPrompt?: string;
+  textReferences?: CanvasTextReference[];
+};
+
+export type CanvasTextCard = CanvasCardBase & {
+  kind: 'text';
+  type: 'text';
+  textContent: string;
+  textRole: CanvasTextRole;
 };
 
 export type CanvasAssetCard = CanvasCardBase & {
@@ -104,6 +123,7 @@ export type CanvasOutputCard = CanvasCardBase & {
 };
 
 export type CanvasCard =
+  | CanvasTextCard
   | CanvasAssetCard
   | CanvasGenerationCard
   | CanvasOutputCard;
@@ -128,6 +148,5 @@ export const getCanvasGenerationMode = (
   card.generationMode ??
   (card.type === 'image' || card.type === 'video' ? card.type : 'video');
 
-export const isCanvasAnalysisCard = (
-  card: CanvasCard | null | undefined
-) => Boolean(card && getCanvasGenerationMode(card) === 'analysis');
+export const isCanvasAnalysisCard = (card: CanvasCard | null | undefined) =>
+  Boolean(card && getCanvasGenerationMode(card) === 'analysis');

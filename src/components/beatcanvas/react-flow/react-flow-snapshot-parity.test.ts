@@ -40,7 +40,7 @@ const generationCard: CanvasCard = {
   workflowTemplateId: null,
   status: 'idle',
   error: null,
-    modelId: 'seedance-2',
+  modelId: 'seedance-2',
   aspectRatio: '9:16',
   outputQuality: '1080p',
   duration: '15s',
@@ -78,7 +78,7 @@ const failedOutputCard: CanvasCard = {
   },
 };
 
-test('keeps the version 3 project document canonical across React Flow restore', () => {
+test('upgrades a version 3 project document while keeping it canonical across React Flow restore', () => {
   const document = buildProjectSnapshotDocument({
     cardsById: {
       [assetCard.id]: assetCard,
@@ -93,7 +93,7 @@ test('keeps the version 3 project document canonical across React Flow restore',
     camera: { x: 460, y: 240, z: 0.75 },
   });
 
-  assert.equal(document.version, 3);
+  assert.equal(document.version, 4);
   assert.deepEqual(document.frames[generationCard.id], {
     x: 620,
     y: 180,

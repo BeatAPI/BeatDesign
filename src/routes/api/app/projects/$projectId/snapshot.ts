@@ -23,7 +23,9 @@ type SaveProjectSnapshotRequest = {
 };
 
 async function GET({ params }: { params: { projectId: string } }) {
-  const state = await loadProjectWithLatestSnapshot({ projectId: params.projectId });
+  const state = await loadProjectWithLatestSnapshot({
+    projectId: params.projectId,
+  });
   if (!state) {
     return Response.json({ error: 'Project not found' }, { status: 404 });
   }
@@ -79,7 +81,7 @@ async function PUT({
   try {
     const result = await saveProjectSnapshot({
       projectId,
-      document: normalizeProjectSnapshotDocument(payload.document),
+      document: payload.document,
       baseVersion:
         typeof payload.baseVersion === 'number' ? payload.baseVersion : null,
       allowEmpty: payload.allowEmpty === true,

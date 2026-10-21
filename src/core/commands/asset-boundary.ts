@@ -39,14 +39,19 @@ export async function normalizeCommandAssetReferences({
   projectId: string;
   command: BeatDesignCommand;
 }): Promise<BeatDesignCommand> {
-  if (command.type === 'editor.validate' || command.type === 'project.update') return command;
+  if (
+    command.type !== 'canvas.apply' &&
+    command.type !== 'editor.apply' &&
+    command.type !== 'editor.replace_document'
+  )
+    return command;
 
   if (command.type === 'canvas.apply') {
     return {
       ...command,
       operations: await Promise.all(
         command.operations.map(async (operation) => {
-          if (operation.type === 'upsert_card' && operation.card.assetId) {
+          if (operation.type === 'upsert_card' && operation.card.kind !== 'text' && operation.card.assetId) {
             const expectedType =
               operation.card.type === 'timeline'
                 ? 'video'

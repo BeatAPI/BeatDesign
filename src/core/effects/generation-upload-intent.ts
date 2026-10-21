@@ -121,17 +121,25 @@ export async function issueGenerationUploadIntent({
   expectedUploadCount,
   now = new Date(),
   dbClient,
+  sourceCardId,
+  sourceContextDigest,
 }: {
   projectId: string;
   effectId: number;
   expectedUploadCount: number;
   now?: Date;
   dbClient?: DbClient;
+  sourceCardId?: string;
+  sourceContextDigest?: string;
 }) {
   const normalizedCount = normalizeExpectedUploadCount(expectedUploadCount);
   if (!projectId || !Number.isFinite(effectId) || normalizedCount === null) {
     throw new Error('A valid project, effect, and upload count are required');
   }
+  if (Boolean(sourceCardId) !== Boolean(sourceContextDigest))
+    throw new Error(
+      'Canvas intent source and reviewed context must be provided together.'
+    );
 
   const db = await resolveDb(dbClient);
   const activeIntents = await db
@@ -154,8 +162,7 @@ export async function issueGenerationUploadIntent({
     activeIntents.filter(
       (intent: { expectedUploadCount: number }) =>
         intent.expectedUploadCount > 0
-    ).length >=
-      MAX_ACTIVE_UPLOAD_INTENTS_PER_PROJECT
+    ).length >= MAX_ACTIVE_UPLOAD_INTENTS_PER_PROJECT
   ) {
     throw new GenerationIntentQuotaError(
       'Too many pending upload authorizations for this project. Finish one or wait for it to expire.'
@@ -173,6 +180,8 @@ export async function issueGenerationUploadIntent({
     expiresAt: new Date(now.getTime() + INTENT_TTL_MS),
     createdAt: now,
     updatedAt: now,
+    sourceCardId: sourceCardId ?? null,
+    sourceContextDigest: sourceContextDigest ?? null,
   });
   return id;
 }
@@ -250,6 +259,32 @@ export async function getGenerationUploadIntentEffectId({
     .limit(1);
 
   return intent?.effectId ?? null;
+}
+
+export async function getGenerationUploadIntentSourceContext({
+  intentId,
+  projectId,
+  dbClient,
+}: {
+  intentId: string;
+  projectId: string;
+  dbClient?: DbClient;
+}) {
+  const db = await resolveDb(dbClient);
+  const [intent] = await db
+    .select({
+      sourceCardId: generationUploadIntent.sourceCardId,
+      sourceContextDigest: generationUploadIntent.sourceContextDigest,
+    })
+    .from(generationUploadIntent)
+    .where(
+      and(
+        eq(generationUploadIntent.id, intentId),
+        eq(generationUploadIntent.projectId, projectId)
+      )
+    )
+    .limit(1);
+  return intent ?? null;
 }
 
 export async function releaseGenerationUploadSlot({

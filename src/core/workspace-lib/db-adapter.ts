@@ -8,7 +8,8 @@
  *   await db.select(...)
  */
 import { db } from '@/core/db';
+import { currentDatabaseTransaction } from '@/core/db/transaction-context';
 
 export async function getDb() {
-  return db();
+  return currentDatabaseTransaction() ?? db();
 }

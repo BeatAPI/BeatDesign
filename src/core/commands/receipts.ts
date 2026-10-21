@@ -10,7 +10,8 @@ import {
 } from './contracts';
 import type { BeatDesignCommandData } from './executor';
 
-export type StoredCommandResult = BeatDesignCommandResult<BeatDesignCommandData>;
+export type StoredCommandResult =
+  BeatDesignCommandResult<BeatDesignCommandData>;
 
 const RECEIPT_RETENTION_MS = 24 * 60 * 60 * 1000;
 const MAX_RECEIPTS_PER_PROJECT = 2_000;
@@ -74,6 +75,7 @@ export async function listCommandReceipts({
       commandId: projectCommandReceipt.commandId,
       idempotencyKey: projectCommandReceipt.idempotencyKey,
       origin: projectCommandReceipt.origin,
+      requestHash: projectCommandReceipt.requestHash,
       commandType: projectCommandReceipt.commandType,
       result: projectCommandReceipt.resultJson,
       createdAt: projectCommandReceipt.createdAt,
@@ -95,6 +97,7 @@ export async function loadCommandReceiptRecord({
   const rows = await db
     .select({
       commandId: projectCommandReceipt.commandId,
+      requestHash: projectCommandReceipt.requestHash,
       commandType: projectCommandReceipt.commandType,
       resultJson: projectCommandReceipt.resultJson,
     })
@@ -110,6 +113,7 @@ export async function loadCommandReceiptRecord({
   return row
     ? {
         commandId: row.commandId,
+        requestHash: row.requestHash,
         commandType: row.commandType,
         result: row.resultJson as StoredCommandResult,
       }
@@ -122,6 +126,7 @@ export async function storeCommandReceipt({
   commandId,
   origin,
   commandType,
+  requestHash,
   result,
 }: {
   projectId: string;
@@ -129,6 +134,7 @@ export async function storeCommandReceipt({
   commandId: string;
   origin: string;
   commandType: string;
+  requestHash?: string;
   result: StoredCommandResult;
 }, database?: any) {
   const db = database ?? await getDb();
@@ -141,6 +147,7 @@ export async function storeCommandReceipt({
       commandId,
       origin,
       commandType,
+      requestHash,
       resultJson: result,
       createdAt: new Date(),
     })
@@ -149,7 +156,9 @@ export async function storeCommandReceipt({
   const stored = await loadCommandReceiptRecord({ projectId, idempotencyKey }, db);
   if (
     stored &&
-    (stored.commandId !== commandId || stored.commandType !== commandType)
+    (stored.commandId !== commandId ||
+      stored.commandType !== commandType ||
+      (requestHash !== undefined && stored.requestHash !== requestHash))
   ) {
     throw new BeatDesignCommandError(
       'INVALID_COMMAND',

@@ -19,7 +19,12 @@ import type {
   CanvasCardMediaType,
   CanvasDraftCard,
   CanvasOutputCard,
+  CanvasTextCard,
 } from '@/core/beatcanvas/canvas-types';
+import {
+  buildTextCard,
+  resolveCanvasTextReferences,
+} from '@/core/beatcanvas/text-nodes';
 import {
   buildGenerationTakes,
   resolvePinnedGenerationOutputId,
@@ -49,10 +54,17 @@ import {
 
 import {
   ASSET_CARD_NODE_TYPE,
+  TEXT_CARD_NODE_TYPE,
   GENERATION_CARD_NODE_TYPE,
   type BeatCanvasEditor,
   type GenerationCardNodeProps,
 } from './react-flow/beatcanvas-react-flow-types';
+import {
+  applyCanvasOrganizationOperations,
+  cleanupCanvasOrganizationForRemovedCards,
+  normalizeCanvasOrganization,
+  type CanvasOrganization,
+} from '@/core/organization/canvas-organization';
 import type { StudioTranslateFn } from './beatcanvas-types';
 
 type ShapePlacement = {
@@ -78,6 +90,25 @@ const VIDEO_FRAME_HEIGHT = 236;
 const ANALYSIS_REPORT_FRAME_SIZE = { w: 480, h: 340 } as const;
 
 const makeId = () => Math.random().toString(36).slice(2, 10);
+
+export function captureCanonicalCanvasFrames({
+  cards,
+  previousFrames,
+  readBounds,
+}: {
+  cards: Record<string, CanvasCard>;
+  previousFrames: Record<string, ProjectSnapshotShapeFrame>;
+  readBounds: (id: string) => ProjectSnapshotShapeFrame | null | undefined;
+}): Record<string, ProjectSnapshotShapeFrame> {
+  return Object.fromEntries(
+    Object.keys(cards).flatMap((id) => {
+      const frame = readBounds(id) ?? previousFrames[id];
+      return frame
+        ? [[id, { x: frame.x, y: frame.y, w: frame.w, h: frame.h }]]
+        : [];
+    })
+  );
+}
 
 const getAspectRatioValue = (
   taskType: CanvasCardMediaType,
@@ -445,18 +476,18 @@ export const resolveDraftShapeSize = (
   editor: DraftShapeSizeEditor | null | undefined,
   card: CanvasDraftCard
 ) => {
-  if (!card.workflowTemplateId) {
-    return getDraftFrameSize(card.type, card.aspectRatio);
-  }
-
+  // Model aspect is input configuration, not an instruction to reflow a saved
+  // Canvas. Runtime status, Take changes and restore must preserve user layout.
   const existingShape = editor?.getShape?.(card.id);
   const existingWidth = existingShape?.props?.w;
   const existingHeight = existingShape?.props?.h;
 
   if (
     typeof existingWidth === 'number' &&
+    Number.isFinite(existingWidth) &&
     existingWidth > 0 &&
     typeof existingHeight === 'number' &&
+    Number.isFinite(existingHeight) &&
     existingHeight > 0
   ) {
     return {
@@ -494,6 +525,56 @@ export function useBeatCanvasReactFlowAdapter({
   setActiveComposerCardId: (cardId: string | null) => void;
 }) {
   const editorRef = useRef<BeatCanvasEditor | null>(null);
+  const canvasOrganizationRef = useRef<CanvasOrganization | undefined>(
+    undefined
+  );
+  const [canvasOrganization, setCanvasOrganization] = useState<
+    CanvasOrganization | undefined
+  >(undefined);
+  const canonicalFramesRef = useRef<Record<string, ProjectSnapshotShapeFrame>>(
+    {}
+  );
+  const handleCanvasOrganizationChange = useCallback(
+    (
+      next: CanvasOrganization,
+      frames?: Record<string, ProjectSnapshotShapeFrame>
+    ) => {
+      if (frames) canonicalFramesRef.current = structuredClone(frames);
+      canvasOrganizationRef.current = next;
+      setCanvasOrganization(next);
+    },
+    []
+  );
+  useEffect(() => {
+    const organization = canvasOrganizationRef.current;
+    if (!organization) return;
+    const known = new Set(Object.keys(canvasCards));
+    const metadataIds = [
+      ...Object.values(organization.groups).flatMap(
+        (group) => group.memberCardIds
+      ),
+      ...Object.values(organization.elementBindings).flatMap((binding) => [
+        binding.consumerCardId,
+        binding.referenceCardId,
+      ]),
+      ...Object.values(organization.templateInstances).flatMap((instance) => [
+        ...Object.values(instance.stepCardIds),
+        ...Object.values(instance.slotBindings).map(
+          (binding) => binding.referenceCardId
+        ),
+      ]),
+    ];
+    const cleaned = cleanupCanvasOrganizationForRemovedCards(
+      {
+        cards: Object.values(canvasCards),
+        frames: canonicalFramesRef.current,
+        organization,
+      },
+      metadataIds.filter((id) => !known.has(id))
+    ).organization;
+    if (JSON.stringify(cleaned) !== JSON.stringify(organization))
+      handleCanvasOrganizationChange(cleaned);
+  }, [canvasCards, handleCanvasOrganizationChange]);
   const syncedDraftShapeSignaturesRef = useRef<Record<string, string>>({});
   const syncedAssetShapeSignaturesRef = useRef<Record<string, string>>({});
   const undoStackRef = useRef<ProjectSnapshotDocument[]>([]);
@@ -513,25 +594,43 @@ export function useBeatCanvasReactFlowAdapter({
 
   const captureCanvasDocument = useCallback((): ProjectSnapshotDocument => {
     const editor = editorRef.current;
-    const frames = Object.values(canvasCardsRef.current).reduce<
-      Record<string, ProjectSnapshotShapeFrame>
-    >((accumulator, card) => {
-      const bounds = editor?.getShapePageBounds(card.id);
-      if (bounds) {
-        accumulator[card.id] = {
-          x: bounds.x,
-          y: bounds.y,
-          w: bounds.w,
-          h: bounds.h,
-        };
-      }
-      return accumulator;
-    }, {});
+    const frames = captureCanonicalCanvasFrames({
+      cards: canvasCardsRef.current,
+      previousFrames: canonicalFramesRef.current,
+      readBounds: (id) => editor?.getShapePageBounds(id),
+    });
+    canonicalFramesRef.current = frames;
+    const cards = Object.values(canvasCardsRef.current);
+    const known = new Set(cards.map((card) => card.id));
+    const referenced = new Set([
+      ...Object.values(canvasOrganizationRef.current?.groups ?? {}).flatMap(
+        (group) => group.memberCardIds
+      ),
+      ...Object.values(
+        canvasOrganizationRef.current?.elementBindings ?? {}
+      ).flatMap((binding) => [binding.consumerCardId, binding.referenceCardId]),
+      ...Object.values(
+        canvasOrganizationRef.current?.templateInstances ?? {}
+      ).flatMap((instance) => [
+        ...Object.values(instance.stepCardIds),
+        ...Object.values(instance.slotBindings).map(
+          (binding) => binding.referenceCardId
+        ),
+      ]),
+    ]);
+    const organization = canvasOrganizationRef.current
+      ? cleanupCanvasOrganizationForRemovedCards(
+          { cards, frames, organization: canvasOrganizationRef.current },
+          [...referenced].filter((id) => !known.has(id))
+        ).organization
+      : undefined;
+    canvasOrganizationRef.current = organization;
 
     return buildProjectSnapshotDocumentFromCards({
       cardsById: canvasCardsRef.current,
       framesById: frames,
       camera: editor?.getCamera(),
+      organization,
     });
   }, [canvasCardsRef]);
 
@@ -656,9 +755,45 @@ export function useBeatCanvasReactFlowAdapter({
     (shapeIds: string[], explicitGroupId?: string) => {
       const editor = editorRef.current;
       const groupId = explicitGroupId ?? `shape:${makeId()}`;
-      return groupCanvasShapes(editor, shapeIds, groupId);
+      const document = captureCanvasDocument();
+      const memberCardIds = [...new Set(shapeIds)].filter((id) =>
+        document.cards.some((card) => card.id === id)
+      );
+      if (!editor || memberCardIds.length < 2) return null;
+      const bounds = memberCardIds.flatMap((id) =>
+        document.frames[id] ? [document.frames[id]] : []
+      );
+      if (!bounds.length) return null;
+      const x = Math.min(...bounds.map((frame) => frame.x));
+      const y = Math.min(...bounds.map((frame) => frame.y));
+      const maxX = Math.max(...bounds.map((frame) => frame.x + frame.w));
+      const maxY = Math.max(...bounds.map((frame) => frame.y + frame.h));
+      recordCanvasHistory();
+      const result = applyCanvasOrganizationOperations(document, [
+        {
+          type: 'create_group',
+          groupId,
+          name: studioT('multiSelect.group'),
+          role: 'shot',
+          memberCardIds,
+          summaryFrame: { x, y, w: 280, h: 136 },
+          expandedFrame: {
+            x: x - 24,
+            y: y - 48,
+            w: maxX - x + 48,
+            h: maxY - y + 72,
+          },
+        },
+      ]);
+      handleCanvasOrganizationChange(result.document.organization);
+      return groupId;
     },
-    []
+    [
+      captureCanvasDocument,
+      handleCanvasOrganizationChange,
+      recordCanvasHistory,
+      studioT,
+    ]
   );
 
   const getViewportCenter = useCallback(() => {
@@ -813,6 +948,50 @@ export function useBeatCanvasReactFlowAdapter({
       });
     },
     []
+  );
+
+  const insertTextCard = useCallback(
+    (options?: {
+      card?: CanvasTextCard;
+      frame?: ProjectSnapshotShapeFrame;
+      recordHistory?: boolean;
+      activate?: boolean;
+    }) => {
+      const editor = editorRef.current;
+      if (!editor) return null;
+      if (options?.recordHistory !== false) recordCanvasHistory();
+      const card =
+        options?.card ??
+        buildTextCard({
+          id: `text:${crypto.randomUUID()}`,
+          name: studioT('textNode.defaultName'),
+        });
+      const size = { w: options?.frame?.w ?? 420, h: options?.frame?.h ?? 360 };
+      const position = options?.frame ?? getCanvasPlacement([], 0, size);
+      setCanvasCard(card);
+      editor.createShape({
+        id: card.id,
+        type: TEXT_CARD_NODE_TYPE,
+        x: position.x,
+        y: position.y,
+        meta: { [CARD_KIND_META_KEY]: 'text', [CARD_TYPE_META_KEY]: 'text' },
+        props: { ...size, textNode: true },
+      });
+      if (options?.activate !== false) {
+        setActiveComposerCardId(null);
+        editor.select(card.id);
+        focusShape(card.id);
+      }
+      return card.id;
+    },
+    [
+      recordCanvasHistory,
+      setCanvasCard,
+      studioT,
+      getCanvasPlacement,
+      setActiveComposerCardId,
+      focusShape,
+    ]
   );
 
   const syncAssetShape = useCallback((card: CanvasCard) => {
@@ -1041,12 +1220,7 @@ export function useBeatCanvasReactFlowAdapter({
         : ANALYSIS_REPORT_FRAME_SIZE;
       const placement =
         frame ??
-        getCanvasPlacement(
-          [draftCard.id],
-          reportIndex,
-          reportSize,
-          'right'
-        );
+        getCanvasPlacement([draftCard.id], reportIndex, reportSize, 'right');
 
       editor.createShape({
         id: outputCard.id,
@@ -1121,6 +1295,11 @@ export function useBeatCanvasReactFlowAdapter({
           analysisDepth: draftCard.analysisDepth,
           prompt: draftCard.prompt,
           referenceCardIds: [...draftCard.referenceCardIds],
+          ...resolveCanvasTextReferences({
+            cards: canvasCardsRef.current,
+            referenceCardIds: draftCard.referenceCardIds,
+            prompt: draftCard.prompt,
+          }),
           workflowTemplateId: draftCard.workflowTemplateId,
           modelId: draftCard.modelId,
           aspectRatio: resolvedAspectRatio,
@@ -1232,12 +1411,7 @@ export function useBeatCanvasReactFlowAdapter({
       }
       return outputCardId;
     },
-    [
-      canvasCardsRef,
-      focusShape,
-      materializeAnalysisReport,
-      setCanvasCard,
-    ]
+    [canvasCardsRef, focusShape, materializeAnalysisReport, setCanvasCard]
   );
 
   const createDraftCard = useCallback(
@@ -1413,6 +1587,12 @@ export function useBeatCanvasReactFlowAdapter({
     (document: ProjectSnapshotDocument) => {
       const editor = editorRef.current;
       if (!editor) return;
+      canonicalFramesRef.current = structuredClone(document.frames);
+      const organization = document.organization
+        ? normalizeCanvasOrganization(document.organization)
+        : undefined;
+      canvasOrganizationRef.current = organization;
+      setCanvasOrganization(organization);
 
       const currentShapeIds = editor
         .getCurrentPageShapes()
@@ -1427,6 +1607,15 @@ export function useBeatCanvasReactFlowAdapter({
       const restorePlan = createProjectSnapshotRestorePlan(document);
       const restoredCardIds: string[] = [];
       const restoredDraftIds: string[] = [];
+      for (const item of restorePlan.textCards) {
+        const id = insertTextCard({
+          card: item.card,
+          frame: item.frame,
+          recordHistory: false,
+          activate: false,
+        });
+        if (id) restoredCardIds.push(id);
+      }
 
       for (const item of restorePlan.assetCards) {
         const insertedAssetCardId = insertAssetCard({
@@ -1468,9 +1657,8 @@ export function useBeatCanvasReactFlowAdapter({
       }
 
       for (const item of restorePlan.outputCards) {
-        const sourceConfigCard = canvasCardsRef.current[
-          item.card.sourceConfigCardId
-        ];
+        const sourceConfigCard =
+          canvasCardsRef.current[item.card.sourceConfigCardId];
         if (!isCanvasDraftCard(sourceConfigCard)) {
           continue;
         }
@@ -1508,6 +1696,17 @@ export function useBeatCanvasReactFlowAdapter({
           return;
         }
 
+        if (Object.keys(document.organization?.groups ?? {}).length) {
+          // Fit the projected overview after virtual groups have mounted, not
+          // the hidden canonical members spread across each expanded chain.
+          const fitOverview = () =>
+            editorRef.current?.fitView({ animation: { duration: 0 } });
+          if (typeof window !== 'undefined')
+            window.requestAnimationFrame(fitOverview);
+          else fitOverview();
+          return;
+        }
+
         if (restoredCardIds.length > 0) {
           focusShapes(restoredCardIds);
         }
@@ -1531,6 +1730,7 @@ export function useBeatCanvasReactFlowAdapter({
       focusShapes,
       insertAssetCard,
       replaceCanvasCards,
+      insertTextCard,
       setActiveComposerCardId,
     ]
   );
@@ -1545,7 +1745,9 @@ export function useBeatCanvasReactFlowAdapter({
         target: document,
         current: captureCanvasDocument(),
       });
-      const currentShapeIds = editor.getCurrentPageShapes().map((shape) => shape.id);
+      const currentShapeIds = editor
+        .getCurrentPageShapes()
+        .map((shape) => shape.id);
       if (currentShapeIds.length > 0) {
         editor.deleteShapes(currentShapeIds);
       }
@@ -1843,6 +2045,16 @@ export function useBeatCanvasReactFlowAdapter({
         continue;
       }
 
+      if (card.kind === 'text') {
+        insertTextCard({
+          card: { ...card, id: nextId },
+          frame: nextFrame,
+          recordHistory: false,
+          activate: false,
+        });
+        pastedCardIds.push(nextId);
+        continue;
+      }
       if (card.kind === 'asset') {
         insertAssetCard({
           type: card.type,
@@ -1875,11 +2087,15 @@ export function useBeatCanvasReactFlowAdapter({
     createDraftCard,
     focusShapes,
     insertAssetCard,
+    insertTextCard,
     recordCanvasHistory,
   ]);
 
   return {
+    canvasOrganization,
+    handleCanvasOrganizationChange,
     buildProjectSnapshotDocument,
+    insertTextCard,
     canUndoCanvas: historyState.canUndo,
     canRedoCanvas: historyState.canRedo,
     recordCanvasHistory,

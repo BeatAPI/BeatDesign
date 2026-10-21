@@ -104,7 +104,7 @@ installation shapes.
 
 ## Tool groups
 
-There are **30** tools:
+The current source exposes **38** tools (the published v0.2.5 package has 30):
 
 - Skill (2): list the bundled official Skill catalog and read one complete
   versioned Skill definition.
@@ -120,6 +120,15 @@ There are **30** tools:
   asset-first request, refresh status, and list history.
 - Editor (8): get, incremental edit, SRT import, authoritative MP4 render,
   semantic snapshot, diagnostics, deep-link view, and command history.
+
+Organization adds eight tools: `bdesign_organization_get`,
+`bdesign_organization_apply`, `bdesign_asset_query`,
+`bdesign_workflow_template_list`, `bdesign_workflow_template_get`,
+`bdesign_workflow_template_preview`, `bdesign_workflow_template_apply`, and
+`bdesign_timeline_usage`. New writes require explicit command IDs, idempotency
+keys and the revision for the command domain. Preview before capturing templates
+or changing exact Element bindings; instantiation never submits generation.
+See [Project organization](PROJECT_ORGANIZATION.md).
 
 The same bundled Skill catalog is also available through the read-only MCP
 Resource `beatdesign://skills`. Individual Skill instructions use the resource

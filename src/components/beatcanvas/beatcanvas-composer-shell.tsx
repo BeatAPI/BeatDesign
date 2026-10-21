@@ -8,8 +8,8 @@ import {
   type ActiveCanvasReferenceMention,
   type CanvasReferenceMention,
 } from '@/core/beatcanvas/reference-mentions';
-import { ArrowUp, Image, Loader2, Video, X } from 'lucide-react';
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
+import { ArrowUp, FileText, Image, Loader2, Video, X } from 'lucide-react';
+import { useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 
 import {
   stopComposerEvent,
@@ -48,6 +48,7 @@ export function BeatCanvasComposerShell({
   promptReferences = [],
   position,
   takeCount: _takeCount = 0,
+  generationBlockers = [],
 }: {
   activeDraftCard: CanvasGenerationCard;
   children: ReactNode;
@@ -76,7 +77,9 @@ export function BeatCanvasComposerShell({
   >;
   position?: { left: number; top: number } | null;
   takeCount?: number;
+  generationBlockers?: readonly string[];
 }) {
+  const blockerDescriptionId = useId();
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [activeMention, setActiveMention] =
     useState<ActiveCanvasReferenceMention | null>(null);
@@ -84,7 +87,8 @@ export function BeatCanvasComposerShell({
   const primaryButtonLabel =
     primaryButtonLabelOverride ??
     (isDraftBusy ? labels.generatingLabel : labels.generateLabel);
-  const isPrimaryDisabled = isDraftBusy || isPromptComposing;
+  const isPrimaryDisabled =
+    isDraftBusy || isPromptComposing || generationBlockers.length > 0;
   const mentionOptions = activeMention
     ? filterCanvasReferenceMentions({
         mentions: promptReferences,
@@ -150,14 +154,9 @@ export function BeatCanvasComposerShell({
       onKeyUpCapture={stopComposerKeyboardEvent}
     >
       {/* ── Header row ── */}
-      <div
-        className={cn(
-          'flex items-center justify-between gap-3',
-          'px-3.5 pt-3'
-        )}
-      >
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-          <div suppressHydrationWarning className="min-w-0 flex-1">
+      <div className="px-3.5 pt-3">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2">
+          <div suppressHydrationWarning className="contents">
             {renderedPromptAccessory ? (
               <div
                 data-composer-reference-row
@@ -327,27 +326,41 @@ export function BeatCanvasComposerShell({
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">{children}</div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onGenerateDraft(activeDraftCard.id);
-              }}
-              disabled={isPrimaryDisabled}
-              aria-label={primaryButtonLabel}
-              className={cn(
-                composerGenerateButtonClassName,
-                'relative active:translate-y-px'
-              )}
-            >
-              {isDraftBusy ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <ArrowUp className="size-3.5" />
-              )}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (isPrimaryDisabled) return;
+              onGenerateDraft(activeDraftCard.id);
+            }}
+            disabled={isPrimaryDisabled}
+            aria-label={primaryButtonLabel}
+            aria-describedby={
+              generationBlockers.length ? blockerDescriptionId : undefined
+            }
+            className={cn(
+              composerGenerateButtonClassName,
+              'relative active:translate-y-px'
+            )}
+          >
+            {isDraftBusy ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <ArrowUp className="size-3.5" />
+            )}
+          </button>
         </div>
+        {generationBlockers.length > 0 && (
+          <ul
+            id={blockerDescriptionId}
+            role="status"
+            aria-live="polite"
+            className="mt-3 space-y-1 text-xs text-[var(--beatcanvas-warning)]"
+          >
+            {generationBlockers.map((reason, index) => (
+              <li key={`${index}:${reason}`}>{reason}</li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   );

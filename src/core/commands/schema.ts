@@ -5,6 +5,15 @@ import { normalizeTimelineDocument } from '@/core/editor/timeline-document';
 
 import { repairCanvasCardInput } from './canvas-card-repair';
 import { projectSettingsPatchSchema } from '@/core/projects/project-settings-contract';
+import {
+  canvasOrganizationOperationSchema,
+  canvasOrganizationSchema,
+} from '@/core/organization/canvas-organization';
+import {
+  organizationCommandSchema,
+  workflowCommandSchema,
+  requiresExplicitEnvelope,
+} from '@/core/organization/command-contract';
 import type { BeatDesignCommand } from './executor';
 
 const commandIdSchema = z.string().trim().min(1).max(200);
@@ -100,11 +109,27 @@ const generationSnapshotSchema = z
     backgroundSource: backgroundSourceSchema.optional(),
     resultText: z.string().max(100_000).nullable().optional(),
     capturedAt: z.string().trim().min(1).max(80),
+    resolvedPrompt: z.string().max(20_000).optional(),
+    textReferences: z
+      .array(
+        z
+          .object({
+            cardId: commandIdSchema,
+            name: z.string().max(500),
+            textRole: z.enum(['note', 'script', 'character', 'storyboard']),
+            textContent: z.string().max(100_000),
+          })
+          .strict()
+      )
+      .max(20)
+      .optional(),
   })
   .strict();
 
 const canvasCardCommonShape = {
   id: commandIdSchema,
+  textContent: z.string().max(100_000).optional(),
+  textRole: z.enum(['note', 'script', 'character', 'storyboard']).optional(),
   assetId: commandIdSchema.nullable().optional(),
   generationMode: generationModeSchema.optional(),
   analysisDepth: analysisDepthSchema.optional(),
@@ -148,6 +173,19 @@ const canvasCardUnion = z.discriminatedUnion('kind', [
   z
     .object({
       ...canvasCardCommonShape,
+      kind: z.literal('text'),
+      type: z.literal('text'),
+      textContent: z.string().max(100_000),
+      textRole: z
+        .enum(['note', 'script', 'character', 'storyboard'])
+        .default('note'),
+      assetId: z.null().optional(),
+      url: z.null().default(null),
+    })
+    .strict(),
+  z
+    .object({
+      ...canvasCardCommonShape,
       kind: z.literal('asset'),
       type: z.enum(['image', 'video', 'audio', 'timeline']),
     })
@@ -183,27 +221,55 @@ const timelineDocumentSchema = z.unknown().transform((value, context) => {
     context.addIssue({
       code: 'custom',
       message:
-        error instanceof Error ? error.message : 'Timeline document is invalid.',
+        error instanceof Error
+          ? error.message
+          : 'Timeline document is invalid.',
     });
     return z.NEVER;
   }
 });
 
-export const canvasOperationSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('set_camera'),
-    camera: z.object({ x: z.number().finite(), y: z.number().finite(), z: z.number().finite().positive() }).strict().nullable(),
-  }).strict(),
-  z.object({
-    type: z.literal('set_workflow'),
-    activeTemplate: z.object({
-      slug: commandIdSchema,
-      title: z.string().max(500),
-      source: z.string().max(4096),
-      taskType: z.enum(['image', 'video', 'audio', 'timeline']),
-      enteredAt: z.string().max(80),
-    }).strict().nullable(),
-  }).strict(),
+const legacyCanvasOperationSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('upsert_text'),
+      cardId: commandIdSchema,
+      name: z.string().trim().min(1).max(500).optional(),
+      textContent: z.string().max(100_000).optional(),
+      textRole: z
+        .enum(['note', 'script', 'character', 'storyboard'])
+        .optional(),
+      frame: frameSchema.optional(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('set_camera'),
+      camera: z
+        .object({
+          x: z.number().finite(),
+          y: z.number().finite(),
+          z: z.number().finite().positive(),
+        })
+        .strict()
+        .nullable(),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('set_workflow'),
+      activeTemplate: z
+        .object({
+          slug: commandIdSchema,
+          title: z.string().max(500),
+          source: z.string().max(4096),
+          taskType: z.enum(['image', 'video', 'audio', 'timeline']),
+          enteredAt: z.string().max(80),
+        })
+        .strict()
+        .nullable(),
+    })
+    .strict(),
   z
     .object({
       type: z.literal('upsert_card'),
@@ -251,6 +317,17 @@ export const canvasOperationSchema = z.discriminatedUnion('type', [
       lastRenderUrl: z.string().trim().max(4096).nullable().optional(),
       referenceCardIds: z.array(commandIdSchema).max(20).optional(),
       frame: frameSchema.optional(),
+    })
+    .strict(),
+]);
+
+export const canvasOperationSchema = z.union([
+  legacyCanvasOperationSchema,
+  canvasOrganizationOperationSchema,
+  z
+    .object({
+      type: z.literal('set_canvas_organization'),
+      organization: canvasOrganizationSchema.nullable(),
     })
     .strict(),
 ]);
@@ -442,29 +519,39 @@ export const editorOperationSchema = z.discriminatedUnion('type', [
     .strict(),
 ]);
 
-export const beatDesignCommandSchema: z.ZodType<BeatDesignCommand> =
-  z.discriminatedUnion('type', [
-    z.object({ type: z.literal('project.update'), patch: projectSettingsPatchSchema }).strict(),
-    z
-      .object({
-        type: z.literal('canvas.apply'),
-        operations: z.array(canvasOperationSchema).min(1).max(500),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal('editor.apply'),
-        operations: z.array(editorOperationSchema).min(1).max(500),
-      })
-      .strict(),
-    z
-      .object({
-        type: z.literal('editor.replace_document'),
-        document: timelineDocumentSchema,
-      })
-      .strict(),
-    z.object({ type: z.literal('editor.validate') }).strict(),
-  ]);
+const legacyBeatDesignCommandSchema = z.discriminatedUnion('type', [
+  z
+    .object({
+      type: z.literal('project.update'),
+      patch: projectSettingsPatchSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('canvas.apply'),
+      operations: z.array(canvasOperationSchema).min(1).max(500),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('editor.apply'),
+      operations: z.array(editorOperationSchema).min(1).max(500),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('editor.replace_document'),
+      document: timelineDocumentSchema,
+    })
+    .strict(),
+  z.object({ type: z.literal('editor.validate') }).strict(),
+]);
+
+export const beatDesignCommandSchema: z.ZodType<BeatDesignCommand> = z.union([
+  legacyBeatDesignCommandSchema,
+  organizationCommandSchema,
+  workflowCommandSchema,
+]);
 
 const commandRequestBaseSchema = z
   .object({
@@ -473,7 +560,30 @@ const commandRequestBaseSchema = z
     idempotencyKey: commandIdSchema.nullable().optional(),
     command: beatDesignCommandSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((request, context) => {
+    if (!requiresExplicitEnvelope(request.command)) return;
+    if (!request.commandId)
+      context.addIssue({
+        code: 'custom',
+        path: ['commandId'],
+        message: 'New organization commands require an explicit commandId.',
+      });
+    if (!request.idempotencyKey)
+      context.addIssue({
+        code: 'custom',
+        path: ['idempotencyKey'],
+        message:
+          'New organization commands require an explicit idempotencyKey.',
+      });
+    if (typeof request.expectedRevision !== 'number')
+      context.addIssue({
+        code: 'custom',
+        path: ['expectedRevision'],
+        message:
+          'New organization commands require an explicit expectedRevision.',
+      });
+  });
 
 /**
  * Public UI requests never choose their own origin. The transport boundary

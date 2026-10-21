@@ -1,5 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { isAbsolute, resolve as resolvePath } from 'node:path';
+import { registerOrganizationTools, queryOrganizationAssets, requiresExplicitEnvelope } from './organization-tools';
 
 import {
   createMcpHandler,
@@ -407,6 +408,8 @@ export function createBeatDesignMcpServer() {
     return project;
   };
 
+  registerOrganizationTools(server, { resolveScopedProject, withToolErrors });
+
   const buildProjectHandoff = (
     project: Awaited<ReturnType<typeof getActiveProject>> & {},
     options: {
@@ -571,14 +574,36 @@ export function createBeatDesignMcpServer() {
   server.registerTool(
     'bdesign_project_update',
     {
-      description: 'Update project name, short description or cover through the shared revision-checked command kernel. Get settingsRevision from project_get; manual coverAssetId must belong to the project. Auto cover uses the first image, then a local video poster.',
-      inputSchema: z.object({ projectId: idSchema.optional(), expectedRevision: z.number().int().min(1), patch: projectSettingsPatchSchema, commandId: idSchema.optional(), idempotencyKey: idSchema.optional() }),
+      description:
+        'Update project name, short description or cover through the shared revision-checked command kernel. Get settingsRevision from project_get; manual coverAssetId must belong to the project. Auto cover uses the first image, then a local video poster.',
+      inputSchema: z.object({
+        projectId: idSchema.optional(),
+        expectedRevision: z.number().int().min(1),
+        patch: projectSettingsPatchSchema,
+        commandId: idSchema.optional(),
+        idempotencyKey: idSchema.optional(),
+      }),
       annotations: { destructiveHint: false, idempotentHint: true },
     },
-    withToolErrors(async ({ projectId, expectedRevision, patch, commandId, idempotencyKey }) => {
-      const project = await resolveScopedProject(projectId);
-      return persistBeatDesignCommand({ projectId: project.id, origin: 'mcp', expectedRevision, commandId, idempotencyKey, command: { type: 'project.update', patch } });
-    })
+    withToolErrors(
+      async ({
+        projectId,
+        expectedRevision,
+        patch,
+        commandId,
+        idempotencyKey,
+      }) => {
+        const project = await resolveScopedProject(projectId);
+        return persistBeatDesignCommand({
+          projectId: project.id,
+          origin: 'mcp',
+          expectedRevision,
+          commandId,
+          idempotencyKey,
+          command: { type: 'project.update', patch },
+        });
+      }
+    )
   );
 
   server.registerTool(
@@ -675,7 +700,7 @@ export function createBeatDesignMcpServer() {
     },
     withToolErrors(async ({ projectId, limit }) => {
       const project = await resolveScopedProject(projectId);
-      return listProjectAssets({ projectId: project.id, limit });
+      return (await queryOrganizationAssets(project.id, { limit })).assets;
     })
   );
 
@@ -842,6 +867,23 @@ export function createBeatDesignMcpServer() {
     },
     withToolErrors(async ({ projectId, operations, ...metadata }) => {
       const project = await resolveScopedProject(projectId);
+      if (requiresExplicitEnvelope({ type: 'canvas.apply', operations })) {
+        if (
+          !metadata.commandId ||
+          !metadata.idempotencyKey ||
+          !Number.isInteger(metadata.expectedRevision) ||
+          (metadata.expectedRevision ?? -1) < 0
+        )
+          throw new Error(
+            'Organization Canvas operations require explicit commandId, idempotencyKey and expectedRevision.'
+          );
+        return persistBeatDesignCommand({
+          projectId: project.id,
+          origin: 'mcp',
+          ...metadata,
+          command: { type: 'canvas.apply', operations },
+        });
+      }
       return executeExternalCommand({
         projectId: project.id,
         ...metadata,

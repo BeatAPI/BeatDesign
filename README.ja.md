@@ -46,6 +46,8 @@ BeatDesignは、AI画像・動画制作のための独立したオープンソ�
 
 [変更履歴](./CHANGELOG.md) · [Project設定](./docs/PROJECT_SETTINGS.md) · [現状とロードマップ](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
+現在のソース（未リリース）は永続 Canvas グループ、素材フォルダー、固定バージョンの Elements、ローカルワークフローテンプレートと 38 の MCP ツールを含みます。v0.2.5 npm パッケージは 30 ツールです。[詳細](./docs/PROJECT_ORGANIZATION.md)。
+
 ## 2つの制作モード、1つのProject
 
 ### 無限Canvas

@@ -2,6 +2,13 @@
 
 All notable changes to BeatDesign are documented in this file.
 
+## [Unreleased]
+
+- Adapt Issue #29 organization work from JaysonAlbert/BeatDesign PR #16: persistent Canvas groups and arrangement, logical Asset folders, exact-version Elements, text steps, and reusable local workflow templates. UI and MCP share atomic revision-checked commands; eight added tools bring source MCP to 38.
+- Preserve older Canvas documents and pinned Timeline Assets. Template capture stores semantic configuration, not source media identities; insertion never uploads or runs generation.
+- Reject non-local production HTTP Host authorities independently of Origin, and pin source production/WorkBuddy listeners to loopback.
+- Apply packaged schema upgrades and migration receipts atomically while tolerating additive columns/tables already installed by older source/runtime startup.
+
 ## [0.2.5] - 2026-10-22
 
 ### Added

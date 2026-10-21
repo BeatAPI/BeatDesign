@@ -1,4 +1,12 @@
 export const BEATDESIGN_MCP_TOOL_NAMES = [
+  'bdesign_organization_get',
+  'bdesign_organization_apply',
+  'bdesign_asset_query',
+  'bdesign_workflow_template_list',
+  'bdesign_workflow_template_get',
+  'bdesign_workflow_template_preview',
+  'bdesign_workflow_template_apply',
+  'bdesign_timeline_usage',
   'bdesign_skill_list',
   'bdesign_skill_get',
   'bdesign_project_list',

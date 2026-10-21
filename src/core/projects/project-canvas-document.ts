@@ -1,5 +1,6 @@
 import {
   type CanvasCard,
+  type CanvasTextCard,
   type CanvasDraftCard,
   type CanvasGenerationCard,
   type CanvasOutputCard,
@@ -9,6 +10,7 @@ import {
 } from '@/core/beatcanvas/canvas-types';
 
 import { isTransientCanvasUrl } from '@/core/beatcanvas/local-references';
+import { normalizeProjectSnapshotDocument } from './project-snapshot';
 import type {
   ProjectSnapshotCamera,
   ProjectSnapshotDocument,
@@ -80,10 +82,12 @@ export const buildProjectSnapshotDocument = ({
   cardsById,
   framesById,
   camera,
+  organization,
 }: {
   cardsById: Record<string, CanvasCard>;
   framesById: SnapshotFramesById;
   camera?: ProjectSnapshotCamera;
+  organization?: ProjectSnapshotDocument['organization'];
 }): ProjectSnapshotDocument => {
   const persistableCards = Object.values(cardsById).filter(
     (card) => !isTransientCanvasUrl(card.url)
@@ -107,12 +111,13 @@ export const buildProjectSnapshotDocument = ({
     {}
   );
 
-  return {
-    version: 3,
+  return normalizeProjectSnapshotDocument({
+    version: 4,
     cards,
     frames,
+    ...(organization ? { organization } : {}),
     ...(camera ? { camera } : {}),
-  };
+  });
 };
 
 type SnapshotRestoreCard<TCard extends CanvasCard> = {
@@ -126,6 +131,7 @@ type SnapshotConnector = {
 };
 
 export type ProjectSnapshotRestorePlan = {
+  textCards: Array<SnapshotRestoreCard<CanvasTextCard>>;
   assetCards: Array<SnapshotRestoreCard<NonDraftCanvasCard>>;
   draftCards: Array<SnapshotRestoreCard<CanvasGenerationCard>>;
   outputCards: Array<SnapshotRestoreCard<CanvasOutputCard>>;
@@ -140,18 +146,6 @@ export const createProjectSnapshotRestorePlan = (
       .filter(isCanvasOutputCard)
       .map((card) => [card.id, card.sourceConfigCardId] as const)
   );
-  const normalizeVisibleReferences = <TCard extends CanvasCard>(card: TCard) =>
-    ({
-      ...card,
-      referenceCardIds: Array.from(
-        new Set(
-          card.referenceCardIds.map(
-            (referenceCardId) =>
-              outputSourceById.get(referenceCardId) ?? referenceCardId
-          )
-        )
-      ),
-    }) as TCard;
   const assetCards = document.cards
     .filter(
       (card): card is NonDraftCanvasCard =>
@@ -161,7 +155,7 @@ export const createProjectSnapshotRestorePlan = (
     )
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((card) => ({
-      card: normalizeVisibleReferences(card),
+      card,
       frame: document.frames[card.id],
     }));
 
@@ -169,7 +163,7 @@ export const createProjectSnapshotRestorePlan = (
     .filter(isCanvasGenerationCard)
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((card) => ({
-      card: normalizeVisibleReferences(card),
+      card,
       frame: document.frames[card.id],
     }));
 
@@ -184,7 +178,10 @@ export const createProjectSnapshotRestorePlan = (
   const connectorIds = new Set<string>();
   const connectors: SnapshotConnector[] = [];
 
-  for (const current of [...assetCards, ...draftCards]) {
+  const textCards = document.cards
+    .filter((card): card is CanvasTextCard => card.kind === 'text')
+    .map((card) => ({ card, frame: document.frames[card.id] }));
+  for (const current of [...assetCards, ...draftCards, ...textCards]) {
     for (const referenceCardId of current.card.referenceCardIds) {
       const connectorId = `${referenceCardId}->${current.card.id}`;
       if (connectorIds.has(connectorId)) {
@@ -193,13 +190,14 @@ export const createProjectSnapshotRestorePlan = (
 
       connectorIds.add(connectorId);
       connectors.push({
-        sourceCardId: referenceCardId,
+        sourceCardId: outputSourceById.get(referenceCardId) ?? referenceCardId,
         targetCardId: current.card.id,
       });
     }
   }
 
   return {
+    textCards,
     assetCards,
     draftCards,
     outputCards,

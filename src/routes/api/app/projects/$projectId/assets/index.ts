@@ -1,3 +1,6 @@
+import { z } from 'zod';
+import { queryOrganizationAssets } from '@/core/organization/service';
+import { BeatDesignCommandError } from '@/core/commands/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 
 import {
@@ -62,7 +65,8 @@ async function POST({
     );
     const file = formData.get('file');
     const requestedAssetClass = formData.get('assetClass');
-    const assetClass = requestedAssetClass === 'derived' ? 'derived' : 'original';
+    const assetClass =
+      requestedAssetClass === 'derived' ? 'derived' : 'original';
     const parseDimension = (value: FormDataEntryValue | null) => {
       const parsed = Number(value);
       return Number.isFinite(parsed) && parsed > 0
@@ -85,16 +89,25 @@ async function POST({
           assetMetadata = parsed as Record<string, unknown>;
         }
       } catch {
-        return Response.json({ error: 'Invalid project asset metadata' }, { status: 400 });
+        return Response.json(
+          { error: 'Invalid project asset metadata' },
+          { status: 400 }
+        );
       }
     }
     if (!(file instanceof File) || file.size <= 0) {
-      return Response.json({ error: 'A non-empty file is required' }, { status: 400 });
+      return Response.json(
+        { error: 'A non-empty file is required' },
+        { status: 400 }
+      );
     }
 
     const mediaType = detectUploadedMediaType(file);
     if (!mediaType) {
-      return Response.json({ error: 'Unsupported project asset type' }, { status: 415 });
+      return Response.json(
+        { error: 'Unsupported project asset type' },
+        { status: 415 }
+      );
     }
     const validation =
       mediaType === 'image'
@@ -112,7 +125,10 @@ async function POST({
     const bytes = new Uint8Array(await file.arrayBuffer());
     const persistedMimeType = getCanonicalUploadedMediaMimeType(file);
     if (!persistedMimeType) {
-      return Response.json({ error: 'Unsupported project asset type' }, { status: 415 });
+      return Response.json(
+        { error: 'Unsupported project asset type' },
+        { status: 415 }
+      );
     }
     if (
       mediaType === 'image' &&
@@ -200,8 +216,60 @@ async function POST({
   }
 }
 
-export const Route = createFileRoute(
-  '/api/app/projects/$projectId/assets/'
-)({
-  server: { handlers: { POST } },
+const querySchema = z
+  .object({
+    folderId: z
+      .string()
+      .max(200)
+      .transform((value) => value || null)
+      .optional(),
+    scope: z.enum(['current', 'project']).default('project'),
+    query: z.string().max(500).default(''),
+    cursor: z.string().min(1).max(8192).optional(),
+    limit: z.coerce.number().int().min(1).max(500).default(100),
+  })
+  .strict();
+
+async function GET({
+  request,
+  params,
+}: {
+  request: Request;
+  params: { projectId: string };
+}) {
+  const parsed = querySchema.safeParse(
+    Object.fromEntries(new URL(request.url).searchParams)
+  );
+  if (!parsed.success)
+    return Response.json(
+      { error: parsed.error.issues[0]?.message ?? 'Invalid Asset query' },
+      { status: 400 }
+    );
+  try {
+    return Response.json(
+      await queryOrganizationAssets(params.projectId, parsed.data),
+      { headers: { 'cache-control': 'no-store' } }
+    );
+  } catch (error) {
+    if (error instanceof BeatDesignCommandError)
+      return Response.json(
+        { error: error.message },
+        {
+          status:
+            error.code === 'NOT_FOUND'
+              ? 404
+              : error.code === 'REVISION_CONFLICT'
+                ? 409
+                : 400,
+        }
+      );
+    return Response.json(
+      { error: 'Unable to query project Assets' },
+      { status: 500 }
+    );
+  }
+}
+
+export const Route = createFileRoute('/api/app/projects/$projectId/assets/')({
+  server: { handlers: { GET, POST } },
 });

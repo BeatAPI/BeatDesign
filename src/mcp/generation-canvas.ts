@@ -4,6 +4,7 @@ import {
   type CanvasGenerationCard,
   type CanvasOutputCard,
 } from '@/core/beatcanvas/canvas-types';
+import { resolveCanvasTextReferences } from '@/core/beatcanvas/text-nodes';
 import {
   buildAssetFirstReferencesFromCanvasCards,
   GENERATION_REQUEST_VERSION,
@@ -18,10 +19,7 @@ type GenerationSubmitInput = Omit<
   'version' | 'projectId'
 >;
 
-const inFlightCanvasGenerationSubmissions = new Map<
-  string,
-  Promise<unknown>
->();
+const inFlightCanvasGenerationSubmissions = new Map<string, Promise<unknown>>();
 
 export function runCanvasGenerationSubmissionOnce<T>({
   key,
@@ -147,7 +145,9 @@ export function prepareCanvasGenerationSubmission({
       'A reviewed Canvas generation node is required before submitting a generation.'
     );
   }
-  if (cards.some((card) => card.kind === 'output' && card.id === outputCardId)) {
+  if (
+    cards.some((card) => card.kind === 'output' && card.id === outputCardId)
+  ) {
     throw new Error('This generation command has already been submitted.');
   }
   if (sourceCard.status === 'pending' || sourceCard.status === 'processing') {
@@ -161,7 +161,9 @@ export function prepareCanvasGenerationSubmission({
         (card.status === 'pending' || card.status === 'processing')
     )
   ) {
-    throw new Error('This Canvas generation node already has an active output.');
+    throw new Error(
+      'This Canvas generation node already has an active output.'
+    );
   }
 
   const reviewedMode = getCanvasGenerationMode(sourceCard);
@@ -169,20 +171,37 @@ export function prepareCanvasGenerationSubmission({
     throw new Error('Generation mode does not match the reviewed Canvas node.');
   }
   if (submitted.modelId !== sourceCard.modelId) {
-    throw new Error('Generation model does not match the reviewed Canvas node.');
+    throw new Error(
+      'Generation model does not match the reviewed Canvas node.'
+    );
   }
   if (submitted.prompt.trim() !== sourceCard.prompt.trim()) {
-    throw new Error('Generation prompt does not match the reviewed Canvas node.');
+    throw new Error(
+      'Generation prompt does not match the reviewed Canvas node.'
+    );
   }
-  if (descriptor.id !== sourceCard.modelId || descriptor.kind !== reviewedMode) {
-    throw new Error('The reviewed Canvas node uses an unavailable generation model.');
+  if (
+    descriptor.id !== sourceCard.modelId ||
+    descriptor.kind !== reviewedMode
+  ) {
+    throw new Error(
+      'The reviewed Canvas node uses an unavailable generation model.'
+    );
   }
 
   const references = buildAssetFirstReferencesFromCanvasCards({
     cards: cardsById,
     referenceCardIds: sourceCard.referenceCardIds,
   });
-  if (references.length !== sourceCard.referenceCardIds.length) {
+  const textContext = resolveCanvasTextReferences({
+    cards: cardsById,
+    referenceCardIds: sourceCard.referenceCardIds,
+    prompt: sourceCard.prompt,
+  });
+  if (
+    references.length + textContext.textReferences.length !==
+    sourceCard.referenceCardIds.length
+  ) {
     throw new Error(
       'Every reference on the reviewed Canvas node must resolve to a project Asset before submission.'
     );
@@ -194,7 +213,9 @@ export function prepareCanvasGenerationSubmission({
       toComparableReferences(references)
     )
   ) {
-    throw new Error('Generation references do not match the reviewed Canvas node.');
+    throw new Error(
+      'Generation references do not match the reviewed Canvas node.'
+    );
   }
 
   const parameters = buildReviewedParameters({
@@ -204,6 +225,10 @@ export function prepareCanvasGenerationSubmission({
   });
   const sourceCardPending: CanvasGenerationCard = {
     ...sourceCard,
+    // UI projections may expose the pinned output URL on a config card.
+    // Durable media belongs to the output; do not replay that URL as MCP input.
+    url: null,
+    assetId: null,
     status: 'pending',
     error: null,
   };
@@ -227,6 +252,7 @@ export function prepareCanvasGenerationSubmission({
       analysisDepth: sourceCard.analysisDepth,
       prompt: sourceCard.prompt,
       referenceCardIds: [...sourceCard.referenceCardIds],
+      ...(textContext.textReferences.length ? textContext : {}),
       workflowTemplateId: sourceCard.workflowTemplateId,
       modelId: sourceCard.modelId,
       aspectRatio: sourceCard.aspectRatio,
@@ -248,10 +274,15 @@ export function prepareCanvasGenerationSubmission({
     outputCard,
     request: {
       version: GENERATION_REQUEST_VERSION,
+      sourceSurface: 'canvas' as const,
+      sourceCardId: sourceCard.id,
       mode: reviewedMode,
       modelId: sourceCard.modelId,
       prompt: sourceCard.prompt,
       references,
+      ...(textContext.textReferences.length
+        ? { textReferences: textContext.textReferences }
+        : {}),
       parameters,
     },
     operations: [
@@ -293,6 +324,8 @@ export function buildCanvasGenerationStatusOperations({
       type: 'upsert_card',
       card: {
         ...sourceCard,
+        url: null,
+        assetId: null,
         ...(succeeded ? { pinnedOutputId: outputCard.id } : {}),
         status: terminal ? 'idle' : status,
         error: null,

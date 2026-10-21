@@ -46,6 +46,8 @@ Already available: tail-frame continuation, Canvas-to-Editor handoff, image over
 
 [Change details](./CHANGELOG.md) · [Project settings](./docs/PROJECT_SETTINGS.md) · [Current scope and roadmap](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
+Current source (unreleased) adds persistent Canvas groups and arrangement, Asset folders, exact-version Elements and reusable local workflow templates, with 38 MCP tools. These changes are not in the v0.2.5 npm package. [Organization guide](./docs/PROJECT_ORGANIZATION.md).
+
 ## Two creative modes, one Project
 
 ### Infinite Canvas
@@ -104,7 +106,7 @@ Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when y
 
 ## Use BeatDesign with an Agent
 
-BeatDesign exposes 30 local MCP tools for Skills, Projects, Assets, Canvas, generation, and Editor operations, including built-in Skill discovery and authoritative MP4 timeline rendering. Agent changes use the same project services and become visible in the browser workspace.
+Current source exposes 38 local MCP tools (v0.2.5 packages expose 30) for Skills, Projects, Assets, Canvas, generation, and Editor operations, including built-in Skill discovery and authoritative MP4 timeline rendering. Agent changes use the same project services and become visible in the browser workspace.
 
 After connecting your MCP host, you can ask:
 

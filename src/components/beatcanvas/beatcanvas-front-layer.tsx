@@ -86,6 +86,7 @@ export function BeatCanvasFrontLayer() {
   const { editor } = useCanvasEngine();
   const {
     cards,
+    generationBlockersByCard,
     composerPresentation,
     effectMetadataMap,
     imageModels,
@@ -156,13 +157,12 @@ export function BeatCanvasFrontLayer() {
     [cards, selectedShapeIds]
   );
   const selectedCardIdsKey = selectedCardIds.join(',');
-  const zoomLevel = useCanvasEngineValue(
-    (currentEditor) =>
-      Math.round(
-        ((typeof currentEditor.getZoomLevel === 'function'
-          ? currentEditor.getZoomLevel()
-          : 1) || 1) * 100
-      )
+  const zoomLevel = useCanvasEngineValue((currentEditor) =>
+    Math.round(
+      ((typeof currentEditor.getZoomLevel === 'function'
+        ? currentEditor.getZoomLevel()
+        : 1) || 1) * 100
+    )
   );
   const camera = useCanvasEngineValue((currentEditor) =>
     currentEditor.getCamera()
@@ -330,37 +330,27 @@ export function BeatCanvasFrontLayer() {
     (currentEditor) => {
       if (!activeDraftCard) return null;
 
-      const bounds = currentEditor.getShapePageBounds(
-        activeDraftCard.id
-      );
+      const bounds = currentEditor.getShapePageBounds(activeDraftCard.id);
       return bounds
         ? { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h }
         : null;
     },
-    [
-      activeDraftCard?.id,
-      activeDraftCard?.type,
-      activeDraftCard?.aspectRatio,
-    ]
+    [activeDraftCard?.id, activeDraftCard?.type, activeDraftCard?.aspectRatio]
   );
-  const canvasViewportWidth = useCanvasEngineValue(
-    (currentEditor) => {
-      try {
-        return currentEditor.getContainer().clientWidth;
-      } catch {
-        return 0;
-      }
+  const canvasViewportWidth = useCanvasEngineValue((currentEditor) => {
+    try {
+      return currentEditor.getContainer().clientWidth;
+    } catch {
+      return 0;
     }
-  );
-  const canvasViewportHeight = useCanvasEngineValue(
-    (currentEditor) => {
-      try {
-        return currentEditor.getContainer().clientHeight;
-      } catch {
-        return 0;
-      }
+  });
+  const canvasViewportHeight = useCanvasEngineValue((currentEditor) => {
+    try {
+      return currentEditor.getContainer().clientHeight;
+    } catch {
+      return 0;
     }
-  );
+  });
   const activeDraftComposerPosition = useMemo(() => {
     if (
       !activeDraftFrame ||
@@ -406,10 +396,9 @@ export function BeatCanvasFrontLayer() {
       ? imageModels
       : videoModels;
   const selectedModel =
-    findWorkspaceModelOption(modelOptions, activeDraftCard?.modelId) ??
-    modelOptions[0] ??
-    null;
-  const selectedModelLabel = selectedModel?.name ?? labels.modelLabel;
+    findWorkspaceModelOption(modelOptions, activeDraftCard?.modelId) ?? null;
+  const selectedModelLabel =
+    selectedModel?.name || activeDraftCard?.modelId || labels.modelLabel;
   const selectedModeOptions = selectedModel?.modeOptions ?? [];
   const selectedVariantOptions = selectedModel?.variantOptions ?? [];
   const selectedQualityOptions = selectedModel?.qualityOptions ?? [];
@@ -461,9 +450,7 @@ export function BeatCanvasFrontLayer() {
       model: selectedModel,
       getReferenceDimensions: (card) => {
         const bounds = editor.getShapePageBounds(card.id);
-        return bounds
-          ? { width: bounds.w, height: bounds.h }
-          : null;
+        return bounds ? { width: bounds.w, height: bounds.h } : null;
       },
     });
 
@@ -488,9 +475,9 @@ export function BeatCanvasFrontLayer() {
       : labels.imagePromptPlaceholder;
   const activePromptCharacterLimit = isAnalysisDraft
     ? getGenerationPromptMaxChars({ modelId: VIDEO_ANALYSIS_MODEL_ID })
-    : getGenerationPromptConstraints({
+    : (getGenerationPromptConstraints({
         modelId: selectedModel?.id,
-      }).maxChars ?? promptCharacterLimit;
+      }).maxChars ?? promptCharacterLimit);
 
   const parameterSummaryTokens = useMemo(() => {
     if (!activeDraftCard) {
@@ -503,9 +490,7 @@ export function BeatCanvasFrontLayer() {
       tokens.push(activeDraftCard.outputQuality.toUpperCase());
     }
     if (selectedAspectRatioOptions.length > 0) {
-      tokens.push(
-        normalizeComposerToken(activeDraftCard.aspectRatio, labels)
-      );
+      tokens.push(normalizeComposerToken(activeDraftCard.aspectRatio, labels));
     }
     if (selectedDurationOptions.length > 0) {
       tokens.push(activeDraftCard.duration);
@@ -527,22 +512,16 @@ export function BeatCanvasFrontLayer() {
       );
     }
     if (selectedLanguageOptions.length > 0 && activeDraftCard.language) {
-      tokens.push(
-        normalizeComposerToken(activeDraftCard.language, labels)
-      );
+      tokens.push(normalizeComposerToken(activeDraftCard.language, labels));
     }
     if (selectedModeOptions.length > 1) {
       tokens.push(normalizeComposerToken(activeDraftCard.mode, labels));
     }
     if (selectedVariantOptions.length > 1) {
-      tokens.push(
-        normalizeComposerToken(activeDraftCard.variant, labels)
-      );
+      tokens.push(normalizeComposerToken(activeDraftCard.variant, labels));
     }
     if (selectedQualityOptions.length > 1) {
-      tokens.push(
-        normalizeComposerToken(activeDraftCard.quality, labels)
-      );
+      tokens.push(normalizeComposerToken(activeDraftCard.quality, labels));
     }
 
     return tokens;
@@ -781,9 +760,7 @@ export function BeatCanvasFrontLayer() {
   }, [isDraftBusy]);
 
   return (
-    <div
-      className="pointer-events-none absolute inset-0 z-30"
-    >
+    <div className="pointer-events-none absolute inset-0 z-30">
       {!activeDraftCard ? (
         <div
           className={cn(
@@ -938,6 +915,7 @@ export function BeatCanvasFrontLayer() {
       {activeDraftCard ? (
         <BeatCanvasComposerShell
           activeDraftCard={activeDraftCard}
+          generationBlockers={generationBlockersByCard?.[activeDraftCard.id]}
           composerRef={composerRef}
           isDraftBusy={isDraftBusy}
           isPromptComposing={isPromptComposing}
@@ -1063,9 +1041,7 @@ export function BeatCanvasFrontLayer() {
                     setIsVersionPickerOpen(false);
                     setIsModelSelectOpen(nextOpen);
                   }}
-                  selectedModelId={
-                    selectedModel?.id ?? activeDraftCard.modelId
-                  }
+                  selectedModelId={selectedModel?.id ?? activeDraftCard.modelId}
                   selectedModelLabel={selectedModelLabel}
                 />
               </div>

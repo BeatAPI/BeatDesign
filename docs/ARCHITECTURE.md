@@ -36,7 +36,24 @@ Provider and optional R2/S3 credentials are encrypted in the local `config` tabl
 
 Upload storage is a separate adapter boundary. File selection remains browser-local. A successful generation precheck creates a short-lived, one-time SQLite intent that binds the project, model, exact upload count, uploaded URLs, and final generation submission. Required references are promoted only after that point and immediately before task submission; they become project assets only after the provider accepts the task. The default path uploads supported references to BeatAPI Files. Users may instead configure a public R2/S3-compatible bucket; those credentials remain local and are used only for confirmed generation inputs.
 
+Production browser requests accept only localhost, IPv4 loopback and IPv6 loopback
+authorities, independently of Origin. `pnpm start` and the WorkBuddy launcher pin
+the listener to IPv4 loopback; ambient hosting variables cannot widen it. Packaged
+DDL and migration receipts commit atomically and tolerate prior additive startup
+upgrades without rewriting user records.
+
 ## Command boundary
+
+Project organization uses this same boundary. Canvas v4 stores canonical groups,
+fixed reference bindings and frozen template instances alongside unchanged cards
+and absolute frames. Display projections never replace raw references or historical
+input snapshots. Per-project folders and Elements live in
+`project_organization_state`; installation-wide definitions live in `workflow_template`.
+New semantic writes require explicit revisions and stable IDs. An asynchronous
+transaction context keeps service reads, CAS updates and request-fingerprinted
+receipts on the same SQLite transaction, including legacy snapshot save paths.
+Canvas generation intents additionally pin the reviewed source card/configuration
+digest. See [Project organization](PROJECT_ORGANIZATION.md).
 
 UI actions and the local MCP server call the same Command Kernel. The kernel owns validation and pure document operations for Canvas and Editor. Persistence boundaries remain responsible for revision checks, durable writes, and returning the authoritative document.
 

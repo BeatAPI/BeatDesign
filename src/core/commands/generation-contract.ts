@@ -21,23 +21,57 @@ export const assetFirstGenerationRequestSchema = z
   .object({
     version: z.literal(GENERATION_REQUEST_VERSION),
     projectId: z.string().min(1).max(160),
+    sourceSurface: z.enum(['canvas', 'studio', 'editor']).optional(),
+    sourceCardId: z.string().min(1).max(200).optional(),
     mode: z.enum(['image', 'video', 'analysis', 'audio']),
     modelId: z.string().min(1).max(200),
     prompt: z.string().max(20_000),
+    textReferences: z
+      .array(
+        z
+          .object({
+            cardId: z.string().min(1).max(200),
+            name: z.string().max(500),
+            textRole: z.enum(['note', 'script', 'character', 'storyboard']),
+            textContent: z.string().max(100_000),
+          })
+          .strict()
+      )
+      .max(20)
+      .optional(),
     references: z
       .array(
-        z.object({
-          assetId: z.string().min(1).max(200),
-          role: generationReferenceRoleSchema,
-          deliveryUrl: z.string().trim().min(1).max(4096).optional(),
-        })
+        z
+          .object({
+            assetId: z.string().min(1).max(200),
+            role: generationReferenceRoleSchema,
+            deliveryUrl: z.string().trim().min(1).max(4096).optional(),
+          })
           .strict()
       )
       .max(20)
       .default([]),
     parameters: z.record(z.string(), z.unknown()).default({}),
   })
-  .strict();
+  .strict()
+  .superRefine((request, context) => {
+    if (request.sourceSurface === 'canvas' && !request.sourceCardId)
+      context.addIssue({
+        code: 'custom',
+        message: 'Canvas generation requires sourceCardId.',
+        path: ['sourceCardId'],
+      });
+    if (
+      request.sourceCardId &&
+      request.sourceSurface &&
+      request.sourceSurface !== 'canvas'
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'A Canvas sourceCardId cannot be used by another surface.',
+        path: ['sourceSurface'],
+      });
+  });
 
 export type AssetFirstGenerationRequest = z.infer<
   typeof assetFirstGenerationRequestSchema
@@ -91,7 +125,8 @@ export function buildAssetFirstReferencesFromCanvasCards({
     let role: GenerationReferenceRole = 'reference';
     if (card.type === 'video') role = 'source';
     else if (card.type === 'audio') role = 'audio_track';
-    const deliveryUrl = deliveryUrlsByCardId[card.id]?.trim() || card.url?.trim();
+    const deliveryUrl =
+      deliveryUrlsByCardId[card.id]?.trim() || card.url?.trim();
     references.push({
       assetId,
       role,

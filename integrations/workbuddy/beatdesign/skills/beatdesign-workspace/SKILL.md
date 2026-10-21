@@ -79,3 +79,14 @@ BeatDesign MCP 是结构化控制层，浏览器中的 BeatDesign 是用户审�
 写入后核对返回的 revision 和变更 ID，再调用对应 view tool。Canvas 和 Editor 当前通常会在约两秒内或页面重新聚焦时读到 Agent 修改。最终提供准确的 `workspaceUrl` 供用户审核；仅有数据库 revision 不代表用户已经看到结果。
 
 未获明确授权时，不要导出、提交付费生成或额外创建多个版本。
+
+## 项目组织与复用模板
+
+先发现当前工具目录：组织工具已加入后续源码，v0.2.5 已发布运行包仍不包含。
+使用 `bdesign_organization_get`、`bdesign_asset_query` 查询逻辑目录和 Elements；
+组织、Canvas、模板分别使用对应 revision，写入必须有稳定 commandId 和幂等键。
+语义冲突先重新读取和审查，不自动采用最新 revision。固定引用使用具体 Asset 与版本，
+当前版本切换不替换已采用的 Timeline 素材。模板先 preview，再 capture/instantiate，
+保持预览摘要和源版本。插入只创建可编辑草稿，缺少必需输入时阻止生成；
+整理、预览、模板载入均不得自动生成或上传。写入后检查 Canvas/Assets，
+通过 `bdesign_timeline_usage` 核对时间线实际采用。

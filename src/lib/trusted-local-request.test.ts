@@ -50,7 +50,7 @@ test('rejects cross-site, simple-content, and marker-free settings requests', ()
   }
 });
 
-test('accepts same-origin workspace mutations on an access-controlled deployment', () => {
+test('rejects matching non-local Host and Origin during DNS rebinding', () => {
   const hostedRequest = new Request(
     'https://workspace.example/api/app/projects',
     {
@@ -65,9 +65,7 @@ test('accepts same-origin workspace mutations on an access-controlled deployment
     }
   );
 
-  assert.deepEqual(validateTrustedWorkspaceJsonMutation(hostedRequest), {
-    ok: true,
-  });
+  assert.equal(validateTrustedWorkspaceJsonMutation(hostedRequest).ok, false);
   assert.equal(validateTrustedLocalJsonMutation(hostedRequest).ok, false);
 });
 

@@ -46,6 +46,8 @@ BeatDesign 是一个独立、开源、本地优先的 AI 图片与视频创作�
 
 [更新详情](./CHANGELOG.md) · [项目设置说明](./docs/PROJECT_SETTINGS.md) · [当前能力与后续规划](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
+当前源码（尚未正式发版）新增持久画布分组与排列、素材文件夹、固定版本 Elements 和本机工作流模板，MCP 共 38 个工具；v0.2.5 npm 包仍为 30 个。[功能说明](./docs/PROJECT_ORGANIZATION.md)。
+
 ## 两种核心创作模式，一个 Project
 
 ### 无限 Canvas
@@ -104,7 +106,7 @@ pnpm dev
 
 ## 让 Agent 操作 BeatDesign
 
-BeatDesign 提供 30 个本地 MCP 工具，覆盖 Skill、Project、Asset、Canvas、生成和 Editor 操作，包括发现内置 Skill 目录以及从权威时间线导出 MP4。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
+当前源码提供 38 个本地 MCP 工具（v0.2.5 发布包为 30 个），覆盖 Skill、Project、Asset、Canvas、生成和 Editor 操作，包括发现内置 Skill 目录以及从权威时间线导出 MP4。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
 
 连接 MCP Host 后，可以直接提出这样的要求。
 

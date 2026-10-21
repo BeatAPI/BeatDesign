@@ -6,9 +6,7 @@ import {
   precheckEffect as defaultPrecheckEffect,
   resolveWmTaskId,
 } from '@/core/effects/client-api';
-import {
-  getWorkspaceEffectReferenceInputDefaults,
-} from '@/core/effects/effect-registry';
+import { getWorkspaceEffectReferenceInputDefaults } from '@/core/effects/effect-registry';
 import { resolveOutputMedia } from '@/core/effects/output-media';
 import { buildDraftModelParameters } from '@/core/effects/model-parameters';
 import {
@@ -45,6 +43,7 @@ import {
 } from '@/core/beatcanvas/canvas-workflows';
 import { isDraftBusyStatus } from '@/core/beatcanvas/composer';
 import { isLocalWorkspaceMediaUrl } from '@/core/beatcanvas/local-references';
+import { resolveCanvasTextReferences } from './text-nodes';
 
 export type StudioJobStatus = CanvasCardStatus;
 
@@ -185,10 +184,7 @@ const getVideoAnalysisModel = (
   depth: CanvasDraftCard['analysisDepth'] = 'standard'
 ): WorkspaceModelOption => ({
   id: VIDEO_ANALYSIS_MODEL_ID,
-  name:
-    depth === 'deep'
-      ? 'Video Analysis Pro'
-      : 'Video Analysis Standard',
+  name: depth === 'deep' ? 'Video Analysis Pro' : 'Video Analysis Standard',
   uploadPath: 'effects/video-analysis',
   imageBucketName: 'video',
   supportsSourceVideo: true,
@@ -220,8 +216,13 @@ export const buildGenerationEffectInput = async ({
   notify,
   loadVideoDurationSecondsImpl = loadVideoDurationSeconds,
 }: BuildGenerationEffectInputParams) => {
+  const { resolvedPrompt } = resolveCanvasTextReferences({
+    cards: canvasCards,
+    referenceCardIds: draftCard.referenceCardIds,
+    prompt: draftCard.prompt,
+  });
   if (isCanvasAnalysisCard(draftCard)) {
-    const promptValidation = validateGenerationPrompt(draftCard.prompt, {
+    const promptValidation = validateGenerationPrompt(resolvedPrompt, {
       required: true,
       maxChars: getGenerationPromptMaxChars({
         modelId: VIDEO_ANALYSIS_MODEL_ID,
@@ -249,7 +250,7 @@ export const buildGenerationEffectInput = async ({
 
     const videoReference = videoReferences[0];
     const videoUrl = videoReference
-      ? referenceUrlOverrides[videoReference.id] ?? videoReference.url
+      ? (referenceUrlOverrides[videoReference.id] ?? videoReference.url)
       : null;
     const input: Record<string, unknown> = {
       prompt: promptValidation.trimmedPrompt,
@@ -279,7 +280,7 @@ export const buildGenerationEffectInput = async ({
   }
 
   const promptValidation = validateGenerationPrompt(
-    draftCard.prompt,
+    resolvedPrompt,
     getGenerationPromptConstraints({ modelId: model.id })
   );
   if (!promptValidation.ok) {
@@ -295,11 +296,12 @@ export const buildGenerationEffectInput = async ({
   const pendingPlannedReferences = draftCard.referenceCardIds
     .map((cardId) => canvasCards[cardId])
     .filter(
-      (card): card is CanvasDraftCard =>
-        isCanvasDraftCard(card) && !card.url
+      (card): card is CanvasDraftCard => isCanvasDraftCard(card) && !card.url
     );
   if (
-    pendingPlannedReferences.some((referenceCard) => referenceCard.type === 'image')
+    pendingPlannedReferences.some(
+      (referenceCard) => referenceCard.type === 'image'
+    )
   ) {
     throw new Error(translate('messages.imageReferencesPending'));
   }
@@ -307,10 +309,8 @@ export const buildGenerationEffectInput = async ({
   const referenceCards = draftCard.referenceCardIds
     .map((cardId) => canvasCards[cardId])
     .flatMap((card) => {
-      if (
-        !card?.url ||
-        (card.type !== 'image' && card.type !== 'video')
-      ) return [];
+      if (!card?.url || (card.type !== 'image' && card.type !== 'video'))
+        return [];
       const providerUrl = referenceUrlOverrides[card.id] ?? card.url;
       if (isLocalWorkspaceMediaUrl(providerUrl)) return [];
       return [
@@ -328,7 +328,10 @@ export const buildGenerationEffectInput = async ({
 
   const input: Record<string, unknown> = {
     prompt: promptValidation.trimmedPrompt,
-    ...buildDraftModelParameters({ ...draftCard, modelId: model.id }, metadata.inputSchema),
+    ...buildDraftModelParameters(
+      { ...draftCard, modelId: model.id },
+      metadata.inputSchema
+    ),
   };
   const hasVideoReference = referenceCards.some(
     (card) => card.type === 'video'
@@ -430,7 +433,10 @@ export const pollGenerationUntilComplete = async ({
   let consecutiveStatusFailures = 0;
 
   for (let count = 0; count < maxAttempts; count += 1) {
-    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    if (
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'hidden'
+    ) {
       await sleepImpl(pollIntervalMs);
       count -= 1;
       continue;
@@ -461,7 +467,10 @@ export const pollGenerationUntilComplete = async ({
         response.status === 408 ||
         response.status === 429;
       consecutiveStatusFailures += 1;
-      if (retryable && consecutiveStatusFailures <= maxConsecutiveStatusFailures) {
+      if (
+        retryable &&
+        consecutiveStatusFailures <= maxConsecutiveStatusFailures
+      ) {
         await sleepImpl(pollIntervalMs);
         continue;
       }
@@ -526,6 +535,7 @@ type RunDraftGenerationParams = {
     suppressFocus?: boolean;
   }) => string | null;
   suppressResultFocus?: boolean;
+  beforeGenerate?: () => Promise<void>;
   setStatusMessage: (message: string) => void;
   setErrorMessage: (message: string | null) => void;
   getStatusLabel: (status: StudioJobStatus) => string;
@@ -551,6 +561,7 @@ export const runDraftGeneration = async ({
   updateGenerationOutput,
   completeGenerationOutput,
   suppressResultFocus = false,
+  beforeGenerate,
   setStatusMessage,
   setErrorMessage,
   getStatusLabel,
@@ -561,7 +572,7 @@ export const runDraftGeneration = async ({
   generateEffectImpl = defaultGenerateEffect,
   pollEffectUntilCompleteImpl,
 }: RunDraftGenerationParams) => {
-  const currentCard = getCurrentCard(draftId);
+  let currentCard = getCurrentCard(draftId);
   if (
     !isCanvasDraftCard(currentCard) ||
     isDraftBusyStatus(currentCard.status)
@@ -572,6 +583,13 @@ export const runDraftGeneration = async ({
   let outputCardId: string | null = null;
 
   try {
+    await beforeGenerate?.();
+    currentCard = getCurrentCard(draftId);
+    if (
+      !isCanvasDraftCard(currentCard) ||
+      isDraftBusyStatus(currentCard.status)
+    )
+      return false;
     const initialRequest = await buildEffectInput(currentCard);
     const { modelId, model } = initialRequest;
     const input = initialRequest.input;
@@ -604,11 +622,25 @@ export const runDraftGeneration = async ({
         ? normalizeAssetFirstGenerationRequest({
             version: GENERATION_REQUEST_VERSION,
             projectId,
+            sourceSurface: 'canvas',
+            sourceCardId: submittedCard.id,
             mode: isCanvasAnalysisCard(submittedCard)
               ? 'analysis'
               : submittedCard.type,
-            modelId: isCanvasAnalysisCard(submittedCard) ? VIDEO_ANALYSIS_MODEL_ID : model.id,
+            modelId: isCanvasAnalysisCard(submittedCard)
+              ? VIDEO_ANALYSIS_MODEL_ID
+              : model.id,
             prompt: submittedCard.prompt,
+            textReferences: resolveCanvasTextReferences({
+              cards: Object.fromEntries(
+                submittedCard.referenceCardIds.map((id) => [
+                  id,
+                  getCurrentCard(id) ?? undefined,
+                ])
+              ),
+              referenceCardIds: submittedCard.referenceCardIds,
+              prompt: submittedCard.prompt,
+            }).textReferences,
             references: buildAssetFirstReferencesFromCanvasCards({
               cards: Object.fromEntries(
                 submittedCard.referenceCardIds.flatMap((cardId) => {
@@ -617,7 +649,6 @@ export const runDraftGeneration = async ({
                 })
               ),
               referenceCardIds: submittedCard.referenceCardIds,
-
             }),
             parameters: Object.fromEntries(
               Object.entries(input).filter(

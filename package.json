@@ -35,7 +35,7 @@
     "mcp:http": "tsx scripts/mcp-server.ts --http",
     "prebuild": "node scripts/db-setup.mjs",
     "build": "tsx scripts/prepare-paraglide.ts && vite build && node scripts/sanitize-output.mjs",
-    "start": "node .output/server/index.mjs",
+    "start": "node scripts/start-local.mjs",
     "postinstall": "node scripts/postinstall.mjs",
     "db:setup": "node scripts/db-setup.mjs",
     "db:push": "drizzle-kit push --config=drizzle.config.ts",

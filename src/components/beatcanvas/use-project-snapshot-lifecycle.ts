@@ -1,3 +1,4 @@
+import { requiresExplicitEnvelope } from '@/core/organization/command-contract';
 import {
   normalizeProjectSnapshotDocument,
   type ProjectSnapshotDocument,
@@ -26,7 +27,8 @@ const hasHydratableProjectSnapshot = (
   snapshot: ProjectSnapshotDocument | null
 ): snapshot is ProjectSnapshotDocument =>
   Boolean(
-    snapshot && (snapshot.cards.length > 0 || snapshot.workflows?.activeTemplate)
+    snapshot &&
+    (snapshot.cards.length > 0 || snapshot.workflows?.activeTemplate)
   );
 
 const valuesEqual = (left: unknown, right: unknown) =>
@@ -117,8 +119,15 @@ export const mergeProjectSnapshotsAfterConflict = ({
   });
 
   return normalizeProjectSnapshotDocument({
-    version: 3,
+    version: 4,
     cards,
+    organization: mergeThreeWayValue(
+      baseDocument.organization,
+      local.organization,
+      remote.organization,
+      'organization',
+      true
+    ),
     frames: mergeThreeWayValue(
       baseDocument.frames,
       local.frames,
@@ -196,6 +205,7 @@ export function useProjectSnapshotLifecycle({
     initialProjectSnapshotVersion
   );
   const saveQueueRef = useRef(Promise.resolve());
+  const snapshotEpochRef = useRef(0);
   const externalPollInFlightRef = useRef(false);
   const saveInFlightRef = useRef(false);
   const buildSnapshotRef = useRef(buildProjectSnapshotDocument);
@@ -203,7 +213,10 @@ export function useProjectSnapshotLifecycle({
 
   const saveSerializedSnapshot = useCallback(
     async (serializedSnapshot: string, allowEmpty: boolean) => {
+      const saveEpoch = snapshotEpochRef.current;
       const runSave = async () => {
+        // A reviewed external result supersedes saves queued from the previous view.
+        if (saveEpoch !== snapshotEpochRef.current) return;
         const targetSerializedSnapshot =
           pendingProjectSnapshotRef.current ?? serializedSnapshot;
         if (targetSerializedSnapshot === lastSavedProjectSnapshotRef.current) {
@@ -227,7 +240,11 @@ export function useProjectSnapshotLifecycle({
         let snapshotToSave = localSnapshotDocument;
         let commandBase = baseSnapshotDocument;
         const sendSaveRequest = async (baseVersion: number | null) => {
-          const operations = buildCanvasOperations(commandBase, snapshotToSave, allowEmpty);
+          const operations = buildCanvasOperations(
+            commandBase,
+            snapshotToSave,
+            allowEmpty
+          );
           if (!operations.length) return null;
           return executeProjectCommand({
             projectId,
@@ -239,6 +256,19 @@ export function useProjectSnapshotLifecycle({
         let recoveredFromConflict = false;
         let result = await sendSaveRequest(lastSavedProjectSnapshotVersionRef.current);
         if (result && !result.ok && result.code === 'REVISION_CONFLICT') {
+          if (
+            requiresExplicitEnvelope({
+              type: 'canvas.apply',
+              operations: buildCanvasOperations(
+                commandBase,
+                snapshotToSave,
+                allowEmpty
+              ),
+            })
+          ) {
+            onProjectSnapshotConflict?.();
+            throw new Error(result.message);
+          }
           const latestResponse = await fetch(
             `/api/app/projects/${encodeURIComponent(projectId)}/snapshot`
           );
@@ -315,6 +345,67 @@ export function useProjectSnapshotLifecycle({
     ]
   );
 
+  const flush = useCallback(async () => {
+    if (!isCanvasReady || !isHydratedFromProject)
+      throw new Error('Canvas is not ready to save.');
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const serialized = JSON.stringify(buildSnapshotRef.current());
+      pendingProjectSnapshotRef.current = serialized;
+      await saveSerializedSnapshot(serialized, allowEmptyProjectSnapshot);
+      if (
+        JSON.stringify(buildSnapshotRef.current()) ===
+        lastSavedProjectSnapshotRef.current
+      ) {
+        pendingProjectSnapshotRef.current = null;
+        return;
+      }
+    }
+    throw new Error(
+      'Canvas kept changing while saving. Finish editing and retry.'
+    );
+  }, [
+    allowEmptyProjectSnapshot,
+    isCanvasReady,
+    isHydratedFromProject,
+    saveSerializedSnapshot,
+  ]);
+
+  const acceptExternalSnapshot = useCallback(
+    (document: ProjectSnapshotDocument, version: number) => {
+      if (
+        !Number.isInteger(version) ||
+        version < (lastSavedProjectSnapshotVersionRef.current ?? 0)
+      )
+        throw new Error(
+          'Canvas external response is older than the current revision.'
+        );
+      const authoritative = normalizeProjectSnapshotDocument(document);
+      const current = buildSnapshotRef.current();
+      const base = lastSavedProjectSnapshotRef.current
+        ? (JSON.parse(
+            lastSavedProjectSnapshotRef.current
+          ) as ProjectSnapshotDocument)
+        : null;
+      // Preserve edits made while the external command was in flight.
+      const restored =
+        JSON.stringify(current) !== lastSavedProjectSnapshotRef.current
+          ? mergeProjectSnapshotsAfterConflict({
+              base,
+              local: current,
+              remote: authoritative,
+            })
+          : authoritative;
+      snapshotEpochRef.current++;
+      lastSavedProjectSnapshotVersionRef.current = version;
+      lastSavedProjectSnapshotRef.current = JSON.stringify(authoritative);
+      const serialized = JSON.stringify(restored);
+      pendingProjectSnapshotRef.current =
+        serialized === lastSavedProjectSnapshotRef.current ? null : serialized;
+      restoreProjectSnapshot(restored);
+    },
+    [restoreProjectSnapshot]
+  );
+
   useEffect(() => {
     // Consume the one-time prompt only after it has become a real draft. Updating
     // history earlier can re-run the route loader before Canvas is ready.
@@ -379,7 +470,9 @@ export function useProjectSnapshotLifecycle({
     }
     pendingProjectSnapshotRef.current = serializedSnapshot;
 
+    const scheduledEpoch = snapshotEpochRef.current;
     const timeoutId = window.setTimeout(async () => {
+      if (scheduledEpoch !== snapshotEpochRef.current) return;
       try {
         await saveSerializedSnapshot(
           serializedSnapshot,
@@ -574,6 +667,5 @@ export function useProjectSnapshotLifecycle({
     isHydratedFromProject,
     projectId,
   ]);
-
-  return isCanvasReady && isHydratedFromProject && isHydratedFromQuery;
+  return { flush, acceptExternalSnapshot, isWorkspaceReady: isCanvasReady && isHydratedFromProject && isHydratedFromQuery };
 }

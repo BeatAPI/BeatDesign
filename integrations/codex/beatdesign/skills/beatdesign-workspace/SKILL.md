@@ -20,7 +20,7 @@ For Canvas-specific review, call `bdesign_canvas_view` with `cardId` so the work
 
 - Read the current Canvas or Editor state before editing.
 - Use incremental Canvas and Editor operations with stable IDs and a stable idempotency key. Never replace a complete Canvas or Timeline document.
-- External incremental commands automatically retry a short revision race against the newest authoritative document. If a result still includes `retry`, follow its instruction once after reading the latest state; do not busy-loop.
+- Legacy incremental commands may retry a short revision race against the newest authoritative document; organization and template commands require explicit conflict review. If a result still includes `retry`, follow its instruction once after reading the latest state; do not busy-loop.
 - Import local media through `bdesign_asset_import` before referencing it from Canvas or Editor.
 - Treat generation as asset-first: generated output becomes a Project Asset before placement.
 
@@ -37,6 +37,25 @@ For Canvas-specific review, call `bdesign_canvas_view` with `cardId` so the work
   before submitting again; do not overwrite another change blindly.
 - Read the saved settings back and inspect the project card or workspace header.
   Project settings refresh while visible within about five seconds.
+
+## Organize assets and reuse workflows
+
+- Discover the installed tool catalog first; organization tools are available in
+  current source and are not included in the published v0.2.5 runtime.
+- Use `bdesign_organization_get` / `bdesign_asset_query` for folders and versioned
+  Elements. Folder changes are logical; they do not move media files.
+- Apply semantic operations with explicit command ID, idempotency key and the
+  correct expected revision. Organization, Canvas and template revisions are
+  separate. On a semantic conflict, read and review again; do not adopt a newer
+  revision automatically. Reuse the original envelope if delivery is uncertain.
+- Element references pin exact Asset/version IDs. Changing the current version
+  does not silently replace existing references or Timeline clips.
+- Use `bdesign_workflow_template_preview` before capture/instantiation, then
+  `bdesign_workflow_template_apply`. Keep the reviewed digest and source revision.
+  Insertions create editable drafts only; missing required slots block generation.
+- Inspect the result in Canvas/Assets. Use `bdesign_timeline_usage` to check actual
+  pinned Timeline usage. Organizing, previewing or loading a template must never
+  trigger generation or upload.
 
 ## Import captions
 

@@ -20,6 +20,8 @@ const createTestDb = async () => {
     CREATE TABLE project (id text PRIMARY KEY NOT NULL);
     CREATE TABLE generation_history (id text PRIMARY KEY NOT NULL);
     CREATE TABLE generation_upload_intent (
+      source_card_id text,
+      source_context_digest text,
       id text PRIMARY KEY NOT NULL,
       project_id text NOT NULL,
       effect_id integer NOT NULL,

@@ -1,6 +1,9 @@
-import type {
-  CanvasCard,
-} from '@/core/beatcanvas/canvas-types';
+import type { CanvasCard } from '@/core/beatcanvas/canvas-types';
+import {
+  normalizeCanvasOrganization,
+  validateCanvasOrganization,
+  type CanvasOrganization,
+} from '@/core/organization/canvas-organization';
 
 export const MAX_PROJECT_SNAPSHOT_BYTES = 2 * 1024 * 1024;
 const MAX_PROJECT_SNAPSHOT_CARDS = 200;
@@ -52,7 +55,8 @@ export type ProjectSnapshotActiveTemplateWorkflow = {
 };
 
 export type ProjectSnapshotDocument = {
-  version: 3;
+  version: 3 | 4;
+  organization?: CanvasOrganization;
   cards: CanvasCard[];
   frames: Record<string, ProjectSnapshotShapeFrame>;
   camera?: ProjectSnapshotCamera;
@@ -144,12 +148,14 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
   }
 
   const referenceCardIds = Array.isArray(value.referenceCardIds)
-    ? value.referenceCardIds.filter(
-        (item): item is string =>
-          typeof item === 'string' &&
-          item.length > 0 &&
-          item.length <= MAX_ID_CHARS
-      ).slice(0, MAX_CARD_REFERENCES)
+    ? value.referenceCardIds
+        .filter(
+          (item): item is string =>
+            typeof item === 'string' &&
+            item.length > 0 &&
+            item.length <= MAX_ID_CHARS
+        )
+        .slice(0, MAX_CARD_REFERENCES)
     : [];
 
   const id = typeof value.id === 'string' ? value.id : null;
@@ -160,16 +166,13 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
     typeof value.workflowTemplateId === 'string'
       ? value.workflowTemplateId
       : null;
-  const modelId =
-    typeof value.modelId === 'string'
-      ? value.modelId
-      : '';
+  const modelId = typeof value.modelId === 'string' ? value.modelId : '';
 
   if (
     !id ||
     id.length > MAX_ID_CHARS ||
-    !['asset', 'generation', 'output'].includes(kind || '') ||
-    !['image', 'video', 'audio', 'timeline'].includes(type || '') ||
+    !['asset', 'generation', 'output', 'text'].includes(kind || '') ||
+    !['image', 'video', 'audio', 'timeline', 'text'].includes(type || '') ||
     !name ||
     name.length > MAX_NAME_CHARS
   ) {
@@ -196,9 +199,23 @@ const normalizeCard = (value: unknown): CanvasCard | null => {
   if (kind !== 'asset' && (type === 'audio' || type === 'timeline')) {
     return null;
   }
+  if ((kind === 'text') !== (type === 'text')) return null;
 
   return {
     id,
+    ...(kind === 'text'
+      ? {
+          textContent: normalizeString(
+            value.textContent,
+            MAX_RESULT_TEXT_CHARS
+          ),
+          textRole: ['script', 'character', 'storyboard'].includes(
+            String(value.textRole)
+          )
+            ? (value.textRole as 'script' | 'character' | 'storyboard')
+            : ('note' as const),
+        }
+      : {}),
     assetId: typeof value.assetId === 'string' ? value.assetId : null,
     kind: kind as CanvasCard['kind'],
     type: type as CanvasCard['type'],
@@ -312,7 +329,7 @@ export const normalizeProjectSnapshotCard = (value: unknown) =>
   normalizeCard(value);
 
 export const createEmptyProjectSnapshot = (): ProjectSnapshotDocument => ({
-  version: 3,
+  version: 4,
   cards: [],
   frames: {},
 });
@@ -331,6 +348,14 @@ export const normalizeProjectSnapshotDocument = (
   if (!isRecord(value)) {
     return createEmptyProjectSnapshot();
   }
+
+  if (
+    value.version !== undefined &&
+    ![1, 2, 3, 4].includes(value.version as number)
+  )
+    throw new ProjectSnapshotValidationError(
+      'Unsupported Canvas document version.'
+    );
 
   if (
     Array.isArray(value.cards) &&
@@ -373,10 +398,13 @@ export const normalizeProjectSnapshotDocument = (
   };
   const camera = normalizeCamera(value.camera);
 
-  return {
-    version: 3,
+  const document: ProjectSnapshotDocument = {
+    version: 4,
     cards,
     frames,
+    ...(value.organization
+      ? { organization: normalizeCanvasOrganization(value.organization) }
+      : {}),
     ...(camera ? { camera } : {}),
     ...(Object.keys(normalizedWorkflows).length > 0
       ? {
@@ -384,4 +412,11 @@ export const normalizeProjectSnapshotDocument = (
         }
       : {}),
   };
+  validateCanvasOrganization(document);
+  if (
+    new TextEncoder().encode(JSON.stringify(document)).byteLength >
+    MAX_PROJECT_SNAPSHOT_BYTES
+  )
+    throw new ProjectSnapshotValidationError('Canvas document exceeds 2 MiB.');
+  return document;
 };

@@ -12,6 +12,7 @@ import {
   issueGenerationUploadIntent,
   releaseGenerationUploadSlot,
   getGenerationUploadIntentEffectId,
+  getGenerationUploadIntentSourceContext,
 } from '@/core/effects/generation-upload-intent';
 import { submitEffectGeneration } from '@/core/effects/submit-generation';
 import { resolveLocalProjectAssetPath } from '@/core/projects/local-project-assets';
@@ -20,8 +21,16 @@ import {
   linkGenerationAsset,
 } from '@/core/workspace-lib/assets/user-assets';
 import { uploadManagedGenerationInput } from '@/core/workspace-storage/managed-generation-input';
-import { getProject } from '@/core/projects/projects';
-import { getGenerationPromptConstraints, validateGenerationPrompt } from '@/core/effects/validation';
+import {
+  getProject,
+  loadProjectWithLatestSnapshot,
+} from '@/core/projects/projects';
+import { resolveCanvasTextReferences } from '@/core/beatcanvas/text-nodes';
+import { assertCanvasGenerationSource } from '@/core/organization/generation-source';
+import {
+  getGenerationPromptConstraints,
+  validateGenerationPrompt,
+} from '@/core/effects/validation';
 
 import {
   getGenerationModelDescriptor,
@@ -148,7 +157,47 @@ async function prepareGenerationReferences({
 }
 
 export async function preflightAssetFirstGeneration(source: unknown) {
-  const generation = normalizeAssetFirstGenerationRequest(source);
+  let generation = normalizeAssetFirstGenerationRequest(source);
+  const reviewedSourceGeneration = generation;
+  const sourceContext = generation.sourceCardId
+    ? await assertCanvasGenerationSource(
+        generation.projectId,
+        generation.sourceCardId,
+        generation
+      )
+    : undefined;
+  if (sourceContext)
+    generation = {
+      ...generation,
+      references: sourceContext.references,
+      parameters: sourceContext.parameters,
+    };
+  const originalPrompt = generation.prompt;
+  if (generation.textReferences?.length) {
+    const state = await loadProjectWithLatestSnapshot({
+      projectId: generation.projectId,
+    });
+    const cards = Object.fromEntries(
+      (state?.snapshot.cards ?? []).map((card) => [card.id, card])
+    );
+    for (const reference of generation.textReferences) {
+      if (cards[reference.cardId]?.kind !== 'text')
+        throw new Error('Text reference does not belong to this project.');
+    }
+    const resolved = resolveCanvasTextReferences({
+      cards,
+      referenceCardIds: generation.textReferences.map((ref) => ref.cardId),
+      prompt: originalPrompt,
+    });
+    if (
+      JSON.stringify(resolved.textReferences) !==
+      JSON.stringify(generation.textReferences)
+    )
+      throw new Error(
+        'Referenced text changed. Review the text node and submit again.'
+      );
+    generation = { ...generation, prompt: resolved.resolvedPrompt };
+  }
   const project = await getProject({ projectId: generation.projectId });
   if (!project || project.status !== 'active') throw new Error('Project not found');
   const provider = getActiveGenerationProvider();
@@ -189,7 +238,8 @@ export async function preflightAssetFirstGeneration(source: unknown) {
   ).length;
   const validationUrls: string[] = [];
   for (const [assetId, asset] of uniqueAssets) {
-    if (!asset) throw new Error(`Asset ${assetId} does not belong to this project.`);
+    if (!asset)
+      throw new Error(`Asset ${assetId} does not belong to this project.`);
     if (needsManagedGenerationReferenceUpload(asset)) {
       if (asset.storageProvider !== 'local') throw new Error(`Asset ${assetId} is unavailable.`);
       const file = await stat(resolveLocalProjectAssetPath({ objectKey: asset.objectKey }));
@@ -210,7 +260,14 @@ export async function preflightAssetFirstGeneration(source: unknown) {
   const input = await compileAssetFirstGenerationInput({ generation: validationRequest, generationIntentId: '', authorizedDeliveryUrls: validationUrls });
   validateGenerationModelInput({ modelId: generation.modelId, input });
   await provider.assertConfigured?.();
-  return { generation, binding, expectedUploadCount };
+  return {
+    generation,
+    binding,
+    expectedUploadCount,
+    originalPrompt,
+    sourceContext,
+    reviewedSourceGeneration,
+  };
 }
 
 export async function createAssetFirstGenerationIntent(source: unknown) {
@@ -219,6 +276,12 @@ export async function createAssetFirstGenerationIntent(source: unknown) {
     projectId: prepared.generation.projectId,
     effectId: prepared.binding.effectId,
     expectedUploadCount: prepared.expectedUploadCount,
+    ...(prepared.sourceContext
+      ? {
+          sourceCardId: prepared.sourceContext.sourceCardId,
+          sourceContextDigest: prepared.sourceContext.sourceContextDigest,
+        }
+      : {}),
   });
 }
 
@@ -231,15 +294,50 @@ export async function submitAssetFirstGeneration({
   origin: 'ui' | 'mcp' | 'cli' | 'system';
   generationIntentId?: string;
 }) {
-  const { generation, binding, expectedUploadCount } = await preflightAssetFirstGeneration(source);
-  const intentId = generationIntentId || await issueGenerationUploadIntent({
-    projectId: generation.projectId,
-    effectId: binding.effectId,
+  const {
+    generation,
+    binding,
     expectedUploadCount,
-  });
-  if (await getGenerationUploadIntentEffectId({ intentId, projectId: generation.projectId }) !== binding.effectId) {
-    throw new Error('Generation authorization does not match this project and model.');
+    originalPrompt,
+    sourceContext,
+    reviewedSourceGeneration,
+  } = await preflightAssetFirstGeneration(source);
+  const intentId =
+    generationIntentId ||
+    (await issueGenerationUploadIntent({
+      projectId: generation.projectId,
+      effectId: binding.effectId,
+      expectedUploadCount,
+      ...(sourceContext
+        ? {
+            sourceCardId: sourceContext.sourceCardId,
+            sourceContextDigest: sourceContext.sourceContextDigest,
+          }
+        : {}),
+    }));
+  if (
+    (await getGenerationUploadIntentEffectId({
+      intentId,
+      projectId: generation.projectId,
+    })) !== binding.effectId
+  ) {
+    throw new Error(
+      'Generation authorization does not match this project and model.'
+    );
   }
+  const reviewedIntent = await getGenerationUploadIntentSourceContext({
+    intentId,
+    projectId: generation.projectId,
+  });
+  if (
+    (reviewedIntent?.sourceCardId ?? null) !==
+      (sourceContext?.sourceCardId ?? null) ||
+    (reviewedIntent?.sourceContextDigest ?? null) !==
+      (sourceContext?.sourceContextDigest ?? null)
+  )
+    throw new Error(
+      'Canvas generation configuration or bindings changed after precheck; review and precheck again.'
+    );
   try {
     const prepared = await prepareGenerationReferences({
       generation,
@@ -251,6 +349,17 @@ export async function submitAssetFirstGeneration({
       authorizedDeliveryUrls: prepared.authorizedDeliveryUrls,
     });
     validateGenerationModelInput({ modelId: generation.modelId, input });
+    if (sourceContext) {
+      const latest = await assertCanvasGenerationSource(
+        generation.projectId,
+        sourceContext.sourceCardId,
+        reviewedSourceGeneration
+      );
+      if (latest.sourceContextDigest !== sourceContext.sourceContextDigest)
+        throw new Error(
+          'Canvas generation configuration or bindings changed before submission; review and precheck again.'
+        );
+    }
     const result = await submitEffectGeneration({
       effectId: binding.effectId,
       input,
@@ -261,6 +370,15 @@ export async function submitAssetFirstGeneration({
         origin,
         requestVersion: generation.version,
         logicalModelId: generation.modelId,
+        ...(sourceContext
+          ? {
+              canvasSource: sourceContext.provenance,
+              sourceContextDigest: sourceContext.sourceContextDigest,
+            }
+          : {}),
+        ...(generation.textReferences?.length
+          ? { originalPrompt, textReferences: generation.textReferences }
+          : {}),
       },
     });
     const generationId =

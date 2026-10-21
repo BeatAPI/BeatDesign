@@ -95,6 +95,7 @@ await Promise.all([
     resolve(repositoryRoot, 'integrations', 'workbuddy', 'runtime', 'launcher.mjs'),
     resolve(outputRoot, 'bin', 'beatdesign-workbuddy.mjs')
   ),
+  cp(resolve(repositoryRoot, 'integrations', 'workbuddy', 'runtime', 'migrations.mjs'), resolve(outputRoot, 'bin', 'migrations.mjs')),
   cp(
     resolve(repositoryRoot, 'integrations', 'workbuddy', 'runtime', 'README.md'),
     resolve(outputRoot, 'README.md')

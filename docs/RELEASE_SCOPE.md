@@ -8,6 +8,15 @@ Excluded: authentication, login, accounts, payments, subscriptions, credits, API
 
 Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. Browser/MCP checks run against that production build; run `pnpm build` before `pnpm test:e2e`. A real paid BeatAPI generation is a separate credentialed end-to-end check.
 
+## Current source — project organization (unreleased, 2026-10-22)
+
+- Adapt Issue #29 organization commits from JaysonAlbert/BeatDesign draft PR #16; preserve official provider and shared local workspace boundaries.
+- Local checks passed: typecheck, 504 tests (no skips), i18n validation and production build. All 25 production browser/MCP checks pass, including English/Chinese organization, mobile focus handling, exact pinned inputs, template insertion visibility and local Host rejection.
+- A separate pure compatibility check accepted Canvas default controls for all 26 official model descriptors without provider requests.
+- Build the runtime tarball, install it in a clean temporary directory, complete the 38-tool stdio handshake and route smoke checks. Additive migration regression covers previously upgraded columns, repeated schema setup, retained project data and rollback after a failed migration.
+- WorkBuddy Connector structure check passes; production dependency audit reports no known vulnerabilities at verification time.
+- Current source adds eight MCP tools; the published v0.2.5 package remains at 30. No new version, GitHub Release, npm publication or WorkBuddy submission is claimed by these checks. Credentialed/paid generation remains a separate unperformed check.
+
 ## v0.2.5 release (2026-10-22)
 
 - [x] Align application, Codex, Claude Code, Claude marketplace, LobeHub and WorkBuddy metadata on `0.2.5`.

@@ -96,7 +96,10 @@ export function repairCanvasCardInput(value: unknown) {
         characterOrientation: card.generationSnapshot.characterOrientation,
         backgroundSource: card.generationSnapshot.backgroundSource,
         resultText: card.generationSnapshot.resultText,
+        resolvedPrompt: card.generationSnapshot.resolvedPrompt,
+        textReferences: card.generationSnapshot.textReferences,
         capturedAt:
+          // Text context is frozen with each output, independently of later edits.
           typeof card.generationSnapshot.capturedAt === 'string' &&
           card.generationSnapshot.capturedAt.trim()
             ? card.generationSnapshot.capturedAt

@@ -12,7 +12,7 @@
 - `bdesign_project_update` 将 MCP 目录扩展为 30 个工具；项目设置更新与幂等回执在同一 SQLite 事务提交，回执失败时回滚设置，保留旧项目封面。
 - 浏览器/MCP 检查使用生产构建；画布完成编辑器与项目初始化后才开放工具栏和快捷键，延迟加载回归检查确认首次创建动作可保存。
 - 从 PR #18 提取 Windows 测试兼容、Studio 首屏翻译、空画布撤销／重做保存及窄屏布局修复；第三方品牌、Provider 和托管部署配置未纳入上游。
-- v0.2.5 补齐跨平台安装脚本、Linux/Windows CI、接入包版本和项目设置 Skill 指引；README 列出 v0.2.5 功能、正式发布入口与源码升级步骤。官方 Skill 目录仍为空，Issue #29 的持久分组、素材文件夹和复用模板仍待实现。
+- v0.2.5 补齐跨平台安装脚本、Linux/Windows CI、接入包版本和项目设置 Skill 指引；README 列出 v0.2.5 功能、正式发布入口与源码升级步骤。官方 Skill 目录仍为空；后续源码改进另见下方，未包含在 v0.2.5 发布包。
 
 ### v0.2.4 已发布改进
 
@@ -22,6 +22,18 @@
 - Canvas / Editor 先查询轻量 revision，发生变化才读取文档，隐藏页面暂停文档轮询。
 - Studio / Canvas / Editor redo 与 MCP 共用 asset-first 服务端预检及提交；浏览器接口使用逻辑 model ID，Provider 状态同步集中到服务端。
 - 本地 SQLite 启用 WAL 和 busy timeout；MCP 版本读取根 package 元数据。浏览器与 MCP 联动测试使用独立临时数据库，不调用付费 Provider。
+
+### 后续源码改进（未正式发版）
+
+从 JaysonAlbert 的 Fork PR #16 中提取 Issue #29 的持久命名分组、折叠和自动排列、
+逻辑素材文件夹、固定版本 Elements、可复用本机工作流模板与文字步骤。
+保留现有项目及 BeatAPI Provider；未引入 Fork 的其他 Provider 或 Series/Scenes 架构。
+UI/MCP 共用事务命令、revision、幂等回执；整理和模板插入不创建生成任务、不上传。
+新增 8 个 MCP 工具，当前源码共 38 个；v0.2.5 发布包仍为 30 个。
+
+补充生产 HTTP Host 校验、`pnpm start`/WorkBuddy 回环绑定，以及兼容旧数据库的
+原子安装迁移。功能边界见 [PROJECT_ORGANIZATION.md](PROJECT_ORGANIZATION.md)。
+源码、自动检查、浏览器/MCP 验证、合并和正式发版分别记录；这里不代表 npm 已更新。
 
 ## 1. BeatDesign 是什么
 
@@ -173,7 +185,7 @@ Codex / Claude Code / Other Agent
 - `AssetFirstGenerationRequest` v2 不保存通用首帧或尾帧角色；大多数模型仍由明确的 `@ImageN` Prompt 指令表达首尾帧语义。MiniMax H3 Max / Max Turbo 按其公开契约使用专用双槽位，并将附件顺序映射为首帧、尾帧。Adapter 负责翻译 Provider 字段和校验模型硬限制。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；当前同步 GPT Image 2.5 Flare/Sunburst、Wan 3.0/Prime、HappyHorse 1.0/1.1、MiniMax H3 Max/Max Turbo 的请求契约和 SVG 品牌标志。BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
-- 本地 stdio MCP Server 提供 30 个工具（Skill / Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_skill_list` / `bdesign_skill_get` 是不显示 MCP Resources 的宿主兼容入口；`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
+- 本地 stdio MCP Server 当前源码提供 38 个工具（Skill / Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_skill_list` / `bdesign_skill_get` 是不显示 MCP Resources 的宿主兼容入口；`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
 - Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 
 ## 6. v0.2 Phase 1 本地已实现
@@ -188,7 +200,7 @@ Codex / Claude Code / Other Agent
 - Canvas -> Timeline Node -> Editor 连续工作流。
 - Editor 自动保存接入命令入口，并补齐冲突三方合并、重复操作保护和稳定播放头时间。
 - 图片 Clip、时间线拖拽调整持续时间与图片/视频统一视觉轨。
-- 本地 MCP Server 提供 30 个 Skill、Project、Asset、Canvas、Generation、Editor 工具；支持内置 Skill 目录发现、会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
+- 本地 MCP Server 当前源码提供 38 个 Skill、Project、Asset、Canvas、Generation、Editor 工具；支持内置 Skill 目录发现、会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
 - 已加入只读 `beatdesign://skills` MCP Resource、单 Skill Resource Template、schema v1 清单校验和宿主兼容工具；当前官方创作 Skill 目录有意保持为空，待具体 Skill 完成提示词评测和可见工作流联调后再加入，并在那时开放 Showcase 入口。
 - MCP 增量 Canvas/Editor 命令在短暂 revision 竞争时会基于最新权威文档限次自动重放；持续冲突返回最新 revision 和明确重试提示。
 - Canvas 与 Editor 每 2 秒并在页面重新聚焦时检查 MCP 写入的新 revision。

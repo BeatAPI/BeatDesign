@@ -29,6 +29,13 @@
       "when": 1788060451792,
       "tag": "0003_slow_the_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792608545998,
+      "tag": "0004_majestic_thing",
+      "breakpoints": true
     }
   ]
 }
