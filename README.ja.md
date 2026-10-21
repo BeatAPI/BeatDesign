@@ -30,11 +30,11 @@
 
 BeatDesignは、AI画像・動画制作のための独立したオープンソース、ローカルファーストのワークスペースです。Higgsfieldのような一貫した制作フローを、自分のマシンで実行、確認、拡張したい人に向けて作られています。
 
-## 最近のソース更新 · 2026年10月
+## 最新リリース · v0.2.5 · 2026年10月
 
-以下は`main`の更新です。最新の正式Releaseとnpmパッケージは引き続き **v0.2.4** です。利用するにはソースを更新してください。既存のパッケージへ自動配信されるものではありません。
+以下の更新は[GitHub Release v0.2.5](https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.5)と`@beatapi/beatdesign-workbuddy@0.2.5`で公開済みです。WorkBuddyマーケットの審査・公開状況は別途確認してください。
 
-リポジトリと連携用マニフェストは **v0.2.5** に更新済みですが、公開は保留中です。ソース版を更新する場合はBeatDesignを停止し、`git pull --ff-only`、`pnpm install --frozen-lockfile`、`pnpm db:push` の順に実行してから、`pnpm dev:agent`（または通常のUI/MCP起動コマンド）を再起動してください。ローカルデータを保持し、Projectを初期化しないでください。
+ソース版を更新する場合はBeatDesignを停止し、`git pull --ff-only`、`pnpm install --frozen-lockfile`、`pnpm db:push` の順に実行してから、`pnpm dev:agent`（または通常のUI/MCP起動コマンド）を再起動してください。ローカルデータを保持し、Projectを初期化しないでください。
 
 - **Project設定とカバー：** 名前と説明の編集、画像カバーのアップロード・選択、自動カバーへのリセットに対応。手動カバーは後の読み込みや生成で置き換わりません。Projectカードまたはワークスペース上部の設定アイコンから開きます。
 - **生成バージョンの一致：** CanvasのプレビューとTake選択が最新の成功結果を示します。手動選択とTimelineの固定Assetは保持されます。

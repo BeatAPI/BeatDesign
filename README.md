@@ -30,11 +30,11 @@
 
 BeatDesign is an independent, open-source, local-first workspace for AI image and video creation. It is built for people who want the connected creative flow of tools such as Higgsfield, with a workspace they can run, inspect, and extend on their own machine.
 
-## Latest source updates — October 2026
+## Latest release — v0.2.5 · October 2026
 
-Available on `main`; the latest tagged release and npm package remain **v0.2.4**. Pull the source to use these updates; existing packaged installations do not receive them automatically.
+Available in [GitHub Release v0.2.5](https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.5) and `@beatapi/beatdesign-workbuddy@0.2.5`. WorkBuddy marketplace review and availability are tracked separately.
 
-The repository and integration manifests are prepared for **v0.2.5**; publication is pending. For an existing source checkout, stop BeatDesign, run `git pull --ff-only`, `pnpm install --frozen-lockfile`, `pnpm db:push`, then restart `pnpm dev:agent` (or your usual UI/MCP commands). Keep your local data directory; no reinstall or project reset is needed.
+For an existing source checkout, stop BeatDesign, run `git pull --ff-only`, `pnpm install --frozen-lockfile`, `pnpm db:push`, then restart `pnpm dev:agent` (or your usual UI/MCP commands). Keep your local data directory; no reinstall or project reset is needed.
 
 - **Project settings:** edit names and descriptions, upload or select a cover, and reset to an automatic image or local video poster. A manual cover stays selected after later imports and generations. Open the settings icon on a project card or workspace header.
 - **Consistent generation versions:** Canvas previews and Take selection agree on the latest successful output; manual selections and concrete timeline Assets are preserved.

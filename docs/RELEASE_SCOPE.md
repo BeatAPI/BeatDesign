@@ -8,21 +8,21 @@ Excluded: authentication, login, accounts, payments, subscriptions, credits, API
 
 Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. Browser/MCP checks run against that production build; run `pnpm build` before `pnpm test:e2e`. A real paid BeatAPI generation is a separate credentialed end-to-end check.
 
-## v0.2.5 candidate (not published)
+## v0.2.5 release (2026-10-22)
 
 - [x] Align application, Codex, Claude Code, Claude marketplace, LobeHub and WorkBuddy metadata on `0.2.5`.
-- [x] Verify clean installation and schema setup on Linux and Windows in CI ([candidate run](https://github.com/BeatAPI/BeatDesign/actions/runs/39647018659), source commit `cbc6951`).
+- [x] Verify clean installation and schema setup on Linux and Windows in CI ([release-commit run](https://github.com/BeatAPI/BeatDesign/actions/runs/39649891401), source commit `796d89f0f451b436877836f91392152f43c3e270`).
 - [x] Run typecheck, tests (432 passing), i18n validation, production build and focused UI/MCP checks (14 passing).
 - [x] Build and inspect the Connector ZIP and npm runtime tarball; install the tarball in a clean temporary directory, complete MCP handshake (30 tools), and smoke-test the production workspace.
-- Merge and main-branch CI status: [maintenance PR #31](https://github.com/BeatAPI/BeatDesign/pull/31) and its linked Quality checks. Recheck the exact merge commit before publishing.
-- [ ] Publish GitHub Release `v0.2.5` with verified assets.
-- [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.5`; independently verify npm `latest`.
+- [x] Merge [maintenance PR #31](https://github.com/BeatAPI/BeatDesign/pull/31); both main-branch CI jobs pass on the exact release commit.
+- [x] Publish [GitHub Release v0.2.5](https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.5) with the tested npm tarball, Connector ZIP and SHA-256 checksums. Public tag resolves to `796d89f0f451b436877836f91392152f43c3e270`; GitHub asset digests match the local files.
+- [x] Publish `@beatapi/beatdesign-workbuddy@0.2.5`; the public registry reports `latest = 0.2.5`, publication timestamp `2026-10-21T18:18:02.264Z`, and SHA-512 integrity matching the tested release tarball.
 - [ ] Submit the updated Connector to WorkBuddy, then record review and public availability separately.
 
-The version in repository metadata identifies the next candidate, not a published
-release. Latest public GitHub Release and npm package remain `v0.2.4` (checked
-2026-10-22). WorkBuddy's last observed review state remains the dated v0.2.4
-submission below.
+GitHub Release and npm publication were independently read back on 2026-10-22.
+The npm version became publicly available after publish-time scanning; the CLI
+success receipt alone was not used as proof of availability. WorkBuddy's last
+observed review state remains the dated v0.2.4 submission below.
 
 ## v0.2.4 release and WorkBuddy update
 

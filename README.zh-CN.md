@@ -30,11 +30,11 @@
 
 BeatDesign 是一个独立、开源、本地优先的 AI 图片与视频创作工作台。它适合喜欢 Higgsfield 这类连贯创作流程，同时希望在自己的电脑上运行、检查和扩展工作空间的人。
 
-## 最近更新 · 2026 年 10 月
+## 最新版本 · v0.2.5 · 2026 年 10 月
 
-以下更新位于 `main` 源码；最新正式 Release 和 npm 包仍为 **v0.2.4**。拉取源码后即可使用，现有安装包不会自动获得这些更新。
+以下更新已发布至 [GitHub Release v0.2.5](https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.5) 和 `@beatapi/beatdesign-workbuddy@0.2.5`。WorkBuddy 市场审核与上架状态单独跟踪。
 
-仓库与接入包元数据已准备为 **v0.2.5**，尚未发布。已有源码用户请先停止 BeatDesign，再依次运行 `git pull --ff-only`、`pnpm install --frozen-lockfile`、`pnpm db:push`，随后重启 `pnpm dev:agent`（或原有 UI/MCP 启动命令）。保留本地数据目录，无需重装或重置项目。
+已有源码用户请先停止 BeatDesign，再依次运行 `git pull --ff-only`、`pnpm install --frozen-lockfile`、`pnpm db:push`，随后重启 `pnpm dev:agent`（或原有 UI/MCP 启动命令）。保留本地数据目录，无需重装或重置项目。
 
 - **项目设置与稳定封面：** 修改项目名称和简介，上传或选择封面，或恢复自动封面。手动封面不会被后续导入、生成的素材替换。入口在项目卡片和工作区顶栏的设置图标。
 - **生成版本保持一致：** 画布预览和 Take 选择默认指向最新成功结果，同时保留手动选择和时间线锁定的具体素材。
