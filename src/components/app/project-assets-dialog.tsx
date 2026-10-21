@@ -1,4 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchProjectSettings, saveProjectSettings } from '@/core/workspace-lib/app/project-settings-client';
+import { invalidateWorkspaceAfterProjectMutation } from '@/core/workspace-lib/app/workspace-query-invalidation';
 import {
   AudioLines,
   ExternalLink,
@@ -63,6 +65,21 @@ function AssetTile({
   openLabel: string;
 }) {
   const [isAddingToTimeline, setIsAddingToTimeline] = useState(false);
+  const [isSettingCover, setIsSettingCover] = useState(false);
+  const settingsCopy = useTranslations('ProjectSettings');
+  const queryClient = useQueryClient();
+  const setAsCover = async () => {
+    if (isSettingCover) return;
+    setIsSettingCover(true);
+    try {
+      const settings = await fetchProjectSettings(projectId);
+      await saveProjectSettings(projectId, settings.settingsRevision, { cover: { mode: 'manual', assetId: asset.id } });
+      await invalidateWorkspaceAfterProjectMutation(queryClient);
+      await queryClient.invalidateQueries({ queryKey: ['project-settings', projectId] });
+      toast.success(settingsCopy('coverSaved'));
+    } catch (error) { toast.error(error instanceof Error ? error.message : settingsCopy('saveError')); }
+    finally { setIsSettingCover(false); }
+  };
   const transfer: ProjectAssetTransfer = {
     ...asset,
     projectId,
@@ -147,6 +164,7 @@ function AssetTile({
 
       {canAddToCanvas || mediaType === 'image' || mediaType === 'video' || mediaType === 'audio' ? (
         <div className="absolute inset-0 flex items-end justify-center gap-1.5 bg-gradient-to-t from-black/85 via-black/10 to-transparent px-2 pb-2 opacity-0 transition duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+          {mediaType === 'image' && <button type="button" disabled={isSettingCover} onClick={() => void setAsCover()} className="inline-flex h-7 items-center rounded-full border border-white/15 bg-white/12 px-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{settingsCopy('setAsCover')}</button>}
           {canAddToCanvas ? (
             <button
               type="button"

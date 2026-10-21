@@ -150,6 +150,7 @@ export function serializeProjectCenterCard(project: {
   lastOpenedAt?: Date | null;
   updatedAt: Date;
   coverImageUrl?: string | null;
+  description?: string;
 }) {
   const activityAt = getProjectActivityDate(project);
 
@@ -160,5 +161,6 @@ export function serializeProjectCenterCard(project: {
     activityAt: activityAt.toISOString(),
     activityLabel: formatProjectActivityDate(activityAt),
     coverImageUrl: project.coverImageUrl ?? null,
+    description: project.description ?? '',
   };
 }

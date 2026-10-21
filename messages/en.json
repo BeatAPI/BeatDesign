@@ -755,5 +755,37 @@
   },
   "Common": {
     "loading": "Loading"
+  },
+  "ProjectSettings": {
+    "title": "Project settings",
+    "subtitle": "Manage the details and cover shown in your project list.",
+    "details": "Details",
+    "name": "Project name",
+    "description": "Description",
+    "descriptionHint": "A short summary shown on project cards.",
+    "descriptionPlaceholder": "Describe your project",
+    "cover": "Cover image",
+    "coverHint": "Choose a project image or upload a cover. 16:9 works best. Uploads stay in the asset library.",
+    "automatic": "Automatic · first image, then a video thumbnail",
+    "manual": "Custom cover · stays fixed when new assets arrive",
+    "upload": "Upload cover",
+    "reset": "Use automatic cover",
+    "choose": "Choose from project images",
+    "info": "Project info",
+    "id": "Project ID",
+    "created": "Created date",
+    "storage": "Storage",
+    "local": "Local workspace",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "loading": "Loading settings…",
+    "loadError": "Unable to load settings.",
+    "saveError": "Unable to save settings.",
+    "imageOnly": "Choose a PNG, JPEG, WebP or GIF image.",
+    "closeReload": "Close and reopen to reload",
+    "setAsCover": "Set as cover",
+    "coverSaved": "Project cover updated",
+    "conflict": "Project settings changed elsewhere. Close and reopen settings before saving."
   }
 }

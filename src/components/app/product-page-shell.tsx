@@ -3,11 +3,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Images, LayoutPanelTop, Scissors, Workflow } from 'lucide-react';
 
 import { WorkspaceApiConfigDialog } from '@/components/app/workspace-api-config-dialog';
+import { ProjectSettingsDialog } from './project-settings-dialog';
+import { fetchProjectSettings, saveProjectSettings } from '@/core/workspace-lib/app/project-settings-client';
+import { useQuery } from '@tanstack/react-query';
 import { LanguageSwitcher } from '@/components/app/language-switcher';
 import { GitHubIcon } from '@/components/icons/github';
 import { Link } from '@/core/i18n/navigation';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
-import { apiJsonPatch, apiJsonPost } from '@/lib/api-client';
+import { apiJsonPost } from '@/lib/api-client';
 import { appConfig } from '@/config';
 import { ACTIVE_GENERATION_PROVIDER_ID } from '@/config/generation-providers';
 import type { WorkspaceMode } from '@/config/workspace-modes';
@@ -40,6 +43,14 @@ export function ProductPageShell({
   const [draftWorkspaceName, setDraftWorkspaceName] =
     useState(defaultWorkspaceName);
   const lastPersistedWorkspaceNameRef = useRef(defaultWorkspaceName);
+  const projectSettings = useQuery({ queryKey: ['project-settings', projectId], queryFn: () => fetchProjectSettings(projectId!), enabled: Boolean(projectId), refetchInterval: 5000, refetchIntervalInBackground: false });
+
+  useEffect(() => {
+    const name = projectSettings.data?.name;
+    if (!name) return;
+    setDraftWorkspaceName((draft) => draft === lastPersistedWorkspaceNameRef.current ? name : draft);
+    lastPersistedWorkspaceNameRef.current = name;
+  }, [projectSettings.data?.name]);
 
   useEffect(() => {
     const nextName = getDisplayWorkspaceName(workspaceName);
@@ -72,7 +83,9 @@ export function ProductPageShell({
     }
 
     try {
-      await apiJsonPatch(`/api/app/projects/${projectId}`, { name: nextName });
+      const current = projectSettings.data ?? await fetchProjectSettings(projectId);
+      await saveProjectSettings(projectId, current.settingsRevision, { name: nextName });
+      void projectSettings.refetch();
       lastPersistedWorkspaceNameRef.current = nextName;
     } catch (error) {
       console.error('rename project failed:', error);
@@ -180,6 +193,11 @@ export function ProductPageShell({
                 </nav>
               ) : null}
               <LanguageSwitcher variant="workspace" />
+              {projectId && <ProjectSettingsDialog projectId={projectId} onSaved={(settings) => {
+                setDraftWorkspaceName(settings.name);
+                lastPersistedWorkspaceNameRef.current = settings.name;
+                void projectSettings.refetch();
+              }} />}
               <WorkspaceApiConfigDialog
                 providerId={ACTIVE_GENERATION_PROVIDER_ID}
               />

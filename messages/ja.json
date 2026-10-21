@@ -755,5 +755,37 @@
   },
   "Common": {
     "loading": "読み込み中"
+  },
+  "ProjectSettings": {
+    "title": "プロジェクト設定",
+    "subtitle": "一覧に表示する情報とカバーを管理します。",
+    "details": "基本情報",
+    "name": "プロジェクト名",
+    "description": "説明",
+    "descriptionHint": "プロジェクトカードに表示する短い説明。",
+    "descriptionPlaceholder": "プロジェクトの説明",
+    "cover": "カバー画像",
+    "coverHint": "画像を選択するかアップロードします。16:9を推奨。画像は素材に保存されます。",
+    "automatic": "自動 · 最初の画像、次に動画サムネイル",
+    "manual": "カスタム · 新しい素材で上書きされません",
+    "upload": "カバーをアップロード",
+    "reset": "自動カバーに戻す",
+    "choose": "プロジェクトの画像から選択",
+    "info": "プロジェクト情報",
+    "id": "プロジェクト ID",
+    "created": "作成日",
+    "storage": "保存先",
+    "local": "ローカルワークスペース",
+    "cancel": "キャンセル",
+    "save": "変更を保存",
+    "saving": "保存中…",
+    "loading": "設定を読み込み中…",
+    "loadError": "設定を読み込めません。",
+    "saveError": "設定を保存できません。",
+    "imageOnly": "PNG、JPEG、WebP、GIFを選択してください。",
+    "closeReload": "閉じて再度開くと更新されます",
+    "setAsCover": "カバーに設定",
+    "coverSaved": "カバーを更新しました",
+    "conflict": "設定が別の場所で更新されました。閉じて再度開いてから保存してください。"
   }
 }

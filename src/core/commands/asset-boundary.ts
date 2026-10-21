@@ -39,7 +39,7 @@ export async function normalizeCommandAssetReferences({
   projectId: string;
   command: BeatDesignCommand;
 }): Promise<BeatDesignCommand> {
-  if (command.type === 'editor.validate') return command;
+  if (command.type === 'editor.validate' || command.type === 'project.update') return command;
 
   if (command.type === 'canvas.apply') {
     return {
