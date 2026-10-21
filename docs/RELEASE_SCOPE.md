@@ -12,7 +12,7 @@ Release verification requires a clean install, schema creation, production build
 
 - [x] Align application, Codex, Claude Code, Claude marketplace, LobeHub and WorkBuddy metadata on `0.2.5`.
 - [ ] Verify clean installation and schema setup on Linux and Windows in CI.
-- [ ] Run typecheck, tests, i18n validation, production build and focused UI/MCP checks.
+- [x] Run typecheck, tests (432 passing), i18n validation, production build and focused UI/MCP checks (14 passing).
 - [x] Build and inspect the Connector ZIP and npm runtime tarball; install the tarball in a clean temporary directory, complete MCP handshake (30 tools), and smoke-test the production workspace.
 - [ ] Merge the maintenance PR and confirm both main-branch CI jobs pass.
 - [ ] Publish GitHub Release `v0.2.5` with verified assets.
