@@ -745,7 +745,9 @@
       "retry": "重试",
       "backToHistory": "返回历史",
       "startTitle": "开始新项目",
-      "startDescription": "选择创作台或画布来创建这个项目。",
+      "startDescription": "创建项目后即可开始，创作台和画布可随时切换。",
+      "createStudio": "创建并进入创作台",
+      "createCanvas": "创建并进入画布",
       "startStudio": "创作台",
       "startCanvas": "画布",
       "defaultName": "未命名项目"

@@ -745,7 +745,9 @@
       "retry": "もう一度試す",
       "backToHistory": "履歴に戻る",
       "startTitle": "新しいプロジェクトを始める",
-      "startDescription": "StudioまたはCanvasを選択してプロジェクトを作成します。",
+      "startDescription": "ここでプロジェクトを作成します。StudioとCanvasはいつでも切り替えられます。",
+      "createStudio": "Studioで作成",
+      "createCanvas": "Canvasで作成",
       "startStudio": "Studio",
       "startCanvas": "Canvas",
       "defaultName": "無題のプロジェクト"
