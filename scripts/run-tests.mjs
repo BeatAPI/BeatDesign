@@ -4,6 +4,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const configuredConcurrency = process.env.BEATDESIGN_TEST_CONCURRENCY?.trim();
+const testConcurrency = configuredConcurrency ||
+  (process.platform === 'win32' ? '1' : undefined);
 const files = [
   ...globSync('src/**/*.test.ts', { cwd: root }),
   ...globSync('src/**/*.test.tsx', { cwd: root }),
@@ -18,7 +21,13 @@ if (files.length === 0) {
 
 const result = spawnSync(
   process.execPath,
-  ['--import', 'tsx', '--test', ...files],
+  [
+    '--import',
+    'tsx',
+    '--test',
+    ...(testConcurrency ? [`--test-concurrency=${testConcurrency}`] : []),
+    ...files,
+  ],
   {
     cwd: root,
     stdio: 'inherit',

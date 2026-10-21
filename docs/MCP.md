@@ -104,12 +104,14 @@ installation shapes.
 
 ## Tool groups
 
-There are **29** tools:
+There are **30** tools:
 
 - Skill (2): list the bundled official Skill catalog and read one complete
   versioned Skill definition.
-- Project (5): list, get, create, target the current MCP session, and open a
-  workspace review surface.
+- Project (6): list, get, update settings, create, target the current MCP
+  session, and open a workspace review surface. `bdesign_project_update` requires
+  the latest `settingsRevision` from `bdesign_project_get`; settings changes and
+  idempotency receipts commit atomically.
 - Asset (4): list, get by project membership, import a local file, and extract a
   video frame.
 - Canvas (5): get, browser view/focus, search, incremental apply, and

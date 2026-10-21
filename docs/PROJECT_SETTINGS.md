@@ -56,7 +56,7 @@ have a separate revision from Canvas/Editor. A stale update returns
 `REVISION_CONFLICT` (HTTP 409); the dialog retains edits and asks the user to
 reopen before saving. It never automatically overwrites a newer change.
 
-The command uses an atomic revision comparison inside a database transaction and
-the existing command receipt/idempotency service. Reuse both command ID and
+The command commits the revision-checked settings update and its idempotency
+receipt in one SQLite transaction. Receipt failures roll back the settings too. Reuse both command ID and
 idempotency key for retries. List/header queries refresh every five seconds while
 visible; opening settings always loads the current record.

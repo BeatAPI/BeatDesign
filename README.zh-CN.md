@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://design.beatapi.io">网站</a> ·
+  <a href="https://beatapi.io/design">网站</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#让-agent-操作-beatdesign">MCP</a> ·
   <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">产品状态</a>
@@ -29,6 +29,20 @@
 </p>
 
 BeatDesign 是一个独立、开源、本地优先的 AI 图片与视频创作工作台。它适合喜欢 Higgsfield 这类连贯创作流程，同时希望在自己的电脑上运行、检查和扩展工作空间的人。
+
+## 最近更新 · 2026 年 10 月
+
+以下更新位于 `main` 源码；最新正式 Release 和 npm 包仍为 **v0.2.4**。拉取源码后即可使用，现有安装包不会自动获得这些更新。
+
+- **项目设置与稳定封面：** 修改项目名称和简介，上传或选择封面，或恢复自动封面。手动封面不会被后续导入、生成的素材替换。入口在项目卡片和工作区顶栏的设置图标。
+- **生成版本保持一致：** 画布预览和 Take 选择默认指向最新成功结果，同时保留手动选择和时间线锁定的具体素材。
+- **创建项目一步直达：** 选择画布或创作台后直接进入新项目，支持失败重试和重复点击保护。
+- **修复导出音量：** MCP 时间线导出保留顺序片段的音量，叠加音频增加峰值保护。
+- **30 个 MCP 工具：** Agent 可通过与 UI 相同、带版本校验的命令修改项目设置。同时改进画布撤销／重做到空白状态的保存、Windows 测试兼容性和窄屏布局。
+
+此前已支持尾帧续写、画布到剪辑的连续流程、图片叠层、带样式的 SRT 字幕、浏览器 MP4 导出和 MCP 时间线导出。浏览器导出不依赖系统 FFmpeg；MCP 抽帧需要 `ffmpeg`，MCP 时间线导出还需要 `ffprobe`。
+
+[更新详情](./CHANGELOG.md) · [项目设置说明](./docs/PROJECT_SETTINGS.md) · [当前能力与后续规划](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
 ## 两种核心创作模式，一个 Project
 
@@ -88,7 +102,7 @@ pnpm dev
 
 ## 让 Agent 操作 BeatDesign
 
-BeatDesign 提供 29 个本地 MCP 工具，覆盖 Skill、Project、Asset、Canvas、生成和 Editor 操作，包括发现内置 Skill 目录以及从权威时间线导出 MP4。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
+BeatDesign 提供 30 个本地 MCP 工具，覆盖 Skill、Project、Asset、Canvas、生成和 Editor 操作，包括发现内置 Skill 目录以及从权威时间线导出 MP4。Agent 修改会经过同一套项目服务，并显示在浏览器工作空间中。
 
 连接 MCP Host 后，可以直接提出这样的要求。
 

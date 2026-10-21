@@ -115,10 +115,12 @@ export async function updateProjectSettings({
   projectId,
   patch,
   expectedRevision,
+  database,
 }: {
   projectId: string;
   patch: unknown;
   expectedRevision?: number | null;
+  database?: any;
 }): Promise<ProjectSettings> {
   const parsed = projectSettingsPatchSchema.safeParse(patch);
   if (!parsed.success)
@@ -131,8 +133,8 @@ export async function updateProjectSettings({
       'INVALID_COMMAND',
       'Project settings require an expectedRevision from the latest settings.',
     );
-  const db = await getDb();
-  return db.transaction(async (tx: any) => {
+  const db = database ?? await getDb();
+  const update = async (tx: any) => {
     const current = await getProjectSettings(projectId, tx);
     if (!current)
       throw new BeatDesignCommandError('NOT_FOUND', 'Project not found');
@@ -197,5 +199,6 @@ export async function updateProjectSettings({
         'Project settings changed. Reload before saving.',
       );
     return (await getProjectSettings(projectId, tx))!;
-  });
+  };
+  return database ? update(database) : db.transaction(update);
 }

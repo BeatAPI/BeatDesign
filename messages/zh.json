@@ -413,6 +413,18 @@
       },
       "textNote": {
         "template": "文本备注\n\n在这里记录构图想法、镜头说明或制作备注。"
+      },
+      "startHere": {
+        "ideasLabel": "创作灵感",
+        "title": "从这里开始创作",
+        "description": "想象画面，塑造氛围，让灵感成为作品。",
+        "selectIdea": "选择{title}",
+        "ideas": {
+          "cinematicLandscape": "电影感风景",
+          "editorialCharacter": "杂志人像",
+          "materialStudy": "材质探索",
+          "surrealFashionFilm": "超现实时尚短片"
+        }
       }
     },
     "editor": {

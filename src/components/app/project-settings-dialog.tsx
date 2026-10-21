@@ -41,6 +41,8 @@ export function ProjectSettingsDialog({
   const locale = useLocale();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   const [settings, setSettings] = useState<ProjectSettings | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -163,6 +165,7 @@ export function ProjectSettingsDialog({
       }}
     >
       <DialogTrigger
+        disabled={!interactive}
         aria-label={t('title')}
         title={t('title')}
         className="inline-flex size-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.035] text-white/60 hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-[#ff6b1a]"

@@ -14,7 +14,11 @@ test('the shared Paraglide config can prepare server imports before Vite starts'
   const outdir = join(outputRoot, 'paraglide');
 
   try {
-    await symlink(resolve('node_modules'), join(outputRoot, 'node_modules'));
+    await symlink(
+      resolve('node_modules'),
+      join(outputRoot, 'node_modules'),
+      process.platform === 'win32' ? 'junction' : 'dir'
+    );
     await compile({ ...paraglideCompilerOptions, outdir });
 
     await Promise.all([

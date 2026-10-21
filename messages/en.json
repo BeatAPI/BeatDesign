@@ -330,8 +330,8 @@
           "status": {
             "queued": "Queued",
             "generating": "Generating",
-        "ready": "Success",
-        "success": "Success",
+            "ready": "Success",
+            "success": "Success",
             "failed": "Failed"
           },
           "fromCanvas": "From canvas",
@@ -413,6 +413,18 @@
       },
       "textNote": {
         "template": "Text note\n\nCapture composition ideas, shot notes, or production reminders here."
+      },
+      "startHere": {
+        "ideasLabel": "Starting ideas",
+        "title": "Create Here",
+        "description": "Imagine the scene. Shape the mood. Bring it to life.",
+        "selectIdea": "Select {title}",
+        "ideas": {
+          "cinematicLandscape": "Cinematic landscape",
+          "editorialCharacter": "Editorial character",
+          "materialStudy": "Material study",
+          "surrealFashionFilm": "Surreal fashion film"
+        }
       }
     },
     "editor": {

@@ -6,7 +6,7 @@ import {
   Workflow,
   Loader2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { BeatApiProductShell } from '@/components/marketing/beatapi-product-shell';
 import { normalizeLocale } from '@/config/locale';
@@ -211,6 +211,8 @@ export function WorkspacePage({
 }) {
   const copy = getHistoryCopy(locale);
   const [createOpen, setCreateOpen] = useState(false);
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   const [deleteTarget, setDeleteTarget] =
     useState<WorkspaceProjectCardItem | null>(null);
   const { projects: liveProjects, deleteProjects } = useWorkspaceProjects({
@@ -248,6 +250,7 @@ export function WorkspacePage({
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
+            disabled={!interactive}
             className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-5 text-[13px] font-semibold text-[var(--beat-accent-ink)] shadow-[0_8px_28px_rgba(255,122,51,0.22)] transition hover:bg-[#ff8a4d] lg:self-auto"
           >
             <Plus className="size-4" />
@@ -309,6 +312,7 @@ export function WorkspacePage({
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
+                disabled={!interactive}
                 className="mt-6 inline-flex h-10 items-center gap-2 rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-4 text-[12px] font-semibold text-[var(--beat-accent-ink)] shadow-[0_8px_24px_rgba(255,122,51,0.24)] transition hover:bg-[#ff8a4d]"
               >
                 <Plus className="size-4" />

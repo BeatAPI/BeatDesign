@@ -2,9 +2,16 @@
 
 - 文档用途：给新加入的开发者、Codex、Claude Code 和其他 AI Agent 提供统一产品上下文
 - 当前基线：BeatDesign v0.2 Phase 1 本地实现
-- 最后核对：2026-09-23
+- 最后核对：2026-10-22
 - 事实边界：只有代码、测试和本文“已完成”栏目共同证明的能力才算完成；规划项不等于已发布
 - 发布状态：GitHub 最新正式 Release 为 [v0.2.4](https://github.com/BeatAPI/BeatDesign/releases/tag/v0.2.4)；npm 最新版本为 `@beatapi/beatdesign-workbuddy@0.2.4`（2026-09-23 核验）。WorkBuddy 开放平台中，原有连接器 `oc_321d021032343aea` 的 v0.2.3 已发布，v0.2.4 已提交更新并显示“审核中”；新版通过审核和公开市场可检索性均未核验。
+
+### 2026-10 主分支更新（尚未发布新版本）
+
+- 整合社区 PR #22、#24、#26、#28：直接创建项目、MCP 导出音量修复、最新成功生成版本统一选择、项目设置与手动／自动封面。
+- `bdesign_project_update` 将 MCP 目录扩展为 30 个工具；项目设置更新与幂等回执在同一 SQLite 事务提交，回执失败时回滚设置，保留旧项目封面。
+- 从 PR #18 提取 Windows 测试兼容、Studio 首屏翻译、空画布撤销／重做保存及窄屏布局修复；第三方品牌、Provider 和托管部署配置未纳入上游。
+- README 分开标注源码更新与 v0.2.4 安装包。官方 Skill 目录仍为空，Issue #29 的持久分组、素材文件夹和复用模板仍待实现。
 
 ### v0.2.4 已发布改进
 
@@ -165,7 +172,7 @@ Codex / Claude Code / Other Agent
 - `AssetFirstGenerationRequest` v2 不保存通用首帧或尾帧角色；大多数模型仍由明确的 `@ImageN` Prompt 指令表达首尾帧语义。MiniMax H3 Max / Max Turbo 按其公开契约使用专用双槽位，并将附件顺序映射为首帧、尾帧。Adapter 负责翻译 Provider 字段和校验模型硬限制。
 - UI 命令入口不再接受客户端 `origin`；服务端固定写入 `ui`，MCP 入口在内核边界固定写入 `mcp`。
 - Provider Contract 已将逻辑模型目录与 BeatAPI effectId、上传路径和上游模型名拆开；当前同步 GPT Image 2.5 Flare/Sunburst、Wan 3.0/Prime、HappyHorse 1.0/1.1、MiniMax H3 Max/Max Turbo 的请求契约和 SVG 品牌标志。BeatAPI 是默认实现，Fork 可在源码扩展点注册其他 Provider。
-- 本地 stdio MCP Server 提供 29 个工具（Skill / Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_skill_list` / `bdesign_skill_get` 是不显示 MCP Resources 的宿主兼容入口；`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
+- 本地 stdio MCP Server 提供 30 个工具（Skill / Project / Asset / Canvas / Generation / Editor），模型和参数通过 capability discovery 暴露；Canvas / Editor 增量操作使用完整 JSON Schema，Agent 可直接发现操作类型和参数。MCP 生成直接调用当前 Provider，本地产品不重复实现 API Key、余额、计费或限流策略，只透传 Provider 的结果与错误。`bdesign_skill_list` / `bdesign_skill_get` 是不显示 MCP Resources 的宿主兼容入口；`bdesign_project_target` 绑定当前会话项目，Project/Canvas/Editor view 工具返回 Codex Browser handoff；`bdesign_asset_import` 把本地文件导入项目 Asset 库；`bdesign_asset_extract_frame` 与 `bdesign_canvas_continue_from_tail` 负责抽帧续写；Editor MCP 可导入 SRT、放置和替换任意项目图片 Overlay、调整叠层与单条字幕参数，并通过 `bdesign_editor_render` 将权威时间线导出为项目内 MP4 Asset。
 - Codex、Claude Code 与 WorkBuddy 接入包内含 `beatdesign-workspace` Skill，负责项目选择、字幕/续写工具编排、付费生成停点和可视化复核；三者共用同一 MCP 与本地 Project 数据，其中 Claude Code 和 WorkBuddy 使用本机 HTTP MCP。
 
 ## 6. v0.2 Phase 1 本地已实现
@@ -180,7 +187,7 @@ Codex / Claude Code / Other Agent
 - Canvas -> Timeline Node -> Editor 连续工作流。
 - Editor 自动保存接入命令入口，并补齐冲突三方合并、重复操作保护和稳定播放头时间。
 - 图片 Clip、时间线拖拽调整持续时间与图片/视频统一视觉轨。
-- 本地 MCP Server 提供 29 个 Skill、Project、Asset、Canvas、Generation、Editor 工具；支持内置 Skill 目录发现、会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
+- 本地 MCP Server 提供 30 个 Skill、Project、Asset、Canvas、Generation、Editor 工具；支持内置 Skill 目录发现、会话项目绑定、Canvas/Editor 可视化交接、从绝对路径导入本地素材、抽取尾帧续写、导入和精调 SRT 字幕、放置/替换/调整图片 Overlay，以及权威时间线 MP4 导出。
 - 已加入只读 `beatdesign://skills` MCP Resource、单 Skill Resource Template、schema v1 清单校验和宿主兼容工具；当前官方创作 Skill 目录有意保持为空，待具体 Skill 完成提示词评测和可见工作流联调后再加入，并在那时开放 Showcase 入口。
 - MCP 增量 Canvas/Editor 命令在短暂 revision 竞争时会基于最新权威文档限次自动重放；持续冲突返回最新 revision 和明确重试提示。
 - Canvas 与 Editor 每 2 秒并在页面重新聚焦时检查 MCP 写入的新 revision。
@@ -215,7 +222,7 @@ Codex / Claude Code / Other Agent
 
 当前可以称为“已支持本地 MCP 基础版”，但不能称为完整 Agent 编辑环境：像素级 Snapshot、独立后台媒体 Worker、实时 UI 事件和永久审计仍未实现。本地文件导入桥和 MCP 权威时间线 MP4 导出已完成；UI 当前使用 2 秒 revision 轮询和聚焦检查，而不是实时事件推送。
 
-Canvas 的拖拽、缩放、视口和完整布局仍使用 revision-checked Snapshot 自动保存；Canvas/Timeline 业务 operation 已有 Command 合同，Timeline Node 回写也已接入 `/commands`。后续做 MCP parity 时，应继续把可语义化的 Canvas UI 动作迁移为 `canvas.apply`，不能让外部 Agent 调用完整 Snapshot 覆盖。
+Canvas UI 已通过 `canvas.apply` 持久化卡片、布局、视口和工作流增量变化；Snapshot 端点仅为兼容例外。Editor 可表达的变化使用 `editor.apply`，其他 UI 编辑保留带 revision 校验的替换路径；外部 Agent 始终只能使用增量命令。
 
 ### 桌面端
 

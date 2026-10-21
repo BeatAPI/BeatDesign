@@ -63,7 +63,11 @@ test('rejects symlinked project asset directories', async () => {
   const root = await mkdtemp(join(tmpdir(), 'beatapi-project-assets-root-'));
   const outside = await mkdtemp(join(tmpdir(), 'beatapi-project-assets-outside-'));
   try {
-    await symlink(outside, join(root, 'project-1'));
+    await symlink(
+      outside,
+      join(root, 'project-1'),
+      process.platform === 'win32' ? 'junction' : 'dir'
+    );
     assert.throws(
       () =>
         resolveLocalProjectAssetPath({

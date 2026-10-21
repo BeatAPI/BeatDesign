@@ -185,6 +185,21 @@ test('project settings persist through the command kernel, lock covers and rejec
     rejected && !rejected.ok ? rejected.code : null,
     'REVISION_CONFLICT',
   );
+  const { getDb } = await import('@/core/workspace-lib/db-adapter');
+  const { sql } = await import('drizzle-orm');
+  const db = await getDb();
+  const beforeFailure = await getProjectSettings(first.id);
+  await db.run(sql.raw("CREATE TRIGGER fail_settings_receipt BEFORE INSERT ON project_command_receipt WHEN NEW.command_id = 'receipt-failure' BEGIN SELECT RAISE(ABORT, 'receipt unavailable'); END"));
+  try {
+    const failed = await update({ name: 'Must roll back' }, beforeFailure!.settingsRevision, 'receipt-failure');
+    assert.equal(failed.ok, false);
+    assert.deepEqual(await getProjectSettings(first.id), beforeFailure);
+  } finally {
+    await db.run(sql.raw('DROP TRIGGER fail_settings_receipt'));
+  }
+  const retried = await update({ name: 'Recovered save' }, beforeFailure!.settingsRevision, 'receipt-failure');
+  assert.equal(retried.ok, true);
+  assert.deepEqual(await update({ name: 'Recovered save' }, beforeFailure!.settingsRevision, 'receipt-failure'), retried);
   await deleteProjects({ projectIds: [first.id] });
   assert.equal(await getProjectSettings(first.id), null);
   const deleted = await update({ name: 'Restore' }, 4, 'deleted-save');

@@ -6,11 +6,12 @@ import { WorkspaceApiConfigDialog } from '@/components/app/workspace-api-config-
 import { ProjectSettingsDialog } from './project-settings-dialog';
 import { fetchProjectSettings, saveProjectSettings } from '@/core/workspace-lib/app/project-settings-client';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { LanguageSwitcher } from '@/components/app/language-switcher';
 import { GitHubIcon } from '@/components/icons/github';
 import { Link } from '@/core/i18n/navigation';
 import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
-import { apiJsonPost } from '@/lib/api-client';
+import { ApiError, apiJsonPost } from '@/lib/api-client';
 import { appConfig } from '@/config';
 import { ACTIVE_GENERATION_PROVIDER_ID } from '@/config/generation-providers';
 import type { WorkspaceMode } from '@/config/workspace-modes';
@@ -27,6 +28,7 @@ export function ProductPageShell({
   workspaceMode?: WorkspaceMode;
 }) {
   const t = useTranslations('AppShell');
+  const settingsCopy = useTranslations('ProjectSettings');
   const untitledWorkspaceName = t('header.untitledCanvas');
   const getDisplayWorkspaceName = useCallback(
     (name: string | null | undefined) => {
@@ -88,8 +90,11 @@ export function ProductPageShell({
       void projectSettings.refetch();
       lastPersistedWorkspaceNameRef.current = nextName;
     } catch (error) {
-      console.error('rename project failed:', error);
-      setDraftWorkspaceName(lastPersistedWorkspaceNameRef.current);
+      toast.error(error instanceof ApiError && error.code === 409
+        ? settingsCopy('conflict')
+        : error instanceof Error ? error.message : settingsCopy('saveError'));
+      // Preserve the user's edit and refresh the revision for an explicit retry.
+      void projectSettings.refetch();
     }
   };
 

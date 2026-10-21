@@ -1,3 +1,4 @@
+import { createServerOnlyFn } from '@tanstack/react-start';
 import {
   BeatApiAdapter,
   validateBeatApiTaskInput,
@@ -50,17 +51,17 @@ export const beatApiGenerationProvider: GenerationProviderDefinition = {
       imageBucketName,
     })
   ),
-  createAdapter: (effect) => new BeatApiAdapter(effect),
-  assertConfigured: async () => {
+  createAdapter: createServerOnlyFn((effect) => new BeatApiAdapter(effect)),
+  assertConfigured: createServerOnlyFn(async () => {
     if (!(await getConfig('BEATAPI_API_KEY'))) {
       throw new Error('Connect a BeatAPI API key before generating.');
     }
-  },
-  validateInput: (effect, input) => {
+  }),
+  validateInput: createServerOnlyFn((effect, input) => {
     validateBeatApiTaskInput({
       effectType: effect.type,
       model: effect.model,
       input,
     });
-  },
+  }),
 };

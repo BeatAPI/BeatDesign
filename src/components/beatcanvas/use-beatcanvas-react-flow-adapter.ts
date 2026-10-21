@@ -1568,7 +1568,7 @@ export function useBeatCanvasReactFlowAdapter({
 
   const undoCanvas = useCallback(() => {
     const previous = undoStackRef.current.at(-1);
-    if (!previous) return;
+    if (!previous) return null;
 
     undoStackRef.current = undoStackRef.current.slice(0, -1);
     redoStackRef.current = [
@@ -1577,11 +1577,12 @@ export function useBeatCanvasReactFlowAdapter({
     ];
     applyHistoryDocument(previous);
     syncHistoryState();
+    return previous;
   }, [applyHistoryDocument, captureCanvasDocument, syncHistoryState]);
 
   const redoCanvas = useCallback(() => {
     const next = redoStackRef.current.at(-1);
-    if (!next) return;
+    if (!next) return null;
 
     redoStackRef.current = redoStackRef.current.slice(0, -1);
     undoStackRef.current = [
@@ -1590,6 +1591,7 @@ export function useBeatCanvasReactFlowAdapter({
     ];
     applyHistoryDocument(next);
     syncHistoryState();
+    return next;
   }, [applyHistoryDocument, captureCanvasDocument, syncHistoryState]);
 
   useEffect(() => {

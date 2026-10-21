@@ -330,8 +330,8 @@
           "status": {
             "queued": "キュー待ち",
             "generating": "生成中",
-        "ready": "成功",
-        "success": "成功",
+            "ready": "成功",
+            "success": "成功",
             "failed": "失敗"
           },
           "fromCanvas": "Canvasから",
@@ -413,6 +413,18 @@
       },
       "textNote": {
         "template": "テキストメモ\n\n構図のアイデア、ショットメモ、制作上の注意点をここに記録します。"
+      },
+      "startHere": {
+        "ideasLabel": "制作アイデア",
+        "title": "ここから制作",
+        "description": "シーンを思い描き、ムードを整え、アイデアを形にしましょう。",
+        "selectIdea": "{title}を選択",
+        "ideas": {
+          "cinematicLandscape": "映画のような風景",
+          "editorialCharacter": "エディトリアルポートレート",
+          "materialStudy": "素材のスタディ",
+          "surrealFashionFilm": "シュールなファッション映像"
+        }
       }
     },
     "editor": {

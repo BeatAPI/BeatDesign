@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://design.beatapi.io">Website</a> ·
+  <a href="https://beatapi.io/design">Website</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#use-beatdesign-with-an-agent">MCP</a> ·
   <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">Product status</a>
@@ -29,6 +29,20 @@
 </p>
 
 BeatDesign is an independent, open-source, local-first workspace for AI image and video creation. It is built for people who want the connected creative flow of tools such as Higgsfield, with a workspace they can run, inspect, and extend on their own machine.
+
+## Latest source updates — October 2026
+
+Available on `main`; the latest tagged release and npm package remain **v0.2.4**. Pull the source to use these updates; existing packaged installations do not receive them automatically.
+
+- **Project settings:** edit names and descriptions, upload or select a cover, and reset to an automatic image or local video poster. A manual cover stays selected after later imports and generations. Open the settings icon on a project card or workspace header.
+- **Consistent generation versions:** Canvas previews and Take selection agree on the latest successful output; manual selections and concrete timeline Assets are preserved.
+- **Faster project entry:** choosing Canvas or Studio creates one project and opens it directly, with retry protection.
+- **Reliable audio export:** MCP timeline rendering preserves clip gain across sequential shots, with peak protection for overlapping audio.
+- **30 MCP tools:** Agents can update project settings through the same revision-checked command path as the UI. Canvas undo/redo can save an intentionally empty canvas; Windows test portability and narrow-screen layout are improved.
+
+Already available: tail-frame continuation, Canvas-to-Editor handoff, image overlays, styled SRT captions, browser-native MP4 export, and MCP timeline rendering. Browser export needs no system FFmpeg; MCP frame extraction needs `ffmpeg`, and MCP timeline rendering also needs `ffprobe`.
+
+[Change details](./CHANGELOG.md) · [Project settings](./docs/PROJECT_SETTINGS.md) · [Current scope and roadmap](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
 ## Two creative modes, one Project
 
@@ -88,7 +102,7 @@ Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when y
 
 ## Use BeatDesign with an Agent
 
-BeatDesign exposes 29 local MCP tools for Skills, Projects, Assets, Canvas, generation, and Editor operations, including built-in Skill discovery and authoritative MP4 timeline rendering. Agent changes use the same project services and become visible in the browser workspace.
+BeatDesign exposes 30 local MCP tools for Skills, Projects, Assets, Canvas, generation, and Editor operations, including built-in Skill discovery and authoritative MP4 timeline rendering. Agent changes use the same project services and become visible in the browser workspace.
 
 After connecting your MCP host, you can ask:
 
