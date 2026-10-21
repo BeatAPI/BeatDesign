@@ -316,7 +316,9 @@ export function useProjectSnapshotLifecycle({
   );
 
   useEffect(() => {
-    if (!initialPrompt?.trim()) return;
+    // Consume the one-time prompt only after it has become a real draft. Updating
+    // history earlier can re-run the route loader before Canvas is ready.
+    if (!initialPrompt?.trim() || !isHydratedFromQuery) return;
 
     const searchParams = new URLSearchParams(window.location.search);
     if (!searchParams.has('prompt')) return;
@@ -329,7 +331,7 @@ export function useProjectSnapshotLifecycle({
         search: window.location.search,
       })
     );
-  }, [initialPrompt, projectPath]);
+  }, [initialPrompt, isHydratedFromQuery, projectPath]);
 
   useEffect(() => {
     if (!isCanvasReady || isHydratedFromProject) return;
@@ -350,11 +352,12 @@ export function useProjectSnapshotLifecycle({
     if (!isCanvasReady || !isHydratedFromProject || isHydratedFromQuery) return;
 
     if (initialPrompt?.trim()) {
-      createDraftCard({
+      const created = createDraftCard({
         taskType: initialTaskType,
         prompt: initialPrompt.trim(),
         referenceCardIds: [],
       });
+      if (!created) return;
     }
 
     setIsHydratedFromQuery(true);

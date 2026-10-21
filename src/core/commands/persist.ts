@@ -2,6 +2,8 @@ import {
   loadProjectTimeline,
   saveProjectTimeline,
 } from '@/core/editor/timeline-state';
+import { updateProjectSettings } from '@/core/projects/project-settings';
+import { getDb } from '@/core/workspace-lib/db-adapter';
 import {
   loadProjectWithLatestSnapshot,
   saveProjectSnapshot,
@@ -13,6 +15,7 @@ import {
   BeatDesignCommandError,
   createCommandFailure,
   createCommandId,
+  createCommandSuccess,
   type BeatDesignCommandEnvelope,
   type BeatDesignCommandOrigin,
   type BeatDesignCommandResult,
@@ -28,6 +31,15 @@ import {
   storeCommandReceipt,
 } from './receipts';
 
+// Keep a settings transaction and its receipt together before another settings
+// command starts on libsql's shared connection. SQLite CAS still guards processes.
+let pendingSettingsCommand: Promise<unknown> = Promise.resolve();
+function enqueueSettingsCommand<T>(run: () => Promise<T>): Promise<T> {
+  const pending = pendingSettingsCommand.catch(() => undefined).then(run);
+  pendingSettingsCommand = pending;
+  return pending;
+}
+
 const inFlightCommands = new Map<
   string,
   {
@@ -40,6 +52,7 @@ const inFlightCommands = new Map<
 const isVersionConflict = (error: unknown) =>
   error instanceof Error &&
   (error.name === 'TimelineVersionConflict' ||
+    error.name === 'ProjectSettingsVersionConflict' ||
     error.name === 'ProjectSnapshotVersionConflict');
 
 const getConflictRevision = (error: unknown) => {
@@ -222,7 +235,23 @@ async function persistBeatDesignCommandOnce({
     };
 
     let result: BeatDesignCommandResult<BeatDesignCommandData>;
-    if (normalizedCommand.type === 'canvas.apply') {
+    if (normalizedCommand.type === 'project.update') {
+      const db = await getDb();
+      // Settings and retry receipts must commit together, including across Web
+      // and MCP processes. A failed receipt must never leave an unacknowledged edit.
+      return await db.transaction(async (tx: any) => {
+        const cached = await loadCommandReceiptRecord({ projectId, idempotencyKey }, tx);
+        if (cached) {
+          if (cached.commandId !== commandId || cached.commandType !== normalizedCommand.type) {
+            throw new BeatDesignCommandError('INVALID_COMMAND', 'Idempotency key is already bound to a different command.');
+          }
+          return cached.result;
+        }
+        const settings = await updateProjectSettings({ projectId, patch: normalizedCommand.patch, expectedRevision, database: tx });
+        const saved = createCommandSuccess({ commandId, projectId, origin, changedIds: [projectId], revision: settings.settingsRevision, data: { projectSettings: settings } });
+        return storeCommandReceipt({ projectId, idempotencyKey, commandId, origin, commandType: normalizedCommand.type, result: saved }, tx);
+      });
+    } else if (normalizedCommand.type === 'canvas.apply') {
       const state = await loadProjectWithLatestSnapshot({ projectId });
       if (!state) {
         return createCommandFailure({
@@ -319,7 +348,9 @@ async function persistBeatDesignCommandOnce({
         code: 'REVISION_CONFLICT',
         revision: getConflictRevision(error),
         message:
-          command.type === 'canvas.apply'
+          command.type === 'project.update'
+            ? 'Project settings changed. Reload before saving.'
+            : command.type === 'canvas.apply'
             ? 'Project snapshot version conflict'
             : 'Timeline version conflict',
       });
@@ -412,14 +443,15 @@ export function persistBeatDesignCommand({
     return existing.promise;
   }
 
-  const promise = persistBeatDesignCommandOnce({
+  const run = () => persistBeatDesignCommandOnce({
     projectId,
     origin,
     commandId,
     expectedRevision,
     idempotencyKey: stableIdempotencyKey,
     command,
-  }).finally(() => {
+  });
+  const promise = (command.type === 'project.update' ? enqueueSettingsCommand(run) : run()).finally(() => {
     if (inFlightCommands.get(lockKey)?.promise === promise) {
       inFlightCommands.delete(lockKey);
     }

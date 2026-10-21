@@ -4,11 +4,14 @@ import {
   Plus,
   Trash2,
   Workflow,
+  Loader2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { BeatApiProductShell } from '@/components/marketing/beatapi-product-shell';
 import { normalizeLocale } from '@/config/locale';
+import { ProjectSettingsDialog } from '@/components/app/project-settings-dialog';
+import { ProjectCoverPreview } from '@/components/app/project-cover-preview';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
   Dialog,
@@ -20,6 +23,7 @@ import {
 import { Link } from '@/core/i18n/navigation';
 import { buildLocalizedProjectDetailPath } from '@/core/projects/project-entry';
 import { useWorkspaceProjects } from '@/core/workspace-hooks/use-workspace-projects';
+import { useCreateProject } from '@/core/workspace-hooks/use-create-project';
 import type { WorkspaceProjectCardItem } from '@/core/workspace-lib/app/workspace-client-api';
 import { m } from '@/paraglide/messages.js';
 
@@ -32,6 +36,16 @@ function getHistoryCopy(locale: string) {
     newProject: m['product.history.newProject']({}, { locale: messageLocale }),
     newStudio: m['product.history.newStudio']({}, { locale: messageLocale }),
     newCanvas: m['product.history.newCanvas']({}, { locale: messageLocale }),
+    creating: m['BeatAPI.project.newTitle']({}, { locale: messageLocale }),
+    createError: m['BeatAPI.project.newErrorTitle'](
+      {},
+      { locale: messageLocale }
+    ),
+    retry: m['BeatAPI.project.retry']({}, { locale: messageLocale }),
+    defaultName: m['BeatAPI.project.defaultName'](
+      {},
+      { locale: messageLocale }
+    ),
     createTitle: m['product.history.createTitle'](
       {},
       { locale: messageLocale }
@@ -68,10 +82,7 @@ function getHistoryCopy(locale: string) {
       {},
       { locale: messageLocale }
     ),
-    startFirst: m['product.history.startFirst'](
-      {},
-      { locale: messageLocale }
-    ),
+    startFirst: m['product.history.startFirst']({}, { locale: messageLocale }),
     emptyDescription: m['product.history.emptyDescription'](
       {},
       { locale: messageLocale }
@@ -97,13 +108,28 @@ function CreateProjectDialog({
   open,
   onOpenChange,
   copy,
+  locale,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   copy: HistoryCopy;
+  locale: string;
 }) {
+  const { creating, error, createProject, retryProject, clearError } =
+    useCreateProject({
+      locale,
+      projectName: copy.defaultName,
+      errorMessage: copy.createError,
+    });
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (creating) return;
+        clearError();
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="overflow-hidden rounded-[26px] border border-white/10 bg-[#111214] p-0 text-[#f6f6f4] shadow-[0_34px_110px_rgba(0,0,0,0.62)] ring-0 sm:max-w-[620px] [&_[data-slot=dialog-close]]:right-4 [&_[data-slot=dialog-close]]:top-4 [&_[data-slot=dialog-close]]:text-white/45 [&_[data-slot=dialog-close]]:hover:bg-white/[0.07] [&_[data-slot=dialog-close]]:hover:text-white">
         <DialogHeader className="border-b border-white/[0.08] px-6 pb-5 pt-6 text-left sm:px-7">
           <DialogTitle className="beat-product-display text-[24px] font-semibold tracking-[-0.035em] text-white">
@@ -115,36 +141,62 @@ function CreateProjectDialog({
         </DialogHeader>
 
         <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
-          <Link
-            href="/studio"
-            className="group relative min-h-[190px] overflow-hidden rounded-[20px] border border-[#ff7a33]/35 bg-[radial-gradient(circle_at_82%_8%,rgba(255,122,51,0.22),transparent_42%),#171719] p-5 transition hover:-translate-y-0.5 hover:border-[#ff7a33]/65 hover:bg-[#1b1b1e]"
+          <button
+            type="button"
+            disabled={creating}
+            onClick={() => void createProject('studio')}
+            className="group relative min-h-[190px] overflow-hidden rounded-[20px] border border-[#ff7a33]/35 bg-[radial-gradient(circle_at_82%_8%,rgba(255,122,51,0.22),transparent_42%),#171719] p-5 text-left transition hover:-translate-y-0.5 hover:border-[#ff7a33]/65 hover:bg-[#1b1b1e] disabled:cursor-wait disabled:opacity-60"
           >
             <span className="grid size-11 place-items-center rounded-[14px] bg-[#ff7a33] text-[#1d1d1f] shadow-[0_12px_30px_rgba(255,122,51,0.22)]">
               <PanelsTopLeft className="size-5" />
             </span>
-            <h2 className="beat-product-display mt-8 text-[18px] font-semibold tracking-[-0.025em] text-white">
+            <span className="beat-product-display mt-8 block text-[18px] font-semibold tracking-[-0.025em] text-white">
               {copy.newStudio}
-            </h2>
-            <p className="mt-2 max-w-[220px] text-[12px] leading-5 text-white/45">
+            </span>
+            <span className="mt-2 block max-w-[220px] text-[12px] leading-5 text-white/45">
               {copy.studioDescription}
-            </p>
-          </Link>
+            </span>
+          </button>
 
-          <Link
-            href="/canvas"
-            className="group relative min-h-[190px] overflow-hidden rounded-[20px] border border-white/[0.10] bg-[radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.09),transparent_42%),#171719] p-5 transition hover:-translate-y-0.5 hover:border-white/[0.22] hover:bg-[#1b1b1e]"
+          <button
+            type="button"
+            disabled={creating}
+            onClick={() => void createProject('canvas')}
+            className="group relative min-h-[190px] overflow-hidden rounded-[20px] border border-white/[0.10] bg-[radial-gradient(circle_at_82%_8%,rgba(255,255,255,0.09),transparent_42%),#171719] p-5 text-left transition hover:-translate-y-0.5 hover:border-white/[0.22] hover:bg-[#1b1b1e] disabled:cursor-wait disabled:opacity-60"
           >
             <span className="grid size-11 place-items-center rounded-[14px] border border-white/[0.12] bg-[#202126] text-white">
               <Workflow className="size-5" />
             </span>
-            <h2 className="beat-product-display mt-8 text-[18px] font-semibold tracking-[-0.025em] text-white">
+            <span className="beat-product-display mt-8 block text-[18px] font-semibold tracking-[-0.025em] text-white">
               {copy.newCanvas}
-            </h2>
-            <p className="mt-2 max-w-[220px] text-[12px] leading-5 text-white/45">
+            </span>
+            <span className="mt-2 block max-w-[220px] text-[12px] leading-5 text-white/45">
               {copy.canvasDescription}
-            </p>
-          </Link>
+            </span>
+          </button>
         </div>
+        {creating ? (
+          <p
+            role="status"
+            className="flex items-center justify-center gap-2 px-5 pb-5 text-sm text-white/65"
+          >
+            <Loader2 className="size-4 animate-spin" />
+            {copy.creating}
+          </p>
+        ) : error ? (
+          <div className="px-5 pb-5">
+            <p role="alert" className="text-sm text-red-400">
+              {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => void retryProject()}
+              className="mt-3 rounded-[8px] border border-white/20 px-4 py-2 text-sm hover:bg-white/10"
+            >
+              {copy.retry}
+            </button>
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -159,6 +211,8 @@ export function WorkspacePage({
 }) {
   const copy = getHistoryCopy(locale);
   const [createOpen, setCreateOpen] = useState(false);
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   const [deleteTarget, setDeleteTarget] =
     useState<WorkspaceProjectCardItem | null>(null);
   const { projects: liveProjects, deleteProjects } = useWorkspaceProjects({
@@ -196,6 +250,7 @@ export function WorkspacePage({
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
+            disabled={!interactive}
             className="inline-flex h-11 shrink-0 items-center justify-center gap-2 self-start rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-5 text-[13px] font-semibold text-[var(--beat-accent-ink)] shadow-[0_8px_28px_rgba(255,122,51,0.22)] transition hover:bg-[#ff8a4d] lg:self-auto"
           >
             <Plus className="size-4" />
@@ -219,24 +274,17 @@ export function WorkspacePage({
                       aria-label={copy.openProject(name)}
                       className="block"
                     >
-                      <div className="relative aspect-[16/10] overflow-hidden rounded-[var(--beat-radius)] border border-white/[0.08] bg-[radial-gradient(circle_at_72%_18%,rgba(255,122,51,0.10),transparent_40%),#111113] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-white/[0.18]">
-                        {project.coverImageUrl ? (
-                          <img
-                            src={project.coverImageUrl}
-                            alt=""
-                            className="size-full object-cover transition duration-500 group-hover:scale-[1.025]"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-white/14">
-                            <FolderClock className="size-11" strokeWidth={1.15} />
-                          </div>
-                        )}
+                      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-[var(--beat-radius)] border border-white/[0.08] bg-[radial-gradient(circle_at_72%_18%,rgba(255,122,51,0.10),transparent_40%),#111113] shadow-[inset_0_1px_0_rgba(255,255,255,0.025)] transition duration-300 group-hover:-translate-y-0.5 group-hover:border-white/[0.18]">
+                        <ProjectCoverPreview url={project.coverImageUrl} />
                         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/45 to-transparent" />
                       </div>
                       <h2 className="beat-product-display mt-3 truncate px-1 text-[15px] font-semibold tracking-[-0.02em] text-[var(--beat-text-1)]">
                         {name}
                       </h2>
+                      {project.description && <p className="mt-1 line-clamp-2 px-1 text-xs leading-5 text-white/45">{project.description}</p>}
                     </Link>
+
+                    <div className="absolute left-3 top-3 rounded-xl bg-black/70 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100 max-sm:opacity-100"><ProjectSettingsDialog projectId={project.id} /></div>
 
                     <button
                       type="button"
@@ -264,6 +312,7 @@ export function WorkspacePage({
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
+                disabled={!interactive}
                 className="mt-6 inline-flex h-10 items-center gap-2 rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-4 text-[12px] font-semibold text-[var(--beat-accent-ink)] shadow-[0_8px_24px_rgba(255,122,51,0.24)] transition hover:bg-[#ff8a4d]"
               >
                 <Plus className="size-4" />
@@ -278,6 +327,7 @@ export function WorkspacePage({
         open={createOpen}
         onOpenChange={setCreateOpen}
         copy={copy}
+        locale={locale}
       />
 
       <ConfirmDialog
@@ -288,9 +338,7 @@ export function WorkspacePage({
         }}
         title={
           deleteTarget
-            ? copy.deleteConfirm(
-                projectName(deleteTarget.name, copy.untitled)
-              )
+            ? copy.deleteConfirm(projectName(deleteTarget.name, copy.untitled))
             : ''
         }
         description={copy.deleteConfirmDescription}

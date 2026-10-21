@@ -42,7 +42,10 @@ test('studio keeps the original wide composer and a project generation feed', ()
   assert.match(feedSource, /object-contain/);
   assert.doesNotMatch(feedSource, /item\.prompt/);
   assert.match(studioSource, /justify-end/);
-  assert.match(startHereSource, /Create Here/);
+  assert.match(startHereSource, /useTranslations\('AppShell\.studio\.startHere'\)/);
+  assert.match(startHereSource, /t\('title'\)/);
+  assert.match(startHereSource, /t\('selectIdea', \{ title \}\)/);
+  assert.doesNotMatch(startHereSource, />\s*Create Here\s*</);
   assert.match(studioSource, /fetchProjectGenerations/);
   assert.match(studioSource, /VIDEO_ANALYSIS_MODEL_ID/);
   assert.match(composerSource, /value: 'analysis'/);

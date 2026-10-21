@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { CreateProjectRoutePage } from './create-project-route-page';
 
 const source = readFileSync(
   new URL('./create-project-route-page.tsx', import.meta.url),
@@ -9,10 +12,41 @@ const source = readFileSync(
 
 test('visiting Studio or Canvas does not create a project automatically', () => {
   assert.doesNotMatch(source, /useEffect/);
-  assert.match(source, /createProject\('studio'\)/);
-  assert.match(source, /createProject\('canvas'\)/);
+  assert.match(
+    source,
+    /onClick=\{\(\) => void createProject\(workspaceMode\)\}/
+  );
   assert.match(source, /appConfig\.app_logo/);
-  assert.match(source, /'\/api\/app\/projects'/);
+});
+
+test('direct entry only offers the workspace selected by its route', () => {
+  for (const workspaceMode of ['studio', 'canvas'] as const) {
+    const html = renderToStaticMarkup(
+      createElement(CreateProjectRoutePage, {
+        data: {
+          locale: 'en',
+          target: null,
+          model: null,
+          prompt: null,
+          projectName: 'Entry test',
+          workspaceMode,
+        },
+      })
+    );
+    assert.equal((html.match(/<button\b/g) ?? []).length, 1);
+    assert.match(html, /<button\b[^>]*disabled=""/);
+    assert.ok(
+      html.includes(
+        workspaceMode === 'canvas' ? 'Create in Canvas' : 'Create in Studio'
+      )
+    );
+    assert.ok(
+      !html.includes(
+        workspaceMode === 'canvas' ? 'Create in Studio' : 'Create in Canvas'
+      )
+    );
+    assert.ok(!html.includes('Choose Studio or Canvas'));
+  }
 });
 
 test('the first-run screen covers the full viewport', () => {

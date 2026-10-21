@@ -6,19 +6,17 @@ import {
 import {
   getProject,
   markProjectOpened,
-  renameProject,
 } from '@/core/projects/projects';
+import { getProjectSettings } from '@/core/projects/project-settings';
+import { persistBeatDesignCommand } from '@/core/commands/persist';
+import { projectSettingsPatchSchema } from '@/core/projects/project-settings-contract';
+import { z } from 'zod';
 import { validateTrustedWorkspaceJsonMutation } from '@/lib/trusted-local-request';
 import {
   MAX_WORKSPACE_JSON_REQUEST_BYTES,
   readRequestJsonWithLimit,
   RequestBodyTooLargeError,
 } from '@/lib/request-body-limit';
-
-type UpdateProjectRequest = {
-  name?: string;
-  workspaceMode?: string;
-};
 
 type OpenProjectRequest = {
   workspaceMode?: string;
@@ -89,37 +87,23 @@ async function PATCH({
     return Response.json({ error: 'Project not found' }, { status: 404 });
   }
 
-  let payload: UpdateProjectRequest | null = null;
+  let payload: unknown;
   try {
-    payload = await readRequestJsonWithLimit<UpdateProjectRequest>(
-      request,
-      MAX_WORKSPACE_JSON_REQUEST_BYTES
-    );
+    payload = await readRequestJsonWithLimit<unknown>(request, MAX_WORKSPACE_JSON_REQUEST_BYTES);
   } catch (error) {
-    if (error instanceof RequestBodyTooLargeError) {
-      return Response.json({ error: 'Request body is too large' }, { status: 413 });
-    }
-    return Response.json({ error: 'Invalid JSON' }, { status: 400 });
+    return Response.json({ error: error instanceof RequestBodyTooLargeError ? 'Request body is too large' : 'Invalid JSON' }, { status: error instanceof RequestBodyTooLargeError ? 413 : 400 });
   }
+  const parsed = z.object({ patch: projectSettingsPatchSchema, expectedRevision: z.number().int().min(1), commandId: z.string().min(1).max(200).optional() }).strict().safeParse(payload);
+  if (!parsed.success) return Response.json({ error: parsed.error.issues[0]?.message ?? 'Invalid settings' }, { status: 400 });
+  const result = await persistBeatDesignCommand({ projectId, origin: 'ui', expectedRevision: parsed.data.expectedRevision, commandId: parsed.data.commandId, command: { type: 'project.update', patch: parsed.data.patch } });
+  return Response.json(result, { status: result.ok ? 200 : result.code === 'REVISION_CONFLICT' ? 409 : result.code === 'NOT_FOUND' ? 404 : 400 });
+}
 
-  const nextName = payload?.name?.trim();
-  if (!nextName) {
-    return Response.json(
-      { error: 'Project name is required' },
-      { status: 400 }
-    );
-  }
-
-  const name = await renameProject({
-    projectId,
-    name: nextName,
-  });
-
-  return Response.json({ id: projectId, name });
+async function GET({ params }: { params: { projectId: string } }) {
+  const settings = await getProjectSettings(params.projectId);
+  return settings ? Response.json({ settings }) : Response.json({ error: 'Project not found' }, { status: 404 });
 }
 
 export const Route = createFileRoute('/api/app/projects/$projectId')({
-  server: {
-    handlers: { POST, PATCH },
-  },
+  server: { handlers: { GET, POST, PATCH } },
 });

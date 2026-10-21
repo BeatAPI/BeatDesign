@@ -330,8 +330,8 @@
           "status": {
             "queued": "Queued",
             "generating": "Generating",
-        "ready": "Success",
-        "success": "Success",
+            "ready": "Success",
+            "success": "Success",
             "failed": "Failed"
           },
           "fromCanvas": "From canvas",
@@ -413,6 +413,18 @@
       },
       "textNote": {
         "template": "Text note\n\nCapture composition ideas, shot notes, or production reminders here."
+      },
+      "startHere": {
+        "ideasLabel": "Starting ideas",
+        "title": "Create Here",
+        "description": "Imagine the scene. Shape the mood. Bring it to life.",
+        "selectIdea": "Select {title}",
+        "ideas": {
+          "cinematicLandscape": "Cinematic landscape",
+          "editorialCharacter": "Editorial character",
+          "materialStudy": "Material study",
+          "surrealFashionFilm": "Surreal fashion film"
+        }
       }
     },
     "editor": {
@@ -745,7 +757,9 @@
       "retry": "Try again",
       "backToHistory": "Back to history",
       "startTitle": "Start a new project",
-      "startDescription": "Choose Studio or Canvas to create this project.",
+      "startDescription": "Create your project here. You can switch between Studio and Canvas at any time.",
+      "createStudio": "Create in Studio",
+      "createCanvas": "Create in Canvas",
       "startStudio": "Studio",
       "startCanvas": "Canvas",
       "defaultName": "Untitled project"
@@ -753,5 +767,37 @@
   },
   "Common": {
     "loading": "Loading"
+  },
+  "ProjectSettings": {
+    "title": "Project settings",
+    "subtitle": "Manage the details and cover shown in your project list.",
+    "details": "Details",
+    "name": "Project name",
+    "description": "Description",
+    "descriptionHint": "A short summary shown on project cards.",
+    "descriptionPlaceholder": "Describe your project",
+    "cover": "Cover image",
+    "coverHint": "Choose a project image or upload a cover. 16:9 works best. Uploads stay in the asset library.",
+    "automatic": "Automatic · first image, then a video thumbnail",
+    "manual": "Custom cover · stays fixed when new assets arrive",
+    "upload": "Upload cover",
+    "reset": "Use automatic cover",
+    "choose": "Choose from project images",
+    "info": "Project info",
+    "id": "Project ID",
+    "created": "Created date",
+    "storage": "Storage",
+    "local": "Local workspace",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "loading": "Loading settings…",
+    "loadError": "Unable to load settings.",
+    "saveError": "Unable to save settings.",
+    "imageOnly": "Choose a PNG, JPEG, WebP or GIF image.",
+    "closeReload": "Close and reopen to reload",
+    "setAsCover": "Set as cover",
+    "coverSaved": "Project cover updated",
+    "conflict": "Project settings changed elsewhere. Close and reopen settings before saving."
   }
 }

@@ -1,19 +1,11 @@
-import { useState } from 'react';
 import { AlertCircleIcon, Loader2Icon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { appConfig } from '@/config';
 import { normalizeLocale } from '@/config/locale';
 import type { WorkspaceMode } from '@/config/workspace-modes';
-import { buildPostCreateProjectDetailPath } from '@/core/projects/project-entry';
-import { apiJsonPost } from '@/lib/api-client';
+import { useCreateProject } from '@/core/workspace-hooks/use-create-project';
 import { m } from '@/paraglide/messages.js';
-
-type CreateProjectResponse = {
-  id?: string;
-  name?: string;
-  error?: string;
-};
 
 export type CreateProjectRouteData = {
   locale: string;
@@ -42,11 +34,11 @@ function getCopy(locale: string) {
       {},
       { locale: messageLocale }
     ),
-    startStudio: m['BeatAPI.project.startStudio'](
+    startStudio: m['BeatAPI.project.createStudio'](
       {},
       { locale: messageLocale }
     ),
-    startCanvas: m['BeatAPI.project.startCanvas'](
+    startCanvas: m['BeatAPI.project.createCanvas'](
       {},
       { locale: messageLocale }
     ),
@@ -58,43 +50,17 @@ export function CreateProjectRoutePage({
 }: {
   data: CreateProjectRouteData;
 }) {
-  const { locale, target, model, prompt, projectName } = data;
+  const { locale, target, model, prompt, projectName, workspaceMode } = data;
   const copy = getCopy(locale);
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function createProject(workspaceMode: WorkspaceMode) {
-    if (creating) return;
-    setCreating(true);
-    setError(null);
-
-    try {
-      const payload = await apiJsonPost<CreateProjectResponse>(
-        '/api/app/projects',
-        { name: projectName, workspaceMode }
-      );
-
-      if (!payload?.id) {
-        throw new Error(payload?.error || copy.errorTitle);
-      }
-
-      window.location.replace(
-        buildPostCreateProjectDetailPath({
-          locale,
-          projectId: payload.id,
-          target: target ?? undefined,
-          model: model ?? undefined,
-          prompt: prompt ?? undefined,
-          mode: workspaceMode,
-        })
-      );
-    } catch (createError) {
-      setError(
-        createError instanceof Error ? createError.message : copy.errorTitle
-      );
-      setCreating(false);
-    }
-  }
+  const { ready, creating, error, createProject, retryProject } = useCreateProject({
+    locale,
+    projectName,
+    errorMessage: copy.errorTitle,
+    replace: true,
+    target: target ?? undefined,
+    model: model ?? undefined,
+    prompt: prompt ?? undefined,
+  });
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[var(--beat-bg)] px-6 py-16 text-[var(--beat-text-1)]">
@@ -128,28 +94,21 @@ export function CreateProjectRoutePage({
               <Button
                 type="button"
                 className="h-11 rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-5 text-[var(--beat-accent-ink)] hover:bg-[var(--beat-accent-hover)]"
-                onClick={() => void createProject('studio')}
+                onClick={() => void retryProject()}
               >
                 {copy.retry}
               </Button>
             ) : (
-              <>
-                <Button
-                  type="button"
-                  className="h-11 rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-5 text-[var(--beat-accent-ink)] hover:bg-[var(--beat-accent-hover)]"
-                  onClick={() => void createProject('studio')}
-                >
-                  {copy.startStudio}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 rounded-[16px] border-white/[0.16] bg-transparent px-5 text-white hover:bg-white/[0.06]"
-                  onClick={() => void createProject('canvas')}
-                >
-                  {copy.startCanvas}
-                </Button>
-              </>
+              <Button
+                type="button"
+                className="h-11 rounded-[var(--beat-radius-sm)] bg-[var(--beat-accent)] px-5 text-[var(--beat-accent-ink)] hover:bg-[var(--beat-accent-hover)]"
+                onClick={() => void createProject(workspaceMode)}
+                disabled={!ready}
+              >
+                {workspaceMode === 'studio'
+                  ? copy.startStudio
+                  : copy.startCanvas}
+              </Button>
             )}
           </div>
         ) : null}

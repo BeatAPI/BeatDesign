@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://design.beatapi.io">ウェブサイト</a> ·
+  <a href="https://beatapi.io/design">ウェブサイト</a> ·
   <a href="#クイックスタート">クイックスタート</a> ·
   <a href="#agentからbeatdesignを使う">MCP</a> ·
   <a href="./docs/PRODUCT_PLAN_AND_STATUS.md">製品ステータス</a>
@@ -29,6 +29,20 @@
 </p>
 
 BeatDesignは、AI画像・動画制作のための独立したオープンソース、ローカルファーストのワークスペースです。Higgsfieldのような一貫した制作フローを、自分のマシンで実行、確認、拡張したい人に向けて作られています。
+
+## 最近のソース更新 · 2026年10月
+
+以下は`main`の更新です。最新の正式Releaseとnpmパッケージは引き続き **v0.2.4** です。利用するにはソースを更新してください。既存のパッケージへ自動配信されるものではありません。
+
+- **Project設定とカバー：** 名前と説明の編集、画像カバーのアップロード・選択、自動カバーへのリセットに対応。手動カバーは後の読み込みや生成で置き換わりません。Projectカードまたはワークスペース上部の設定アイコンから開きます。
+- **生成バージョンの一致：** CanvasのプレビューとTake選択が最新の成功結果を示します。手動選択とTimelineの固定Assetは保持されます。
+- **Projectへ直接移動：** CanvasまたはStudioを選ぶとProjectを作成して直接開きます。再試行と連打防止にも対応します。
+- **音量を保持した書き出し：** MCPのTimeline書き出しで順番に並ぶClipの音量を保持し、重なる音声にはピーク保護を適用します。
+- **30個のMCPツール：** AgentもUIと同じバージョン確認付きコマンドでProject設定を更新できます。空のCanvasへの取り消し・やり直しの保存、Windowsテスト互換性、狭い画面のレイアウトも改善しました。
+
+末尾フレームからの続き生成、CanvasからEditorへの移行、画像オーバーレイ、スタイル付きSRT字幕、ブラウザーとMCPによるMP4書き出しも利用できます。ブラウザーの書き出しにはシステムFFmpegは不要です。MCPのフレーム抽出には`ffmpeg`、Timeline書き出しにはさらに`ffprobe`が必要です。
+
+[変更履歴](./CHANGELOG.md) · [Project設定](./docs/PROJECT_SETTINGS.md) · [現状とロードマップ](./docs/PRODUCT_PLAN_AND_STATUS.md)
 
 ## 2つの制作モード、1つのProject
 
@@ -88,7 +102,7 @@ pnpm dev
 
 ## AgentからBeatDesignを使う
 
-BeatDesignはSkill、Project、Asset、Canvas、生成、Editor操作をカバーする29個のローカルMCPツールを提供し、内蔵Skillの検出と正式なTimelineからのMP4書き出しにも対応します。Agentによる変更は同じProjectサービスを通り、ブラウザーのワークスペースに表示されます。
+BeatDesignはSkill、Project、Asset、Canvas、生成、Editor操作をカバーする30個のローカルMCPツールを提供し、内蔵Skillの検出と正式なTimelineからのMP4書き出しにも対応します。Agentによる変更は同じProjectサービスを通り、ブラウザーのワークスペースに表示されます。
 
 MCP Hostへ接続した後は、次のように依頼できます。
 

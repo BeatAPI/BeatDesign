@@ -17,13 +17,13 @@ const MAX_RECEIPTS_PER_PROJECT = 2_000;
 const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
 const lastCleanupByProject = new Map<string, number>();
 
-async function cleanupCommandReceipts(projectId: string) {
+async function cleanupCommandReceipts(projectId: string, database?: any) {
   const now = Date.now();
   const lastCleanup = lastCleanupByProject.get(projectId) ?? 0;
   if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
   lastCleanupByProject.set(projectId, now);
 
-  const db = await getDb();
+  const db = database ?? await getDb();
   const overflow = await db
     .select({ id: projectCommandReceipt.id })
     .from(projectCommandReceipt)
@@ -90,8 +90,8 @@ export async function loadCommandReceiptRecord({
 }: {
   projectId: string;
   idempotencyKey: string;
-}) {
-  const db = await getDb();
+}, database?: any) {
+  const db = database ?? await getDb();
   const rows = await db
     .select({
       commandId: projectCommandReceipt.commandId,
@@ -130,8 +130,8 @@ export async function storeCommandReceipt({
   origin: string;
   commandType: string;
   result: StoredCommandResult;
-}) {
-  const db = await getDb();
+}, database?: any) {
+  const db = database ?? await getDb();
   await db
     .insert(projectCommandReceipt)
     .values({
@@ -145,8 +145,8 @@ export async function storeCommandReceipt({
       createdAt: new Date(),
     })
     .onConflictDoNothing();
-  await cleanupCommandReceipts(projectId);
-  const stored = await loadCommandReceiptRecord({ projectId, idempotencyKey });
+  await cleanupCommandReceipts(projectId, db);
+  const stored = await loadCommandReceiptRecord({ projectId, idempotencyKey }, db);
   if (
     stored &&
     (stored.commandId !== commandId || stored.commandType !== commandType)

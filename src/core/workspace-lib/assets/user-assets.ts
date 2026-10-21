@@ -15,36 +15,6 @@ export type AssetSource = 'upload' | 'provider' | 'derived';
 export type AssetRole = 'input' | 'output' | 'thumbnail' | 'reference';
 export type ProjectAssetRole = 'upload' | 'reference' | 'generated' | 'cover';
 
-function shouldSyncProjectCoverAsset({
-  role,
-  assetType,
-}: {
-  role: ProjectAssetRole;
-  assetType: AssetType;
-}) {
-  return (
-    assetType === 'image' &&
-    (role === 'cover' || role === 'generated' || role === 'upload')
-  );
-}
-
-async function syncProjectCoverAsset({
-  projectId,
-  assetId,
-}: {
-  projectId: string;
-  assetId: string;
-}) {
-  const db = await getDb();
-  await db
-    .update(project)
-    .set({
-      coverAssetId: assetId,
-      updatedAt: new Date(),
-    })
-    .where(eq(project.id, projectId));
-}
-
 export const recordUserAsset = async ({
   id: requestedId,
   type,
@@ -379,14 +349,6 @@ export const linkProjectAsset = async ({
     .limit(1);
 
   if (existing[0]?.id) {
-    if (
-      shouldSyncProjectCoverAsset({
-        role,
-        assetType: targetAsset.type as AssetType,
-      })
-    ) {
-      await syncProjectCoverAsset({ projectId, assetId });
-    }
     return existing[0].id;
   }
 
@@ -404,15 +366,6 @@ export const linkProjectAsset = async ({
     metadata: metadata ?? null,
     createdAt: new Date(),
   });
-
-  if (
-    shouldSyncProjectCoverAsset({
-      role,
-      assetType: targetAsset.type as AssetType,
-    })
-  ) {
-    await syncProjectCoverAsset({ projectId, assetId });
-  }
 
   return id;
 };

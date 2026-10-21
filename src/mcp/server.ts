@@ -22,6 +22,9 @@ import { extractProjectVideoFrame } from '@/core/projects/extract-project-video-
 import { importLocalProjectAsset } from '@/core/projects/import-local-asset';
 import { parseLocalProjectAssetUrl } from '@/core/projects/local-project-asset-url';
 import { createCommandId } from '@/core/commands/contracts';
+import { getProjectSettings } from '@/core/projects/project-settings';
+import { projectSettingsPatchSchema } from '@/core/projects/project-settings-contract';
+import { persistBeatDesignCommand } from '@/core/commands/persist';
 import { listCommandReceipts } from '@/core/commands/receipts';
 import {
   findCaptionAtTime,
@@ -551,6 +554,7 @@ export function createBeatDesignMcpServer() {
       if (!canvas) throw new Error('Project not found.');
       return {
         project: canvas.project,
+        settings: await getProjectSettings(scopedProjectId),
         canvas: {
           ...canvas,
           snapshot: {
@@ -561,6 +565,19 @@ export function createBeatDesignMcpServer() {
         timeline,
         assets,
       };
+    })
+  );
+
+  server.registerTool(
+    'bdesign_project_update',
+    {
+      description: 'Update project name, short description or cover through the shared revision-checked command kernel. Get settingsRevision from project_get; manual coverAssetId must belong to the project. Auto cover uses the first image, then a local video poster.',
+      inputSchema: z.object({ projectId: idSchema.optional(), expectedRevision: z.number().int().min(1), patch: projectSettingsPatchSchema, commandId: idSchema.optional(), idempotencyKey: idSchema.optional() }),
+      annotations: { destructiveHint: false, idempotentHint: true },
+    },
+    withToolErrors(async ({ projectId, expectedRevision, patch, commandId, idempotencyKey }) => {
+      const project = await resolveScopedProject(projectId);
+      return persistBeatDesignCommand({ projectId: project.id, origin: 'mcp', expectedRevision, commandId, idempotencyKey, command: { type: 'project.update', patch } });
     })
   );
 

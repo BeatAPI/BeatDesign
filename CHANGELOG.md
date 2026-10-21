@@ -4,6 +4,27 @@ All notable changes to BeatDesign are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- Project settings from project cards and workspace headers: names, short descriptions, explicit image covers, automatic image/video-poster fallback, and the revision-checked `bdesign_project_update` MCP tool (30 tools total). Community contribution: #28.
+
+### Fixed
+
+- Create a project directly after choosing Canvas or Studio, preserving entry parameters and retrying in the chosen workspace without duplicate clicks (#22).
+- Align Canvas previews and Take selection with the latest usable successful generation, while preserving explicit selections and pinned timeline Assets (#26).
+- Preserve timeline clip gains in MCP audio exports and limit overlapping peaks without makeup gain (#24).
+- Commit project settings and idempotency receipts atomically; retain edits and show errors when header renames conflict.
+- Persist undo/redo back to an intentionally empty Canvas. Extract Windows test portability, Studio empty-state translations, and narrow-screen hero layout improvements from #18 without its branding, Provider, or hosted deployment profile.
+
+### Security
+
+- Isolate BeatAPI adapter construction, readiness checks and input validation with TanStack server-only functions so browser model discovery never imports local configuration or SQLite.
+- Update TanStack Start/Router, the MCP SDK, Vite, Seroval and source-map-js to patched versions; production dependency audit reports no known vulnerabilities.
+
+### Documentation
+
+- Highlight current source updates in English, Chinese and Japanese READMEs, while distinguishing them from the v0.2.4 release and package. Update the MCP catalog and current product status.
+
 ## [0.2.4] - 2026-09-23
 
 ### Added

@@ -4,6 +4,7 @@ import {
   type TimelineDocument,
 } from '@/core/editor/timeline-document';
 import type { ProjectSnapshotDocument } from '@/core/projects/project-snapshot';
+import type { ProjectSettings, ProjectSettingsPatch } from '@/core/projects/project-settings-contract';
 
 import {
   applyCanvasOperations,
@@ -23,6 +24,7 @@ import {
 } from './contracts';
 
 export type BeatDesignCommand =
+  | { type: 'project.update'; patch: ProjectSettingsPatch }
   | { type: 'canvas.apply'; operations: CanvasOperation[] }
   | { type: 'editor.apply'; operations: EditorOperation[] }
   | { type: 'editor.replace_document'; document: TimelineDocument }
@@ -34,6 +36,7 @@ export type BeatDesignCommandDocuments = {
 };
 
 export type BeatDesignCommandData = BeatDesignCommandDocuments & {
+  projectSettings?: ProjectSettings;
   diagnostics?: ReturnType<typeof diagnoseTimeline>;
 };
 
@@ -47,6 +50,9 @@ export function executeBeatDesignCommand({
   const { commandId, projectId, origin, command } = envelope;
 
   try {
+    if (command.type === 'project.update') {
+      throw new BeatDesignCommandError('INVALID_COMMAND', 'Project settings commands require the persistence boundary.');
+    }
     if (command.type === 'canvas.apply') {
       if (!documents.canvas) {
         throw new BeatDesignCommandError(

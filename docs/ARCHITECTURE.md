@@ -32,7 +32,7 @@ The browser calls local `/api` routes. Server routes validate input and resolve 
 
 BeatDesign does not implement account concurrency policy. Projects may submit generations independently, and the active Generation Provider is the sole authority for account-level admission. The local submission lock protects SQLite intent/history consistency only; it does not reserve a long-running generation slot or reject a different Project because another task is active.
 
-Provider and optional R2/S3 credentials are encrypted in the local `config` table. Browser components never receive raw credentials.
+Provider and optional R2/S3 credentials are encrypted in the local `config` table. Browser components never receive raw credentials. Shared model metadata may read Provider bindings, but Provider adapter construction, configuration checks and input validation are wrapped in TanStack `createServerOnlyFn`; the browser dependency graph must not import local configuration or SQLite.
 
 Upload storage is a separate adapter boundary. File selection remains browser-local. A successful generation precheck creates a short-lived, one-time SQLite intent that binds the project, model, exact upload count, uploaded URLs, and final generation submission. Required references are promoted only after that point and immediately before task submission; they become project assets only after the provider accepts the task. The default path uploads supported references to BeatAPI Files. Users may instead configure a public R2/S3-compatible bucket; those credentials remain local and are used only for confirmed generation inputs.
 
