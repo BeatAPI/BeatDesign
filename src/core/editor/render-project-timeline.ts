@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { buildTimelineAudioMixFilter } from './timeline-audio-filter';
 
 import { getResolvedCaptionStyle } from './captions';
 import {
@@ -363,8 +364,7 @@ async function buildFfmpegArgs({
   }
   if (audioLabels.length > 0) {
     filters.push(
-      `${audioLabels.join('')}amix=inputs=${audioLabels.length}:duration=longest:dropout_transition=0,` +
-        `atrim=duration=${time(document.duration)},apad=whole_dur=${time(document.duration)}[aout]`
+      `${audioLabels.join('')}${buildTimelineAudioMixFilter(audioLabels.length, document.duration)}[aout]`
     );
   }
 
