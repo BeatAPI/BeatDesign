@@ -2,7 +2,7 @@
 
 All notable changes to BeatDesign are documented in this file.
 
-## Unreleased
+## Unreleased — v0.2.5 candidate
 
 ### Added
 
@@ -14,6 +14,7 @@ All notable changes to BeatDesign are documented in this file.
 - Align Canvas previews and Take selection with the latest usable successful generation, while preserving explicit selections and pinned timeline Assets (#26).
 - Preserve timeline clip gains in MCP audio exports and limit overlapping peaks without makeup gain (#24).
 - Commit project settings and idempotency receipts atomically; retain edits and show errors when header renames conflict.
+- Keep Canvas creation, upload/history controls and keyboard shortcuts inactive until the editor and saved project are ready, preserving the first user action even when the editor chunk loads slowly.
 - Persist undo/redo back to an intentionally empty Canvas. Extract Windows test portability, Studio empty-state translations, and narrow-screen hero layout improvements from #18 without its branding, Provider, or hosted deployment profile.
 
 ### Security
@@ -21,8 +22,17 @@ All notable changes to BeatDesign are documented in this file.
 - Isolate BeatAPI adapter construction, readiness checks and input validation with TanStack server-only functions so browser model discovery never imports local configuration or SQLite.
 - Update TanStack Start/Router, the MCP SDK, Vite, Seroval and source-map-js to patched versions; production dependency audit reports no known vulnerabilities.
 
+### Maintenance
+
+- Prepare v0.2.5 application and integration metadata; publication remains pending.
+- Replace Unix-only postinstall commands with a Node.js setup script. Verify clean installation, schema setup, build, types, tests and translations on Linux and Windows in CI.
+- Run browser/MCP checks against the production build so development reloads and Vite error overlays cannot interrupt release validation.
+- Pin Node.js 24-compatible GitHub Actions and explicit runner images; adopt the current server-function validator API and explicit Vite config import extensions.
+- Correct product website links in application, package, plugin and policy-page metadata.
+
 ### Documentation
 
+- Document source upgrade steps and project-setting revision/cover handling in Codex, Claude Code and WorkBuddy Skills.
 - Highlight current source updates in English, Chinese and Japanese READMEs, while distinguishing them from the v0.2.4 release and package. Update the MCP catalog and current product status.
 
 ## [0.2.4] - 2026-09-23

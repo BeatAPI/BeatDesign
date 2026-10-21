@@ -43,6 +43,16 @@ BeatDesign MCP 是结构化控制层，浏览器中的 BeatDesign 是用户审�
 - 本地媒体先通过 `bdesign_asset_import` 导入，再放进 Canvas 或 Editor。
 - 生成结果先成为 Project Asset；是否放进 Canvas/Editor 是下一步操作。
 
+## 项目设置
+
+- 先调用 `bdesign_project_get`，把 `settings.settingsRevision` 用作
+  `bdesign_project_update` 的 expected revision；不要使用画布或时间线的 revision。
+- 只修改用户要求的名称、简介或封面。手动封面必须是本项目的图片 Asset；本地图片先导入。
+  使用 `cover: { "mode": "auto" }` 恢复自动封面。
+- 结果不确定时复用同一个 command ID 和幂等键；遇到 revision 冲突先读最新设置，
+  解决冲突后再提交，不直接覆盖他人的修改。
+- 写入后读回设置，并在项目卡片或工作区标题处检查。设置通常在页面可见时约五秒内刷新。
+
 ## 字幕
 
 - 完整 SRT 文件或文本优先使用 `bdesign_editor_import_srt`；单条调整才使用

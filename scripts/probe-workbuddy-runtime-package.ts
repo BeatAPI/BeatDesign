@@ -156,6 +156,13 @@ try {
   assert.equal(health.ok, true);
   assert.equal((await health.json()).message, 'pong');
 
+  for (const path of ['/', '/zh', '/ja', '/projects', '/privacy-policy', '/terms-of-service']) {
+    const page = await fetch(`http://127.0.0.1:3020${path}`);
+    assert.equal(page.ok, true, `Packaged workspace route ${path} must load`);
+    assert.match(page.headers.get('content-type') ?? '', /text\/html/);
+    assert.match(await page.text(), /BeatDesign/);
+  }
+
   const conflictingRuntime = spawn(process.execPath, [launcher], {
     cwd: probeRoot,
     env: {

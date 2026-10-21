@@ -111,9 +111,18 @@ test('home does not overflow narrow screens', async ({ page }) => {
 
 test('undo and redo persist an explicitly empty Canvas across reload', async ({ page, request }) => {
   const id = await createProject(request, 'Empty undo QA');
-  await page.goto(`/canvas/${id}`);
+  let releaseEditor!: () => void;
+  const editorDownload = new Promise<void>((resolve) => { releaseEditor = resolve; });
+  await page.route('**/assets/react-flow-editor-*.js', async (route) => {
+    await editorDownload;
+    await route.continue();
+  });
+  await page.goto(`/canvas/${id}`, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('button', { name: 'Project settings', exact: true })).toBeEnabled();
-  await page.getByRole('button', { name: 'Generation node', exact: true }).click();
+  const createNode = page.getByRole('button', { name: 'Generation node', exact: true });
+  await expect(createNode).toBeDisabled();
+  releaseEditor();
+  await createNode.click();
   const cards = async () => (await (await request.get(`/api/app/projects/${id}/snapshot`)).json()).document.cards;
   await expect.poll(async () => (await cards()).length).toBe(1);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();

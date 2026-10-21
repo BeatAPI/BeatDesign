@@ -6,7 +6,23 @@ Included: homepage, projects, Studio, Canvas, provider and upload-storage config
 
 Excluded: authentication, login, accounts, payments, subscriptions, credits, API-key issuing, invitations, RBAC, admin, support tickets, CMS, email delivery, and unrelated AI-provider adapters.
 
-Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. A real paid BeatAPI generation is a separate credentialed end-to-end check.
+Release verification requires a clean install, schema creation, production build (which generates Paraglide and route types), typecheck, test, i18n check, MCP stdio handshake, and local route smoke test. Browser/MCP checks run against that production build; run `pnpm build` before `pnpm test:e2e`. A real paid BeatAPI generation is a separate credentialed end-to-end check.
+
+## v0.2.5 candidate (not published)
+
+- [x] Align application, Codex, Claude Code, Claude marketplace, LobeHub and WorkBuddy metadata on `0.2.5`.
+- [x] Verify clean installation and schema setup on Linux and Windows in CI ([candidate run](https://github.com/BeatAPI/BeatDesign/actions/runs/39647018659), source commit `cbc6951`).
+- [x] Run typecheck, tests (432 passing), i18n validation, production build and focused UI/MCP checks (14 passing).
+- [x] Build and inspect the Connector ZIP and npm runtime tarball; install the tarball in a clean temporary directory, complete MCP handshake (30 tools), and smoke-test the production workspace.
+- Merge and main-branch CI status: [maintenance PR #31](https://github.com/BeatAPI/BeatDesign/pull/31) and its linked Quality checks. Recheck the exact merge commit before publishing.
+- [ ] Publish GitHub Release `v0.2.5` with verified assets.
+- [ ] Publish `@beatapi/beatdesign-workbuddy@0.2.5`; independently verify npm `latest`.
+- [ ] Submit the updated Connector to WorkBuddy, then record review and public availability separately.
+
+The version in repository metadata identifies the next candidate, not a published
+release. Latest public GitHub Release and npm package remain `v0.2.4` (checked
+2026-10-22). WorkBuddy's last observed review state remains the dated v0.2.4
+submission below.
 
 ## v0.2.4 release and WorkBuddy update
 

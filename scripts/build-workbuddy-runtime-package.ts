@@ -22,7 +22,7 @@ const runtimePackage = {
   description:
     'One-click local BeatDesign Canvas and video Editor runtime for WorkBuddy',
   license: 'Apache-2.0',
-  homepage: 'https://design.beatapi.io',
+  homepage: 'https://beatapi.io/design',
   repository: {
     type: 'git',
     url: 'git+https://github.com/BeatAPI/BeatDesign.git',

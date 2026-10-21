@@ -37,6 +37,20 @@ opened when the host cannot open it.
 - Treat generation as asset-first: output becomes a Project Asset before it is
   placed on Canvas or Editor.
 
+## Update project settings
+
+- Call `bdesign_project_get` and use `settings.settingsRevision` as the expected
+  revision for `bdesign_project_update`. Settings revisions are separate from
+  Canvas and Editor revisions.
+- Update only the requested name, description or cover. A manual cover must be
+  an image Asset in this Project; import a local image first when needed. Use
+  `cover: { "mode": "auto" }` to restore automatic cover selection.
+- Reuse the command ID and idempotency key when delivery is uncertain. On a
+  revision conflict, read the latest settings and resolve the conflicting edit
+  before submitting again; do not overwrite another change blindly.
+- Read the saved settings back and inspect the project card or workspace header.
+  Project settings refresh while visible within about five seconds.
+
 ## Import captions
 
 - Prefer `bdesign_editor_import_srt` for a file or complete SRT text. Use

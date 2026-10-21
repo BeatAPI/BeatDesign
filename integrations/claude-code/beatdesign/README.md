@@ -31,7 +31,7 @@ Inside Claude Code, check `/mcp` for the `beatdesign` server and ask:
 
 ## Install from the repository marketplace
 
-After this repository is available on GitHub:
+Add the repository marketplace:
 
 ```text
 /plugin marketplace add BeatAPI/BeatDesign

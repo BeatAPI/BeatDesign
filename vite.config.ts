@@ -6,8 +6,8 @@ import viteReact from '@vitejs/plugin-react';
 import { nitro } from 'nitro/vite';
 import { defineConfig } from 'vite';
 
-import { paraglideCompilerOptions } from './src/config/paraglide';
-import { shouldNormalizeProjectAssetMediaRequest } from './src/lib/project-asset-media-request';
+import { paraglideCompilerOptions } from './src/config/paraglide.ts';
+import { shouldNormalizeProjectAssetMediaRequest } from './src/lib/project-asset-media-request.ts';
 
 export default defineConfig({
   server: {

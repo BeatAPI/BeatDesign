@@ -15,10 +15,13 @@ Use Node.js 22+ and pnpm 10+.
 ```bash
 pnpm install
 pnpm db:push
+# Generate route and translation modules before checking a fresh clone.
+pnpm build
 pnpm typecheck
 pnpm test
 pnpm i18n:check
-pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
 ```
 
 Add or update tests for behavior changes. Add user-facing copy to both `messages/en.json` and `messages/zh.json`. Never include API keys, local databases, generated uploads, or storage credentials.

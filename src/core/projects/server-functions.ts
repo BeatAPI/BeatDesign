@@ -10,7 +10,7 @@ const loadProjectWithLatestSnapshotSchema = z.object({
 });
 
 export const loadSerializedProjectsFn = createServerFn()
-  .inputValidator(loadProjectsSchema)
+  .validator(loadProjectsSchema)
   .handler(async ({ data }) => {
     const [{ loadProjects }, { serializeProjectCenterCard }] =
       await Promise.all([
@@ -22,7 +22,7 @@ export const loadSerializedProjectsFn = createServerFn()
   });
 
 export const loadProjectWithLatestSnapshotFn = createServerFn()
-  .inputValidator(loadProjectWithLatestSnapshotSchema)
+  .validator(loadProjectWithLatestSnapshotSchema)
   .handler(async ({ data }) => {
     const { loadProjectWithLatestSnapshot } = await import('./projects');
     return loadProjectWithLatestSnapshot({
