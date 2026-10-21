@@ -14,7 +14,7 @@ Release verification requires a clean install, schema creation, production build
 - Local checks passed: typecheck, 504 tests (no skips), i18n validation and production build. All 25 production browser/MCP checks pass, including English/Chinese organization, mobile focus handling, exact pinned inputs, template insertion visibility and local Host rejection.
 - A separate pure compatibility check accepted Canvas default controls for all 26 official model descriptors without provider requests.
 - Build the runtime tarball, install it in a clean temporary directory, complete the 38-tool stdio handshake and route smoke checks. Additive migration regression covers previously upgraded columns, repeated schema setup, retained project data and rollback after a failed migration.
-- WorkBuddy Connector structure check passes; production dependency audit reports no known vulnerabilities at verification time.
+- WorkBuddy Connector structure check passes. Remove the unused shadcn generator CLI: all 71 development-tree advisories disappear, full dependency audit reports zero findings, and CI audits development as well as production dependencies.
 - Current source adds eight MCP tools; the published v0.2.5 package remains at 30. No new version, GitHub Release, npm publication or WorkBuddy submission is claimed by these checks. Credentialed/paid generation remains a separate unperformed check.
 
 ## v0.2.5 release (2026-10-22)

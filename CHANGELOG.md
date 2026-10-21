@@ -4,6 +4,8 @@ All notable changes to BeatDesign are documented in this file.
 
 ## [Unreleased]
 
+- Remove the unused shadcn generator CLI and its obsolete dependency tree; full dependency audit reports zero advisories. CI now checks development dependencies as well as production dependencies. Existing UI components and their configuration are unchanged.
+
 - Adapt Issue #29 organization work from JaysonAlbert/BeatDesign PR #16: persistent Canvas groups and arrangement, logical Asset folders, exact-version Elements, text steps, and reusable local workflow templates. UI and MCP share atomic revision-checked commands; eight added tools bring source MCP to 38.
 - Preserve older Canvas documents and pinned Timeline Assets. Template capture stores semantic configuration, not source media identities; insertion never uploads or runs generation.
 - Reject non-local production HTTP Host authorities independently of Origin, and pin source production/WorkBuddy listeners to loopback.

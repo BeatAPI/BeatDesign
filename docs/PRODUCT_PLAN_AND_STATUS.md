@@ -32,7 +32,7 @@ UI/MCP 共用事务命令、revision、幂等回执；整理和模板插入不�
 新增 8 个 MCP 工具，当前源码共 38 个；v0.2.5 发布包仍为 30 个。
 
 补充生产 HTTP Host 校验、`pnpm start`/WorkBuddy 回环绑定，以及兼容旧数据库的
-原子安装迁移。功能边界见 [PROJECT_ORGANIZATION.md](PROJECT_ORGANIZATION.md)。
+原子安装迁移；移除未使用的 shadcn 生成器 CLI 及其过期依赖，完整依赖审计为 0 条告警，CI 同时检查开发依赖。功能边界见 [PROJECT_ORGANIZATION.md](PROJECT_ORGANIZATION.md)。
 源码、自动检查、浏览器/MCP 验证、合并和正式发版分别记录；这里不代表 npm 已更新。
 
 ## 1. BeatDesign 是什么
