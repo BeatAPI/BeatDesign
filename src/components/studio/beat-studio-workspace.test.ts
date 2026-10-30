@@ -30,7 +30,7 @@ test('studio keeps the original wide composer and a project generation feed', ()
   assert.match(studioSource, /StudioGenerationFeed/);
   assert.match(studioSource, /StudioStartHere/);
   assert.match(composerSource, /max-w-\[1138px\]/);
-  assert.match(composerSource, /ariaLabel="Media type"/);
+  assert.match(composerSource, /ariaLabel=\{studioT\('messages.mediaTypeLabel'\)\}/);
   assert.match(composerSource, /WorkspaceSelect/);
   assert.match(composerSource, /BeatCanvasComposerParameterPicker/);
   assert.match(composerSource, /truncatePromptToMaxChars/);
@@ -62,6 +62,6 @@ test('studio keeps the original wide composer and a project generation feed', ()
 test('studio model selector follows the selected model name width', () => {
   assert.match(
     composerSource,
-    /ariaLabel="Model"[\s\S]*?triggerClassName="w-fit max-w-full"/
+    /ariaLabel=\{studioT\('messages.modelPickerLabel'\)\}[\s\S]*?triggerClassName="w-fit max-w-full"/
   );
 });

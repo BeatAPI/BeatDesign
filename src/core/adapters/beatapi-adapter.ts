@@ -17,17 +17,23 @@ import { BaseAdapter, type GenerationResult } from './base-adapter';
 const IMAGE_MODELS = new Set([
   'nano-banana',
   'nano-banana-2',
+  'nano-banana-2.1',
   'nano-banana-2-lite',
   'nano-banana-pro',
   'gpt-image-2',
   'gpt-image-2.5-flare',
   'gpt-image-2.5-sunburst',
   'seedream-5-pro',
+  'seedream-5-lite',
+  'qwen-image-2.1',
   'grok-imagine-image-2.0',
 ]);
 
 const VIDEO_MODELS = new Set([
   'minimax-h3',
+  'minimax-h3-fast',
+  'minimax-h3-normal',
+  'kling-v4',
   'seedance-2',
   'seedance-2-fast',
   'seedance-2-mini',
@@ -143,7 +149,7 @@ const mapMinimaxMaxResolution = (value: string | undefined) =>
 
 const mapKlingResolution = (value: string | undefined) => {
   const quality = value?.toLowerCase();
-  if (quality === '4k') return '4K';
+  if (quality === '4k') throw new Error('Kling 3 supports std or pro resolution, not 4K');
   if (quality === 'pro' || quality === '1080p') return 'pro';
   return 'std';
 };
@@ -239,6 +245,7 @@ const resolveVideoReferenceFields = ({
 }) => {
   if (model === 'wan-3.0' || model === 'wan-3.0-prime') {
     const contract = getBeatApiVideoReferenceContract(model)!;
+    if (images.length && (videoUrls.length || audioUrls.length)) throw new Error(`${model} images cannot be combined with video or audio references`);
     assertAtMost(`${model} image input`, images.length, contract.maxReferenceImages);
     assertAtMost(`${model} video references`, videoUrls.length, contract.maxReferenceVideos);
     assertAtMost(`${model} audio references`, audioUrls.length, contract.maxReferenceAudios);
@@ -275,7 +282,11 @@ const resolveVideoReferenceFields = ({
     } as const;
   }
 
-  const frameImages = resolveExplicitFrameImages({ prompt, images });
+  const requestedFrames = resolveExplicitFrameImages({ prompt, images });
+  if (model === 'kling-v4' && requestedFrames) {
+    throw new Error('Kling 4 frame mode is not yet supported in this workspace; use reference images instead');
+  }
+  const frameImages = requestedFrames;
   if (frameImages && (videoUrls.length || audioUrls.length)) {
     throw new Error('Frame input cannot be combined with reference video or audio');
   }
@@ -318,6 +329,8 @@ const resolveVideoReferenceFields = ({
       fields: { images: frameImages },
     } as const;
   }
+
+  if (model === 'kling-v4' && images.length + videoUrls.length + audioUrls.length > 15) throw new Error('Kling 4 accepts at most 15 total references');
 
   const usesReferenceMode =
     images.length > 0 || videoUrls.length > 0 || audioUrls.length > 0;
@@ -394,6 +407,9 @@ export const buildBeatApiTaskRequest = ({
     if (!IMAGE_MODELS.has(model)) {
       throw new Error(`Unsupported BeatAPI image model: ${model}`);
     }
+    if (model === 'qwen-image-2.1' && input.seed !== undefined && input.seed > 2147483647) {
+      throw new Error('Qwen Image 2.1 seed must not exceed 2147483647');
+    }
     assertAtMost(model, images.length, getBeatApiImageReferenceLimit(model));
     if (
       model === 'grok-imagine-image-2.0' &&
@@ -413,13 +429,17 @@ export const buildBeatApiTaskRequest = ({
         ...(images.length > 0 ? { images } : {}),
         ...(input.aspect_ratio ? { aspect_ratio: input.aspect_ratio } : {}),
         ...(model === 'nano-banana-2' ||
+        model === 'nano-banana-2.1' ||
+        model === 'seedream-5-lite' ||
+        model === 'qwen-image-2.1' ||
         model === 'nano-banana-pro' ||
         model === 'gpt-image-2' ||
         model === 'gpt-image-2.5-flare' ||
         model === 'gpt-image-2.5-sunburst' ||
         model === 'seedream-5-pro'
-          ? { resolution: mapImageResolution(input.wmOutputQuality) }
+          ? { resolution: mapImageResolution(input.wmOutputQuality ?? (model === 'seedream-5-lite' ? '2k' : undefined)) }
           : {}),
+        ...(model === 'qwen-image-2.1' && input.seed !== undefined ? { seed: input.seed } : {}),
       },
     };
   }
@@ -497,7 +517,7 @@ export const buildBeatApiTaskRequest = ({
     );
   }
   const aspectRatio =
-    model === 'minimax-h3' &&
+    (model === 'minimax-h3' || model === 'minimax-h3-fast') &&
     references.mode === 'text' &&
     input.aspect_ratio === 'adaptive'
       ? '16:9'
@@ -525,8 +545,8 @@ export const buildBeatApiTaskRequest = ({
     );
   }
   const body: Record<string, unknown> = {
-    model,
-    prompt,
+    model: model === 'kling-3' ? 'kling-v3' : model,
+    prompt: model === 'kling-v4' ? prompt.replace(/@Image(\d+)/gi, '@image_$1').replace(/@Video(\d+)/gi, '@video_$1').replace(/@Audio(\d+)/gi, '@voice_$1') : prompt,
     ...references.fields,
     ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
   };
@@ -535,8 +555,13 @@ export const buildBeatApiTaskRequest = ({
     if (duration) body.duration = duration;
   }
 
-  if (model === 'minimax-h3') {
+  if (model === 'minimax-h3' || model === 'minimax-h3-fast') {
     body.resolution = mapMinimaxResolution(input.wmOutputQuality);
+  } else if (model === 'minimax-h3-normal') {
+    body.resolution = input.wmOutputQuality || '768p';
+    if (input.seed !== undefined) body.seed = input.seed;
+  } else if (model === 'kling-v4') {
+    body.resolution = input.wmOutputQuality || '720p';
   } else if (
     model === 'minimax-h3-max' ||
     model === 'minimax-h3-max-turbo'
@@ -556,7 +581,7 @@ export const buildBeatApiTaskRequest = ({
   } else if (model === 'seedance-2-mini') {
     body.resolution = input.wmOutputQuality || '720p';
   } else if (model === 'seedance-2.5') {
-    body.resolution = '720p';
+    body.resolution = input.wmOutputQuality || '720p';
     body.generate_audio = input.wmSound ?? true;
   } else if (model === 'veo-3.1') {
     body.resolution = mapVeoResolution(input.wmOutputQuality);

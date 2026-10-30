@@ -162,6 +162,12 @@ export const WORKSPACE_MEDIA_SCHEMAS = {
     video: emptySection,
     audio: emptySection,
   },
+  'nano-banana-2.1': { image: createGenericSection('reference-image', getBeatApiImageReferenceLimit('nano-banana-2.1')), video: emptySection, audio: emptySection },
+  'seedream-5-lite': { image: createGenericSection('reference-image', getBeatApiImageReferenceLimit('seedream-5-lite')), video: emptySection, audio: emptySection },
+  'qwen-image-2.1': { image: createGenericSection('reference-image', getBeatApiImageReferenceLimit('qwen-image-2.1')), video: emptySection, audio: emptySection },
+  'minimax-h3-fast': { image: createVideoContractSection('minimax-h3-fast', 'reference-image'), video: createVideoContractSection('minimax-h3-fast', 'reference-video'), audio: createVideoContractSection('minimax-h3-fast', 'reference-audio') },
+  'minimax-h3-normal': { image: createVideoContractSection('minimax-h3-normal', 'reference-image'), video: createVideoContractSection('minimax-h3-normal', 'reference-video'), audio: createVideoContractSection('minimax-h3-normal', 'reference-audio') },
+  'kling-v4': { image: createVideoContractSection('kling-v4', 'reference-image'), video: createVideoContractSection('kling-v4', 'reference-video'), audio: createVideoContractSection('kling-v4', 'reference-audio') },
   'seedance-2': {
     image: createVideoContractSection('seedance-2', 'reference-image'),
     video: createVideoContractSection('seedance-2', 'reference-video'),

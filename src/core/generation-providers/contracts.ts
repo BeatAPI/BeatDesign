@@ -5,6 +5,8 @@ export type GenerationMediaCapability = 'image' | 'video' | 'audio' | 'analysis'
 export type GenerationProviderModelBinding = {
   /** Stable BeatDesign product model id. */
   modelId: string;
+  /** Retained for existing history and polling, unavailable for new submissions. */
+  retired?: boolean;
   /** Provider-local numeric id retained for existing DB/API compatibility. */
   effectId: number;
   /** Provider model name sent upstream. */

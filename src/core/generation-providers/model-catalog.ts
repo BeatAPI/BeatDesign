@@ -46,6 +46,7 @@ export type GenerationModelDescriptor = {
 export function listGenerationModelDescriptors(): GenerationModelDescriptor[] {
   const provider = getActiveGenerationProvider();
   return provider.modelBindings.flatMap<GenerationModelDescriptor>((binding) => {
+    if (binding.retired) return [];
     const effect = getRegisteredEffectById(binding.effectId);
     if (!effect) return [];
     if (binding.modelId === VIDEO_ANALYSIS_MODEL_ID) {
@@ -102,9 +103,16 @@ export function validateGenerationModelInput({
 }) {
   const provider = getActiveGenerationProvider();
   const binding = getGenerationModelBinding({ modelId, providerId: provider.id });
-  if (!binding) throw new Error(`Model ${modelId} is not available from ${provider.label}.`);
+  if (!binding || binding.retired) throw new Error(`Model ${modelId} is not available from ${provider.label}.`);
   const effect = getRegisteredEffectById(binding.effectId);
   if (!effect) throw new Error(`Model ${modelId} is not registered.`);
+  const schema = effect.inputSchema as Record<string, { type?: string; values?: unknown[] }>;
+  for (const [key, definition] of Object.entries(schema)) {
+    const value = input[key];
+    if (value !== undefined && definition.type === 'enum' && definition.values && !definition.values.includes(value)) {
+      throw new Error(`Unsupported ${key} for model ${modelId}: ${String(value)}`);
+    }
+  }
   provider.validateInput?.(effect, input);
   return { provider, binding, effect };
 }

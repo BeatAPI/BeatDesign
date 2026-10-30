@@ -339,10 +339,14 @@ test('maps MiniMax and Kling quality values to official BeatAPI resolutions', ()
     buildBeatApiTaskRequest({
       effectType: 1,
       model: 'kling-3',
-      input: { prompt: 'Product orbit', wmOutputQuality: '4k', wmDuration: '5s' },
-    }).body.resolution,
-    '4K'
+      input: { prompt: 'Product orbit', wmOutputQuality: 'pro', wmDuration: '5s' },
+    }).body.model,
+    'kling-v3'
   );
+  assert.throws(() => buildBeatApiTaskRequest({
+    effectType: 1, model: 'kling-3',
+    input: { prompt: 'Product orbit', wmOutputQuality: '4k' },
+  }), /not 4K/);
 });
 
 test('maps Kling 2.6 and 3.0 Motion Control to the dedicated BeatAPI contract', () => {

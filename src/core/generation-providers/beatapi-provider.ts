@@ -11,18 +11,24 @@ export const BEATAPI_PROVIDER_ID = 'beatapi';
 
 export const BEATAPI_MODEL_BINDINGS = [
   ['nano-banana-pro', 6, 'effects/nano-banana-pro', 'image'],
+  ['nano-banana-2.1', 35, 'effects/nano-banana-2-1', 'image'],
   ['nano-banana-2', 25, 'effects/nano-banana-2', 'image'],
   ['nano-banana-2-lite', 26, 'effects/nano-banana-2-lite', 'image'],
   ['nano-banana', 5, 'effects/nano-banana', 'image'],
   ['gpt-image-2', 12, 'effects/gpt-image-2', 'image'],
   ['gpt-image-2.5-flare', 27, 'effects/gpt-image-2-5-flare', 'image'],
   ['gpt-image-2.5-sunburst', 28, 'effects/gpt-image-2-5-sunburst', 'image'],
+  ['seedream-5-lite', 36, 'effects/seedream-5-lite', 'image'],
+  ['qwen-image-2.1', 37, 'effects/qwen-image-2-1', 'image'],
   ['seedream-5-pro', 16, 'effects/seedream-5-pro', 'image'],
   ['grok-imagine-image-2.0', 23, 'effects/grok-imagine-image-2-0', 'image'],
   ['seedance-2', 9, 'effects/seedance-2', 'image'],
   ['seedance-2-fast', 21, 'effects/seedance-2-fast', 'image'],
   ['seedance-2-mini', 22, 'effects/seedance-2-mini', 'image'],
   ['seedance-2.5', 18, 'effects/seedance-2-5', 'image'],
+  ['minimax-h3-fast', 38, 'effects/minimax-h3-fast', 'image'],
+  ['minimax-h3-normal', 39, 'effects/minimax-h3-normal', 'image'],
+  ['kling-v4', 40, 'effects/kling-v4', 'image'],
   ['minimax-h3', 17, 'effects/minimax-h3', 'image'],
   ['wan-3.0', 29, 'effects/wan-3-0', 'image'],
   ['wan-3.0-prime', 30, 'effects/wan-3-0-prime', 'image'],
@@ -45,6 +51,7 @@ export const beatApiGenerationProvider: GenerationProviderDefinition = {
   modelBindings: BEATAPI_MODEL_BINDINGS.map(
     ([modelId, effectId, uploadPath, imageBucketName]) => ({
       modelId,
+      retired: ['happyhorse-1.0', 'happyhorse-1.1', 'kling-2.6-motion-control', 'kling-3-motion-control'].includes(modelId),
       effectId,
       upstreamModelId: modelId,
       uploadPath,

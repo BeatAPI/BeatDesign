@@ -190,3 +190,38 @@ test('Studio sends asset-first validation and does not submit when provider setu
   await expect(page.getByText(/key|configured|connect/i).last()).toBeVisible();
   expect(submissions).toHaveLength(0);
 });
+
+test('Studio model picker and MCP discovery expose the updated catalog', async ({ page, request }) => {
+  const id = await project(request, 'Model catalog QA');
+  await page.goto(`/studio/${id}`);
+  await page.getByRole('button', { name: 'Model', exact: true }).click();
+  for (const name of ['Nano Banana 2.1', 'Seedream 5 Lite', 'Qwen Image 2.1']) {
+    await expect(page.getByText(name, { exact: true })).toBeVisible();
+  }
+  await page.getByText('Qwen Image 2.1', { exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Model', exact: true })).toContainText('Qwen Image 2.1');
+  await page.getByRole('button', { name: 'Media type' }).click();
+  await page.getByRole('option', { name: 'Video', exact: true }).click();
+  await page.getByRole('button', { name: 'Model', exact: true }).click();
+  for (const name of ['MiniMax H3 Fast', 'MiniMax H3 Normal', 'Kling 4']) {
+    await expect(page.getByRole('option', { name, exact: true })).toBeVisible();
+  }
+  await expect(page.getByRole('option', { name: /HappyHorse|Motion Control/i })).toHaveCount(0);
+  const discovery = JSON.stringify(await mcp(request, 'bdesign_generation_models', { kind: 'video' }));
+  expect(discovery).toContain('kling-v4');
+  expect(discovery).toContain('minimax-h3-normal');
+  expect(discovery).not.toContain('happyhorse');
+  expect(discovery).not.toContain('motion-control');
+});
+
+for (const locale of ['en', 'zh', 'ja'] as const) {
+  test(`Studio model picker works in ${locale}`, async ({ page, request }) => {
+    const id = await project(request, `Catalog locale ${locale}`);
+    await page.goto(`${locale === 'en' ? '' : `/${locale}`}/studio/${id}`);
+    const modelLabel = { en: 'Model', zh: '模型', ja: 'モデル' }[locale];
+    await page.getByRole('button', { name: modelLabel, exact: true }).click();
+    await page.getByRole('option', { name: 'Qwen Image 2.1', exact: true }).click();
+    await expect(page.getByRole('button', { name: modelLabel, exact: true })).toContainText('Qwen Image 2.1');
+    await expect(page.locator('textarea').first()).toBeVisible();
+  });
+}

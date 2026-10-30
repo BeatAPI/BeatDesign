@@ -15,8 +15,6 @@ const syncedModels = [
   'gpt-image-2.5-sunburst',
   'wan-3.0',
   'wan-3.0-prime',
-  'happyhorse-1.0',
-  'happyhorse-1.1',
   'minimax-h3-max',
   'minimax-h3-max-turbo',
 ] as const;
@@ -60,7 +58,6 @@ test('Wan 3.0 keeps image, video, and audio reference field names', () => {
     model: 'wan-3.0-prime',
     input: {
       prompt: 'Match the reference motion',
-      image_urls: ['https://media.beatapi.io/input.png'],
       video_urls: ['https://media.beatapi.io/reference.mp4'],
       audio_urls: ['https://media.beatapi.io/reference.mp3'],
       wmDuration: '30s',
@@ -72,7 +69,6 @@ test('Wan 3.0 keeps image, video, and audio reference field names', () => {
   assert.deepEqual(request.body, {
     model: 'wan-3.0-prime',
     prompt: 'Match the reference motion',
-    images: ['https://media.beatapi.io/input.png'],
     reference_videos: ['https://media.beatapi.io/reference.mp4'],
     reference_audios: ['https://media.beatapi.io/reference.mp3'],
     aspect_ratio: '9:16',

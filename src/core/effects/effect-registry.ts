@@ -17,6 +17,7 @@ type WorkspaceRegistryAspectRatio =
   | '9:21'
   | '3:4'
   | '1:1'
+  | '1:4' | '1:8' | '4:1' | '8:1'
   | '1:2'
   | '2:1'
   | '1:3'
@@ -153,7 +154,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       routeOrder: 15,
       defaultAspectRatio: '1:1',
       supportedAspectRatios: [
-        '1:1',
+        '1:1', '1:4', '1:8', '4:1', '8:1',
         '9:16',
         '16:9',
         '3:4',
@@ -170,6 +171,12 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       modelAliases: ['nanobanana2'],
     },
     {
+      id: 'nano-banana-2.1', name: 'Nano Banana 2.1', workspaceType: 'ai-image',
+      routeSlug: 'nano-banana-2-1', routeOrder: 16,
+      defaultAspectRatio: '1:1', supportedAspectRatios: ['1:1','1:4','1:8','2:3','3:2','3:4','4:1','4:3','4:5','5:4','8:1','9:16','16:9','21:9','auto'],
+      defaultOutputQuality: '1k', supportedOutputQualities: ['1k','2k','4k'],
+    },
+    {
       id: 'nano-banana-2-lite',
       name: 'Nano Banana 2 Lite',
       workspaceType: 'ai-image',
@@ -177,7 +184,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       routeOrder: 18,
       defaultAspectRatio: '1:1',
       supportedAspectRatios: [
-        '1:1',
+        '1:1', '1:4', '1:8', '4:1', '8:1',
         '9:16',
         '16:9',
         '3:4',
@@ -291,6 +298,18 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       supportedOutputQualities: ['1k', '2k'],
     },
     {
+      id: 'seedream-5-lite', name: 'Seedream 5 Lite', workspaceType: 'ai-image',
+      routeSlug: 'seedream-5-lite', routeOrder: 42, defaultAspectRatio: '1:1',
+      supportedAspectRatios: ['auto','1:1','4:3','3:4','16:9','9:16','3:2','2:3'],
+      defaultOutputQuality: '2k', supportedOutputQualities: ['2k','4k'],
+    },
+    {
+      id: 'qwen-image-2.1', name: 'Qwen Image 2.1', workspaceType: 'ai-image',
+      routeSlug: 'qwen-image-2-1', routeOrder: 45, defaultAspectRatio: 'auto',
+      supportedAspectRatios: ['auto','1:1','4:3','3:4','3:2','2:3','16:9','9:16','21:9','9:21'],
+      defaultOutputQuality: '1k', supportedOutputQualities: ['1k','2k'], supportsSeed: true,
+    },
+    {
       id: 'grok-imagine-image-2.0',
       name: 'Grok Imagine Image 2.0',
       workspaceType: 'ai-image',
@@ -357,7 +376,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       defaultAspectRatio: 'adaptive',
       supportedAspectRatios: [...SEEDANCE_ASPECT_RATIOS],
       defaultOutputQuality: '720p',
-      supportedOutputQualities: ['720p'],
+      supportedOutputQualities: ['480p', '720p', '1080p'],
     },
     {
       id: 'minimax-h3',
@@ -371,6 +390,18 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       supportedAspectRatios: [...SEEDANCE_ASPECT_RATIOS],
       defaultOutputQuality: '768p',
       supportedOutputQualities: ['768p', '2k'],
+    },
+    {
+      id: 'minimax-h3-fast', name: 'MiniMax H3 Fast', workspaceType: 'ai-video',
+      routeSlug: 'minimax-h3-fast', routeOrder: 31, defaultDuration: '5s', supportedDurations: durationRange(4,15),
+      defaultAspectRatio: '16:9', supportedAspectRatios: [...SEEDANCE_ASPECT_RATIOS],
+      defaultOutputQuality: '768p', supportedOutputQualities: ['768p','2k'],
+    },
+    {
+      id: 'minimax-h3-normal', name: 'MiniMax H3 Normal', workspaceType: 'ai-video',
+      routeSlug: 'minimax-h3-normal', routeOrder: 31.5, defaultDuration: '5s', supportedDurations: durationRange(5,15),
+      defaultAspectRatio: '16:9', supportedAspectRatios: ['16:9','9:16','1:1','4:3','3:4','21:9'],
+      defaultOutputQuality: '768p', supportedOutputQualities: ['480p','768p','1080p'], supportsSeed: true,
     },
     {
       id: 'wan-3.0',
@@ -392,7 +423,7 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       routeSlug: 'wan-3-0-prime',
       routeOrder: 34,
       defaultDuration: '5s',
-      supportedDurations: durationRange(2, 30),
+      supportedDurations: durationRange(4, 30),
       defaultAspectRatio: '16:9',
       supportedAspectRatios: ['16:9', '9:16', '1:1', '4:3', '3:4'],
       defaultOutputQuality: '720p',
@@ -483,8 +514,14 @@ export const WORKSPACE_EFFECT_REGISTRY: readonly WorkspaceEffectRegistryEntry[] 
       defaultAspectRatio: '16:9',
       supportedAspectRatios: ['16:9', '9:16', '1:1'],
       defaultOutputQuality: 'pro',
-      supportedOutputQualities: ['std', 'pro', '4k'],
+      supportedOutputQualities: ['std', 'pro'],
       modelAliases: ['kling30'],
+    },
+    {
+      id: 'kling-v4', name: 'Kling 4', workspaceType: 'ai-video', routeSlug: 'kling-v4', routeOrder: 62,
+      defaultDuration: '5s', supportedDurations: durationRange(3,30), defaultAspectRatio: '16:9',
+      supportedAspectRatios: ['16:9','9:16','1:1','21:9'], defaultOutputQuality: '720p',
+      supportedOutputQualities: ['720p','1080p'],
     },
     {
       id: 'grok-imagine-video-1.5',

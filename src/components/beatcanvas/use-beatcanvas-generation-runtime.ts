@@ -1,3 +1,4 @@
+import { localizeModelError } from '@/core/effects/localize-model-error';
 import { useEffectMetadata } from '@/core/workspace-hooks/use-workspace-metadata';
 import type { WorkspaceModelOption } from '@/core/effects/workspace-models';
 import type {
@@ -323,7 +324,7 @@ export function useBeatCanvasGenerationRuntime({
         } catch (error) {
           const message =
             error instanceof Error
-              ? error.message
+              ? localizeModelError(error.message, studioT)
               : studioT('messages.generationFailed');
           updateGenerationOutput(outputCard.id, {
             status: 'failed',

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
+import { localizeModelError } from '@/core/effects/localize-model-error';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { StudioComposer } from '@/components/studio/studio-composer';
@@ -91,6 +93,7 @@ export function BeatStudioWorkspace({
   initialPrompt: string | null;
 }) {
   const queryClient = useQueryClient();
+  const studioT = useTranslations('AppShell.studio');
   const initialMedia: StudioMedia =
     initialTarget === 'analysis'
       ? 'analysis'
@@ -225,7 +228,7 @@ export function BeatStudioWorkspace({
       void invalidateWorkspaceAfterGeneration(queryClient);
     },
     onError: (generationError: Error) => {
-      setError(generationError.message);
+      setError(localizeModelError(generationError.message, studioT));
       void invalidateWorkspaceAfterGeneration(queryClient);
     },
   });

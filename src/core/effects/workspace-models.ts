@@ -98,7 +98,7 @@ const toWorkspaceModelOption = (
   const mediaSchema = withMediaSchema(workspaceType, entry.id);
   const providerId = getActiveGenerationProviderId();
   const binding = getGenerationModelBinding({ modelId: entry.id, providerId });
-  if (!binding) return null;
+  if (!binding || binding.retired) return null;
 
   return {
     id: entry.id,

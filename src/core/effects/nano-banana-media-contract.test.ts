@@ -6,19 +6,19 @@ import { buildBeatApiTaskRequest } from '@/core/adapters/beatapi-adapter';
 import { getRegisteredEffectById } from './registered-effects';
 import { getWorkspaceMediaSchema } from './workspace-media';
 
-test('Nano Banana accepts up to ten reference images from Canvas through BeatAPI', () => {
+test('Nano Banana accepts up to three reference images from Canvas through BeatAPI', () => {
   const mediaSchema = getWorkspaceMediaSchema('nano-banana');
   const inputSchema = getRegisteredEffectById(5)?.inputSchema as Record<
     string,
     unknown
   >;
   const images = Array.from(
-    { length: 10 },
+    { length: 3 },
     (_, index) => `https://media.example/reference-${index + 1}.png`
   );
 
-  assert.equal(mediaSchema?.image.max, 10);
-  assert.equal(mediaSchema?.image.slots.length, 10);
+  assert.equal(mediaSchema?.image.max, 3);
+  assert.equal(mediaSchema?.image.slots.length, 3);
   assert.ok(
     mediaSchema?.image.slots.every((slot) => slot.kind === 'reference-image')
   );
@@ -46,8 +46,8 @@ test('Nano Banana 2 variants expose the upstream image contract', () => {
     const effect = getRegisteredEffectById(effectId);
     const inputSchema = effect?.inputSchema as Record<string, unknown>;
 
-    assert.equal(mediaSchema?.image.max, 10);
-    assert.equal(mediaSchema?.image.slots.length, 10);
+    assert.equal(mediaSchema?.image.max, 14);
+    assert.equal(mediaSchema?.image.slots.length, 14);
     assert.ok(inputSchema.image_urls);
     assert.equal(effect?.model, model);
   }

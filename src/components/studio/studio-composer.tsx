@@ -74,6 +74,7 @@ export function StudioComposer({
 }) {
   const labels = useCanvasComposerLabels();
   const t = useTranslations('AppShell.studio.analysis');
+  const studioT = useTranslations('AppShell.studio');
   const analysisFileInputRef = useRef<HTMLInputElement | null>(null);
   const parameterPickerRef = useRef<HTMLDivElement | null>(null);
   const [isParameterOpen, setIsParameterOpen] = useState(false);
@@ -251,7 +252,7 @@ export function StudioComposer({
         <div className="mt-1.5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             <WorkspaceSelect
-              ariaLabel="Media type"
+              ariaLabel={studioT('messages.mediaTypeLabel')}
               triggerClassName="min-w-[96px]"
               value={media}
               options={[
@@ -308,7 +309,7 @@ export function StudioComposer({
               </>
             ) : (
             <WorkspaceSelect
-              ariaLabel="Model"
+              ariaLabel={studioT('messages.modelPickerLabel')}
               triggerClassName="w-fit max-w-full"
               value={selectedModel?.id || ''}
               options={models.map((model) => ({

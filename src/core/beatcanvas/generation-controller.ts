@@ -6,7 +6,8 @@ import {
   precheckEffect as defaultPrecheckEffect,
   resolveWmTaskId,
 } from '@/core/effects/client-api';
-import { getWorkspaceEffectReferenceInputDefaults } from '@/core/effects/effect-registry';
+import { getWorkspaceEffectReferenceInputDefaults, getWorkspaceEffectRegistryEntry } from '@/core/effects/effect-registry';
+import { getGenerationModelBinding } from '@/core/generation-providers/registry';
 import { resolveOutputMedia } from '@/core/effects/output-media';
 import { buildDraftModelParameters } from '@/core/effects/model-parameters';
 import {
@@ -175,10 +176,14 @@ export const toWorkflowReferenceCard = (
 export const getSelectableModel = (
   models: WorkspaceModelOption[],
   modelId: string | null | undefined
-) =>
-  findWorkspaceModelOption(models, modelId) ??
-  models.find((model) => model.available !== false) ??
-  null;
+) => {
+  const found = findWorkspaceModelOption(models, modelId);
+  if (found) return found;
+  // Never silently replace a retired model on an existing generation card.
+  const canonicalId = modelId && (getWorkspaceEffectRegistryEntry(modelId)?.id ?? modelId);
+  if (canonicalId && getGenerationModelBinding({ modelId: canonicalId })?.retired) return null;
+  return models.find((model) => model.available !== false) ?? null;
+};
 
 const getVideoAnalysisModel = (
   depth: CanvasDraftCard['analysisDepth'] = 'standard'
@@ -271,7 +276,7 @@ export const buildGenerationEffectInput = async ({
   const models = draftCard.type === 'image' ? imageModels : videoModels;
   const model = getSelectableModel(models, draftCard.modelId);
   if (!model) {
-    throw new Error(translate('messages.noAvailableModel'));
+    throw new Error(translate(draftCard.modelId && getGenerationModelBinding({ modelId: getWorkspaceEffectRegistryEntry(draftCard.modelId)?.id ?? draftCard.modelId })?.retired ? 'messages.retiredModel' : 'messages.noAvailableModel'));
   }
 
   const metadata = metadataMap[model.id];

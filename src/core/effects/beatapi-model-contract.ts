@@ -6,14 +6,17 @@ export type BeatApiVideoReferenceContract = {
 };
 
 export const BEATAPI_IMAGE_REFERENCE_LIMITS = {
-  'nano-banana': 10,
-  'nano-banana-2': 10,
-  'nano-banana-2-lite': 10,
-  'nano-banana-pro': 8,
+  'nano-banana': 3,
+  'nano-banana-2': 14,
+  'nano-banana-2.1': 14,
+  'nano-banana-2-lite': 14,
+  'nano-banana-pro': 14,
   'gpt-image-2': 16,
   'gpt-image-2.5-flare': 16,
   'gpt-image-2.5-sunburst': 16,
   'seedream-5-pro': 10,
+  'seedream-5-lite': 6,
+  'qwen-image-2.1': 10,
   'grok-imagine-image-2.0': 5,
 } as const;
 
@@ -24,6 +27,9 @@ export const BEATAPI_VIDEO_REFERENCE_CONTRACTS = {
     maxReferenceAudios: 3,
     allowsAudioOnly: false,
   },
+  'minimax-h3-fast': { maxReferenceImages: 9, maxReferenceVideos: 3, maxReferenceAudios: 3, allowsAudioOnly: false },
+  'minimax-h3-normal': { maxReferenceImages: 4, maxReferenceVideos: 1, maxReferenceAudios: 0, allowsAudioOnly: false },
+  'kling-v4': { maxReferenceImages: 10, maxReferenceVideos: 5, maxReferenceAudios: 3, allowsAudioOnly: false },
   'seedance-2': {
     maxReferenceImages: 9,
     maxReferenceVideos: 3,

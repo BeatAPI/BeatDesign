@@ -16,12 +16,15 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
   assert.deepEqual(imageIds, [
     'nano-banana-pro',
     'nano-banana-2',
+    'nano-banana-2.1',
     'nano-banana-2-lite',
     'nano-banana',
     'gpt-image-2',
     'gpt-image-2.5-flare',
     'gpt-image-2.5-sunburst',
     'seedream-5-pro',
+    'seedream-5-lite',
+    'qwen-image-2.1',
     'grok-imagine-image-2.0',
   ]);
   assert.deepEqual(videoIds, [
@@ -30,17 +33,16 @@ test('workspace exposes the official BeatAPI image and video catalog', () => {
     'seedance-2-mini',
     'seedance-2.5',
     'minimax-h3',
+    'minimax-h3-fast',
+    'minimax-h3-normal',
     'wan-3.0',
     'wan-3.0-prime',
-    'happyhorse-1.0',
-    'happyhorse-1.1',
     'minimax-h3-max',
     'minimax-h3-max-turbo',
     'veo-3.1',
     'kling-3',
+    'kling-v4',
     'grok-imagine-video-1.5',
-    'kling-2.6-motion-control',
-    'kling-3-motion-control',
   ]);
   assert.equal(videoIds.includes('wan27'), false);
   assert.equal(imageIds.includes('nano-banana-2'), true);
@@ -81,24 +83,10 @@ test('legacy canvas model ids resolve to official BeatAPI slugs', () => {
   );
 });
 
-test('Kling Motion Control exposes one image, one motion video, and its controls', () => {
-  const videoModels = getWorkspaceModelsByType('ai-video');
-  const kling26 = findWorkspaceModelOption(
-    videoModels,
-    'kling-2.6-motion-control'
-  );
-  const kling3 = findWorkspaceModelOption(videoModels, 'kling-3-motion-control');
-
-  assert.equal(kling26?.maxReferenceImages, 1);
-  assert.equal(kling26?.maxSourceVideos, 1);
-  assert.deepEqual(kling26?.supportedOutputQualities, ['720p', '1080p']);
-  assert.deepEqual(kling26?.characterOrientationOptions, ['image', 'video']);
-  assert.equal(kling3?.maxReferenceImages, 1);
-  assert.equal(kling3?.maxSourceVideos, 1);
-  assert.deepEqual(kling3?.backgroundSourceOptions, [
-    'input_video',
-    'input_image',
-  ]);
+test('retired Motion Control models are not selectable', () => {
+  const models = getWorkspaceModelsByType('ai-video');
+  assert.equal(findWorkspaceModelOption(models, 'kling-2.6-motion-control'), null);
+  assert.equal(findWorkspaceModelOption(models, 'kling-3-motion-control'), null);
 });
 
 test('BeatAPI-backed models are the default image and video canvas choices', () => {

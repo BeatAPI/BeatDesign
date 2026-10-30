@@ -23,11 +23,16 @@ parameters, and provider configuration without uploading files. Only the
 subsequent confirmed submission prepares remote delivery URLs. Browser status
 requests read local task state; provider synchronization runs server-side.
 
-The built-in catalog includes the current BeatAPI GPT Image 2.5 Flare/Sunburst, Wan 3.0/Prime, HappyHorse 1.0/1.1, and MiniMax H3 Max/Max Turbo contracts. Their resolution casing, duration ranges, reference limits, required-image rules, seed support, and upstream request field names are preserved by the adapter.
+The source catalog was reconciled against `GET /v1/media/models` on 2026-10-30. It offers the current image and video models through a shared API key, except HappyHorse and Kling Motion Control, which are retired in BeatDesign. Retired model identities remain readable for existing project history and polling, but cannot be selected or submitted for new generation. Existing cards must be switched explicitly to another model. A catalog entry is a supported local integration, not proof of a successful paid generation.
 
-Image attachments remain generic references in the shared BeatDesign request contract. Most first-frame and last-frame intent uses explicit prompt directives such as `Use @Image1 as the first frame.` and `Use @Image2 as the last frame.` The MiniMax H3 Max pair is an upstream exception: its dedicated two-slot media schema maps attachment order directly to first frame then last frame, matching BeatAPI's published contract.
+The current source exposes these logical models:
 
-Kling 2.6 and Kling 3.0 Motion Control are exposed as BeatAPI models. Each run requires exactly one character image and one MP4/MOV motion video uploaded through the connected BeatAPI account. The Workspace never asks users for a KIE key; BeatAPI owns the upstream provider route, billing, polling, and output persistence.
+- Image: Nano Banana, Nano Banana 2, Nano Banana 2.1, Nano Banana 2 Lite, Nano Banana Pro, GPT Image 2, GPT Image 2.5 Flare, GPT Image 2.5 Sunburst, Seedream 5 Pro, Seedream 5 Lite, Grok Imagine Image 2.0 and Qwen Image 2.1.
+- Video: MiniMax H3, H3 Fast, H3 Normal, H3 Max and H3 Max Turbo; Seedance 2, 2 Fast, 2 Mini and 2.5; Veo 3.1; Kling 3 and Kling 4; Grok Imagine Video 1.5; Wan 3.0 and Wan 3.0 Prime. Kling 3 is sent to BeatAPI as `kling-v3` while its existing logical ID remains `kling-3` for project compatibility.
+
+This is a dated source snapshot, not a live-synchronized catalog. Model availability can change; check the live endpoint before a future update. The current changes are not part of the published v0.2.5 package.
+
+The Composer exposes a supported subset of each model's upstream controls. MiniMax H3 Max / Max Turbo use dedicated first/last-frame slots; most other models use explicit prompt directives for frames and generic references otherwise. Kling 4 currently accepts generic references, translates BeatDesign reference mentions to BeatAPI syntax, and does not expose upstream elements or multi-frame controls. Account access, funds, and model availability remain subject to BeatAPI.
 
 Video Analysis is exposed as a stable BeatAPI workflow with Standard and Deep depth controls. The Workspace uploads one MP4/MOV input, submits the analysis task, polls `GET /v1/tasks/:id`, and stores the returned report text and usage in the local project history. Provider-specific Gemini routing remains private to BeatAPI.
 
