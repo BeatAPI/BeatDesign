@@ -273,7 +273,14 @@
         "videoMetadataLoadFailed": "Unable to load video metadata.",
         "analysisVideoRequired": "Attach exactly one MP4 or MOV video to analyze.",
         "analysisCompletedWithoutText": "Analysis completed without text output.",
-        "addTextNoteSuccess": "Text note added to the canvas."
+        "addTextNoteSuccess": "Text note added to the canvas.",
+        "modelRequiresImage": "{model} requires at least one image.",
+        "projectReferenceRequired": "Reference media must belong to this project. Import it again.",
+        "generationStillProcessing": "Generation is still processing. You can find it in History.",
+        "generationMissingOutput": "Generation completed without a media URL.",
+        "providerKeyRequired": "Connect a BeatAPI API key before generating.",
+        "timelineUsageFailed": "Timeline usage is unavailable. Please try again.",
+        "downloadFailed": "Could not download this asset. Please try again."
       },
       "dock": {
         "select": "Select",
@@ -516,7 +523,8 @@
           "submitting": "Submitting generation…",
           "processing": "BeatAPI is generating a new Take…",
           "succeeded": "Generation completed."
-        }
+        },
+        "takeLabel": "AI Take {number}"
       },
       "trim": {
         "in": "In",
@@ -648,7 +656,8 @@
         "redoFailed": "BeatAPI could not redo this selection.",
         "srtImportFailed": "The SRT file could not be imported.",
         "srtTooLarge": "The SRT file is too large.",
-        "clipOverlap": "This position overlaps another clip on the same track."
+        "clipOverlap": "This position overlaps another clip on the same track.",
+        "saveConflict": "The timeline changed elsewhere. Your local edit is still open. Review the latest version before saving."
       }
     },
     "header": {
@@ -786,7 +795,38 @@
     }
   },
   "Common": {
-    "loading": "Loading"
+    "loading": "Loading",
+    "close": "Close",
+    "media": {
+      "image": "Image",
+      "video": "Video",
+      "audio": "Audio",
+      "text": "Text",
+      "analysis": "Analysis",
+      "timeline": "Timeline",
+      "any": "Any media"
+    },
+    "audioRole": {
+      "music": "Music",
+      "voice": "Voice",
+      "sound_effect": "Sound effect",
+      "source_audio": "Source audio",
+      "reference": "Reference"
+    },
+    "notifications": "Notifications",
+    "canvas": {
+      "nodeKeyboard": "Press Enter or Space to select a node, arrow keys to move it, Delete to remove it, or Escape to cancel.",
+      "nodeSelection": "Press Enter or Space to select a node, Delete to remove it, or Escape to cancel.",
+      "nodeMoved": "Node moved to x: {x}, y: {y}.",
+      "edgeSelection": "Press Enter or Space to select a connection, or Escape to cancel.",
+      "controls": "Canvas controls",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fitView": "Fit graph to view",
+      "toggleInteraction": "Toggle canvas interaction",
+      "minimap": "Canvas overview",
+      "handle": "Connection point"
+    }
   },
   "ProjectSettings": {
     "title": "Project settings",

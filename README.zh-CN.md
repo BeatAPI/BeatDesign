@@ -87,12 +87,16 @@ Studio 提供更专注的单次生成入口。Assets 让导入和生成的文件
 需要 Node.js 22+、`pnpm` 10+，以及 macOS 或 Windows 上的新版 Chrome。
 
 ```bash
+git clone https://github.com/BeatAPI/BeatDesign.git
+cd BeatDesign
 pnpm install
 pnpm db:push
 pnpm dev
 ```
 
 打开 [http://127.0.0.1:3020](http://127.0.0.1:3020)。
+
+通过语言菜单选择中文、英文或日文。当前源码会在此浏览器保存选择 400 天，每次访问续期，再打开旧的语言链接也沿用该选择。请使用相同的本机地址；更换浏览器、使用隐私窗口或清除站点数据后需重新选择。
 
 只有在生成、分析媒体或使用 AI 重做时，才需要添加自己的 [BeatAPI API Key](https://beatapi.io/dashboard/apikeys)。选择本地文件不会自动上传到 Provider。
 

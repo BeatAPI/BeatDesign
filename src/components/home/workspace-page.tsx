@@ -135,7 +135,7 @@ function CreateProjectDialog({
           <DialogTitle className="beat-product-display text-[24px] font-semibold tracking-[-0.035em] text-white">
             {copy.createTitle}
           </DialogTitle>
-          <DialogDescription className="w-full text-[13px] leading-6 text-white/48 sm:whitespace-nowrap">
+          <DialogDescription className="w-full text-[13px] leading-6 text-white/48">
             {copy.createDescription}
           </DialogDescription>
         </DialogHeader>

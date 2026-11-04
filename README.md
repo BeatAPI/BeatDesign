@@ -87,12 +87,16 @@ Any MCP Agent ───── works in the same local Project
 Requirements include Node.js 22+, `pnpm` 10+, and a current Chrome browser on macOS or Windows.
 
 ```bash
+git clone https://github.com/BeatAPI/BeatDesign.git
+cd BeatDesign
 pnpm install
 pnpm db:push
 pnpm dev
 ```
 
 Open [http://127.0.0.1:3020](http://127.0.0.1:3020).
+
+Use the language menu to choose English, Chinese, or Japanese. Current source remembers the choice in this browser for 400 days, renewed on each visit, including when reopening an old localized link. Use the same local hostname; another browser, private session, or cleared site data needs a new choice.
 
 Add your own [BeatAPI API key](https://beatapi.io/dashboard/apikeys) only when you want to generate or analyze media, or use AI redo. Selecting a local file does not upload it to a provider.
 

@@ -15,5 +15,5 @@ test('projects page stays simple and resumes each project in its last workspace'
   assert.match(source, /onClick=\{\(\) => void createProject\('studio'\)\}/);
   assert.match(source, /onClick=\{\(\) => void createProject\('canvas'\)\}/);
   assert.doesNotMatch(source, /href="\/(studio|canvas)"/);
-  assert.match(source, /sm:whitespace-nowrap/);
+  // Multilingual dialog wrapping is exercised by the browser matrix.
 });

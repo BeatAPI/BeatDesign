@@ -334,7 +334,7 @@ export function ProjectSettingsDialog({
                 <dt className="text-white/50">{t('created')}</dt>
                 <dd>
                   {settings &&
-                    new Date(settings.createdAt).toLocaleDateString()}
+                    new Date(settings.createdAt).toLocaleDateString(locale)}
                 </dd>
                 <dt className="text-white/50">{t('storage')}</dt>
                 <dd>{t('local')}</dd>

@@ -96,7 +96,9 @@ function mergeValue({
       ...Object.keys(remote),
     ]);
     for (const key of keys) {
-      if (key === 'updatedAt' || key === 'duration') continue;
+      // Only the document duration is derived. Clip durations are user edits
+      // and must participate in the same merge/conflict rules as trim points.
+      if (path === 'timeline' && (key === 'updatedAt' || key === 'duration')) continue;
       merged[key] = mergeValue({
         base: base[key],
         local: local[key],
@@ -105,8 +107,10 @@ function mergeValue({
         conflicts,
       });
     }
-    if ('updatedAt' in local) merged.updatedAt = local.updatedAt;
-    if ('duration' in local) merged.duration = local.duration;
+    if (path === 'timeline') {
+      merged.updatedAt = local.updatedAt;
+      merged.duration = local.duration;
+    }
     return merged;
   }
 

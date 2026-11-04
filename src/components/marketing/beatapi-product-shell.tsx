@@ -54,7 +54,7 @@ export function Brand({ href = '/' }: { href?: string }) {
   return (
     <Link
       href={href}
-      aria-label={`${appConfig.app_name} home`}
+      aria-label={`${appConfig.app_name} ${m['product.shell.home']()}`}
       className="beat-product-display inline-flex min-w-0 items-center gap-2.5 text-[15px] font-semibold tracking-[-0.02em] text-[#f6f6f4] sm:text-base"
     >
       <img

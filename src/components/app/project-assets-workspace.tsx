@@ -13,7 +13,7 @@ export function ProjectAssetsWorkspace({ projectId }: { projectId: string }) {
           <h1 className="beat-product-display text-[1.35rem] font-semibold tracking-[-0.03em] text-[var(--beat-text-1)]">
             {t('title')}
           </h1>
-          <p className="mt-2 whitespace-nowrap text-[13px] leading-6 text-[var(--beat-text-3)]">
+          <p className="mt-2 text-[13px] leading-6 text-[var(--beat-text-3)]">
             {t('description')}
           </p>
           <ProjectOrganizationWorkspace key={projectId} projectId={projectId} />

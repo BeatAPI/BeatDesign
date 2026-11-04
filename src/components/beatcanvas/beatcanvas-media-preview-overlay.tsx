@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
+import { Dialog } from '@base-ui/react/dialog';
 
 export type BeatCanvasPreviewMedia = {
   type: 'image' | 'video';
@@ -7,26 +8,32 @@ export type BeatCanvasPreviewMedia = {
   title: string;
 };
 
-export function BeatCanvasMediaPreviewOverlay({
-  media,
-  closeLabel,
-  onClose,
-}: {
+type PreviewProps = {
   media: BeatCanvasPreviewMedia | null;
   closeLabel: string;
   onClose: () => void;
-}) {
-  if (!media) {
-    return null;
-  }
+};
 
+export function BeatCanvasMediaPreviewOverlay(props: PreviewProps) {
+  if (!props.media) return null;
   return (
-    <section
-      aria-label={media.title}
-      aria-modal="true"
-      className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-black/55 px-6 py-8 backdrop-blur-sm"
-      role="dialog"
-    >
+    <Dialog.Root open onOpenChange={(open) => { if (!open) props.onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Popup
+          aria-label={props.media.title}
+          className="pointer-events-auto fixed inset-x-0 bottom-0 top-14 z-[70] flex items-center justify-center bg-black/55 px-6 py-8 backdrop-blur-sm outline-none"
+          onKeyDown={(event) => { if (event.key !== 'Escape') event.stopPropagation(); }}
+        >
+          <BeatCanvasMediaPreviewContent {...props} />
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+export function BeatCanvasMediaPreviewContent({ media, closeLabel, onClose }: PreviewProps) {
+  if (!media) return null;
+  return (
       <div className="relative flex max-w-[min(1120px,calc(100vw-48px))] flex-col items-center">
         <button
           type="button"
@@ -62,6 +69,5 @@ export function BeatCanvasMediaPreviewOverlay({
           {media.title}
         </div>
       </div>
-    </section>
   );
 }

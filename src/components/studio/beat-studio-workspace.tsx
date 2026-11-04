@@ -58,8 +58,10 @@ const wait = (ms: number) =>
 
 async function waitForGeneration({
   wmTaskId,
+  translate,
 }: {
   wmTaskId: string;
+  translate: (key: string) => string;
 }) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (document.visibilityState === 'hidden') {
@@ -72,12 +74,12 @@ async function waitForGeneration({
     );
     if (result.status === 'succeeded') return result.output;
     if (result.status === 'failed') {
-      throw new Error(result.error || 'Generation failed');
+      throw new Error(result.error || translate('messages.generationFailed'));
     }
     await wait(2500);
   }
   throw new Error(
-    'Generation is still processing. You can find it in History.'
+    translate('messages.generationStillProcessing')
   );
 }
 
@@ -151,19 +153,19 @@ export function BeatStudioWorkspace({
     mutationFn: async () => {
       const isAnalysis = media === 'analysis';
       if (!isAnalysis && !selectedModel) {
-        throw new Error('No model is available for this media type.');
+        throw new Error(studioT('messages.noAvailableModel'));
       }
       const promptConstraints = getGenerationPromptConstraints({
         modelId: isAnalysis ? VIDEO_ANALYSIS_MODEL_ID : selectedModel?.id,
       });
       if (promptConstraints.required && !draft.prompt.trim()) {
-        throw new Error('Describe what you want to create first.');
+        throw new Error(studioT('messages.promptRequired'));
       }
       if (selectedModel?.requiresImageInput && referenceUrls.length === 0) {
-        throw new Error(`${selectedModel.name} requires at least one image.`);
+        throw new Error(studioT('messages.modelRequiresImage', { model: selectedModel.name }));
       }
       if (isAnalysis && !analysisFile) {
-        throw new Error('Add an MP4 or MOV video to analyze.');
+        throw new Error(studioT('messages.analysisVideoRequired'));
       }
       const initialInput = isAnalysis
         ? {
@@ -181,7 +183,7 @@ export function BeatStudioWorkspace({
           .find((item) => item.publicUrl === url ||
             (item.metadata as { providerUrl?: string } | null)?.providerUrl === url);
         const assetId = local?.assetId ?? asset?.id;
-        if (!assetId) throw new Error('Reference media must belong to this project. Import it again.');
+        if (!assetId) throw new Error(studioT('messages.projectReferenceRequired'));
         return { assetId, role: 'reference' as const };
       });
       if (isAnalysis) {
@@ -198,14 +200,14 @@ export function BeatStudioWorkspace({
         parameters: initialInput,
       };
       const precheck = await precheckEffect({ generation: request });
-      if (!precheck.ok) throw new Error(precheck.data.error || 'Generation validation failed.');
+      if (!precheck.ok) throw new Error(precheck.data.error || studioT('messages.requestValidationFailed'));
       const response = await generateEffect({
         generation: request, generationIntentToken: precheck.data.uploadIntentToken,
       });
-      if (!response.ok) throw new Error(response.data.error || 'Generation failed.');
+      if (!response.ok) throw new Error(response.data.error || studioT('messages.generationFailed'));
       const created = response.data;
       if (created.status === 'failed') {
-        throw new Error(created.error || 'Generation failed');
+        throw new Error(created.error || studioT('messages.generationFailed'));
       }
       await invalidateWorkspaceAfterGeneration(queryClient);
       const wmTaskId = resolveWmTaskId(created);
@@ -213,14 +215,15 @@ export function BeatStudioWorkspace({
       if (wmTaskId && created.status !== 'succeeded') {
         output = await waitForGeneration({
           wmTaskId,
+          translate: studioT,
         });
       }
       if (isAnalysis) {
         if (!resolveVideoAnalysisText(output)) {
-          throw new Error('Analysis completed without text output.');
+          throw new Error(studioT('messages.analysisCompletedWithoutText'));
         }
       } else if (!resolveOutputMedia(output).resultUrl) {
-        throw new Error('Generation completed without a media URL.');
+        throw new Error(studioT('messages.generationMissingOutput'));
       }
     },
     onSuccess: () => {

@@ -45,11 +45,13 @@ export async function configureLocalSqlite(
         break;
       } catch (error) {
         if (
-          ((error as { code?: string }).code !== 'SQLITE_BUSY' &&
+          (!/^SQLITE_BUSY(?:_|$)/.test((error as { code?: string }).code ?? '') &&
            !/duplicate column name:/i.test(error instanceof Error ? error.message : '')) ||
           attempt === 5
         )
           throw error;
+        // batch() rolls back before rejecting. Re-read the schema on the next
+        // attempt, including when another process invalidated our WAL snapshot.
         await delay(50 * (attempt + 1));
       }
     }

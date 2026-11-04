@@ -42,6 +42,7 @@ const button = `${control} hover:bg-white/10`;
 /** Local template controls delegate all authoritative writes to their shared command owner. */
 export function WorkflowTemplatePanel(props: WorkflowTemplatePanelProps) {
   const t = useTranslations('Organization');
+  const mediaT = useTranslations('Common.media');
   const [captureName, setCaptureName] = useState('');
   const [capturePreview, setCapturePreview] =
     useState<WorkflowTemplateDefinition | null>(null);
@@ -167,7 +168,7 @@ export function WorkflowTemplatePanel(props: WorkflowTemplatePanelProps) {
               {renderDefinition(capturePreview)}
               {capturePreview.slots.map((slot) => (
                 <p className="text-xs" key={slot.id}>
-                  {slot.label} · {slot.mediaType}
+                  {slot.label} · {mediaT(slot.mediaType)}
                 </p>
               ))}
               <button
@@ -230,7 +231,7 @@ export function WorkflowTemplatePanel(props: WorkflowTemplatePanelProps) {
               {renderDefinition(definition)}
               {definition.slots.map((slot) => (
                 <label key={slot.id} className="block space-y-1 text-xs">
-                  {slot.label} · {slot.mediaType}
+                  {slot.label} · {mediaT(slot.mediaType)}
                   {slot.required ? ` · ${t('templateRequired')}` : ''}
                   <select
                     className={`${control} block w-full`}

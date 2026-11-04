@@ -5,17 +5,20 @@ export const paraglideCompilerOptions = {
   outdir: './src/paraglide',
   outputStructure: 'message-modules',
   cookieName: 'PARAGLIDE_LOCALE',
-  // On unprefixed links, honor a saved choice first, then the browser's
-  // preferred language. Explicit /zh and /ja links always win below.
+  // Persist across browser restarts, renewing on each visit (400 days).
+  cookieMaxAge: 60 * 60 * 24 * 400,
+  // A saved choice wins even when opening an old localized bookmark.
+  // Without a cookie, unprefixed links use the browser's preferred language;
+  // explicit /zh and /ja links use their locale before browser detection.
   strategy: ['cookie', 'preferredLanguage', 'url', 'baseLocale'],
   routeStrategies: [
     {
       match: '/zh/:path(.*)?',
-      strategy: ['url', 'cookie', 'preferredLanguage', 'baseLocale'],
+      strategy: ['cookie', 'url', 'preferredLanguage', 'baseLocale'],
     },
     {
       match: '/ja/:path(.*)?',
-      strategy: ['url', 'cookie', 'preferredLanguage', 'baseLocale'],
+      strategy: ['cookie', 'url', 'preferredLanguage', 'baseLocale'],
     },
   ],
   urlPatterns: [

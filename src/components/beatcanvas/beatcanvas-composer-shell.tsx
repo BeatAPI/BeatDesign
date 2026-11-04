@@ -1,4 +1,5 @@
 import { Textarea } from '@/components/ui/textarea';
+import { useTranslations } from '@/core/workspace-lib/shims/next-intl';
 import { cn } from '@/lib/utils';
 import type { CanvasGenerationCard } from '@/core/beatcanvas/canvas-types';
 import {
@@ -80,6 +81,7 @@ export function BeatCanvasComposerShell({
   generationBlockers?: readonly string[];
 }) {
   const blockerDescriptionId = useId();
+  const mediaT = useTranslations('Common.media');
   const promptInputRef = useRef<HTMLTextAreaElement | null>(null);
   const [activeMention, setActiveMention] =
     useState<ActiveCanvasReferenceMention | null>(null);
@@ -288,7 +290,7 @@ export function BeatCanvasComposerShell({
                           </span>
                         </span>
                         <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-white/30">
-                          {mention.type}
+                          {mediaT(mention.type)}
                         </span>
                       </button>
                     );

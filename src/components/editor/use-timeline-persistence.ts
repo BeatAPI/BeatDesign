@@ -17,6 +17,7 @@ type Options = {
   onRemote: (document: TimelineDocument) => void;
   onStatus: (status: 'idle' | 'saving' | 'saved') => void;
   onError: (message: string) => void;
+  errorMessages: { conflict: string; saveFailed: string };
 };
 
 export function useTimelinePersistence(options: Options) {
@@ -48,7 +49,7 @@ export function useTimelinePersistence(options: Options) {
           const remote = (await load()).timeline;
           if (!remote) throw error;
           const merged = mergeTimelineDocuments({ base, local: candidate, remote: remote.document });
-          if (merged.conflicts.length) throw new Error(`Timeline edit conflict at ${merged.conflicts[0].path}. Your local edit is still open.`);
+          if (merged.conflicts.length) throw new Error(o.errorMessages.conflict);
           saved = await saveTimelineThroughCommand({ projectId, document: merged.document, baseDocument: remote.document, expectedRevision: remote.version });
         }
         if (!active) return;
@@ -62,7 +63,7 @@ export function useTimelinePersistence(options: Options) {
       } catch (error) {
         if (active) {
           o.onStatus('idle');
-          o.onError(error instanceof Error ? error.message : 'The timeline could not be saved.');
+          o.onError(error instanceof Error ? error.message : o.errorMessages.saveFailed);
         }
       } finally {
         busy.current = false;

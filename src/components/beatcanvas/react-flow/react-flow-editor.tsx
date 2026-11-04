@@ -306,6 +306,7 @@ function BeatCanvasReactFlowCanvas({
   components,
 }: BeatCanvasReactFlowEditorProps) {
   const organizationT = useTranslations('Organization');
+  const a11yT = useTranslations('Common.canvas');
   const containerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<
     ReactFlowInstance<BeatCanvasFlowNode, BeatCanvasFlowEdge> | null
@@ -1443,6 +1444,19 @@ function BeatCanvasReactFlowCanvas({
         className="beatcanvas-react-flow absolute inset-0 overflow-hidden"
       >
         <ReactFlow<BeatCanvasFlowNode, BeatCanvasFlowEdge>
+          ariaLabelConfig={{
+            'node.a11yDescription.default': a11yT('nodeKeyboard'),
+            'node.a11yDescription.keyboardDisabled': a11yT('nodeSelection'),
+            'node.a11yDescription.ariaLiveMessage': ({ x, y }) => a11yT('nodeMoved', { x, y }),
+            'edge.a11yDescription.default': a11yT('edgeSelection'),
+            'controls.ariaLabel': a11yT('controls'),
+            'controls.zoomIn.ariaLabel': a11yT('zoomIn'),
+            'controls.zoomOut.ariaLabel': a11yT('zoomOut'),
+            'controls.fitView.ariaLabel': a11yT('fitView'),
+            'controls.interactive.ariaLabel': a11yT('toggleInteraction'),
+            'minimap.ariaLabel': a11yT('minimap'),
+            'handle.ariaLabel': a11yT('handle'),
+          }}
           nodes={lineagePresentation.nodes}
           edges={lineagePresentation.edges}
           nodeTypes={nodeTypes}

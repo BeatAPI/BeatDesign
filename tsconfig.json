@@ -32,6 +32,7 @@
   ],
   "exclude": [
     "node_modules",
+    "promotion-kit",
     ".output",
     ".nitro",
     ".tanstack"

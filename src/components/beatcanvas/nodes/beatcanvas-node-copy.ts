@@ -10,6 +10,9 @@ type BeatCanvasNodeCopy = {
   analysisReportReady: string;
   image: string;
   video: string;
+  timeline: string;
+  audio: string;
+  audioRoles: Record<string, string>;
   previewLoading: string;
   previewUnavailable: string;
   pending: string;
@@ -74,6 +77,15 @@ const getNodeCopyForLocale = (locale: BeatCanvasNodeLocale): BeatCanvasNodeCopy 
   ),
   image: m['AppShell.studio.canvas.shapes.image']({}, { locale }),
   video: m['AppShell.studio.canvas.shapes.video']({}, { locale }),
+  timeline: m['AppShell.editor.timeline.title']({}, { locale }),
+  audio: m['Common.media.audio']({}, { locale }),
+  audioRoles: {
+    music: m['Common.audioRole.music']({}, { locale }),
+    voice: m['Common.audioRole.voice']({}, { locale }),
+    sound_effect: m['Common.audioRole.sound_effect']({}, { locale }),
+    source_audio: m['Common.audioRole.source_audio']({}, { locale }),
+    reference: m['Common.audioRole.reference']({}, { locale }),
+  },
   previewLoading: m['AppShell.studio.canvas.shapes.previewLoading'](
     {},
     { locale }

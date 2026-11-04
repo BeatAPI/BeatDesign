@@ -75,8 +75,17 @@ for (const type of ['image', 'video'] as const) {
       await page.getByRole('dialog').getByRole('button').click();
     }
     await node.getByRole('button', { name: 'Take 1', exact: true }).click();
+    const preview = page.getByRole('dialog');
+    await expect(preview.getByRole('button', { name: 'Close preview' })).toBeFocused();
+    await page.screenshot({ path: `test-results/media-preview-${type}.png` });
+    await page.keyboard.press('Tab');
+    await expect.poll(() => preview.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press('g');
+    await page.keyboard.press('Delete');
+    await expect(page.locator('.react-flow__node')).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(preview).toBeHidden();
     await expect(node.getByRole('button', { name: 'Take 1', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await page.getByRole('dialog').getByRole('button').click();
     await expect.poll(async () => {
       const state = await (await request.get(`/api/app/projects/${projectId}/snapshot`)).json();
       return state.document.cards.find((card: { id: string }) => card.id === draft.id)?.pinnedOutputId;

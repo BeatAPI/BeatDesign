@@ -761,7 +761,7 @@ export function BeatCanvasShell({
       const response = await fetch(
         `/api/app/projects/${encodeURIComponent(projectId)}/timeline-usage`
       );
-      if (!response.ok) throw new Error('Timeline usage unavailable');
+      if (!response.ok) throw new Error(studioT('messages.timelineUsageFailed'));
       return response.json() as Promise<{
         clips: Array<{ assetId: string | null }>;
       }>;
@@ -1233,7 +1233,7 @@ export function BeatCanvasShell({
     async (card: CanvasCard) => {
       const downloadUrl = resolveDownloadUrl(card);
       if (!downloadUrl) {
-        throw new Error('Missing download URL');
+        throw new Error(studioT('messages.missingPreview'));
       }
 
       let response = await fetch(downloadUrl);
@@ -1242,7 +1242,7 @@ export function BeatCanvasShell({
       }
 
       if (!response.ok) {
-        throw new Error(`Failed to download ${card.name}`);
+        throw new Error(studioT('messages.downloadFailed'));
       }
 
       const blob = await response.blob();
@@ -1564,7 +1564,7 @@ export function BeatCanvasShell({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isWorkspaceReady) return;
+      if (!isWorkspaceReady || previewMedia) return;
       const targetContext = getCanvasShortcutTargetContext(event.target);
       const key = event.key.toLowerCase();
       const hasModifier = event.metaKey || event.ctrlKey;
@@ -1655,6 +1655,7 @@ export function BeatCanvasShell({
     };
   }, [
     isWorkspaceReady,
+    previewMedia,
     copySelectedCanvasCards,
     handleCreatePromptDraft,
     openUploadPicker,
@@ -1715,7 +1716,7 @@ export function BeatCanvasShell({
   );
 
   return (
-    <div className="relative flex min-h-0 flex-1 overflow-hidden bg-[var(--beatcanvas-canvas-bg)]">
+    <div className="relative isolate flex min-h-0 flex-1 overflow-hidden bg-[var(--beatcanvas-canvas-bg)]">
       <input
         ref={mediaFileInputRef}
         type="file"

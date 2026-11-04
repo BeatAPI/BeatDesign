@@ -28,3 +28,37 @@ test('local SQLite uses WAL and a busy timeout on each connection', async () => 
     });
   }
 });
+
+test('startup retries stale WAL snapshots, re-reads schema and preserves user data', async (t) => {
+  const client = createClient({ url: ':memory:' });
+  try {
+    await client.execute('CREATE TABLE project (id TEXT PRIMARY KEY, cover_asset_id TEXT)');
+    await client.execute("INSERT INTO project VALUES ('existing', NULL)");
+    const batch = client.batch.bind(client);
+    let attempts = 0;
+    const reads = t.mock.method(client, 'execute');
+    t.mock.method(client, 'batch', async (...args: Parameters<typeof client.batch>) => {
+      if (++attempts === 1) throw Object.assign(new Error('database is locked'), { code: 'SQLITE_BUSY_SNAPSHOT' });
+      return batch(...args);
+    });
+    await configureLocalSqlite(client);
+    assert.equal(attempts, 2);
+    assert.equal(reads.mock.calls.filter(({ arguments: args }) => args[0] === 'PRAGMA table_info(project)').length, 2);
+    assert.equal((await client.execute('SELECT id, cover_mode FROM project')).rows[0].id, 'existing');
+    assert.equal((await client.execute('SELECT cover_mode FROM project')).rows[0].cover_mode, 'auto');
+    assert.equal((await client.execute('PRAGMA busy_timeout')).rows[0].timeout, 5000);
+  } finally { client.close(); }
+});
+
+test('startup retries remain bounded and never swallow non-lock failures', async (t) => {
+  for (const [code, attempts] of [['SQLITE_BUSY_SNAPSHOT', 6], ['SQLITE_CORRUPT', 1]] as const) {
+    const client = createClient({ url: ':memory:' });
+    try {
+      const failure = Object.assign(new Error('startup failure'), { code });
+      const calls = t.mock.method(client, 'executeMultiple', async () => { throw failure; });
+      await assert.rejects(configureLocalSqlite(client), (error) => error === failure);
+      assert.equal(calls.mock.callCount(), attempts);
+      assert.equal((await client.execute('PRAGMA busy_timeout')).rows[0].timeout, 5000);
+    } finally { client.close(); }
+  }
+});

@@ -168,7 +168,7 @@ export function AssetCardNode({
                   {title}
                 </p>
                 <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-white/38">
-                  {audioRole?.replace('_', ' ') || 'audio'}
+                  {shapeCopy.audioRoles[audioRole ?? ''] ?? shapeCopy.audio}
                 </p>
               </div>
               <span className="font-mono text-[10px] tabular-nums text-white/45">
@@ -218,11 +218,11 @@ export function AssetCardNode({
                 />
               ) : (
                 <div className="grid size-full place-items-center text-[11px] uppercase tracking-[0.18em] text-white/28">
-                  Timeline
+                  {shapeCopy.timeline}
                 </div>
               )}
               <span className="absolute left-3 top-3 rounded-md border border-white/10 bg-black/55 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/65">
-                Timeline
+                {shapeCopy.timeline}
               </span>
             </div>
             <div className="border-t border-white/10 px-3 py-2.5">

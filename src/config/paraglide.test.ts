@@ -64,8 +64,35 @@ test('the shared Paraglide config can prepare server imports before Vite starts'
       localeRuntime.extractLocaleFromRequest(
         request('/ja/canvas/project-1', { cookie: 'PARAGLIDE_LOCALE=en' })
       ),
+      'en'
+    );
+    for (const locale of ['en', 'zh', 'ja']) {
+      for (const path of ['/projects', '/zh/projects', '/ja/projects']) {
+        const savedRequest = request(`${path}?view=recent`, {
+          accept: 'text/html',
+          'accept-language': 'de-DE,de;q=0.9',
+          cookie: `PARAGLIDE_LOCALE=${locale}`,
+        });
+        assert.equal(localeRuntime.extractLocaleFromRequest(savedRequest), locale);
+        const savedRedirect = await localeRuntime.shouldRedirect({ request: savedRequest });
+        const expectedPath = `${locale === 'en' ? '' : `/${locale}`}/projects`;
+        assert.equal(savedRedirect.shouldRedirect, path !== expectedPath);
+        if (savedRedirect.shouldRedirect) {
+          assert.equal(savedRedirect.redirectUrl?.pathname, expectedPath);
+          assert.equal(savedRedirect.redirectUrl?.search, '?view=recent');
+        }
+      }
+    }
+    assert.equal(
+      localeRuntime.extractLocaleFromRequest(
+        request('/ja/projects', { cookie: 'PARAGLIDE_LOCALE=invalid', 'accept-language': 'en-US' })
+      ),
       'ja'
     );
+    const apiRedirect = await localeRuntime.shouldRedirect({
+      request: request('/api/ping', { accept: 'application/json', cookie: 'PARAGLIDE_LOCALE=zh' }),
+    });
+    assert.equal(apiRedirect.shouldRedirect, false);
     const redirect = await localeRuntime.shouldRedirect({
       request: request('/canvas/project-1', {
         accept: 'text/html',

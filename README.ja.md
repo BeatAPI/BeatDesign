@@ -87,12 +87,16 @@ Studioは集中した生成画面を提供します。Assetsでは、読み込�
 Node.js 22以上、`pnpm` 10以上、macOSまたはWindows上の最新Chromeが必要です。
 
 ```bash
+git clone https://github.com/BeatAPI/BeatDesign.git
+cd BeatDesign
 pnpm install
 pnpm db:push
 pnpm dev
 ```
 
 [http://127.0.0.1:3020](http://127.0.0.1:3020)を開きます。
+
+言語メニューで英語・中国語・日本語を選択できます。現在のソース版では選択をこのブラウザーに400日間保存し、アクセスごとに更新します。以前の言語付きリンクを開いても保存した選択が優先されます。同じローカルホスト名を使用してください。別のブラウザー、プライベートウィンドウ、サイトデータ削除後は再選択が必要です。
 
 画像・動画の生成や分析、AI再生成を使う場合にのみ、自分の[BeatAPI API Key](https://beatapi.io/dashboard/apikeys)を追加します。ローカルファイルを選択しただけではProviderへアップロードされません。
 

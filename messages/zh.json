@@ -273,7 +273,14 @@
         "videoMetadataLoadFailed": "无法加载视频元数据。",
         "analysisVideoRequired": "请添加且仅添加一个 MP4 或 MOV 视频进行分析。",
         "analysisCompletedWithoutText": "分析已完成，但没有返回文本结果。",
-        "addTextNoteSuccess": "文本备注已加入画布。"
+        "addTextNoteSuccess": "文本备注已加入画布。",
+        "modelRequiresImage": "{model} 至少需要一张参考图片。",
+        "projectReferenceRequired": "参考素材必须属于当前项目，请重新导入。",
+        "generationStillProcessing": "生成仍在进行，可在历史记录中查看。",
+        "generationMissingOutput": "生成完成，但没有返回可用的媒体地址。",
+        "providerKeyRequired": "请先在连接设置中配置 BeatAPI API 密钥，再开始生成。",
+        "timelineUsageFailed": "暂时无法读取时间线使用情况，请重试。",
+        "downloadFailed": "素材下载失败，请重试。"
       },
       "dock": {
         "select": "选择",
@@ -505,18 +512,19 @@
         "placeholder": "描述你希望怎样重做这一段视频…",
         "confirm": "确认并生成",
         "running": "生成中…",
-        "takes": "版本 Takes",
+        "takes": "备选版本",
         "original": "原始片段",
         "rollback": "恢复原片段",
         "preparing": "正在准备选区…",
-        "ready": "新 Take 已完成，请预览后再替换当前片段。",
+        "ready": "新版本已完成，请预览后再替换当前片段。",
         "status": {
           "validating": "正在校验 BeatAPI 请求…",
           "uploading": "正在上传派生片段…",
           "submitting": "正在提交生成任务…",
-          "processing": "BeatAPI 正在生成新 Take…",
+          "processing": "BeatAPI 正在生成新版本…",
           "succeeded": "生成完成。"
-        }
+        },
+        "takeLabel": "AI 版本 {number}"
       },
       "trim": {
         "in": "入点",
@@ -622,7 +630,7 @@
         "timeline_gap": "可见视频轨存在空隙，已阻止导出，避免产生未解释的黑帧。",
         "clip_overlap": "同一轨道存在片段重叠，已阻止导出。",
         "media_missing": "有源素材文件缺失，已阻止导出。",
-        "take_duration_mismatch": "当前 AI Take 短于时间线片段，已阻止导出，避免尾帧冻结。",
+        "take_duration_mismatch": "当前 AI 版本短于时间线片段，已阻止导出，避免尾帧冻结。",
         "caption_overlap": "字幕存在重叠，已阻止导出。",
         "caption_out_of_video": "有字幕超出视频范围，已阻止导出。",
         "overlay_out_of_video": "有叠加图片超出主视频范围，已阻止导出。",
@@ -648,7 +656,8 @@
         "redoFailed": "BeatAPI 无法重做这个选区。",
         "srtImportFailed": "无法导入这个 SRT 字幕文件。",
         "srtTooLarge": "这个 SRT 字幕文件过大。",
-        "clipOverlap": "这个位置会与同一轨道上的其他片段重叠。"
+        "clipOverlap": "这个位置会与同一轨道上的其他片段重叠。",
+        "saveConflict": "时间线已在其他位置更新。当前编辑仍保留，请检查最新版本后再保存。"
       }
     },
     "header": {
@@ -705,7 +714,7 @@
         "loadingConnection": "正在读取 BeatAPI 连接",
         "title": "连接配置",
         "description": "需要使用远程生成模型时，连接你的 BeatAPI API Key。",
-        "providerTab": "AI Provider",
+        "providerTab": "AI 服务商",
         "storageTab": "存储",
         "activeProvider": "当前提供商",
         "defaultBadge": "默认",
@@ -713,7 +722,7 @@
         "endpointLabel": "接口地址",
         "mediaLabel": "支持类型",
         "mediaValue": "图片 + 视频",
-        "keyLabel": "API Key",
+        "keyLabel": "API 密钥",
         "keyPlaceholder": "请输入 BeatAPI API Key",
         "save": "保存设置",
         "saving": "保存中…",
@@ -786,7 +795,38 @@
     }
   },
   "Common": {
-    "loading": "加载中"
+    "loading": "加载中",
+    "close": "关闭",
+    "media": {
+      "image": "图片",
+      "video": "视频",
+      "audio": "音频",
+      "text": "文本",
+      "analysis": "分析",
+      "timeline": "时间线",
+      "any": "任意素材"
+    },
+    "audioRole": {
+      "music": "音乐",
+      "voice": "人声",
+      "sound_effect": "音效",
+      "source_audio": "原声音轨",
+      "reference": "参考音频"
+    },
+    "notifications": "通知",
+    "canvas": {
+      "nodeKeyboard": "按回车或空格选择节点，方向键移动，Delete 删除，Esc 取消。",
+      "nodeSelection": "按回车或空格选择节点，Delete 删除，Esc 取消。",
+      "nodeMoved": "节点已移至 x：{x}，y：{y}。",
+      "edgeSelection": "按回车或空格选择连线，Esc 取消。",
+      "controls": "画布控制",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "fitView": "适配全部节点",
+      "toggleInteraction": "切换画布交互",
+      "minimap": "画布概览",
+      "handle": "连接点"
+    }
   },
   "ProjectSettings": {
     "title": "项目设置",
@@ -935,7 +975,7 @@
     "adoptVersion": "采用当前版本",
     "unbind": "解除绑定",
     "timelineUsage": "查看时间线实际采用",
-    "activeTake": "采用的 Take",
+    "activeTake": "采用的版本",
     "templateInputs": "模板实例参考槽",
     "detachTemplate": "解除模板关联",
     "historyInspector": "全部生成版本",

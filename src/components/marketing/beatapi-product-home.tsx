@@ -21,6 +21,8 @@ function getCopy(locale: string) {
     prompt: m['product.home.prompt']({}, { locale: messageLocale }),
     sectionTitle: m['product.home.sectionTitle']({}, { locale: messageLocale }),
     projects: m['product.home.viewProjects']({}, { locale: messageLocale }),
+    studio: m['product.shell.studio']({}, { locale: messageLocale }),
+    canvas: m['product.shell.canvas']({}, { locale: messageLocale }),
     studioDescription: m['product.home.studioDescription'](
       {},
       { locale: messageLocale }
@@ -73,7 +75,7 @@ function WorkspaceCard({
         <h3 className="beat-product-display mt-6 text-[17px] font-semibold tracking-[-0.02em] text-[var(--beat-text-1)]">
           {title}
         </h3>
-        <p className="mt-2 truncate whitespace-nowrap text-[13px] leading-[1.65] text-[var(--beat-text-2)]">
+        <p className="mt-2 text-[13px] leading-[1.65] text-[var(--beat-text-2)]">
           {description}
         </p>
         <span className="mt-auto inline-flex items-center gap-2 pt-6 text-[12.5px] font-medium text-white/65 transition-colors group-hover:text-white">
@@ -153,7 +155,7 @@ export function BeatApiProductHome({ locale }: { locale: string }) {
 
           <div className="grid gap-4 md:grid-cols-3">
             <WorkspaceCard
-              title="Studio"
+              title={copy.studio}
               index="01"
               description={copy.studioDescription}
               href="/studio"
@@ -161,7 +163,7 @@ export function BeatApiProductHome({ locale }: { locale: string }) {
               openLabel={copy.open}
             />
             <WorkspaceCard
-              title="Canvas"
+              title={copy.canvas}
               index="02"
               description={copy.canvasDescription}
               href="/canvas"

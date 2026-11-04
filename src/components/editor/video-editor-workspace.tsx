@@ -561,6 +561,7 @@ export function VideoEditorWorkspace({
     projectId, document, hydrated: isTimelineHydrated,
     documentRef, versionRef: timelineVersionRef, savedRef: lastSavedDocumentRef,
     onDocument: setDocument, onStatus: setSaveStatus, onError: setError,
+    errorMessages: { conflict: t('errors.saveConflict'), saveFailed: t('errors.saveFailed') },
     onRemote: (remoteDocument) => {
       resetDocument(remoteDocument);
         const remoteVisualClips = remoteDocument.tracks
@@ -1568,7 +1569,7 @@ export function VideoEditorWorkspace({
             <button
               type="button"
               aria-current="page"
-              className="relative flex h-9 items-center gap-2 text-xs font-[560] text-white"
+              className="relative flex h-9 shrink-0 items-center gap-2 whitespace-nowrap text-xs font-[560] text-white"
             >
               <FileVideo2 className="size-4" />
               {t('media.tab')}
@@ -2056,7 +2057,7 @@ export function VideoEditorWorkspace({
                           : 'border-white/[0.08] text-white/55 hover:bg-white/[0.04]'
                       }`}
                     >
-                      <span className="min-w-0 truncate">AI Take {index + 1} · {take.prompt}</span>
+                      <span className="min-w-0 truncate">{t('redo.takeLabel', { number: index + 1 })} · {take.prompt}</span>
                       {selectedClip.activeTakeId === take.id ? <span>✓</span> : null}
                     </button>
                   ))}

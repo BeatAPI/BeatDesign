@@ -34,6 +34,7 @@ async function readJson(url: string, init?: RequestInit) {
 
 export function CanvasOrganizationPanel(props: Props) {
   const t = useTranslations('Organization');
+  const mediaT = useTranslations('Common.media');
   const capturePreviewRef = useRef<{
     selectedCardIds: string[];
     sourceCanvasRevision: number;
@@ -286,7 +287,7 @@ export function CanvasOrganizationPanel(props: Props) {
   }
   return (
     <details
-      className="pointer-events-auto absolute right-4 top-4 z-20 max-h-[75vh] w-[min(380px,calc(100%_-_32px))] overflow-auto rounded-xl border border-white/10 bg-[var(--beat-panel,#111214)] text-[var(--beat-text-1)] shadow-lg"
+      className="pointer-events-auto absolute right-4 top-4 z-[60] max-h-[75vh] w-[min(380px,calc(100%_-_32px))] overflow-auto rounded-xl border border-white/10 bg-[var(--beat-panel,#111214)] text-[var(--beat-text-1)] shadow-lg"
       data-testid="canvas-organization-panel"
     >
       <summary className="min-h-11 cursor-pointer px-4 py-3 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-orange-500">
@@ -833,7 +834,7 @@ export function CanvasOrganizationPanel(props: Props) {
                 {instance.slotDefinitions.map((slot) => (
                   <label key={slot.id} className="block text-xs">
                     {slot.label} ·{' '}
-                    {slot.required ? t('templateRequired') : slot.mediaType}
+                    {slot.required ? t('templateRequired') : mediaT(slot.mediaType)}
                     <select
                       className={`${control} mt-1 w-full`}
                       value={

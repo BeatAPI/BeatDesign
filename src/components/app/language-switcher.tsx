@@ -47,7 +47,9 @@ export function LanguageSwitcher({
 
   function switchLanguage(nextLocale: (typeof supportedLocales)[number]) {
     setOpen(false);
-    if (nextLocale !== locale) setLocale(nextLocale);
+    // Reaffirming the visible language must also save/renew the preference.
+    // Paraglide only navigates when the locale actually changes.
+    setLocale(nextLocale);
   }
 
   const workspace = variant === 'workspace';

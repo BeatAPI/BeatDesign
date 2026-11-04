@@ -3,11 +3,11 @@ import test from 'node:test';
 
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { BeatCanvasMediaPreviewOverlay } from './beatcanvas-media-preview-overlay';
+import { BeatCanvasMediaPreviewContent } from './beatcanvas-media-preview-overlay';
 
-test('media preview overlay renders the selected image at a larger size', () => {
+test('media preview content renders the selected image at a larger size', () => {
   const html = renderToStaticMarkup(
-    <BeatCanvasMediaPreviewOverlay
+    <BeatCanvasMediaPreviewContent
       media={{
         type: 'image',
         url: 'blob:local-product-preview',
@@ -24,9 +24,9 @@ test('media preview overlay renders the selected image at a larger size', () => 
   assert.match(html, /max-h-\[calc\(100vh-140px\)\]/);
 });
 
-test('media preview overlay renders video playback controls', () => {
+test('media preview content renders video playback controls', () => {
   const html = renderToStaticMarkup(
-    <BeatCanvasMediaPreviewOverlay
+    <BeatCanvasMediaPreviewContent
       media={{
         type: 'video',
         url: 'blob:local-video-preview',
